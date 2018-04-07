@@ -93,13 +93,6 @@ void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb) {
     #endif
 }
 
-// execute jobs from timer and from run queue
-void os_runloop () {
-    while(1) {
-        os_runloop_once();
-    }
-}
-
 void os_runloop_once() {
     #if LMIC_DEBUG_LEVEL > 1
         bool has_deadline = false;
