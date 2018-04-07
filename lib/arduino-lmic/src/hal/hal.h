@@ -10,7 +10,7 @@
 #ifndef _hal_hal_h_
 #define _hal_hal_h_
 
-static const int NUM_DIO = 3;
+static const int NUM_DIO = 2;
 
 struct lmic_pinmap {
     u1_t nss;

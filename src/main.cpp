@@ -37,7 +37,7 @@ const lmic_pinmap lmic_pins = {
     .nss = 14,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 5,
-    .dio = {2, 3, 4},
+    .dio = {2, 3},
 };
 
 void onEvent (ev_t ev) {
