@@ -4,6 +4,7 @@
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+#include <LowPower.h>
 
 void do_send(osjob_t* j);
 
@@ -31,6 +32,8 @@ static osjob_t sendjob;
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 const unsigned TX_INTERVAL = 60;
+
+const unsigned int BAUDRATE = 19200;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -123,15 +126,9 @@ void do_send(osjob_t* j){
 }
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(BAUDRATE);
     Serial.println(F("Starting"));
 
-    #ifdef VCC_ENABLE
-    // For Pinoccio Scout boards
-    pinMode(VCC_ENABLE, OUTPUT);
-    digitalWrite(VCC_ENABLE, HIGH);
-    delay(1000);
-    #endif
 
     // LMIC init
     os_init();
@@ -154,6 +151,53 @@ void setup() {
     do_send(&sendjob);
 }
 
+
+void powersave(int32_t maxTime) {
+    // fastpath
+    if(maxTime == 0)
+        return;
+
+    int32_t duration_selected = 0;
+    period_t period_selected;
+
+    if(maxTime > 8500) {
+        duration_selected = 8500;
+        period_selected = SLEEP_8S;
+    } else if (maxTime > 4500) {
+        duration_selected = 4200;
+        period_selected = SLEEP_4S;
+    } else if (maxTime > 2500) {
+        duration_selected = 2100;
+        period_selected = SLEEP_2S;
+    } else if (maxTime > 1500) {
+        duration_selected = 1000;
+        period_selected = SLEEP_1S;
+    } else if (maxTime > 1000) {
+        duration_selected = 510;
+        period_selected = SLEEP_500MS;
+    } else {
+        return;
+    }
+    #if LMIC_DEBUG_LEVEL > 1
+        Serial.print(os_getTime());
+        Serial.print(": Sleep :");
+        Serial.println(duration_selected);
+    #endif
+    Serial.end();
+    LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
+    hal_add_time_in_sleep(duration_selected);
+    Serial.begin(BAUDRATE);
+    delay(100);
+    #if LMIC_DEBUG_LEVEL > 1            
+        Serial.print(os_getTime());
+        Serial.println(": wakeup");
+    #endif
+}
+
+
 void loop() {
-    os_runloop_once();
+    int32_t to_wait = os_runloop_once();
+    if(hal_is_sleep_allow()) {
+        powersave(to_wait);
+    } 
 }

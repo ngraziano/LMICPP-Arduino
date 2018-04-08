@@ -109,6 +109,29 @@ static void hal_time_init () {
     // Nothing to do
 }
 
+bool is_sleep_allow = false;
+
+bool hal_is_sleep_allow() {
+    return is_sleep_allow;
+}
+
+void hal_allow_sleep() {
+    is_sleep_allow = true;
+}
+
+
+void hal_forbid_sleep() {
+    is_sleep_allow = false;
+}
+
+uint32_t time_in_sleep;
+
+void hal_add_time_in_sleep(uint32_t nb_ms)
+{
+    time_in_sleep += ms2osticks(nb_ms);
+    os_getTime();
+}
+
 u4_t hal_ticks () {
     // Because micros() is scaled down in this function, micros() will
     // overflow before the tick timer should, causing the tick timer to
@@ -147,7 +170,7 @@ u4_t hal_ticks () {
     // Return the scaled value with the upper bits of stored added. The
     // overlapping bit will be equal and the lower bits will be 0, so
     // bitwise or is a no-op for them.
-    return scaled | ((uint32_t)overflow << 24);
+    return (scaled | ((uint32_t)overflow << 24)) + time_in_sleep;
 
     // 0 leads to correct, but overly complex code (it could just return
     // micros() unmodified), 8 leaves no room for the overlapping bit.
@@ -156,7 +179,7 @@ u4_t hal_ticks () {
 
 // Returns the number of ticks until time. Negative values indicate that
 // time has already passed.
-static s4_t delta_time(u4_t time) {
+s4_t delta_time(u4_t time) {
     return (s4_t)(time - hal_ticks());
 }
 

@@ -12,6 +12,8 @@
 #ifndef _hal_hpp_
 #define _hal_hpp_
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -65,6 +67,14 @@ void hal_sleep (void);
  */
 u4_t hal_ticks (void);
 
+void hal_add_time_in_sleep(uint32_t nb_ms);
+
+bool hal_is_sleep_allow();
+
+void hal_allow_sleep();
+
+void hal_forbid_sleep();
+
 /*
  * busy-wait until specified timestamp (in ticks) is reached.
  */
@@ -83,6 +93,8 @@ u1_t hal_checkTimer (u4_t targettime);
  *   - action could be HALT or reboot
  */
 void hal_failed (const char *file, u2_t line);
+
+s4_t delta_time(u4_t time);
 
 #ifdef __cplusplus
 } // extern "C"

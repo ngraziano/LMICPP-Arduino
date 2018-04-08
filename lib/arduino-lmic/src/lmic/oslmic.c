@@ -93,7 +93,7 @@ void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb) {
     #endif
 }
 
-void os_runloop_once() {
+int32_t os_runloop_once() {
     #if LMIC_DEBUG_LEVEL > 1
         bool has_deadline = false;
     #endif
@@ -118,5 +118,11 @@ void os_runloop_once() {
             lmic_printf("%lu: Running job %p, cb %p, deadline %lu\n", os_getTime(), j, j->func, has_deadline ? j->deadline : 0);
         #endif
         j->func(j);
-    }
+    } 
+    if (OS.runnablejobs) {
+        return 0;
+    } else {
+        // return the number of milisecond to wait ()
+        return osticks2ms(delta_time(OS.scheduledjobs->deadline));
+    } 
 }

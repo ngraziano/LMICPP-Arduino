@@ -367,6 +367,7 @@ static void txlora () {
 
     // now we actually start the transmission
     opmode(OPMODE_TX);
+    hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
     u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
@@ -444,6 +445,8 @@ static void rxlora (u1_t rxmode) {
     } else { // continous rx (scan or rssi)
         opmode(OPMODE_RX);
     }
+    hal_forbid_sleep();
+    
 
 #if LMIC_DEBUG_LEVEL > 0
     if (rxmode == RXMODE_RSSI) {
@@ -528,6 +531,7 @@ void radio_init () {
 #endif /* CFG_sx1276mb1_board */
 
     opmode(OPMODE_SLEEP);
+    hal_allow_sleep();
 
     hal_enableIRQs();
 }
@@ -575,6 +579,8 @@ void radio_irq_handler (u1_t dio) {
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
             LMIC.txend = now - us2osticks(43); // TXDONE FIXUP
+            hal_forbid_sleep();    
+            
         } else if( flags & IRQ_LORA_RXDONE_MASK ) {
             // save exact rx time
             if(getBw(LMIC.rps) == BW125) {
@@ -591,9 +597,11 @@ void radio_irq_handler (u1_t dio) {
             // read rx quality parameters
             LMIC.snr  = readReg(LORARegPktSnrValue); // SNR [dB] * 4
             LMIC.rssi = readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
+            hal_allow_sleep();                
         } else if( flags & IRQ_LORA_RXTOUT_MASK ) {
             // indicate timeout
             LMIC.dataLen = 0;
+            hal_allow_sleep();    
         }
         // mask all radio IRQs
         writeReg(LORARegIrqFlagsMask, 0xFF);
@@ -612,6 +620,7 @@ void os_radio (u1_t mode) {
       case RADIO_RST:
         // put radio to sleep
         opmode(OPMODE_SLEEP);
+        hal_allow_sleep();
         break;
 
       case RADIO_TX:
