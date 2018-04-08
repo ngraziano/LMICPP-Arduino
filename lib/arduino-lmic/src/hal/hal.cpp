@@ -37,13 +37,13 @@ static void hal_io_init () {
 }
 
 // val == 1  => tx 1
-void hal_pin_rxtx (u1_t val) {
+void hal_pin_rxtx (uint8_t val) {
     if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
         digitalWrite(lmic_pins.rxtx, val);
 }
 
 // set radio RST pin to given value (or keep floating!)
-void hal_pin_rst (u1_t val) {
+void hal_pin_rst (uint8_t val) {
     if (lmic_pins.rst == LMIC_UNUSED_PIN)
         return;
 
@@ -80,7 +80,7 @@ static void hal_spi_init () {
     SPI.begin();
 }
 
-void hal_pin_nss (u1_t val) {
+void hal_pin_nss (uint8_t val) {
     if (!val)
         SPI.beginTransaction(settings);
     else
@@ -91,8 +91,8 @@ void hal_pin_nss (u1_t val) {
 }
 
 // perform SPI transaction with radio
-u1_t hal_spi (u1_t out) {
-    u1_t res = SPI.transfer(out);
+uint8_t hal_spi (uint8_t out) {
+    uint8_t res = SPI.transfer(out);
 /*
     Serial.print(">");
     Serial.print(out, HEX);
@@ -132,7 +132,7 @@ void hal_add_time_in_sleep(uint32_t nb_ms)
     os_getTime();
 }
 
-u4_t hal_ticks () {
+uint32_t hal_ticks () {
     // Because micros() is scaled down in this function, micros() will
     // overflow before the tick timer should, causing the tick timer to
     // miss a significant part of its values if not corrected. To fix
@@ -179,12 +179,12 @@ u4_t hal_ticks () {
 
 // Returns the number of ticks until time. Negative values indicate that
 // time has already passed.
-s4_t delta_time(u4_t time) {
-    return (s4_t)(time - hal_ticks());
+int32_t delta_time(uint32_t time) {
+    return (int32_t)(time - hal_ticks());
 }
 
-void hal_waitUntil (u4_t time) {
-    s4_t delta = delta_time(time);
+void hal_waitUntil (uint32_t time) {
+    int32_t delta = delta_time(time);
     // From delayMicroseconds docs: Currently, the largest value that
     // will produce an accurate delay is 16383.
     while (delta > (16000 / US_PER_OSTICK)) {
@@ -196,7 +196,7 @@ void hal_waitUntil (u4_t time) {
 }
 
 // check and rewind for target time
-u1_t hal_checkTimer (u4_t time) {
+uint8_t hal_checkTimer (uint32_t time) {
     // No need to schedule wakeup, since we're not sleeping
     return delta_time(time) <= 0;
 }
@@ -263,7 +263,7 @@ void hal_init () {
 #endif
 }
 
-void hal_failed (const char *file, u2_t line) {
+void hal_failed (const char *file, uint16_t line) {
 #if defined(LMIC_FAILURE_TO)
     LMIC_FAILURE_TO.println("FAILURE ");
     LMIC_FAILURE_TO.print(file);

@@ -13,14 +13,14 @@
 static const int NUM_DIO = 2;
 
 struct lmic_pinmap {
-    u1_t nss;
-    u1_t rxtx;
-    u1_t rst;
-    u1_t dio[NUM_DIO];
+    uint8_t nss;
+    uint8_t rxtx;
+    uint8_t rst;
+    uint8_t dio[NUM_DIO];
 };
 
 // Use this for any unused pins.
-const u1_t LMIC_UNUSED_PIN = 0xff;
+const uint8_t LMIC_UNUSED_PIN = 0xff;
 
 // Declared here, to be defined an initialized by the application
 extern const lmic_pinmap lmic_pins;

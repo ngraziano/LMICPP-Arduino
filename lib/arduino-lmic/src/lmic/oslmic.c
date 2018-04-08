@@ -29,7 +29,7 @@ ostime_t os_getTime () {
     return hal_ticks();
 }
 
-static u1_t unlinkjob (osjob_t** pnext, osjob_t* job) {
+static uint8_t unlinkjob (osjob_t** pnext, osjob_t* job) {
     for( ; *pnext; pnext = &((*pnext)->next)) {
         if(*pnext == job) { // unlink
             *pnext = job->next;
@@ -42,7 +42,7 @@ static u1_t unlinkjob (osjob_t** pnext, osjob_t* job) {
 // clear scheduled job
 void os_clearCallback (osjob_t* job) {
     hal_disableIRQs();
-    u1_t res = unlinkjob(&OS.scheduledjobs, job) || unlinkjob(&OS.runnablejobs, job);
+    uint8_t res = unlinkjob(&OS.scheduledjobs, job) || unlinkjob(&OS.runnablejobs, job);
     hal_enableIRQs();
     #if LMIC_DEBUG_LEVEL > 1
         if (res)

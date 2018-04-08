@@ -23,12 +23,12 @@ extern "C"{
 enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK=0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
 enum _bw_t { BW125=0, BW250, BW500, BWrfu };
-typedef u1_t cr_t;
-typedef u1_t sf_t;
-typedef u1_t bw_t;
-typedef u1_t dr_t;
+typedef uint8_t cr_t;
+typedef uint8_t sf_t;
+typedef uint8_t bw_t;
+typedef uint8_t dr_t;
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-typedef u2_t rps_t;
+typedef uint16_t rps_t;
 TYPEDEF_xref2rps_t;
 
 enum { ILLEGAL_RPS = 0xFF };
@@ -339,7 +339,7 @@ enum {
 };
 
 // Device address
-typedef u4_t devaddr_t;
+typedef uint32_t devaddr_t;
 
 // RX quality (device)
 enum { RSSI_OFF=64, SNR_SCALEUP=4 };
@@ -361,7 +361,7 @@ inline rps_t makeRps (sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
 // Two frames with params r1/r2 would interfere on air: same SFx + BWx
 inline int sameSfBw(rps_t r1, rps_t r2) { return ((r1^r2)&0x1F) == 0; }
 
-extern CONST_TABLE(u1_t, _DR2RPS_CRC)[];
+extern CONST_TABLE(uint8_t, _DR2RPS_CRC)[];
 inline rps_t updr2rps (dr_t dr) { return (rps_t)TABLE_GET_U1(_DR2RPS_CRC, dr+1); }
 inline rps_t dndr2rps (dr_t dr) { return setNocrc(updr2rps(dr),1); }
 inline int isFasterDR (dr_t dr1, dr_t dr2) { return dr1 > dr2; }
@@ -370,7 +370,7 @@ inline dr_t  incDR    (dr_t dr) { return TABLE_GET_U1(_DR2RPS_CRC, dr+2)==ILLEGA
 inline dr_t  decDR    (dr_t dr) { return TABLE_GET_U1(_DR2RPS_CRC, dr  )==ILLEGAL_RPS ? dr : (dr_t)(dr-1); } // decrease data rate
 inline dr_t  assertDR (dr_t dr) { return TABLE_GET_U1(_DR2RPS_CRC, dr+1)==ILLEGAL_RPS ? DR_DFLTMIN : dr; }   // force into a valid DR
 inline bit_t validDR  (dr_t dr) { return TABLE_GET_U1(_DR2RPS_CRC, dr+1)!=ILLEGAL_RPS; } // in range
-inline dr_t  lowerDR  (dr_t dr, u1_t n) { while(n--){dr=decDR(dr);} return dr; } // decrease data rate by n steps
+inline dr_t  lowerDR  (dr_t dr, uint8_t n) { while(n--){dr=decDR(dr);} return dr; } // decrease data rate by n steps
 
 //
 // BEG: Keep in sync with lorabase.hpp
@@ -378,9 +378,9 @@ inline dr_t  lowerDR  (dr_t dr, u1_t n) { while(n--){dr=decDR(dr);} return dr; }
 
 
 // Convert between dBm values and power codes (MCMD_LADR_XdBm)
-s1_t pow2dBm (u1_t mcmd_ladr_p1);
+int8_t pow2dBm (uint8_t mcmd_ladr_p1);
 // Calculate airtime
-ostime_t calcAirTime (rps_t rps, u1_t plen);
+ostime_t calcAirTime (rps_t rps, uint8_t plen);
 // Sensitivity at given SF/BW
 int getSensitivity (rps_t rps);
 

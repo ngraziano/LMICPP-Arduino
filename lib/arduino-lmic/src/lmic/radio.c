@@ -161,7 +161,7 @@
 
 // RADIO STATE
 // (initialized by radio_init(), used by radio_rand1())
-static u1_t randbuf[16];
+static uint8_t randbuf[16];
 
 
 #ifdef CFG_sx1276_radio
@@ -173,45 +173,45 @@ static u1_t randbuf[16];
 #endif
 
 
-static void writeReg (u1_t addr, u1_t data ) {
+static void writeReg (uint8_t addr, uint8_t data ) {
     hal_pin_nss(0);
     hal_spi(addr | 0x80);
     hal_spi(data);
     hal_pin_nss(1);
 }
 
-static u1_t readReg (u1_t addr) {
+static uint8_t readReg (uint8_t addr) {
     hal_pin_nss(0);
     hal_spi(addr & 0x7F);
-    u1_t val = hal_spi(0x00);
+    uint8_t val = hal_spi(0x00);
     hal_pin_nss(1);
     return val;
 }
 
-static void writeBuf (u1_t addr, xref2u1_t buf, u1_t len) {
+static void writeBuf (uint8_t addr, xref2uint8_t buf, uint8_t len) {
     hal_pin_nss(0);
     hal_spi(addr | 0x80);
-    for (u1_t i=0; i<len; i++) {
+    for (uint8_t i=0; i<len; i++) {
         hal_spi(buf[i]);
     }
     hal_pin_nss(1);
 }
 
-static void readBuf (u1_t addr, xref2u1_t buf, u1_t len) {
+static void readBuf (uint8_t addr, xref2uint8_t buf, uint8_t len) {
     hal_pin_nss(0);
     hal_spi(addr & 0x7F);
-    for (u1_t i=0; i<len; i++) {
+    for (uint8_t i=0; i<len; i++) {
         buf[i] = hal_spi(0x00);
     }
     hal_pin_nss(1);
 }
 
-static void opmode (u1_t mode) {
+static void opmode (uint8_t mode) {
     writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
 static void opmodeLora() {
-    u1_t u = OPMODE_LORA;
+    uint8_t u = OPMODE_LORA;
 #ifdef CFG_sx1276_radio
     u |= 0x8;   // TBD: sx1276 high freq
 #endif
@@ -223,7 +223,7 @@ static void configLoraModem () {
     sf_t sf = getSf(LMIC.rps);
 
 #ifdef CFG_sx1276_radio
-        u1_t mc1 = 0, mc2 = 0, mc3 = 0;
+        uint8_t mc1 = 0, mc2 = 0, mc3 = 0;
 
         switch (getBw(LMIC.rps)) {
         case BW125: mc1 |= SX1276_MC1_BW_125; break;
@@ -260,7 +260,7 @@ static void configLoraModem () {
         }
         writeReg(LORARegModemConfig3, mc3);
 #elif CFG_sx1272_radio
-        u1_t mc1 = (getBw(LMIC.rps)<<6);
+        uint8_t mc1 = (getBw(LMIC.rps)<<6);
 
         switch( getCr(LMIC.rps) ) {
         case CR_4_5: mc1 |= SX1272_MC1_CR_4_5; break;
@@ -294,9 +294,9 @@ static void configLoraModem () {
 static void configChannel () {
     // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
     uint64_t frf = ((uint64_t)LMIC.freq << 19) / 32000000;
-    writeReg(RegFrfMsb, (u1_t)(frf>>16));
-    writeReg(RegFrfMid, (u1_t)(frf>> 8));
-    writeReg(RegFrfLsb, (u1_t)(frf>> 0));
+    writeReg(RegFrfMsb, (uint8_t)(frf>>16));
+    writeReg(RegFrfMid, (uint8_t)(frf>> 8));
+    writeReg(RegFrfLsb, (uint8_t)(frf>> 0));
 }
 
 
@@ -304,25 +304,25 @@ static void configChannel () {
 static void configPower () {
 #ifdef CFG_sx1276_radio
     // no boost used for now
-    s1_t pw = (s1_t)LMIC.txpow;
+    int8_t pw = (int8_t)LMIC.txpow;
     if(pw >= 17) {
         pw = 15;
     } else if(pw < 2) {
         pw = 2;
     }
     // check board type for BOOST pin
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw&0xf)));
+    writeReg(RegPaConfig, (uint8_t)(0x80|(pw&0xf)));
     writeReg(RegPaDac, readReg(RegPaDac)|0x4);
 
 #elif CFG_sx1272_radio
     // set PA config (2-17 dBm using PA_BOOST)
-    s1_t pw = (s1_t)LMIC.txpow;
+    int8_t pw = (int8_t)LMIC.txpow;
     if(pw > 17) {
         pw = 17;
     } else if(pw < 2) {
         pw = 2;
     }
-    writeReg(RegPaConfig, (u1_t)(0x80|(pw-2)));
+    writeReg(RegPaConfig, (uint8_t)(0x80|(pw-2)));
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif /* CFG_sx1272_radio */
@@ -370,9 +370,9 @@ static void txlora () {
     hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
-    u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
-    u1_t bw = getBw(LMIC.rps);
-    u1_t cr = getCr(LMIC.rps);
+    uint8_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
+    uint8_t bw = getBw(LMIC.rps);
+    uint8_t cr = getCr(LMIC.rps);
     lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
            os_getTime(), LMIC.freq, LMIC.dataLen, sf,
            bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
@@ -392,14 +392,14 @@ static void starttx () {
 
 enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
 
-static CONST_TABLE(u1_t, rxlorairqmask)[] = {
+static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
     [RXMODE_SINGLE] = IRQ_LORA_RXDONE_MASK|IRQ_LORA_RXTOUT_MASK,
     [RXMODE_SCAN]   = IRQ_LORA_RXDONE_MASK,
     [RXMODE_RSSI]   = 0x00,
 };
 
 // start LoRa receiver (time=LMIC.rxtime, timeout=LMIC.rxsyms, result=LMIC.frame[LMIC.dataLen])
-static void rxlora (u1_t rxmode) {
+static void rxlora (uint8_t rxmode) {
     // select LoRa modem (from sleep mode)
     opmodeLora();
     ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
@@ -452,9 +452,9 @@ static void rxlora (u1_t rxmode) {
     if (rxmode == RXMODE_RSSI) {
         lmic_printf("RXMODE_RSSI\n");
     } else {
-        u1_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
-        u1_t bw = getBw(LMIC.rps);
-        u1_t cr = getCr(LMIC.rps);
+        uint8_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
+        uint8_t bw = getBw(LMIC.rps);
+        uint8_t cr = getCr(LMIC.rps);
         lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
                os_getTime(),
                rxmode == RXMODE_SINGLE ? "RXMODE_SINGLE" : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
@@ -467,7 +467,7 @@ static void rxlora (u1_t rxmode) {
 #endif
 }
 
-static void startrx (u1_t rxmode) {
+static void startrx (uint8_t rxmode) {
     ASSERT( (readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP );
     rxlora(rxmode);
     // the radio will go back to STANDBY mode as soon as the RX is finished
@@ -491,7 +491,7 @@ void radio_init () {
     opmode(OPMODE_SLEEP);
 
     // some sanity checks, e.g., read version number
-    u1_t v = readReg(RegVersion);
+    uint8_t v = readReg(RegVersion);
 #ifdef CFG_sx1276_radio
     ASSERT(v == 0x12 );
 #elif CFG_sx1272_radio
@@ -504,7 +504,7 @@ void radio_init () {
     while( (readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX ); // continuous rx
     for(int i=1; i<16; i++) {
         for(int j=0; j<8; j++) {
-            u1_t b; // wait for two non-identical subsequent least-significant bits
+            uint8_t b; // wait for two non-identical subsequent least-significant bits
             while( (b = readReg(LORARegRssiWideband) & 0x01) == (readReg(LORARegRssiWideband) & 0x01) );
             randbuf[i] = (randbuf[i] << 1) | b;
         }
@@ -520,10 +520,10 @@ void radio_init () {
     while((readReg(FSKRegImageCal)&RF_IMAGECAL_IMAGECAL_RUNNING) == RF_IMAGECAL_IMAGECAL_RUNNING){ ; }
 
     // Sets a Frequency in HF band
-    u4_t frf = 868000000;
-    writeReg(RegFrfMsb, (u1_t)(frf>>16));
-    writeReg(RegFrfMid, (u1_t)(frf>> 8));
-    writeReg(RegFrfLsb, (u1_t)(frf>> 0));
+    uint32_t frf = 868000000;
+    writeReg(RegFrfMsb, (uint8_t)(frf>>16));
+    writeReg(RegFrfMid, (uint8_t)(frf>> 8));
+    writeReg(RegFrfLsb, (uint8_t)(frf>> 0));
 
     // Launch Rx chain calibration for HF band
     writeReg(FSKRegImageCal, (readReg(FSKRegImageCal) & RF_IMAGECAL_IMAGECAL_MASK)|RF_IMAGECAL_IMAGECAL_START);
@@ -538,26 +538,26 @@ void radio_init () {
 
 // return next random byte derived from seed buffer
 // (buf[0] holds index of next byte to be returned)
-u1_t radio_rand1 () {
-    u1_t i = randbuf[0];
+uint8_t radio_rand1 () {
+    uint8_t i = randbuf[0];
     ASSERT( i != 0 );
     if( i==16 ) {
         os_aes(AES_ENC, randbuf, 16); // encrypt seed with any key
         i = 0;
     }
-    u1_t v = randbuf[i++];
+    uint8_t v = randbuf[i++];
     randbuf[0] = i;
     return v;
 }
 
-u1_t radio_rssi () {
+uint8_t radio_rssi () {
     hal_disableIRQs();
-    u1_t r = readReg(LORARegRssiValue);
+    uint8_t r = readReg(LORARegRssiValue);
     hal_enableIRQs();
     return r;
 }
 
-static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {
+static CONST_TABLE(uint16_t, LORA_RXDONE_FIXUP)[] = {
     [FSK]  =     us2osticks(0), // (   0 ticks)
     [SF7]  =     us2osticks(0), // (   0 ticks)
     [SF8]  =  us2osticks(1648), // (  54 ticks)
@@ -569,10 +569,10 @@ static CONST_TABLE(u2_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void radio_irq_handler (u1_t dio) {
+void radio_irq_handler (uint8_t dio) {
     ostime_t now = os_getTime();
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
-        u1_t flags = readReg(LORARegIrqFlags);
+        uint8_t flags = readReg(LORARegIrqFlags);
 #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: irq: dio: 0x%x flags: 0x%x\n", now, dio, flags);
 #endif
@@ -614,7 +614,7 @@ void radio_irq_handler (u1_t dio) {
     os_setCallback(&LMIC.osjob, LMIC.osjob.func);
 }
 
-void os_radio (u1_t mode) {
+void os_radio (uint8_t mode) {
     hal_disableIRQs();
     switch (mode) {
       case RADIO_RST:
