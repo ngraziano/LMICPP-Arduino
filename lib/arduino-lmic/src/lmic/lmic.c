@@ -12,10 +12,6 @@
 //! \file
 #include "lmic.h"
 
-#if defined(DISABLE_BEACONS) && !defined(DISABLE_PING)
-#error Ping needs beacon tracking
-#endif
-
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
 #endif // !defined(MINRX_SYMS)
@@ -388,79 +384,6 @@ static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
 };
 
 
-#if !defined(DISABLE_BEACONS)
-static ostime_t calcRxWindow (uint8_t secs, dr_t dr) {
-    ostime_t rxoff, err;
-    if( secs==0 ) {
-        // aka 128 secs (next becaon)
-        rxoff = LMIC.drift;
-        err = LMIC.lastDriftDiff;
-    } else {
-        // scheduled RX window within secs into current beacon period
-        rxoff = (LMIC.drift * (ostime_t)secs) >> BCN_INTV_exp;
-        err = (LMIC.lastDriftDiff * (ostime_t)secs) >> BCN_INTV_exp;
-    }
-    uint8_t rxsyms = MINRX_SYMS;
-    err += (ostime_t)LMIC.maxDriftDiff * LMIC.missedBcns;
-    LMIC.rxsyms = MINRX_SYMS + (err / dr2hsym(dr));
-
-    return (rxsyms-PAMBL_SYMS) * dr2hsym(dr) + rxoff;
-}
-
-
-// Setup beacon RX parameters assuming we have an error of ms (aka +/-(ms/2))
-static void calcBcnRxWindowFromMillis (uint8_t ms, bit_t ini) {
-    if( ini ) {
-        LMIC.drift = 0;
-        LMIC.maxDriftDiff = 0;
-        LMIC.missedBcns = 0;
-        LMIC.bcninfo.flags |= BCN_NODRIFT|BCN_NODDIFF;
-    }
-    ostime_t hsym = dr2hsym(DR_BCN);
-    LMIC.bcnRxsyms = MINRX_SYMS + ms2osticksCeil(ms) / hsym;
-    LMIC.bcnRxtime = LMIC.bcninfo.txtime + BCN_INTV_osticks - (LMIC.bcnRxsyms-PAMBL_SYMS) * hsym;
-}
-#endif // !DISABLE_BEACONS
-
-
-#if !defined(DISABLE_PING)
-// Setup scheduled RX window (ping/multicast slot)
-static void rxschedInit (xref2rxsched_t rxsched) {
-    os_clearMem(AESkey,16);
-    os_clearMem(LMIC.frame+8,8);
-    os_wlsbf4(LMIC.frame, LMIC.bcninfo.time);
-    os_wlsbf4(LMIC.frame+4, LMIC.devaddr);
-    os_aes(AES_ENC,LMIC.frame,16);
-    uint8_t intvExp = rxsched->intvExp;
-    ostime_t off = os_rlsbf2(LMIC.frame) & (0x0FFF >> (7 - intvExp)); // random offset (slot units)
-    rxsched->rxbase = (LMIC.bcninfo.txtime +
-                       BCN_RESERVE_osticks +
-                       ms2osticks(BCN_SLOT_SPAN_ms * off)); // random offset osticks
-    rxsched->slot   = 0;
-    rxsched->rxtime = rxsched->rxbase - calcRxWindow(/*secs BCN_RESERVE*/2+(1<<intvExp),rxsched->dr);
-    rxsched->rxsyms = LMIC.rxsyms;
-}
-
-
-static bit_t rxschedNext (xref2rxsched_t rxsched, ostime_t cando) {
-  again:
-    if( rxsched->rxtime - cando >= 0 )
-        return 1;
-    uint8_t slot;
-    if( (slot=rxsched->slot) >= 128 )
-        return 0;
-    uint8_t intv = 1<<rxsched->intvExp;
-    if( (rxsched->slot = (slot += (intv))) >= 128 )
-        return 0;
-    rxsched->rxtime = rxsched->rxbase
-        + ((BCN_WINDOW_osticks * (ostime_t)slot) >> BCN_INTV_exp)
-        - calcRxWindow(/*secs BCN_RESERVE*/2+slot+intv,rxsched->dr);
-    rxsched->rxsyms = LMIC.rxsyms;
-    goto again;
-}
-#endif // !DISABLE_PING)
-
-
 static ostime_t rndDelay (uint8_t secSpan) {
     uint16_t r = os_getRndU2();
     ostime_t delay = r;
@@ -510,24 +433,6 @@ static void setDrTxpow (uint8_t reason, uint8_t dr, int8_t pow) {
     }
 }
 
-
-#if !defined(DISABLE_PING)
-void LMIC_stopPingable (void) {
-    LMIC.opmode &= ~(OP_PINGABLE|OP_PINGINI);
-}
-
-
-void LMIC_setPingable (uint8_t intvExp) {
-    // Change setting
-    LMIC.ping.intvExp = (intvExp & 0x7);
-    LMIC.opmode |= OP_PINGABLE;
-    // App may call LMIC_enableTracking() explicitely before
-    // Otherwise tracking is implicitly enabled here
-    if( (LMIC.opmode & (OP_TRACK|OP_SCAN)) == 0  &&  LMIC.bcninfoTries == 0 )
-        LMIC_enableTracking(0);
-}
-
-#endif // !DISABLE_PING
 
 #if defined(CFG_eu868)
 // ================================================================================
@@ -678,14 +583,6 @@ static ostime_t nextTx (ostime_t now) {
     } while(1);
 }
 
-
-#if !defined(DISABLE_BEACONS)
-static void setBcnRxParams (void) {
-    LMIC.dataLen = 0;
-    LMIC.freq = LMIC.channelFreq[LMIC.bcnChnl] & ~(uint32_t)3;
-    LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
-}
-#endif // !DISABLE_BEACONS
 
 #define setRx1Params() /*LMIC.freq/rps remain unchanged*/
 
@@ -868,14 +765,6 @@ static void _nextTx (void) {
     // No feasible channel  found! Keep old one.
 }
 
-#if !defined(DISABLE_BEACONS)
-static void setBcnRxParams (void) {
-    LMIC.dataLen = 0;
-    LMIC.freq = US915_500kHz_DNFBASE + LMIC.bcnChnl * US915_500kHz_DNFSTEP;
-    LMIC.rps  = setIh(setNocrc(dndr2rps((dr_t)DR_BCN),1),LEN_BCN);
-}
-#endif // !DISABLE_BEACONS
-
 #define setRx1Params() {                                                \
     LMIC.freq = US915_500kHz_DNFBASE + (LMIC.txChnl & 0x7) * US915_500kHz_DNFSTEP; \
     if( /* TX datarate */LMIC.dndr < DR_SF8C )                          \
@@ -972,66 +861,15 @@ static void stateJustJoined (void) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
     LMIC.dutyCapAns  = 0;
 #endif
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-    LMIC.pingSetAns  = 0;
-#endif
     LMIC.upRepeat    = 0;
     LMIC.adrAckReq   = LINK_CHECK_INIT;
     LMIC.dn2Dr       = DR_DNW2;
     LMIC.dn2Freq     = FREQ_DNW2;
-#if !defined(DISABLE_BEACONS)
-    LMIC.bcnChnl     = CHNL_BCN;
-#endif
-#if !defined(DISABLE_PING)
-    LMIC.ping.freq   = FREQ_PING;
-    LMIC.ping.dr     = DR_PING;
-#endif
 }
 
 
 // ================================================================================
 // Decoding frames
-
-
-#if !defined(DISABLE_BEACONS)
-// Decode beacon  - do not overwrite bcninfo unless we have a match!
-static int decodeBeacon (void) {
-    ASSERT(LMIC.dataLen == LEN_BCN); // implicit header RX guarantees this
-    xref2uint8_t d = LMIC.frame;
-    if(
-#if CFG_eu868
-        d[OFF_BCN_CRC1] != (uint8_t)os_crc16(d,OFF_BCN_CRC1)
-#elif CFG_us915
-        os_rlsbf2(&d[OFF_BCN_CRC1]) != os_crc16(d,OFF_BCN_CRC1)
-#endif
-        )
-        return 0;   // first (common) part fails CRC check
-    // First set of fields is ok
-    uint32_t bcnnetid = os_rlsbf4(&d[OFF_BCN_NETID]) & 0xFFFFFF;
-    if( bcnnetid != LMIC.netid )
-        return -1;  // not the beacon we're looking for
-
-    LMIC.bcninfo.flags &= ~(BCN_PARTIAL|BCN_FULL);
-    // Match - update bcninfo structure
-    LMIC.bcninfo.snr    = LMIC.snr;
-    LMIC.bcninfo.rssi   = LMIC.rssi;
-    LMIC.bcninfo.txtime = LMIC.rxtime - AIRTIME_BCN_osticks;
-    LMIC.bcninfo.time   = os_rlsbf4(&d[OFF_BCN_TIME]);
-    LMIC.bcninfo.flags |= BCN_PARTIAL;
-
-    // Check 2nd set
-    if( os_rlsbf2(&d[OFF_BCN_CRC2]) != os_crc16(d,OFF_BCN_CRC2) )
-        return 1;
-    // Second set of fields is ok
-    LMIC.bcninfo.lat    = (int32_t)os_rlsbf4(&d[OFF_BCN_LAT-1]) >> 8; // read as signed 24-bit
-    LMIC.bcninfo.lon    = (int32_t)os_rlsbf4(&d[OFF_BCN_LON-1]) >> 8; // ditto
-    LMIC.bcninfo.info   = d[OFF_BCN_INFO];
-    LMIC.bcninfo.flags |= BCN_FULL;
-    return 2;
-}
-#endif // !DISABLE_BEACONS
-
-
 static bit_t decodeFrame (void) {
     xref2uint8_t d = LMIC.frame;
     uint8_t hdr    = d[0];
@@ -1225,47 +1063,10 @@ static bit_t decodeFrame (void) {
             continue;
         }
         case MCMD_PING_SET: {
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-            uint32_t freq = convFreq(&opts[oidx+1]);
-            uint8_t flags = 0x80;
-            if( freq != 0 ) {
-                flags |= MCMD_PING_ANS_FQACK;
-                LMIC.ping.freq = freq;
-                DO_DEVDB(LMIC.ping.intvExp, pingIntvExp);
-                DO_DEVDB(LMIC.ping.freq, pingFreq);
-                DO_DEVDB(LMIC.ping.dr, pingDr);
-            }
-            LMIC.pingSetAns = flags;
-#endif // !DISABLE_MCMD_PING_SET && !DISABLE_PING
             oidx += 4;
             continue;
         }
         case MCMD_BCNI_ANS: {
-#if !defined(DISABLE_MCMD_BCNI_ANS) && !defined(DISABLE_BEACONS)
-            // Ignore if tracking already enabled
-            if( (LMIC.opmode & OP_TRACK) == 0 ) {
-                LMIC.bcnChnl = opts[oidx+3];
-                // Enable tracking - bcninfoTries
-                LMIC.opmode |= OP_TRACK;
-                // Cleared later in txComplete handling - triggers EV_BEACON_FOUND
-                ASSERT(LMIC.bcninfoTries!=0);
-                // Setup RX parameters
-                LMIC.bcninfo.txtime = (LMIC.rxtime
-                                       + ms2osticks(os_rlsbf2(&opts[oidx+1]) * MCMD_BCNI_TUNIT)
-                                       + ms2osticksCeil(MCMD_BCNI_TUNIT/2)
-                                       - BCN_INTV_osticks);
-                LMIC.bcninfo.flags = 0;  // txtime above cannot be used as reference (BCN_PARTIAL|BCN_FULL cleared)
-                calcBcnRxWindowFromMillis(MCMD_BCNI_TUNIT,1);  // error of +/-N ms
-
-                EV(lostFrame, INFO, (e_.reason  = EV::lostFrame_t::MCMD_BCNI_ANS,
-                                     e_.eui     = MAIN::CDEV->getEui(),
-                                     e_.lostmic = Base::lsbf4(&d[pend]),
-                                     e_.info    = (LMIC.missedBcns |
-                                                   (osticks2us(LMIC.bcninfo.txtime + BCN_INTV_osticks
-                                                               - LMIC.bcnRxtime) << 8)),
-                                     e_.time    = MAIN::CDEV->ostime2ustime(LMIC.bcninfo.txtime + BCN_INTV_osticks)));
-            }
-#endif // !DISABLE_MCMD_BCNI_ANS && !DISABLE_BEACONS
             oidx += 4;
             continue;
         }
@@ -1395,13 +1196,6 @@ static void setupRx1 (osjobcb_t func) {
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in LMIC.rxtime
 static void txDone (ostime_t delay, osjobcb_t func) {
-#if !defined(DISABLE_PING)
-    if( (LMIC.opmode & (OP_TRACK|OP_PINGABLE|OP_PINGINI)) == (OP_TRACK|OP_PINGABLE) ) {
-        rxschedInit(&LMIC.ping);    // note: reuses LMIC.frame buffer!
-        LMIC.opmode |= OP_PINGINI;
-    }
-#endif // !DISABLE_PING
-
     // Change RX frequency / rps (US only) before we increment txChnl
     setRx1Params();
     // LMIC.rxsyms carries the TX datarate (can be != LMIC.datarate [confirm retries etc.])
@@ -1619,14 +1413,6 @@ static void buildDataFrame (void) {
     // Piggyback MAC options
     // Prioritize by importance
     int  end = OFF_DAT_OPTS;
-#if !defined(DISABLE_PING)
-    if( (LMIC.opmode & (OP_TRACK|OP_PINGABLE)) == (OP_TRACK|OP_PINGABLE) ) {
-        // Indicate pingability in every UP frame
-        LMIC.frame[end] = MCMD_PING_IND;
-        LMIC.frame[end+1] = LMIC.ping.dr | (LMIC.ping.intvExp<<4);
-        end += 2;
-    }
-#endif // !DISABLE_PING
 #if !defined(DISABLE_MCMD_DCAP_REQ)
     if( LMIC.dutyCapAns ) {
         LMIC.frame[end] = MCMD_DCAP_ANS;
@@ -1655,25 +1441,11 @@ static void buildDataFrame (void) {
         end += 2;
         LMIC.ladrAns = 0;
     }
-#if !defined(DISABLE_BEACONS)
-    if( LMIC.bcninfoTries > 0 ) {
-        LMIC.frame[end] = MCMD_BCNI_REQ;
-        end += 1;
-    }
-#endif // !DISABLE_BEACONS
     if( LMIC.adrChanged ) {
         if( LMIC.adrAckReq < 0 )
             LMIC.adrAckReq = 0;
         LMIC.adrChanged = 0;
     }
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-    if( LMIC.pingSetAns != 0 ) {
-        LMIC.frame[end+0] = MCMD_PING_ANS;
-        LMIC.frame[end+1] = LMIC.pingSetAns & ~MCMD_PING_ANS_RFU;
-        end += 2;
-        LMIC.pingSetAns = 0;
-    }
-#endif // !DISABLE_MCMD_PING_SET && !DISABLE_PING
 #if !defined(DISABLE_MCMD_SNCH_REQ)
     if( LMIC.snchAns ) {
         LMIC.frame[end+0] = MCMD_SNCH_ANS;
@@ -1741,73 +1513,6 @@ static void buildDataFrame (void) {
 }
 
 
-#if !defined(DISABLE_BEACONS)
-// Callback from HAL during scan mode or when job timer expires.
-static void onBcnRx (xref2osjob_t job) {
-    // If we arrive via job timer make sure to put radio to rest.
-    os_radio(RADIO_RST);
-    os_clearCallback(&LMIC.osjob);
-    if( LMIC.dataLen == 0 ) {
-        // Nothing received - timeout
-        LMIC.opmode &= ~(OP_SCAN | OP_TRACK);
-        reportEvent(EV_SCAN_TIMEOUT);
-        return;
-    }
-    if( decodeBeacon() <= 0 ) {
-        // Something is wrong with the beacon - continue scan
-        LMIC.dataLen = 0;
-        os_radio(RADIO_RXON);
-        os_setTimedCallback(&LMIC.osjob, LMIC.bcninfo.txtime, FUNC_ADDR(onBcnRx));
-        return;
-    }
-    // Found our 1st beacon
-    // We don't have a previous beacon to calc some drift - assume
-    // an max error of 13ms = 128sec*100ppm which is roughly +/-100ppm
-    calcBcnRxWindowFromMillis(13,1);
-    LMIC.opmode &= ~OP_SCAN;          // turn SCAN off
-    LMIC.opmode |=  OP_TRACK;         // auto enable tracking
-    reportEvent(EV_BEACON_FOUND);    // can be disabled in callback
-}
-
-
-// Enable receiver to listen to incoming beacons
-// netid defines when scan stops (any or specific beacon)
-// This mode ends with events: EV_SCAN_TIMEOUT/EV_SCAN_BEACON
-// Implicitely cancels any pending TX/RX transaction.
-// Also cancels an onpoing joining procedure.
-static void startScan (void) {
-    ASSERT(LMIC.devaddr!=0 && (LMIC.opmode & OP_JOINING)==0);
-    if( (LMIC.opmode & OP_SHUTDOWN) != 0 )
-        return;
-    // Cancel onging TX/RX transaction
-    LMIC.txCnt = LMIC.dnConf = LMIC.bcninfo.flags = 0;
-    LMIC.opmode = (LMIC.opmode | OP_SCAN) & ~(OP_TXRXPEND);
-    setBcnRxParams();
-    LMIC.rxtime = LMIC.bcninfo.txtime = os_getTime() + sec2osticks(BCN_INTV_sec+1);
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime, FUNC_ADDR(onBcnRx));
-    os_radio(RADIO_RXON);
-}
-
-
-bit_t LMIC_enableTracking (uint8_t tryBcnInfo) {
-    if( (LMIC.opmode & (OP_SCAN|OP_TRACK|OP_SHUTDOWN)) != 0 )
-        return 0;  // already in progress or failed to enable
-    // If BCN info requested from NWK then app has to take are
-    // of sending data up so that MCMD_BCNI_REQ can be attached.
-    if( (LMIC.bcninfoTries = tryBcnInfo) == 0 )
-        startScan();
-    return 1;  // enabled
-}
-
-
-void LMIC_disableTracking (void) {
-    LMIC.opmode &= ~(OP_SCAN|OP_TRACK);
-    LMIC.bcninfoTries = 0;
-    engineUpdate();
-}
-#endif // !DISABLE_BEACONS
-
-
 // ================================================================================
 //
 // Join stuff
@@ -1870,19 +1575,6 @@ bit_t LMIC_startJoining (void) {
 //
 // ================================================================================
 
-#if !defined(DISABLE_PING)
-static void processPingRx (xref2osjob_t osjob) {
-    if( LMIC.dataLen != 0 ) {
-        LMIC.txrxFlags = TXRX_PING;
-        if( decodeFrame() ) {
-            reportEvent(EV_RXCOMPLETE);
-            return;
-        }
-    }
-    // Pick next ping slot
-    engineUpdate();
-}
-#endif // !DISABLE_PING
 
 
 static bit_t processDnData (void) {
@@ -1928,18 +1620,6 @@ static bit_t processDnData (void) {
             LMIC.opmode |= OP_REJOIN|OP_LINKDEAD;
             reportEvent(EV_LINK_DEAD);
         }
-#if !defined(DISABLE_BEACONS)
-        // If this falls to zero the NWK did not answer our MCMD_BCNI_REQ commands - try full scan
-        if( LMIC.bcninfoTries > 0 ) {
-            if( (LMIC.opmode & OP_TRACK) != 0 ) {
-                reportEvent(EV_BEACON_FOUND);
-                LMIC.bcninfoTries = 0;
-            }
-            else if( --LMIC.bcninfoTries == 0 ) {
-                startScan();   // NWK did not answer - try scan
-            }
-        }
-#endif // !DISABLE_BEACONS
         return 1;
     }
     if( !decodeFrame() ) {
@@ -1949,86 +1629,6 @@ static bit_t processDnData (void) {
     }
     goto txcomplete;
 }
-
-
-#if !defined(DISABLE_BEACONS)
-static void processBeacon (xref2osjob_t osjob) {
-    ostime_t lasttx = LMIC.bcninfo.txtime;   // save here - decodeBeacon might overwrite
-    uint8_t flags = LMIC.bcninfo.flags;
-    ev_t ev;
-
-    if( LMIC.dataLen != 0 && decodeBeacon() >= 1 ) {
-        ev = EV_BEACON_TRACKED;
-        if( (flags & (BCN_PARTIAL|BCN_FULL)) == 0 ) {
-            // We don't have a previous beacon to calc some drift - assume
-            // an max error of 13ms = 128sec*100ppm which is roughly +/-100ppm
-            calcBcnRxWindowFromMillis(13,0);
-            goto rev;
-        }
-        // We have a previous BEACON to calculate some drift
-        int16_t drift = BCN_INTV_osticks - (LMIC.bcninfo.txtime - lasttx);
-        if( LMIC.missedBcns > 0 ) {
-            drift = LMIC.drift + (drift - LMIC.drift) / (LMIC.missedBcns+1);
-        }
-        if( (LMIC.bcninfo.flags & BCN_NODRIFT) == 0 ) {
-            int16_t diff = LMIC.drift - drift;
-            if( diff < 0 ) diff = -diff;
-            LMIC.lastDriftDiff = diff;
-            if( LMIC.maxDriftDiff < diff )
-                LMIC.maxDriftDiff = diff;
-            LMIC.bcninfo.flags &= ~BCN_NODDIFF;
-        }
-        LMIC.drift = drift;
-        LMIC.missedBcns = LMIC.rejoinCnt = 0;
-        LMIC.bcninfo.flags &= ~BCN_NODRIFT;
-        EV(devCond,INFO,(e_.reason = EV::devCond_t::CLOCK_DRIFT,
-                         e_.eui    = MAIN::CDEV->getEui(),
-                         e_.info   = drift,
-                         e_.info2  = /*occasion BEACON*/0));
-        ASSERT((LMIC.bcninfo.flags & (BCN_PARTIAL|BCN_FULL)) != 0);
-    } else {
-        ev = EV_BEACON_MISSED;
-        LMIC.bcninfo.txtime += BCN_INTV_osticks - LMIC.drift;
-        LMIC.bcninfo.time   += BCN_INTV_sec;
-        LMIC.missedBcns++;
-        // Delay any possible TX after surmised beacon - it's there although we missed it
-        txDelay(LMIC.bcninfo.txtime + BCN_RESERVE_osticks, 4);
-        if( LMIC.missedBcns > MAX_MISSED_BCNS )
-            LMIC.opmode |= OP_REJOIN;  // try if we can roam to another network
-        if( LMIC.bcnRxsyms > MAX_RXSYMS ) {
-            LMIC.opmode &= ~(OP_TRACK|OP_PINGABLE|OP_PINGINI|OP_REJOIN);
-            reportEvent(EV_LOST_TSYNC);
-            return;
-        }
-    }
-    LMIC.bcnRxtime = LMIC.bcninfo.txtime + BCN_INTV_osticks - calcRxWindow(0,DR_BCN);
-    LMIC.bcnRxsyms = LMIC.rxsyms;
-  rev:
-#if CFG_us915
-    LMIC.bcnChnl = (LMIC.bcnChnl+1) & 7;
-#endif
-#if !defined(DISABLE_PING)
-    if( (LMIC.opmode & OP_PINGINI) != 0 )
-        rxschedInit(&LMIC.ping);  // note: reuses LMIC.frame buffer!
-#endif // !DISABLE_PING
-    reportEvent(ev);
-}
-
-
-static void startRxBcn (xref2osjob_t osjob) {
-    LMIC.osjob.func = FUNC_ADDR(processBeacon);
-    os_radio(RADIO_RX);
-}
-#endif // !DISABLE_BEACONS
-
-
-#if !defined(DISABLE_PING)
-static void startRxPing (xref2osjob_t osjob) {
-    LMIC.osjob.func = FUNC_ADDR(processPingRx);
-    os_radio(RADIO_RX);
-}
-#endif // !DISABLE_PING
-
 
 // Decide what to do next for the MAC layer of a device
 static void engineUpdate (void) {
@@ -2049,14 +1649,6 @@ static void engineUpdate (void) {
     ostime_t now    = os_getTime();
     ostime_t rxtime = 0;
     ostime_t txbeg  = 0;
-
-#if !defined(DISABLE_BEACONS)
-    if( (LMIC.opmode & OP_TRACK) != 0 ) {
-        // We are tracking a beacon
-        ASSERT( now + RX_RAMPUP - LMIC.bcnRxtime <= 0 );
-        rxtime = LMIC.bcnRxtime - RX_RAMPUP;
-    }
-#endif // !DISABLE_BEACONS
 
     if( (LMIC.opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
         // Need to TX some data...
@@ -2088,23 +1680,6 @@ static void engineUpdate (void) {
                 lmic_printf("%lu: Airtime available at %lu (global duty limit)\n", os_getTime(), txbeg);
             #endif
         }
-#if !defined(DISABLE_BEACONS)
-        // If we're tracking a beacon...
-        // then make sure TX-RX transaction is complete before beacon
-        if( (LMIC.opmode & OP_TRACK) != 0 &&
-            txbeg + (jacc ? JOIN_GUARD_osticks : TXRX_GUARD_osticks) - rxtime > 0 ) {
-
-            #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%lu: Awaiting beacon before uplink\n", os_getTime());
-            #endif
-
-            // Not enough time to complete TX-RX before beacon - postpone after beacon.
-            // In order to avoid clustering of postponed TX right after beacon randomize start!
-            txDelay(rxtime + BCN_RESERVE_osticks, 16);
-            txbeg = 0;
-            goto checkrx;
-        }
-#endif // !DISABLE_BEACONS
         // Earliest possible time vs overhead to setup radio
         if( txbeg - (now + TX_RAMPUP) < 0 ) {
             #if LMIC_DEBUG_LEVEL > 1
@@ -2173,42 +1748,6 @@ static void engineUpdate (void) {
             return;
     }
 
-#if !defined(DISABLE_BEACONS)
-    // Are we pingable?
-  checkrx:
-#if !defined(DISABLE_PING)
-    if( (LMIC.opmode & OP_PINGINI) != 0 ) {
-        // One more RX slot in this beacon period?
-        if( rxschedNext(&LMIC.ping, now+RX_RAMPUP) ) {
-            if( txbeg != 0  &&  (txbeg - LMIC.ping.rxtime) < 0 )
-                goto txdelay;
-            LMIC.rxsyms  = LMIC.ping.rxsyms;
-            LMIC.rxtime  = LMIC.ping.rxtime;
-            LMIC.freq    = LMIC.ping.freq;
-            LMIC.rps     = dndr2rps(LMIC.ping.dr);
-            LMIC.dataLen = 0;
-            ASSERT(LMIC.rxtime - now+RX_RAMPUP >= 0 );
-            os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, FUNC_ADDR(startRxPing));
-            return;
-        }
-        // no - just wait for the beacon
-    }
-#endif // !DISABLE_PING
-
-    if( txbeg != 0  &&  (txbeg - rxtime) < 0 )
-        goto txdelay;
-
-    setBcnRxParams();
-    LMIC.rxsyms = LMIC.bcnRxsyms;
-    LMIC.rxtime = LMIC.bcnRxtime;
-    if( now - rxtime >= 0 ) {
-        LMIC.osjob.func = FUNC_ADDR(processBeacon);
-        os_radio(RADIO_RX);
-        return;
-    }
-    os_setTimedCallback(&LMIC.osjob, rxtime, FUNC_ADDR(startRxBcn));
-    return;
-#endif // !DISABLE_BEACONS
 
   txdelay:
     EV(devCond, INFO, (e_.reason = EV::devCond_t::TX_DELAY,
@@ -2253,11 +1792,6 @@ void LMIC_reset (void) {
     LMIC.dn2Dr        =  DR_DNW2;   // we need this for 2nd DN window of join accept
     LMIC.dn2Freq      =  FREQ_DNW2; // ditto
     LMIC.rxDelay      =  DELAY_DNW1;
-#if !defined(DISABLE_PING)
-    LMIC.ping.freq    =  FREQ_PING; // defaults for ping
-    LMIC.ping.dr      =  DR_PING;   // ditto
-    LMIC.ping.intvExp =  0xFF;
-#endif // !DISABLE_PING
 #if defined(CFG_us915)
     initDefaultChannels();
 #endif
@@ -2265,11 +1799,6 @@ void LMIC_reset (void) {
     DO_DEVDB(LMIC.devNonce,     devNonce);
     DO_DEVDB(LMIC.dn2Dr,        dn2Dr);
     DO_DEVDB(LMIC.dn2Freq,      dn2Freq);
-#if !defined(DISABLE_PING)
-    DO_DEVDB(LMIC.ping.freq,    pingFreq);
-    DO_DEVDB(LMIC.ping.dr,      pingDr);
-    DO_DEVDB(LMIC.ping.intvExp, pingIntvExp);
-#endif // !DISABLE_PING
 }
 
 

@@ -69,43 +69,6 @@ enum { MAX_TXPOW_125kHz = 30 };
 enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
 enum { KEEP_TXPOW = -128 };
 
-
-#if !defined(DISABLE_PING)
-//! \internal
-struct rxsched_t {
-    uint8_t     dr;
-    uint8_t     intvExp;   // 0..7
-    uint8_t     slot;      // runs from 0 to 128
-    uint8_t     rxsyms;
-    ostime_t rxbase;
-    ostime_t rxtime;    // start of next spot
-    uint32_t     freq;
-};
-TYPEDEF_xref2rxsched_t;  //!< \internal
-#endif // !DISABLE_PING
-
-
-#if !defined(DISABLE_BEACONS)
-//! Parsing and tracking states of beacons.
-enum { BCN_NONE    = 0x00,   //!< No beacon received
-       BCN_PARTIAL = 0x01,   //!< Only first (common) part could be decoded (info,lat,lon invalid/previous)
-       BCN_FULL    = 0x02,   //!< Full beacon decoded
-       BCN_NODRIFT = 0x04,   //!< No drift value measured yet
-       BCN_NODDIFF = 0x08 }; //!< No differential drift measured yet
-//! Information about the last and previous beacons.
-struct bcninfo_t {
-    ostime_t txtime;  //!< Time when the beacon was sent
-    int8_t     rssi;    //!< Adjusted RSSI value of last received beacon
-    int8_t     snr;     //!< Scaled SNR value of last received beacon
-    uint8_t     flags;   //!< Last beacon reception and tracking states. See BCN_* values.
-    uint32_t     time;    //!< GPS time in seconds of last beacon (received or surrogate)
-    //
-    uint8_t     info;    //!< Info field of last beacon (valid only if BCN_FULL set)
-    int32_t     lat;     //!< Lat field of last beacon (valid only if BCN_FULL set)
-    int32_t     lon;     //!< Lon field of last beacon (valid only if BCN_FULL set)
-};
-#endif // !DISABLE_BEACONS
-
 // purpose of receive window - lmic_t.rxState
 enum { RADIO_RST=0, RADIO_TX=1, RADIO_RX=2, RADIO_RXON=3 };
 // Netid values /  lmic_t.netid
@@ -185,11 +148,6 @@ struct lmic_t {
     uint8_t        datarate;     // current data rate
     uint8_t        errcr;        // error coding rate (used for TX only)
     uint8_t        rejoinCnt;    // adjustment for rejoin datarate
-#if !defined(DISABLE_BEACONS)
-    int16_t        drift;        // last measured drift
-    int16_t        lastDriftDiff;
-    int16_t        maxDriftDiff;
-#endif
 
     uint16_t        clockError; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                             // represents +/-100% error
@@ -230,17 +188,6 @@ struct lmic_t {
     uint8_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
 #endif
 
-    // Class B state
-#if !defined(DISABLE_BEACONS)
-    uint8_t        missedBcns;   // unable to track last N beacons
-    uint8_t        bcninfoTries; // how often to try (scan mode only)
-#endif
-#if !defined(DISABLE_MCMD_PING_SET) && !defined(DISABLE_PING)
-    uint8_t        pingSetAns;   // answer set cmd and ACK bits
-#endif
-#if !defined(DISABLE_PING)
-    rxsched_t   ping;         // pingable setup
-#endif
 
     // Public part of MAC state
     uint8_t        txCnt;
@@ -249,12 +196,6 @@ struct lmic_t {
     uint8_t        dataLen;    // 0 no data or zero length data, >0 byte count of data
     uint8_t        frame[MAX_LEN_FRAME];
 
-#if !defined(DISABLE_BEACONS)
-    uint8_t        bcnChnl;
-    uint8_t        bcnRxsyms;    //
-    ostime_t    bcnRxtime;
-    bcninfo_t   bcninfo;      // Last received beacon info
-#endif
 };
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.
@@ -289,15 +230,6 @@ void  LMIC_setTxData    (void);
 int   LMIC_setTxData2   (uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed);
 void  LMIC_sendAlive    (void);
 
-#if !defined(DISABLE_BEACONS)
-bit_t LMIC_enableTracking  (uint8_t tryBcnInfo);
-void  LMIC_disableTracking (void);
-#endif
-
-#if !defined(DISABLE_PING)
-void  LMIC_stopPingable  (void);
-void  LMIC_setPingable   (uint8_t intvExp);
-#endif
 #if !defined(DISABLE_JOIN)
 void  LMIC_tryRejoin     (void);
 #endif
