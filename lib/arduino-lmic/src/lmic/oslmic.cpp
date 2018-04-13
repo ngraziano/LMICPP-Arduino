@@ -12,6 +12,9 @@
 #include "lmic.h"
 #include <stdbool.h>
 
+
+OsScheduler OSS;
+
 // RUNTIME STATE
 static struct {
     osjob_t* scheduledjobs;

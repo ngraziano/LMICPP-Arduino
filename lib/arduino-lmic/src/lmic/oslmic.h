@@ -21,6 +21,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+
+
 #ifdef __cplusplus
 extern "C"{
 #endif
@@ -119,6 +121,8 @@ struct osjob_t {
     ostime_t deadline;
     osjobcb_t  func;
 };
+
+
 
 
 
@@ -277,5 +281,28 @@ uint32_t os_aes (uint8_t mode, xref2uint8_t buf, uint16_t len);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+class OsJob;
+
+class OsScheduler {
+    private:
+        OsJob* scheduledjobs;
+        OsJob* runnablejobs;
+};
+
+extern OsScheduler OSS;
+
+class OsJob {
+    private:
+        OsJob* next;
+        ostime_t deadline;
+        osjobcb_t  func;
+    public:
+        OsJob(OsScheduler& scheduler);
+        void setCallback(osjobcb_t cb);
+        void clearCallback();
+        void setTimedCallback (ostime_t time, osjobcb_t cb);
+};
+
 
 #endif // _oslmic_h_
