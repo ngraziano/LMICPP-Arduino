@@ -823,7 +823,7 @@ static ostime_t nextJoinState (void) {
 #endif
 
 
-static void runEngineUpdate (osjob_t* osjob) {
+static void runEngineUpdate (OsJob* osjob) {
     engineUpdate();
 }
 
@@ -837,7 +837,7 @@ static void reportEvent (ev_t ev) {
 }
 
 
-static void runReset (osjob_t* osjob) {
+static void runReset (OsJob* osjob) {
     // Disable session
     LMIC_reset();
 #if !defined(DISABLE_JOIN)
@@ -1180,7 +1180,7 @@ static void schedRx12 (ostime_t delay, osjobcb_t func, uint8_t dr) {
     // (again note that hsym is half a sumbol time, so no /2 needed)
     LMIC.rxtime = LMIC.txend + delay + PAMBL_SYMS * hsym - LMIC.rxsyms * hsym;
 
-    os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+    LMIC.osjob.setTimedCallback(LMIC.rxtime - RX_RAMPUP, func);
 }
 
 static void setupRx1 (osjobcb_t func) {
@@ -1188,7 +1188,7 @@ static void setupRx1 (osjobcb_t func) {
     // Turn LMIC.rps from TX over to RX
     LMIC.rps = setNocrc(LMIC.rps,1);
     LMIC.dataLen = 0;
-    LMIC.osjob.func = func;
+    LMIC.osjob.setCallbackFuture(func);
     os_radio(RADIO_RX);
 }
 
@@ -1204,7 +1204,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
     if( /* TX datarate */LMIC.rxsyms == DR_FSK ) {
         LMIC.rxtime = LMIC.txend + delay - PRERX_FSK*us2osticksRound(160);
         LMIC.rxsyms = RXLEN_FSK;
-        os_setTimedCallback(&LMIC.osjob, LMIC.rxtime - RX_RAMPUP, func);
+        LMIC.osjob.setTimedCallback(LMIC.rxtime - RX_RAMPUP, func);
     }
     else
 #endif
@@ -1218,7 +1218,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 
 
 #if !defined(DISABLE_JOIN)
-static void onJoinFailed (osjob_t* osjob) {
+static void onJoinFailed (OsJob* osjob) {
     // Notify app - must call LMIC_reset() to stop joining
     // otherwise join procedure continues.
     reportEvent(EV_JOIN_FAILED);
@@ -1249,10 +1249,13 @@ static bit_t processJoinAccept (void) {
         // Build next JOIN REQUEST with next engineUpdate call
         // Optionally, report join failed.
         // Both after a random/chosen amount of ticks.
-        os_setTimedCallback(&LMIC.osjob, os_getTime()+delay,
+
+        // this delay is suspissisous FIXME GZOGZO
+
+        LMIC.osjob.setTimedCallback(os_getTime()+delay,
                             (delay&1) != 0
-                            ? FUNC_ADDR(onJoinFailed)      // one JOIN iteration done and failed
-                            : FUNC_ADDR(runEngineUpdate)); // next step to be delayed
+                            ? &onJoinFailed      // one JOIN iteration done and failed
+                            : &runEngineUpdate); // next step to be delayed
         return 1;
     }
     uint8_t hdr  = LMIC.frame[0];
@@ -1332,32 +1335,32 @@ static bit_t processJoinAccept (void) {
 }
 
 
-static void processRx2Jacc (osjob_t* osjob) {
+static void processRx2Jacc (OsJob* osjob) {
     if( LMIC.dataLen == 0 )
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
     processJoinAccept();
 }
 
 
-static void setupRx2Jacc (osjob_t* osjob) {
-    LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
+static void setupRx2Jacc (OsJob* osjob) {
+    LMIC.osjob.setCallbackFuture(&processRx2Jacc);
     setupRx2();
 }
 
 
-static void processRx1Jacc (osjob_t* osjob) {
+static void processRx1Jacc (OsJob* osjob) {
     if( LMIC.dataLen == 0 || !processJoinAccept() )
-        schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
+        schedRx12(DELAY_JACC2_osticks, &setupRx2Jacc, LMIC.dn2Dr);
 }
 
 
-static void setupRx1Jacc (osjob_t* osjob) {
-    setupRx1(FUNC_ADDR(processRx1Jacc));
+static void setupRx1Jacc (OsJob* osjob) {
+    setupRx1(&processRx1Jacc);
 }
 
 
-static void jreqDone (osjob_t* osjob) {
-    txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
+static void jreqDone (OsJob* osjob) {
+    txDone(DELAY_JACC1_osticks, &setupRx1Jacc);
 }
 
 #endif // !DISABLE_JOIN
@@ -1367,7 +1370,7 @@ static void jreqDone (osjob_t* osjob) {
 // Fwd decl.
 static bit_t processDnData(void);
 
-static void processRx2DnData (osjob_t* osjob) {
+static void processRx2DnData (OsJob* osjob) {
     if( LMIC.dataLen == 0 ) {
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         // It could be that the gateway *is* sending a reply, but we
@@ -1381,25 +1384,25 @@ static void processRx2DnData (osjob_t* osjob) {
 }
 
 
-static void setupRx2DnData (osjob_t* osjob) {
-    LMIC.osjob.func = FUNC_ADDR(processRx2DnData);
+static void setupRx2DnData (OsJob* osjob) {
+    LMIC.osjob.setCallbackFuture(&processRx2DnData);
     setupRx2();
 }
 
 
-static void processRx1DnData (osjob_t* osjob) {
+static void processRx1DnData (OsJob* osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
-        schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
+        schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), &setupRx2DnData, LMIC.dn2Dr);
 }
 
 
-static void setupRx1DnData (osjob_t* osjob) {
-    setupRx1(FUNC_ADDR(processRx1DnData));
+static void setupRx1DnData (OsJob* osjob) {
+    setupRx1(&processRx1DnData);
 }
 
 
-static void updataDone (osjob_t* osjob) {
-    txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
+static void updataDone (OsJob* osjob) {
+    txDone(sec2osticks(LMIC.rxDelay), &setupRx1DnData);
 }
 
 // ========================================
@@ -1542,7 +1545,7 @@ static void buildJoinRequest (uint8_t ftype) {
     DO_DEVDB(LMIC.devNonce,devNonce);
 }
 
-static void startJoining (osjob_t* osjob) {
+static void startJoining (OsJob* osjob) {
     reportEvent(EV_JOINING);
 }
 
@@ -1560,7 +1563,7 @@ bit_t LMIC_startJoining (void) {
         initJoinLoop();
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
-        os_setCallback(&LMIC.osjob, FUNC_ADDR(startJoining));
+        LMIC.osjob.setCallbackRunnable(startJoining);
         return 1;
     }
     return 0; // already joined
@@ -1696,7 +1699,7 @@ static void engineUpdate (void) {
                     ftype = HDR_FTYPE_JREQ;
                 }
                 buildJoinRequest(ftype);
-                LMIC.osjob.func = FUNC_ADDR(jreqDone);
+                LMIC.osjob.setCallbackFuture(&jreqDone);
             } else
 #endif // !DISABLE_JOIN
             {
@@ -1709,7 +1712,7 @@ static void engineUpdate (void) {
                     // Device has to react! NWK will not roll over and just stop sending.
                     // Thus, we have N frames to detect a possible lock up.
                   reset:
-                    os_setCallback(&LMIC.osjob, FUNC_ADDR(runReset));
+                    LMIC.osjob.setCallbackRunnable(&runReset);
                     return;
                 }
                 if( (LMIC.txCnt==0 && LMIC.seqnoUp == 0xFFFFFFFF) ) {
@@ -1722,7 +1725,7 @@ static void engineUpdate (void) {
                     goto reset;
                 }
                 buildDataFrame();
-                LMIC.osjob.func = FUNC_ADDR(updataDone);
+                LMIC.osjob.setCallbackFuture(&updataDone);
             }
             LMIC.rps    = setCr(updr2rps(txdr), (cr_t)LMIC.errcr);
             LMIC.dndr   = txdr;  // carry TX datarate (can be != LMIC.datarate) over to txDone/setupRx1
@@ -1752,7 +1755,7 @@ static void engineUpdate (void) {
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = osticks2ms(txbeg-now),
                        e_.info2  = LMIC.seqnoUp-1));
-    os_setTimedCallback(&LMIC.osjob, txbeg-TX_RAMPUP, FUNC_ADDR(runEngineUpdate));
+    LMIC.osjob.setTimedCallback(txbeg-TX_RAMPUP, &runEngineUpdate);
 }
 
 
@@ -1768,7 +1771,7 @@ void LMIC_setDrTxpow (dr_t dr, int8_t txpow) {
 
 
 void LMIC_shutdown (void) {
-    os_clearCallback(&LMIC.osjob);
+    LMIC.osjob.clearCallback();
     os_radio(RADIO_RST);
     LMIC.opmode |= OP_SHUTDOWN;
 }
@@ -1779,7 +1782,7 @@ void LMIC_reset (void) {
                        e_.eui    = MAIN::CDEV->getEui(),
                        e_.info   = EV_RESET));
     os_radio(RADIO_RST);
-    os_clearCallback(&LMIC.osjob);
+    LMIC.osjob.clearCallback();
 
     os_clearMem((xref2uint8_t)&LMIC,SIZEOFEXPR(LMIC));
     LMIC.devaddr      =  0;
@@ -1810,7 +1813,7 @@ void LMIC_clrTxData (void) {
     LMIC.pendTxLen = 0;
     if( (LMIC.opmode & (OP_JOINING|OP_SCAN)) != 0 ) // do not interfere with JOINING
         return;
-    os_clearCallback(&LMIC.osjob);
+    LMIC.osjob.clearCallback();
     os_radio(RADIO_RST);
     engineUpdate();
 }

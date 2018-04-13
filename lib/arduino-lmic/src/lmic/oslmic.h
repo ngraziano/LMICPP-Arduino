@@ -69,7 +69,6 @@ extern uint32_t AESAUX[];
 extern uint32_t AESKEY[];
 #define AESkey ((uint8_t*)AESKEY)
 #define AESaux ((uint8_t*)AESAUX)
-#define FUNC_ADDR(func) (&(func))
 
 uint8_t radio_rand1 (void);
 #define os_getRndU1() radio_rand1()
@@ -80,7 +79,6 @@ uint8_t radio_rand1 (void);
 void radio_init (void);
 void radio_irq_handler (uint8_t dio);
 void os_init (void);
-int32_t os_runloop_once (void);
 
 //================================================================================
 
@@ -114,13 +112,8 @@ typedef int32_t  ostime_t;
 #endif
 
 
-struct osjob_t;  // fwd decl.
-typedef void (*osjobcb_t) (struct osjob_t*);
-struct osjob_t {
-    struct osjob_t* next;
-    ostime_t deadline;
-    osjobcb_t  func;
-};
+
+
 
 
 
@@ -136,15 +129,6 @@ void os_getArtEui (xref2uint8_t buf);
 #endif
 #ifndef os_getDevEui
 void os_getDevEui (xref2uint8_t buf);
-#endif
-#ifndef os_setCallback
-void os_setCallback (osjob_t* job, osjobcb_t cb);
-#endif
-#ifndef os_setTimedCallback
-void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb);
-#endif
-#ifndef os_clearCallback
-void os_clearCallback (osjob_t* job);
 #endif
 #ifndef os_getTime
 ostime_t os_getTime (void);
@@ -284,22 +268,35 @@ uint32_t os_aes (uint8_t mode, xref2uint8_t buf, uint16_t len);
 
 class OsJob;
 
+typedef void (*osjobcb_t) (OsJob*);
+
 class OsScheduler {
+    friend class OsJob;
     private:
-        OsJob* scheduledjobs;
-        OsJob* runnablejobs;
+        OsJob* scheduledjobs = nullptr;
+        OsJob* runnablejobs = nullptr;
+    public:
+        int32_t runloopOnce();
+
 };
 
 extern OsScheduler OSS;
 
 class OsJob {
+    friend class OsScheduler;
     private:
-        OsJob* next;
-        ostime_t deadline;
-        osjobcb_t  func;
+        OsScheduler* scheduler;
+        OsJob* next = nullptr;
+        ostime_t deadline = 0;
+        osjobcb_t  func = nullptr;
+
+        static bool unlinkjob (OsJob** pnext, OsJob* job);
     public:
         OsJob(OsScheduler& scheduler);
-        void setCallback(osjobcb_t cb);
+        OsJob(): OsJob(OSS){};
+        void setCallbackFuture(osjobcb_t cb) { func = cb; };
+        void setCallbackRunnable(osjobcb_t cb);
+        void setRunnable() { setCallbackRunnable(func); };
         void clearCallback();
         void setTimedCallback (ostime_t time, osjobcb_t cb);
 };

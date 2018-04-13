@@ -611,7 +611,7 @@ void radio_irq_handler (uint8_t dio) {
     // go from stanby to sleep
     opmode(OPMODE_SLEEP);
     // run os job (use preset func ptr)
-    os_setCallback(&LMIC.osjob, LMIC.osjob.func);
+    LMIC.osjob.setRunnable();
 }
 
 void os_radio (uint8_t mode) {

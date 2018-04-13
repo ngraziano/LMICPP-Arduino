@@ -6,7 +6,7 @@
 #include <SPI.h>
 #include <LowPower.h>
 
-void do_send(osjob_t* j);
+void do_send(OsJob* j);
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first. When copying an EUI from ttnctl output, this means to reverse
@@ -26,7 +26,8 @@ void os_getDevEui (uint8_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 void os_getDevKey (uint8_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
 static uint8_t mydata[] = "Hello, world!";
-static osjob_t sendjob;
+
+OsJob sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
@@ -88,7 +89,7 @@ void onEvent (ev_t ev) {
               Serial.println(F(" bytes of payload"));
             }
             // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+            sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
@@ -112,7 +113,7 @@ void onEvent (ev_t ev) {
     }
 }
 
-void do_send(osjob_t* j){
+void do_send(OsJob* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
@@ -195,7 +196,7 @@ void powersave(int32_t maxTime) {
 
 
 void loop() {
-    int32_t to_wait = os_runloop_once();
+    int32_t to_wait = OSS.runloopOnce();
     if(hal_is_sleep_allow()) {
         powersave(to_wait);
     } 

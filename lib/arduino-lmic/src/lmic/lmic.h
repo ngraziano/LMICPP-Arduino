@@ -123,7 +123,7 @@ struct lmic_t {
     uint8_t        dndr;
     int8_t        txpow;     // dBm
 
-    osjob_t     osjob;
+    OsJob     osjob;
 
     // Channel scheduling
 #if defined(CFG_eu868)
