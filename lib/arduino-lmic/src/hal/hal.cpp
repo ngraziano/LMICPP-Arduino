@@ -222,10 +222,6 @@ void hal_enableIRQs () {
     }
 }
 
-void hal_sleep () {
-    // Not implemented
-}
-
 // -----------------------------------------------------------------------------
 
 #if defined(LMIC_PRINTF_TO)

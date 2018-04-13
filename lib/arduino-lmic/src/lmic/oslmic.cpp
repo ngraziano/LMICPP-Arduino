@@ -99,8 +99,6 @@ int32_t OsScheduler::runloopOnce() {
         #if LMIC_DEBUG_LEVEL > 1
             has_deadline = true;
         #endif
-    } else { // nothing pending
-        hal_sleep(); // wake by irq (timer already restarted)
     }
     hal_enableIRQs();
     if(j) { // run job callback
