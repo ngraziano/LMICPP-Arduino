@@ -111,14 +111,6 @@ typedef int32_t  ostime_t;
 #define ms2osticksRound(ms) ((ostime_t)( ((int64_t)(ms) * OSTICKS_PER_SEC + 500) / 1000))
 #endif
 
-
-
-
-
-
-
-
-
 #ifndef HAS_os_calls
 
 #ifndef os_getDevKey
