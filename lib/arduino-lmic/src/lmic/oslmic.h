@@ -56,7 +56,7 @@ typedef              uint8_t* xref2uint8_t;
 #define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
 #define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
 #define TYPEDEF_xref2band_t    typedef        band_t* xref2band_t
-#define TYPEDEF_xref2osjob_t   typedef       osjob_t* xref2osjob_t
+
 
 #define SIZEOFEXPR(x) sizeof(x)
 
@@ -119,7 +119,7 @@ struct osjob_t {
     ostime_t deadline;
     osjobcb_t  func;
 };
-TYPEDEF_xref2osjob_t;
+
 
 
 #ifndef HAS_os_calls
@@ -134,13 +134,13 @@ void os_getArtEui (xref2uint8_t buf);
 void os_getDevEui (xref2uint8_t buf);
 #endif
 #ifndef os_setCallback
-void os_setCallback (xref2osjob_t job, osjobcb_t cb);
+void os_setCallback (osjob_t* job, osjobcb_t cb);
 #endif
 #ifndef os_setTimedCallback
-void os_setTimedCallback (xref2osjob_t job, ostime_t time, osjobcb_t cb);
+void os_setTimedCallback (osjob_t* job, ostime_t time, osjobcb_t cb);
 #endif
 #ifndef os_clearCallback
-void os_clearCallback (xref2osjob_t job);
+void os_clearCallback (osjob_t* job);
 #endif
 #ifndef os_getTime
 ostime_t os_getTime (void);

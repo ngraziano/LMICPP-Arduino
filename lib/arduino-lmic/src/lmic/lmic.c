@@ -45,7 +45,6 @@ DEFINE_LMIC;
 
 // Fwd decls.
 static void engineUpdate(void);
-static void startScan (void);
 
 
 // ================================================================================
@@ -824,7 +823,7 @@ static ostime_t nextJoinState (void) {
 #endif
 
 
-static void runEngineUpdate (xref2osjob_t osjob) {
+static void runEngineUpdate (osjob_t* osjob) {
     engineUpdate();
 }
 
@@ -838,7 +837,7 @@ static void reportEvent (ev_t ev) {
 }
 
 
-static void runReset (xref2osjob_t osjob) {
+static void runReset (osjob_t* osjob) {
     // Disable session
     LMIC_reset();
 #if !defined(DISABLE_JOIN)
@@ -1219,7 +1218,7 @@ static void txDone (ostime_t delay, osjobcb_t func) {
 
 
 #if !defined(DISABLE_JOIN)
-static void onJoinFailed (xref2osjob_t osjob) {
+static void onJoinFailed (osjob_t* osjob) {
     // Notify app - must call LMIC_reset() to stop joining
     // otherwise join procedure continues.
     reportEvent(EV_JOIN_FAILED);
@@ -1333,31 +1332,31 @@ static bit_t processJoinAccept (void) {
 }
 
 
-static void processRx2Jacc (xref2osjob_t osjob) {
+static void processRx2Jacc (osjob_t* osjob) {
     if( LMIC.dataLen == 0 )
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
     processJoinAccept();
 }
 
 
-static void setupRx2Jacc (xref2osjob_t osjob) {
+static void setupRx2Jacc (osjob_t* osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2Jacc);
     setupRx2();
 }
 
 
-static void processRx1Jacc (xref2osjob_t osjob) {
+static void processRx1Jacc (osjob_t* osjob) {
     if( LMIC.dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, FUNC_ADDR(setupRx2Jacc), LMIC.dn2Dr);
 }
 
 
-static void setupRx1Jacc (xref2osjob_t osjob) {
+static void setupRx1Jacc (osjob_t* osjob) {
     setupRx1(FUNC_ADDR(processRx1Jacc));
 }
 
 
-static void jreqDone (xref2osjob_t osjob) {
+static void jreqDone (osjob_t* osjob) {
     txDone(DELAY_JACC1_osticks, FUNC_ADDR(setupRx1Jacc));
 }
 
@@ -1368,7 +1367,7 @@ static void jreqDone (xref2osjob_t osjob) {
 // Fwd decl.
 static bit_t processDnData(void);
 
-static void processRx2DnData (xref2osjob_t osjob) {
+static void processRx2DnData (osjob_t* osjob) {
     if( LMIC.dataLen == 0 ) {
         LMIC.txrxFlags = 0;  // nothing in 1st/2nd DN slot
         // It could be that the gateway *is* sending a reply, but we
@@ -1382,24 +1381,24 @@ static void processRx2DnData (xref2osjob_t osjob) {
 }
 
 
-static void setupRx2DnData (xref2osjob_t osjob) {
+static void setupRx2DnData (osjob_t* osjob) {
     LMIC.osjob.func = FUNC_ADDR(processRx2DnData);
     setupRx2();
 }
 
 
-static void processRx1DnData (xref2osjob_t osjob) {
+static void processRx1DnData (osjob_t* osjob) {
     if( LMIC.dataLen == 0 || !processDnData() )
         schedRx12(sec2osticks(LMIC.rxDelay +(int)DELAY_EXTDNW2), FUNC_ADDR(setupRx2DnData), LMIC.dn2Dr);
 }
 
 
-static void setupRx1DnData (xref2osjob_t osjob) {
+static void setupRx1DnData (osjob_t* osjob) {
     setupRx1(FUNC_ADDR(processRx1DnData));
 }
 
 
-static void updataDone (xref2osjob_t osjob) {
+static void updataDone (osjob_t* osjob) {
     txDone(sec2osticks(LMIC.rxDelay), FUNC_ADDR(setupRx1DnData));
 }
 
@@ -1543,7 +1542,7 @@ static void buildJoinRequest (uint8_t ftype) {
     DO_DEVDB(LMIC.devNonce,devNonce);
 }
 
-static void startJoining (xref2osjob_t osjob) {
+static void startJoining (osjob_t* osjob) {
     reportEvent(EV_JOINING);
 }
 
@@ -1647,7 +1646,6 @@ static void engineUpdate (void) {
 #endif // !DISABLE_JOIN
 
     ostime_t now    = os_getTime();
-    ostime_t rxtime = 0;
     ostime_t txbeg  = 0;
 
     if( (LMIC.opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
