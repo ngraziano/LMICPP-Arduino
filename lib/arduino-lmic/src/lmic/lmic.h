@@ -275,7 +275,7 @@ public:
     void setLinkCheckMode (bool enabled);
     void setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey);
 
-    bool setupChannel (uint8_t channel, uint32_t freq, uint16_t drmap, int8_t band);
+    bool setupChannel (uint8_t channel, uint32_t newfreq, uint16_t drmap, int8_t band);
     void disableChannel (uint8_t channel);
 
     // set ADR mode (if mobile turn off)

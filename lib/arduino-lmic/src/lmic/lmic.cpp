@@ -465,22 +465,22 @@ bool Lmic::setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap) {
     return true;
 }
 
-bool Lmic::setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t band) {
+bool Lmic::setupChannel (uint8_t chidx, uint32_t newfreq, uint16_t drmap, int8_t band) {
     if( chidx >= MAX_CHANNELS )
         return false;
     if( band == -1 ) {
-        if( freq >= 869400000 && freq <= 869650000 )
-            freq |= BAND_DECI;   // 10% 27dBm
-        else if( (freq >= 868000000 && freq <= 868600000) ||
-                 (freq >= 869700000 && freq <= 870000000)  )
-            freq |= BAND_CENTI;  // 1% 14dBm
+        if( newfreq >= 869400000 && newfreq <= 869650000 )
+            newfreq |= BAND_DECI;   // 10% 27dBm
+        else if( (newfreq >= 868000000 && newfreq <= 868600000) ||
+                 (newfreq >= 869700000 && newfreq <= 870000000)  )
+            newfreq |= BAND_CENTI;  // 1% 14dBm
         else
-            freq |= BAND_MILLI;  // 0.1% 14dBm
+            newfreq |= BAND_MILLI;  // 0.1% 14dBm
     } else {
         if( band > BAND_AUX ) return 0;
-        freq = (freq&~3) | band;
+        newfreq = (newfreq&~3) | band;
     }
-    channelFreq [chidx] = freq;
+    channelFreq [chidx] = newfreq;
     channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF12,DR_SF7) : drmap;
     channelMap |= 1<<chidx;  // enabled right away
     return true;
@@ -493,10 +493,10 @@ void Lmic::disableChannel (uint8_t channel) {
 }
 
 static uint32_t convFreq (xref2uint8_t ptr) {
-    uint32_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
-    if( freq < EU868_FREQ_MIN || freq > EU868_FREQ_MAX )
-        freq = 0;
-    return freq;
+    uint32_t newfreq = (os_rlsbf4(ptr-1) >> 8) * 100;
+    if( newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX )
+        newfreq = 0;
+    return newfreq;
 }
 
 uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
@@ -513,12 +513,12 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
 
 
 void Lmic::updateTx (ostime_t txbeg) {
-    uint32_t freq = channelFreq[txChnl];
+    uint32_t newfreq = channelFreq[txChnl];
     // Update global/band specific duty cycle stats
     ostime_t airtime = calcAirTime(rps, dataLen);
     // Update channel/global duty cycle stats
     xref2band_t band = &bands[freq & 0x3];
-    freq  = freq & ~(uint32_t)3;
+    freq  = newfreq & ~(uint32_t)3;
     txpow = band->txpow;
     band->avail = txbeg + airtime * band->txcap;
     if( globalDutyRate != 0 )
@@ -978,15 +978,15 @@ bool Lmic::decodeFrame () {
         case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
             dr_t dr = (dr_t)(opts[oidx+1] & 0x0F);
-            uint32_t freq = convFreq(&opts[oidx+2]);
+            uint32_t newfreq = convFreq(&opts[oidx+2]);
             dn2Ans = 0x80;   // answer pending
             if( validDR(dr) )
                 dn2Ans |= MCMD_DN2P_ANS_DRACK;
-            if( freq != 0 )
+            if( newfreq != 0 )
                 dn2Ans |= MCMD_DN2P_ANS_CHACK;
             if( dn2Ans == (0x80|MCMD_DN2P_ANS_DRACK|MCMD_DN2P_ANS_CHACK) ) {
                 dn2Dr = dr;
-                dn2Freq = freq;
+                dn2Freq = newfreq;
             }
 #endif // !DISABLE_MCMD_DN2P_SET
             oidx += 5;
@@ -1008,10 +1008,10 @@ bool Lmic::decodeFrame () {
         case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
             uint8_t chidx = opts[oidx+1];  // channel
-            uint32_t freq  = convFreq(&opts[oidx+2]); // freq
+            uint32_t newfreq  = convFreq(&opts[oidx+2]); // freq
             uint8_t drs   = opts[oidx+5];  // datarate span
             snchAns = 0x80;
-            if( freq != 0 && setupChannel(chidx, freq, DR_RANGE_MAP(drs&0xF,drs>>4), -1) )
+            if( newfreq != 0 && setupChannel(chidx, newfreq, DR_RANGE_MAP(drs&0xF,drs>>4), -1) )
                 snchAns |= MCMD_SNCH_ANS_DRACK|MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
             oidx += 6;
@@ -1220,11 +1220,11 @@ bool Lmic::processJoinAccept () {
 #endif
         dlen = OFF_CFLIST;
         for( uint8_t chidx=3; chidx<8; chidx++, dlen+=3 ) {
-            uint32_t freq = convFreq(&frame[dlen]);
-            if( freq ) {
+            uint32_t newfreq = convFreq(&frame[dlen]);
+            if( newfreq ) {
                 setupChannel(chidx, freq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
-                lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)freq);
+                lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)newfreq);
 #endif
             }
         }
