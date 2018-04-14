@@ -21,11 +21,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <string.h>
+#include "hal.h"
 
-
-#ifdef __cplusplus
-extern "C"{
-#endif
 
 //================================================================================
 //================================================================================
@@ -34,10 +32,6 @@ typedef uint8_t            bit_t;
 typedef unsigned int       uint;
 typedef const char* str_t;
 
-#include <string.h>
-#include "hal.h"
-#define EV(a,b,c) /**/
-#define DO_DEVDB(field1,field2) /**/
 #if !defined(CFG_noassert)
 #define ASSERT(cond) if(!(cond)) hal_failed(__FILE__, __LINE__)
 #else
@@ -254,13 +248,10 @@ extern xref2uint8_t AESaux;
 uint32_t os_aes (uint8_t mode, xref2uint8_t buf, uint16_t len);
 #endif
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 class OsJob;
 
-typedef void (*osjobcb_t) (OsJob*);
+using osjobcb_t = void (*) (OsJob*);
 
 class OsScheduler {
     friend class OsJob;
@@ -280,6 +271,7 @@ class OsJob {
         OsScheduler* scheduler;
         OsJob* next = nullptr;
         ostime_t deadline = 0;
+        
         osjobcb_t  func = nullptr;
 
         static bool unlinkjob (OsJob** pnext, OsJob* job);
