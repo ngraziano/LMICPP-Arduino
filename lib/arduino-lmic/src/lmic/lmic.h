@@ -115,82 +115,83 @@ enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
 class Lmic {
 public:
     // Radio settings TX/RX (also accessed by HAL)
-    ostime_t    txend;
-    ostime_t    rxtime;
-    uint32_t        freq;
-    int8_t        rssi;
-    int8_t        snr;
-    rps_t       rps;
-    uint8_t        rxsyms;
-    uint8_t        dndr;
-    int8_t        txpow;     // dBm
+    ostime_t  txend = 0;
+    ostime_t  rxtime = 0;
+    uint32_t  freq = 0;
+    int8_t    rssi = 0;
+    int8_t    snr = 0;
+    rps_t     rps = 0;
+    uint8_t   rxsyms = 0;
+    uint8_t   dndr = 0;
+    int8_t    txpow = 0;     // dBm
 
+private:
     OsJobType<Lmic>     osjob {  this, OSS };
 
     // Channel scheduling
 #if defined(CFG_eu868)
-    band_t      bands[MAX_BANDS];
-    uint32_t        channelFreq[MAX_CHANNELS];
-    uint16_t        channelDrMap[MAX_CHANNELS];
-    uint16_t        channelMap;
+    band_t      bands[MAX_BANDS]  { };
+    uint32_t    channelFreq[MAX_CHANNELS] = {};
+    uint16_t    channelDrMap[MAX_CHANNELS] = {};
+    uint16_t    channelMap = 0;
 #elif defined(CFG_us915)
     uint32_t        xchFreq[MAX_XCHANNELS];    // extra channel frequencies (if device is behind a repeater)
     uint16_t        xchDrMap[MAX_XCHANNELS];   // extra channel datarate ranges  ---XXX: ditto
     uint16_t        channelMap[(72+MAX_XCHANNELS+15)/16];  // enabled bits
     uint16_t        chRnd;        // channel randomizer
 #endif
-    uint8_t        txChnl;          // channel for next TX
-    uint8_t        globalDutyRate;  // max rate: 1/2^k
-    ostime_t    globalDutyAvail; // time device can send again
+    uint8_t        txChnl = 0;          // channel for next TX
+    uint8_t        globalDutyRate = 0;  // max rate: 1/2^k
+    ostime_t    globalDutyAvail = 0; // time device can send again
 
-    uint32_t        netid;        // current network id (~0 - none)
-    uint16_t        opmode;
-    uint8_t        upRepeat;     // configured up repeat
-    int8_t        adrTxPow;     // ADR adjusted TX power
-    dr_t        datarate;     // current data rate
-    uint8_t        errcr;        // error coding rate (used for TX only)
-    uint8_t        rejoinCnt;    // adjustment for rejoin datarate
+    uint32_t        netid = 0;        // current network id (~0 - none)
+    uint16_t        opmode = 0;
+    uint8_t        upRepeat = 0;     // configured up repeat
+    int8_t        adrTxPow = 0;     // ADR adjusted TX power
+    dr_t        datarate = 0;     // current data rate
+    uint8_t        errcr = 0;        // error coding rate (used for TX only)
+    uint8_t        rejoinCnt = 0;    // adjustment for rejoin datarate
 
-    uint16_t        clockError; // Inaccuracy in the clock. CLOCK_ERROR_MAX
+    uint16_t        clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                             // represents +/-100% error
 
-    uint8_t        pendTxPort;
-    uint8_t        pendTxConf;   // confirmed data
-    uint8_t        pendTxLen;    // +0x80 = confirmed
-    uint8_t        pendTxData[MAX_LEN_PAYLOAD];
+    uint8_t        pendTxPort = 0;
+    uint8_t        pendTxConf = 0;   // confirmed data
+    uint8_t        pendTxLen = 0;    // +0x80 = confirmed
+    uint8_t        pendTxData[MAX_LEN_PAYLOAD] = {0};
 
-    uint16_t        devNonce;     // last generated nonce
-    uint8_t        nwkKey[16];   // network session key
-    uint8_t        artKey[16];   // application router session key
-    devaddr_t   devaddr;
-    uint32_t        seqnoDn;      // device level down stream seqno
-    uint32_t        seqnoUp;
+    uint16_t        devNonce = 0;     // last generated nonce
+    uint8_t        nwkKey[16] = { 0 };   // network session key
+    uint8_t        artKey[16] = { 0 };   // application router session key
+    devaddr_t   devaddr = 0;
+    uint32_t        seqnoDn = 0;      // device level down stream seqno
+    uint32_t        seqnoUp = 0;
 
-    uint8_t        dnConf;       // dn frame confirm pending: LORA::FCT_ACK or 0
-    int8_t        adrAckReq;    // counter until we reset data rate (0=off)
-    uint8_t        adrChanged;
+    uint8_t        dnConf = 0;       // dn frame confirm pending: LORA::FCT_ACK or 0
+    int8_t        adrAckReq = 0;    // counter until we reset data rate (0=off)
+    uint8_t        adrChanged = 0;
 
-    uint8_t        rxDelay;      // Rx delay after TX
+    uint8_t        rxDelay = 0;      // Rx delay after TX
     
-    uint8_t        margin;
-    bool       ladrAns;      // link adr adapt answer pending
-    bool       devsAns;      // device status answer pending
-    uint8_t        adrEnabled;
-    uint8_t        moreData;     // NWK has more data pending
+    uint8_t        margin = 0;
+    bool       ladrAns = false;      // link adr adapt answer pending
+    bool       devsAns = false;      // device status answer pending
+    uint8_t        adrEnabled = 0;
+    uint8_t        moreData = 0;     // NWK has more data pending
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-    bool       dutyCapAns;   // have to ACK duty cycle settings
+    bool       dutyCapAns = false;   // have to ACK duty cycle settings
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
-    uint8_t        snchAns;      // answer set new channel
+    uint8_t        snchAns = 0;      // answer set new channel
 #endif
     // 2nd RX window (after up stream)
-    uint8_t        dn2Dr;
-    uint32_t        dn2Freq;
+    uint8_t        dn2Dr = 0;
+    uint32_t        dn2Freq = 0;
 #if !defined(DISABLE_MCMD_DN2P_SET)
-    uint8_t        dn2Ans;       // 0=no answer pend, 0x80+ACKs
+    uint8_t        dn2Ans = 0;       // 0=no answer pend, 0x80+ACKs
 #endif
 
-
+public:
     // Public part of MAC state
     uint8_t        txCnt;
     uint8_t        txrxFlags;  // transaction flags (TX-RX combo)
@@ -235,11 +236,8 @@ private:
     void setupRx2DnData (OsJob* osjob);
     
     void updataDone (OsJob* osjob);
-    
-
 
     void stateJustJoined();
-    
 
     void reportEvent (ev_t ev);
     
@@ -309,6 +307,11 @@ public:
     int setTxData2(uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed);
     void sendAlive();
     void setClockError(uint16_t error);
+
+    uint16_t getOpMode() { return opmode; };
+
+    // for radio to wakeup processing.
+    void nextTask();
 };
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.

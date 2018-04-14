@@ -427,9 +427,11 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
 };
 
 void Lmic::initDefaultChannels (bool join) {
+    PRINT_DEBUG_2("Init Default Channel join?=%d",join);
     os_clearMem(&channelFreq, sizeof(channelFreq));
     os_clearMem(&channelDrMap, sizeof(channelDrMap));
     os_clearMem(&bands, sizeof(bands));
+    
 
     channelMap = 0x07;
     uint8_t su = join ? 0 : 3;
@@ -447,8 +449,8 @@ void Lmic::initDefaultChannels (bool join) {
     bands[BAND_DECI ].txcap    = 10;    // 10%
     bands[BAND_DECI ].txpow    = 27;
     bands[BAND_DECI ].lastchnl = os_getRndU1() % MAX_CHANNELS;
-    bands[BAND_MILLI].avail =
-    bands[BAND_CENTI].avail =
+    bands[BAND_MILLI].avail = os_getTime();
+    bands[BAND_CENTI].avail = os_getTime();
     bands[BAND_DECI ].avail = os_getTime();
 }
 
@@ -575,6 +577,7 @@ void Lmic::initJoinLoop () {
     initDefaultChannels(true);
     ASSERT((opmode & OP_NEXTCHNL)==0);
     txend = bands[BAND_MILLI].avail + rndDelay(8);
+    PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail, txend);
 }
 
 
@@ -1755,4 +1758,8 @@ void Lmic::setLinkCheckMode (bool enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint16_t error) {
     clockError = error;
+}
+
+void Lmic::nextTask() {
+    osjob.setRunnable();
 }

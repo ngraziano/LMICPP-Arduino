@@ -17,6 +17,12 @@
 // -----------------------------------------------------------------------------
 // I/O
 
+ostime_t last_int_trigger = 0;
+
+void hal_store_trigger() {
+    last_int_trigger = os_getTime();
+}
+
 static void hal_io_init () {
     // NSS and DIO0 are required, DIO1 is required for LoRa
     ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
@@ -32,7 +38,12 @@ static void hal_io_init () {
     pinMode(lmic_pins.dio[0], INPUT);
     if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
         pinMode(lmic_pins.dio[1], INPUT);
+
+    attachInterrupt(digitalPinToInterrupt(lmic_pins.dio[0]), hal_store_trigger, RISING);
+    attachInterrupt(digitalPinToInterrupt(lmic_pins.dio[1]), hal_store_trigger, RISING);
 }
+
+
 
 // val == 1  => tx 1
 void hal_pin_rxtx (uint8_t val) {
@@ -64,8 +75,9 @@ void hal_io_check() {
         if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
             dio_states[i] = !dio_states[i];
             if (dio_states[i])
-                radio_irq_handler(i);
+                radio_irq_handler(i, last_int_trigger);
         }
+        last_int_trigger = 0;
     }
 }
 
@@ -122,7 +134,7 @@ void hal_forbid_sleep() {
     is_sleep_allow = false;
 }
 
-uint32_t time_in_sleep;
+uint32_t time_in_sleep = 0;
 
 void hal_add_time_in_sleep(uint32_t nb_ms)
 {
@@ -239,7 +251,7 @@ void hal_init () {
     hal_io_init();
     // configure radio SPI
     hal_spi_init();
-    // configure timer and interrupt handler
+    // configure timer 
     hal_time_init();
 #if defined(LMIC_PRINTF_TO)
     // printf support

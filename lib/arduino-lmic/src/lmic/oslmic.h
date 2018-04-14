@@ -68,7 +68,7 @@ uint8_t radio_rand1 (void);
 
 
 void radio_init (void);
-void radio_irq_handler (uint8_t dio);
+void radio_irq_handler (uint8_t dio, int32_t trigger);
 void os_init (void);
 
 //================================================================================
@@ -234,7 +234,7 @@ uint16_t os_crc16 (xref2uint8_t d, uint len);
 #endif
 
 #if LMIC_DEBUG_LEVEL > 1
-    #define PRINT_DEBUG_1(str, ...) lmic_printf("%lu: " str "\n", os_getTime(), ##__VA_ARGS__)
+    #define PRINT_DEBUG_2(str, ...) lmic_printf("%lu: " str "\n", os_getTime(), ##__VA_ARGS__)
 #else
     #define PRINT_DEBUG_2(str, ...) 
 #endif
@@ -307,15 +307,17 @@ template<class T> class OsJobType : public OsJob {
         T* refClass;
         osjobcbTyped_t funcTyped;
     protected:
-        virtual void call() { 
+        virtual void call() {
+            PRINT_DEBUG_1("Run func %p on class %p", funcTyped, refClass);
+            
             if(func)
                 OsJob::call();
             else
                 (refClass->*funcTyped)(this);
         };
     public:
-        OsJobType(T* ref): OsJob() {};
-        OsJobType(T* ref, OsScheduler& scheduler): OsJob(scheduler) {};
+        OsJobType(T* ref): OsJob() { refClass = ref; };
+        OsJobType(T* ref, OsScheduler& scheduler): OsJob(scheduler) { refClass = ref; };
         void setCallbackFuture2(osjobcbTyped_t cb) { func = nullptr; funcTyped=cb; };
         void setCallbackRunnable2(osjobcbTyped_t cb) {     
             setCallbackFuture2(cb);

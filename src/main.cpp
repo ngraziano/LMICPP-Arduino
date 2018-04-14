@@ -115,7 +115,7 @@ void onEvent (ev_t ev) {
 
 void do_send(OsJob* j){
     // Check if there is not a current TX/RX job running
-    if (LMIC.opmode & OP_TXRXPEND) {
+    if (LMIC.getOpMode() & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
@@ -131,7 +131,8 @@ void setup() {
 
     // LMIC init
     os_init();
-
+    PRINT_DEBUG_1("LMIC Addr=%p",&LMIC);
+    
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 

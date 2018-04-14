@@ -569,8 +569,14 @@ static CONST_TABLE(uint16_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void radio_irq_handler (uint8_t dio) {
+void radio_irq_handler (uint8_t dio, ostime_t trigger) {
     ostime_t now = os_getTime();
+    if(now - trigger < 2000) {
+        now = trigger;        
+    } else {
+        PRINT_DEBUG_2("Not using interupt trigger %lu", trigger);
+    }
+
     if( (readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
         uint8_t flags = readReg(LORARegIrqFlags);
 #if LMIC_DEBUG_LEVEL > 1
@@ -579,6 +585,7 @@ void radio_irq_handler (uint8_t dio) {
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
             LMIC.txend = now - us2osticks(43); // TXDONE FIXUP
+            // forbid sleep to keep precise time counting.
             hal_forbid_sleep();    
             
         } else if( flags & IRQ_LORA_RXDONE_MASK ) {
@@ -611,7 +618,7 @@ void radio_irq_handler (uint8_t dio) {
     // go from stanby to sleep
     opmode(OPMODE_SLEEP);
     // run os job (use preset func ptr)
-    LMIC.osjob.setRunnable();
+    LMIC.nextTask();
 }
 
 void os_radio (uint8_t mode) {
