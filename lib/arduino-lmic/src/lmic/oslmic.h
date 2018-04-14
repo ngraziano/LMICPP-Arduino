@@ -28,7 +28,6 @@
 //================================================================================
 //================================================================================
 // Target platform as C library
-typedef uint8_t            bit_t;
 typedef unsigned int       uint;
 typedef const char* str_t;
 

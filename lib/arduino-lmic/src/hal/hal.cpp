@@ -55,7 +55,7 @@ void hal_pin_rst (uint8_t val) {
 
 static bool dio_states[NUM_DIO] = {0};
 
-static void hal_io_check() {
+void hal_io_check() {
     uint8_t i;
     for (i = 0; i < NUM_DIO; ++i) {
         if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
@@ -209,16 +209,6 @@ void hal_disableIRQs () {
 void hal_enableIRQs () {
     if(--irqlevel == 0) {
         interrupts();
-
-        // Instead of using proper interrupts (which are a bit tricky
-        // and/or not available on all pins on AVR), just poll the pin
-        // values. Since os_runloop disables and re-enables interrupts,
-        // putting this here makes sure we check at least once every
-        // loop.
-        //
-        // As an additional bonus, this prevents the can of worms that
-        // we would otherwise get for running SPI transfers inside ISRs
-        hal_io_check();
     }
 }
 

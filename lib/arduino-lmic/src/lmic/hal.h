@@ -14,10 +14,6 @@
 
 #include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
  */
@@ -57,6 +53,10 @@ void hal_disableIRQs (void);
  */
 void hal_enableIRQs (void);
 
+/*
+ * check "interrupt" pin
+ */
+void hal_io_check();
 
 /*
  * return 32-bit system time in ticks.
@@ -91,9 +91,5 @@ uint8_t hal_checkTimer (uint32_t targettime);
 void hal_failed (const char *file, uint16_t line);
 
 int32_t delta_time(uint32_t time);
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
 
 #endif // _hal_hpp_

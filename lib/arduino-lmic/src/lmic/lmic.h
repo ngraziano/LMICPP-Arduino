@@ -18,9 +18,6 @@
 #include "oslmic.h"
 #include "lorabase.h"
 
-#ifdef __cplusplus
-extern "C"{
-#endif
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -245,8 +242,6 @@ DECL_ON_LMIC_EVENT;
 // Special APIs - for development or testing
 // !!!See implementation for caveats!!!
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+
 
 #endif // _lmic_h_

@@ -576,7 +576,7 @@ static void initJoinLoop (void) {
     LMIC.txChnl = os_getRndU1() % 3;
     LMIC.adrTxPow = 14;
     setDrJoin(DRCHG_SET, DR_SF7);
-    initDefaultChannels(1);
+    initDefaultChannels(true);
     ASSERT((LMIC.opmode & OP_NEXTCHNL)==0);
     LMIC.txend = LMIC.bands[BAND_MILLI].avail + rndDelay(8);
 }
@@ -1206,7 +1206,7 @@ static bool processJoinAccept (void) {
     LMIC.netid = os_rlsbf4(&LMIC.frame[OFF_JA_NETID]) & 0xFFFFFF;
 
 #if defined(CFG_eu868)
-    initDefaultChannels(0);
+    initDefaultChannels(false);
 #endif
     if( dlen > LEN_JA ) {
 #if defined(CFG_us915)
@@ -1737,7 +1737,7 @@ void LMIC_setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xr
         os_copyMem(LMIC.artKey, artKey, 16);
 
 #if defined(CFG_eu868)
-    initDefaultChannels(0);
+    initDefaultChannels(false);
 #endif
 
     LMIC.opmode &= ~(OP_JOINING|OP_TRACK|OP_REJOIN|OP_TXRXPEND|OP_PINGINI);
