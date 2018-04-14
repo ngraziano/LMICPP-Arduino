@@ -216,6 +216,7 @@ private:
 
     #if !defined(DISABLE_JOIN)
     void onJoinFailed (OsJob* osjob);
+    bool processJoinAcceptNoJoinFrame();
     bool processJoinAccept();
     void processRx1Jacc (OsJob* osjob);
     void processRx2Jacc (OsJob* osjob);
@@ -247,8 +248,13 @@ private:
     bool decodeFrame ();
     bool processDnData();
 
-
+    #if defined(CFG_us915)
+    void initDefaultChannels ();
+    #endif
+    #if defined(CFG_eu868)
     void initDefaultChannels (bool join);
+    #endif
+    
     uint8_t mapChannels (uint8_t chpage, uint16_t chmap);
     void updateTx (ostime_t txbeg);
 
