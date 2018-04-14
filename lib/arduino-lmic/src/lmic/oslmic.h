@@ -66,8 +66,6 @@ extern uint32_t AESKEY[];
 uint8_t radio_rand1 (void);
 #define os_getRndU1() radio_rand1()
 
-#define DEFINE_LMIC  struct lmic_t LMIC
-#define DECLARE_LMIC extern struct lmic_t LMIC
 
 void radio_init (void);
 void radio_irq_handler (uint8_t dio);
@@ -284,18 +282,49 @@ class OsJob {
         OsJob* next = nullptr;
         ostime_t deadline = 0;
         
-        osjobcb_t  func = nullptr;
+        
 
         static bool unlinkjob (OsJob** pnext, OsJob* job);
+    protected:
+        osjobcb_t  func = nullptr;
+        virtual void call();
+    
     public:
         OsJob(OsScheduler& scheduler);
         OsJob(): OsJob(OSS){};
         void setCallbackFuture(osjobcb_t cb) { func = cb; };
         void setCallbackRunnable(osjobcb_t cb);
-        void setRunnable() { setCallbackRunnable(func); };
+        void setRunnable();
         void clearCallback();
         void setTimedCallback (ostime_t time, osjobcb_t cb);
+        void setTimed(ostime_t time);
 };
 
+template<class T> class OsJobType : public OsJob {
+    public:
+        using osjobcbTyped_t = void (T::*) (OsJob*);
+    private:
+        T* refClass;
+        osjobcbTyped_t funcTyped;
+    protected:
+        virtual void call() { 
+            if(func)
+                OsJob::call();
+            else
+                (refClass->*funcTyped)(this);
+        };
+    public:
+        OsJobType(T* ref): OsJob() {};
+        OsJobType(T* ref, OsScheduler& scheduler): OsJob(scheduler) {};
+        void setCallbackFuture2(osjobcbTyped_t cb) { func = nullptr; funcTyped=cb; };
+        void setCallbackRunnable2(osjobcbTyped_t cb) {     
+            setCallbackFuture2(cb);
+            setRunnable(); 
+        };
+        void setTimedCallback2 (ostime_t time, osjobcbTyped_t cb) {
+            setCallbackFuture2(cb);
+            setTimed(time);
+        };
+};
 
 #endif // _oslmic_h_

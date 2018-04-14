@@ -67,7 +67,7 @@ void onEvent (ev_t ev) {
 
             // Disable link check validation (automatically enabled
             // during join, but not supported by TTN at this time).
-            LMIC_setLinkCheckMode(0);
+            LMIC.setLinkCheckMode(false);
             break;
         case EV_RFU1:
             Serial.println(F("EV_RFU1"));
@@ -119,7 +119,7 @@ void do_send(OsJob* j){
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC.setTxData2(1, mydata, sizeof(mydata)-1, 0);
         Serial.println(F("Packet queued"));
     }
     // Next TX is scheduled after TX_COMPLETE event.
@@ -129,13 +129,11 @@ void setup() {
     Serial.begin(BAUDRATE);
     Serial.println(F("Starting"));
 
-
     // LMIC init
     os_init();
-    
-   
+
     // Reset the MAC state. Session and pending data transfers will be discarded.
-    LMIC_reset();
+    LMIC.reset();
 
     // for(int i = 1; i <= 8; i++) LMIC_disableChannel(i);
     // LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
@@ -144,8 +142,6 @@ void setup() {
     // LMIC.dn2Dr = DR_SF9;
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     // LMIC_setDrTxpow(DR_SF9,14);
-
-
     
     // Start job (sending automatically starts OTAA too)
     do_send(&sendjob);

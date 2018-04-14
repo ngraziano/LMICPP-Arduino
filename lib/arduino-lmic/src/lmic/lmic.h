@@ -108,7 +108,12 @@ enum {
         MAX_CLOCK_ERROR = 65536,
 };
 
-struct lmic_t {
+#if defined(CFG_eu868)
+enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
+#endif
+
+class Lmic {
+public:
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t    txend;
     ostime_t    rxtime;
@@ -120,7 +125,7 @@ struct lmic_t {
     uint8_t        dndr;
     int8_t        txpow;     // dBm
 
-    OsJob     osjob;
+    OsJobType<Lmic>     osjob {  this, OSS };
 
     // Channel scheduling
 #if defined(CFG_eu868)
@@ -142,7 +147,7 @@ struct lmic_t {
     uint16_t        opmode;
     uint8_t        upRepeat;     // configured up repeat
     int8_t        adrTxPow;     // ADR adjusted TX power
-    uint8_t        datarate;     // current data rate
+    dr_t        datarate;     // current data rate
     uint8_t        errcr;        // error coding rate (used for TX only)
     uint8_t        rejoinCnt;    // adjustment for rejoin datarate
 
@@ -193,54 +198,123 @@ struct lmic_t {
     uint8_t        dataLen;    // 0 no data or zero length data, >0 byte count of data
     uint8_t        frame[MAX_LEN_FRAME];
 
+private:
+
+
+    // callbacks
+
+    void processRx1DnData (OsJob* osjob);
+    void setupRx1 (OsJobType<Lmic>::osjobcbTyped_t func);
+    void setupRx2 ();
+    void schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr);
+    
+    void txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func);
+
+
+    void runReset (OsJob* osjob);
+    void runEngineUpdate (OsJob* osjob);
+
+    #if !defined(DISABLE_JOIN)
+    void onJoinFailed (OsJob* osjob);
+    bool processJoinAccept();
+    void processRx1Jacc (OsJob* osjob);
+    void processRx2Jacc (OsJob* osjob);
+    void setupRx1Jacc (OsJob* osjob);
+    void setupRx2Jacc (OsJob* osjob);
+    void jreqDone (OsJob* osjob);
+    void startJoining (OsJob* osjob);
+
+    void buildJoinRequest (uint8_t ftype);
+    
+    #endif
+
+    void processRx2DnData (OsJob* osjob);
+
+    void setupRx1DnData (OsJob* osjob);
+    void setupRx2DnData (OsJob* osjob);
+    
+    void updataDone (OsJob* osjob);
+    
+
+
+    void stateJustJoined();
+    
+
+    void reportEvent (ev_t ev);
+    
+    void buildDataFrame ();
+    void engineUpdate();
+    bool decodeFrame ();
+    bool processDnData();
+
+
+    void initDefaultChannels (bool join);
+    uint8_t mapChannels (uint8_t chpage, uint16_t chmap);
+    void updateTx (ostime_t txbeg);
+
+    // GZO Maybe public
+    ostime_t nextTx (ostime_t now);
+    
+    void setRx1Params();
+
+    void txDelay (ostime_t reftime, uint8_t secSpan);
+    
+    void setDrJoin (dr_t dr);
+    
+    #if !defined(DISABLE_JOIN)
+    void initJoinLoop ();
+    ostime_t nextJoinState (void);
+    #endif
+public:
+    // set default/start DR/txpow
+    void setDrTxpow (uint8_t dr, int8_t pow);
+    void setLinkCheckMode (bool enabled);
+    void setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey);
+
+    bool setupChannel (uint8_t channel, uint32_t freq, uint16_t drmap, int8_t band);
+    void disableChannel (uint8_t channel);
+
+    // set ADR mode (if mobile turn off)
+    void  setAdrMode   (bool enabled);        
+    
+    #if defined(CFG_us915)
+    void  enableChannel (uint8_t channel);
+    void  enableSubBand (uint8_t band);
+    void  disableSubBand (uint8_t band);
+    void  selectSubBand (uint8_t band);
+    #endif
+
+    #if defined(CFG_eu868)
+    bool setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap);
+    #endif
+
+    #if !defined(DISABLE_JOIN)
+    bool startJoining ();
+    void tryRejoin();
+
+    #endif
+
+    void init();
+    void shutdown();
+    void reset();
+    
+    void clrTxData();
+    void setTxData();
+    int setTxData2(uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed);
+    void sendAlive();
+    void setClockError(uint16_t error);
 };
 //! \var struct lmic_t LMIC
 //! The state of LMIC MAC layer is encapsulated in this variable.
-DECLARE_LMIC; //!< \internal
+extern struct Lmic LMIC; //!< \internal
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo,drhi) (((uint16_t)0xFFFF<<(drlo)) & ((uint16_t)0xFFFF>>(15-(drhi))))
-#if defined(CFG_eu868)
-enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
-bool LMIC_setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap);
-#endif
-bool LMIC_setupChannel (uint8_t channel, uint32_t freq, uint16_t drmap, int8_t band);
-void  LMIC_disableChannel (uint8_t channel);
-#if defined(CFG_us915)
-void  LMIC_enableChannel (uint8_t channel);
-void  LMIC_enableSubBand (uint8_t band);
-void  LMIC_disableSubBand (uint8_t band);
-void  LMIC_selectSubBand (uint8_t band);
-#endif
 
-void  LMIC_setDrTxpow   (dr_t dr, int8_t txpow);  // set default/start DR/txpow
-void  LMIC_setAdrMode   (bool enabled);        // set ADR mode (if mobile turn off)
-#if !defined(DISABLE_JOIN)
-bool LMIC_startJoining (void);
-#endif
-
-void  LMIC_shutdown     (void);
-void  LMIC_init         (void);
-void  LMIC_reset        (void);
-void  LMIC_clrTxData    (void);
-void  LMIC_setTxData    (void);
-int   LMIC_setTxData2   (uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed);
-void  LMIC_sendAlive    (void);
-
-#if !defined(DISABLE_JOIN)
-void  LMIC_tryRejoin     (void);
-#endif
-
-void LMIC_setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey);
-void LMIC_setLinkCheckMode (bool enabled);
-void LMIC_setClockError(uint16_t error);
 
 // Declare onEvent() function, to make sure any definition will have the
 // C conventions, even when in a C++ file.
 DECL_ON_LMIC_EVENT;
-
-// Special APIs - for development or testing
-// !!!See implementation for caveats!!!
 
 
 

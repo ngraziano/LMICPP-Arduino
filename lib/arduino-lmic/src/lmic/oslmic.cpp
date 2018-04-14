@@ -19,14 +19,18 @@ OsJob::OsJob(OsScheduler& scheduler) {
     this->scheduler = &scheduler;
 }
 
-// schedule immediately runnable job
 void OsJob::setCallbackRunnable (osjobcb_t cb) {
+    setCallbackFuture(cb);
+    setRunnable();
+}
+
+// schedule immediately runnable job
+void OsJob::setRunnable () {
     OsJob** pnext;
     hal_disableIRQs();
     // remove if job was already queued
     clearCallback();
     // fill-in job
-    func = cb;
     next = nullptr;
     // add to end of run queue
     for(pnext=&this->scheduler->runnablejobs; *pnext; pnext=&((*pnext)->next));
@@ -58,15 +62,19 @@ void OsJob::clearCallback () {
     #endif
 }
 
-// schedule timed job
 void OsJob::setTimedCallback (ostime_t time, osjobcb_t cb) {
+    setCallbackFuture(cb);
+    setTimed(time);
+}
+
+// schedule timed job
+void OsJob::setTimed (ostime_t time) {
     OsJob** pnext;
     hal_disableIRQs();
     // remove if job was already queued
     clearCallback();
     // fill-in job
     deadline = time;
-    func = cb;
     next = nullptr;
     // insert into schedule
     for(pnext=&this->scheduler->scheduledjobs; *pnext; pnext=&((*pnext)->next)) {
@@ -81,6 +89,10 @@ void OsJob::setTimedCallback (ostime_t time, osjobcb_t cb) {
     #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: Scheduled job %p, cb %p at %lu\n", os_getTime(), this, cb, time);
     #endif
+}
+
+void OsJob::call() {
+    func(this);
 }
 
 int32_t OsScheduler::runloopOnce() {
@@ -113,7 +125,7 @@ int32_t OsScheduler::runloopOnce() {
         #if LMIC_DEBUG_LEVEL > 1
             lmic_printf("%lu: Running job %p, cb %p, deadline %lu\n", os_getTime(), j, j->func, has_deadline ? j->deadline : 0);
         #endif
-        j->func(j);
+        j->call();
     } 
     if (runnablejobs) {
         return 0;
@@ -126,7 +138,7 @@ int32_t OsScheduler::runloopOnce() {
 void os_init () {
     hal_init();
     radio_init();
-    LMIC_init();
+    LMIC.init();
 }
 
 ostime_t os_getTime () {
