@@ -215,6 +215,7 @@ uint16_t os_crc16 (xref2uint8_t d, uint len);
     #define CONST_TABLE(type, name) const type PROGMEM RESOLVE_TABLE(name)
 
     #define lmic_printf(fmt, ...) printf_P(PSTR(fmt), ## __VA_ARGS__)
+
 #else
     inline uint8_t table_get_u1(const uint8_t *table, size_t index) { return table[index]; }
     inline int8_t table_get_s1(const int8_t *table, size_t index) { return table[index]; }
@@ -227,6 +228,18 @@ uint16_t os_crc16 (xref2uint8_t d, uint len);
     // Declare a table
     #define CONST_TABLE(type, name) const type RESOLVE_TABLE(name)
     #define lmic_printf printf
+#endif
+
+#if LMIC_DEBUG_LEVEL > 0
+    #define PRINT_DEBUG_1(str, ...) lmic_printf("%lu: " str "\n", os_getTime(), ## __VA_ARGS__)
+#else
+    #define PRINT_DEBUG_1(str, ...) 
+#endif
+
+#if LMIC_DEBUG_LEVEL > 1
+    #define PRINT_DEBUG_1(str, ...) lmic_printf("%lu: " str "\n", os_getTime(), ##__VA_ARGS__)
+#else
+    #define PRINT_DEBUG_2(str, ...) 
 #endif
 
 // ======================================================================

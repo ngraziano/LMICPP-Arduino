@@ -171,12 +171,12 @@ struct lmic_t {
     uint8_t        rxDelay;      // Rx delay after TX
     
     uint8_t        margin;
-    bit_t       ladrAns;      // link adr adapt answer pending
-    bit_t       devsAns;      // device status answer pending
+    bool       ladrAns;      // link adr adapt answer pending
+    bool       devsAns;      // device status answer pending
     uint8_t        adrEnabled;
     uint8_t        moreData;     // NWK has more data pending
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-    bit_t       dutyCapAns;   // have to ACK duty cycle settings
+    bool       dutyCapAns;   // have to ACK duty cycle settings
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
     uint8_t        snchAns;      // answer set new channel
@@ -205,9 +205,9 @@ DECLARE_LMIC; //!< \internal
 #define DR_RANGE_MAP(drlo,drhi) (((uint16_t)0xFFFF<<(drlo)) & ((uint16_t)0xFFFF>>(15-(drhi))))
 #if defined(CFG_eu868)
 enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
-bit_t LMIC_setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap);
+bool LMIC_setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap);
 #endif
-bit_t LMIC_setupChannel (uint8_t channel, uint32_t freq, uint16_t drmap, int8_t band);
+bool LMIC_setupChannel (uint8_t channel, uint32_t freq, uint16_t drmap, int8_t band);
 void  LMIC_disableChannel (uint8_t channel);
 #if defined(CFG_us915)
 void  LMIC_enableChannel (uint8_t channel);
@@ -217,9 +217,9 @@ void  LMIC_selectSubBand (uint8_t band);
 #endif
 
 void  LMIC_setDrTxpow   (dr_t dr, int8_t txpow);  // set default/start DR/txpow
-void  LMIC_setAdrMode   (bit_t enabled);        // set ADR mode (if mobile turn off)
+void  LMIC_setAdrMode   (bool enabled);        // set ADR mode (if mobile turn off)
 #if !defined(DISABLE_JOIN)
-bit_t LMIC_startJoining (void);
+bool LMIC_startJoining (void);
 #endif
 
 void  LMIC_shutdown     (void);
@@ -235,7 +235,7 @@ void  LMIC_tryRejoin     (void);
 #endif
 
 void LMIC_setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey);
-void LMIC_setLinkCheckMode (bit_t enabled);
+void LMIC_setLinkCheckMode (bool enabled);
 void LMIC_setClockError(uint16_t error);
 
 // Declare onEvent() function, to make sure any definition will have the

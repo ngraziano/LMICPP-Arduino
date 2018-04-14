@@ -318,7 +318,7 @@ extern inline int isSlowerDR (dr_t dr1, dr_t dr2);
 extern inline dr_t  incDR    (dr_t dr);
 extern inline dr_t  decDR    (dr_t dr);
 extern inline dr_t  assertDR (dr_t dr);
-extern inline dr_t  validDR  (dr_t dr);
+extern inline bool  validDR  (dr_t dr);
 extern inline dr_t  lowerDR  (dr_t dr, uint8_t n);
 
 extern inline sf_t  getSf    (rps_t params);
@@ -431,7 +431,7 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
     EU868_F1|BAND_CENTI, EU868_F2|BAND_CENTI, EU868_F3|BAND_CENTI,
 };
 
-static void initDefaultChannels (bit_t join) {
+static void initDefaultChannels (bool join) {
     os_clearMem(&LMIC.channelFreq, sizeof(LMIC.channelFreq));
     os_clearMem(&LMIC.channelDrMap, sizeof(LMIC.channelDrMap));
     os_clearMem(&LMIC.bands, sizeof(LMIC.bands));
@@ -457,19 +457,20 @@ static void initDefaultChannels (bit_t join) {
     LMIC.bands[BAND_DECI ].avail = os_getTime();
 }
 
-bit_t LMIC_setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap) {
-    if( bandidx > BAND_AUX ) return 0;
+bool LMIC_setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap) {
+    if( bandidx > BAND_AUX ) 
+        return false;
     band_t* b = &LMIC.bands[bandidx];
     b->txpow = txpow;
     b->txcap = txcap;
     b->avail = os_getTime();
     b->lastchnl = os_getRndU1() % MAX_CHANNELS;
-    return 1;
+    return true;
 }
 
-bit_t LMIC_setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t band) {
+bool LMIC_setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t band) {
     if( chidx >= MAX_CHANNELS )
-        return 0;
+        return false;
     if( band == -1 ) {
         if( freq >= 869400000 && freq <= 869650000 )
             freq |= BAND_DECI;   // 10% 27dBm
@@ -485,7 +486,7 @@ bit_t LMIC_setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t ba
     LMIC.channelFreq [chidx] = freq;
     LMIC.channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF12,DR_SF7) : drmap;
     LMIC.channelMap |= 1<<chidx;  // enabled right away
-    return 1;
+    return true;
 }
 
 void LMIC_disableChannel (uint8_t channel) {
@@ -644,14 +645,14 @@ static uint32_t convFreq (xref2uint8_t ptr) {
     return freq;
 }
 
-bit_t LMIC_setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t band) {
+bool LMIC_setupChannel (uint8_t chidx, uint32_t freq, uint16_t drmap, int8_t band) {
     if( chidx < 72 || chidx >= 72+MAX_XCHANNELS )
-        return 0; // channels 0..71 are hardwired
+        return false; // channels 0..71 are hardwired
     chidx -= 72;
     LMIC.xchFreq[chidx] = freq;
     LMIC.xchDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF10,DR_SF8C) : drmap;
     LMIC.channelMap[chidx>>4] |= (1<<(chidx&0xF));
-    return 1;
+    return true;
 }
 
 void LMIC_disableChannel (uint8_t channel) {
@@ -851,7 +852,7 @@ static void stateJustJoined (void) {
 
 // ================================================================================
 // Decoding frames
-static bit_t decodeFrame (void) {
+static bool decodeFrame (void) {
     xref2uint8_t d = LMIC.frame;
     uint8_t hdr    = d[0];
     uint8_t ftype  = hdr & HDR_FTYPE;
@@ -861,11 +862,9 @@ static bit_t decodeFrame (void) {
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
         (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {
         // Basic sanity checks failed
-#if LMIC_DEBUG_LEVEL > 0
-        lmic_printf("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
-#endif
+        PRINT_DEBUG_1("Invalid downlink, window=%s", window);
         LMIC.dataLen = 0;
-        return 0;
+        return false;
     }
     // Validate exact frame length
     // Note: device address was already read+evaluated in order to arrive here.
@@ -878,18 +877,14 @@ static bit_t decodeFrame (void) {
     int  pend  = dlen-4;  // MIC
 
     if( addr != LMIC.devaddr ) {
-    #if LMIC_DEBUG_LEVEL > 0
-        lmic_printf("%lu: Invalid address, window=%s\n", os_getTime(), window);
-    #endif
+        PRINT_DEBUG_1("Invalid address, window=%s", window);
         LMIC.dataLen = 0;
-        return 0;
+        return false;
     }
     if( poff > pend ) {
-    #if LMIC_DEBUG_LEVEL > 0
-        lmic_printf("%lu: Invalid offset, window=%s\n", os_getTime(), window);
-    #endif
+        PRINT_DEBUG_1("Invalid offset, window=%s", window);
         LMIC.dataLen = 0;
-        return 0;
+        return false;
     }
 
     int port = -1;
@@ -901,20 +896,18 @@ static bit_t decodeFrame (void) {
     seqno = LMIC.seqnoDn + (uint16_t)(seqno - LMIC.seqnoDn);
 
     if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
-    #if LMIC_DEBUG_LEVEL > 0
-        lmic_printf("%lu: Fail to verify aes mic, window=%s\n", os_getTime(), window);
-    #endif
+        PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
         LMIC.dataLen = 0;
-        return 0;
+        return false;
     }
     if( seqno < LMIC.seqnoDn ) {
         if( (int32_t)seqno > (int32_t)LMIC.seqnoDn ) {
             LMIC.dataLen = 0;
-            return 0;
+            return false;
         }
         if( seqno != LMIC.seqnoDn-1 || !LMIC.dnConf || ftype != HDR_FTYPE_DCDN ) {
             LMIC.dataLen = 0;
-            return 0;
+            return false;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
@@ -1069,10 +1062,8 @@ static bit_t decodeFrame (void) {
         LMIC.dataBeg = poff;
         LMIC.dataLen = pend-poff;
     }
-#if LMIC_DEBUG_LEVEL > 0
-    lmic_printf("%lu: Received downlink, window=%s, port=%d, ack=%d\n", os_getTime(), window, port, ackup);
-#endif
-    return 1;
+    PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, port, ackup);
+    return true;
 }
 
 
@@ -1164,7 +1155,7 @@ static void onJoinFailed (OsJob* osjob) {
 }
 
 
-static bit_t processJoinAccept (void) {
+static bool processJoinAccept (void) {
     ASSERT(LMIC.txrxFlags != TXRX_DNW1 || LMIC.dataLen != 0);
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
@@ -1177,7 +1168,7 @@ static bit_t processJoinAccept (void) {
             if( LMIC.rejoinCnt < 10 )
                 LMIC.rejoinCnt++;
             reportEvent(EV_REJOIN_FAILED);
-            return 1;
+            return true;
         }
         LMIC.opmode &= ~OP_TXRXPEND;
         ostime_t delay = nextJoinState();
@@ -1191,7 +1182,7 @@ static bit_t processJoinAccept (void) {
                             (delay&1) != 0
                             ? &onJoinFailed      // one JOIN iteration done and failed
                             : &runEngineUpdate); // next step to be delayed
-        return 1;
+        return true;
     }
     uint8_t hdr  = LMIC.frame[0];
     uint8_t dlen = LMIC.dataLen;
@@ -1201,7 +1192,7 @@ static bit_t processJoinAccept (void) {
             //unexpected frame
       badframe:
         if( (LMIC.txrxFlags & TXRX_DNW1) != 0 )
-            return 0;
+            return false;
         goto nojoinframe;
     }
     aes_encrypt(LMIC.frame+1, dlen-1);
@@ -1248,7 +1239,7 @@ static bit_t processJoinAccept (void) {
     LMIC.rxDelay = LMIC.frame[OFF_JA_RXDLY];
     if (LMIC.rxDelay == 0) LMIC.rxDelay = 1;
     reportEvent(EV_JOINED);
-    return 1;
+    return true;
 }
 
 
@@ -1285,7 +1276,7 @@ static void jreqDone (OsJob* osjob) {
 // ======================================== Data frames
 
 // Fwd decl.
-static bit_t processDnData(void);
+static bool processDnData(void);
 
 static void processRx2DnData (OsJob* osjob) {
     if( LMIC.dataLen == 0 ) {
@@ -1326,7 +1317,7 @@ static void updataDone (OsJob* osjob) {
 
 
 static void buildDataFrame (void) {
-    bit_t txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
+    bool txdata = ((LMIC.opmode & (OP_TXDATA|OP_POLL)) != OP_POLL);
     uint8_t dlen = txdata ? LMIC.pendTxLen : 0;
 
     // Piggyback MAC options
@@ -1440,7 +1431,7 @@ static void startJoining (OsJob* osjob) {
 }
 
 // Start join procedure if not already joined.
-bit_t LMIC_startJoining (void) {
+bool LMIC_startJoining (void) {
     if( LMIC.devaddr == 0 ) {
         // There should be no TX/RX going on
         ASSERT((LMIC.opmode & (OP_POLL|OP_TXRXPEND)) == 0);
@@ -1454,9 +1445,9 @@ bit_t LMIC_startJoining (void) {
         LMIC.opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
         LMIC.osjob.setCallbackRunnable(startJoining);
-        return 1;
+        return true;
     }
-    return 0; // already joined
+    return false; // already joined
 }
 #endif // !DISABLE_JOIN
 
@@ -1469,7 +1460,7 @@ bit_t LMIC_startJoining (void) {
 
 
 
-static bit_t processDnData (void) {
+static bool processDnData (void) {
     ASSERT((LMIC.opmode & OP_TXRXPEND)!=0);
 
     if( LMIC.dataLen == 0 ) {
@@ -1541,7 +1532,7 @@ static void engineUpdate (void) {
     if( (LMIC.opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
         // Need to TX some data...
         // Assuming txChnl points to channel which first becomes available again.
-        bit_t jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
+        bool jacc = ((LMIC.opmode & (OP_JOINING|OP_REJOIN)) != 0 ? 1 : 0);
         #if LMIC_DEBUG_LEVEL > 1
             if (jacc)
                 lmic_printf("%lu: Uplink join pending\n", os_getTime());
@@ -1635,7 +1626,7 @@ static void engineUpdate (void) {
 }
 
 
-void LMIC_setAdrMode (bit_t enabled) {
+void LMIC_setAdrMode (bool enabled) {
     LMIC.adrEnabled = enabled ? FCT_ADREN : 0;
 }
 
@@ -1762,7 +1753,7 @@ void LMIC_setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xr
 // This mode can be disabled and no connectivity prove (ADRACKREQ) is requested
 // nor is the datarate changed.
 // This must be called only if a session is established (e.g. after EV_JOINED)
-void LMIC_setLinkCheckMode (bit_t enabled) {
+void LMIC_setLinkCheckMode (bool enabled) {
     LMIC.adrChanged = 0;
     LMIC.adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
