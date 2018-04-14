@@ -861,7 +861,6 @@ static bit_t decodeFrame (void) {
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
         (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {
         // Basic sanity checks failed
-      norx:
 #if LMIC_DEBUG_LEVEL > 0
         lmic_printf("%lu: Invalid downlink, window=%s\n", os_getTime(), window);
 #endif
@@ -879,10 +878,18 @@ static bit_t decodeFrame (void) {
     int  pend  = dlen-4;  // MIC
 
     if( addr != LMIC.devaddr ) {
-        goto norx;
+    #if LMIC_DEBUG_LEVEL > 0
+        lmic_printf("%lu: Invalid address, window=%s\n", os_getTime(), window);
+    #endif
+        LMIC.dataLen = 0;
+        return 0;
     }
     if( poff > pend ) {
-        goto norx;
+    #if LMIC_DEBUG_LEVEL > 0
+        lmic_printf("%lu: Invalid offset, window=%s\n", os_getTime(), window);
+    #endif
+        LMIC.dataLen = 0;
+        return 0;
     }
 
     int port = -1;
@@ -894,14 +901,20 @@ static bit_t decodeFrame (void) {
     seqno = LMIC.seqnoDn + (uint16_t)(seqno - LMIC.seqnoDn);
 
     if( !aes_verifyMic(LMIC.nwkKey, LMIC.devaddr, seqno, /*dn*/1, d, pend) ) {
-        goto norx;
+    #if LMIC_DEBUG_LEVEL > 0
+        lmic_printf("%lu: Fail to verify aes mic, window=%s\n", os_getTime(), window);
+    #endif
+        LMIC.dataLen = 0;
+        return 0;
     }
     if( seqno < LMIC.seqnoDn ) {
         if( (int32_t)seqno > (int32_t)LMIC.seqnoDn ) {
-            goto norx;
+            LMIC.dataLen = 0;
+            return 0;
         }
         if( seqno != LMIC.seqnoDn-1 || !LMIC.dnConf || ftype != HDR_FTYPE_DCDN ) {
-            goto norx;
+            LMIC.dataLen = 0;
+            return 0;
         }
         // Replay of previous sequence number allowed only if
         // previous frame and repeated both requested confirmation
@@ -1581,7 +1594,6 @@ static void engineUpdate (void) {
                     // Imminent roll over - proactively reset MAC
                     // Device has to react! NWK will not roll over and just stop sending.
                     // Thus, we have N frames to detect a possible lock up.
-                  reset:
                     LMIC.osjob.setCallbackRunnable(&runReset);
                     return;
                 }
@@ -1589,7 +1601,8 @@ static void engineUpdate (void) {
                     // Roll over of up seq counter
                     // Do not run RESET event callback from here!
                     // App code might do some stuff after send unaware of RESET.
-                    goto reset;
+                    LMIC.osjob.setCallbackRunnable(&runReset);
+                    return;
                 }
                 buildDataFrame();
                 LMIC.osjob.setCallbackFuture(&updataDone);
