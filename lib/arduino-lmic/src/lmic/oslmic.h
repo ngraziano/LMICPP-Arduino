@@ -308,12 +308,8 @@ template<class T> class OsJobType : public OsJob {
         osjobcbTyped_t funcTyped;
     protected:
         virtual void call() {
-            PRINT_DEBUG_1("Run func %p on class %p", funcTyped, refClass);
-            
-            if(func)
-                OsJob::call();
-            else
-                (refClass->*funcTyped)(this);
+            PRINT_DEBUG_2("Run func %p on class %p", funcTyped, refClass);
+            (refClass->*funcTyped)(this);
         };
     public:
         OsJobType(T* ref): OsJob() { refClass = ref; };

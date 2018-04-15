@@ -26,13 +26,13 @@ void OsJob::setCallbackRunnable (osjobcb_t cb) {
 
 // schedule immediately runnable job
 void OsJob::setRunnable () {
-    OsJob** pnext;
     hal_disableIRQs();
     // remove if job was already queued
-    clearCallback();
+    unlinkjob(&this->scheduler->scheduledjobs, this) || unlinkjob(&this->scheduler->runnablejobs, this);
     // fill-in job
     next = nullptr;
     // add to end of run queue
+    OsJob** pnext;
     for(pnext=&this->scheduler->runnablejobs; *pnext; pnext=&((*pnext)->next));
     *pnext = this;
     hal_enableIRQs();
