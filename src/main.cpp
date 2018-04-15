@@ -135,6 +135,7 @@ void setup() {
     
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
+    LMIC.setClockError (MAX_CLOCK_ERROR * 1 / 100);
 
     // for(int i = 1; i <= 8; i++) LMIC_disableChannel(i);
     // LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
