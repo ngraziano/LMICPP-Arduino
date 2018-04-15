@@ -259,15 +259,16 @@ uint32_t os_aes (uint8_t mode, xref2uint8_t buf, uint16_t len);
 #endif
 
 
+class OsJobBase;
 class OsJob;
 
 using osjobcb_t = void (*) (OsJob*);
 
 class OsScheduler {
-    friend class OsJob;
+    friend class OsJobBase;
     private:
-        OsJob* scheduledjobs = nullptr;
-        OsJob* runnablejobs = nullptr;
+        OsJobBase* scheduledjobs = nullptr;
+        OsJobBase* runnablejobs = nullptr;
     public:
         int32_t runloopOnce();
 
@@ -275,34 +276,41 @@ class OsScheduler {
 
 extern OsScheduler OSS;
 
-class OsJob {
+class OsJobBase {
     friend class OsScheduler;
     private:
         OsScheduler* scheduler;
-        OsJob* next = nullptr;
+        OsJobBase* next = nullptr;
         ostime_t deadline = 0;
-        
-        
 
-        static bool unlinkjob (OsJob** pnext, OsJob* job);
+        static bool unlinkjob (OsJobBase** pnext, OsJobBase* job);
     protected:
         osjobcb_t  func = nullptr;
-        virtual void call();
+        virtual void call() = 0;
     
     public:
-        OsJob(OsScheduler& scheduler);
-        OsJob(): OsJob(OSS){};
-        void setCallbackFuture(osjobcb_t cb) { func = cb; };
-        void setCallbackRunnable(osjobcb_t cb);
+        OsJobBase(OsScheduler& scheduler);
+        OsJobBase(): OsJobBase(OSS){};
+
         void setRunnable();
         void clearCallback();
-        void setTimedCallback (ostime_t time, osjobcb_t cb);
+        
         void setTimed(ostime_t time);
 };
 
-template<class T> class OsJobType : public OsJob {
+class OsJob : public OsJobBase {
+    protected:
+        osjobcb_t  func = nullptr;
+        virtual void call();
     public:
-        using osjobcbTyped_t = void (T::*) (OsJob*);
+        void setCallbackFuture(osjobcb_t cb) { func = cb; };
+        void setCallbackRunnable(osjobcb_t cb);
+        void setTimedCallback (ostime_t time, osjobcb_t cb);
+};
+
+template<class T> class OsJobType : public OsJobBase {
+    public:
+        using osjobcbTyped_t = void (T::*) (OsJobBase*);
     private:
         T* refClass;
         osjobcbTyped_t funcTyped;
@@ -312,8 +320,8 @@ template<class T> class OsJobType : public OsJob {
             (refClass->*funcTyped)(this);
         };
     public:
-        OsJobType(T* ref): OsJob() { refClass = ref; };
-        OsJobType(T* ref, OsScheduler& scheduler): OsJob(scheduler) { refClass = ref; };
+        OsJobType(T* ref): OsJobBase() { refClass = ref; };
+        OsJobType(T* ref, OsScheduler& scheduler): OsJobBase(scheduler) { refClass = ref; };
         void setCallbackFuture2(osjobcbTyped_t cb) { func = nullptr; funcTyped=cb; };
         void setCallbackRunnable2(osjobcbTyped_t cb) {     
             setCallbackFuture2(cb);

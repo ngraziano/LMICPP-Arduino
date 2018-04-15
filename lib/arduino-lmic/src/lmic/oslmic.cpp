@@ -15,7 +15,7 @@
 
 OsScheduler OSS;
 
-OsJob::OsJob(OsScheduler& scheduler) {
+OsJobBase::OsJobBase(OsScheduler& scheduler) {
     this->scheduler = &scheduler;
 }
 
@@ -25,14 +25,14 @@ void OsJob::setCallbackRunnable (osjobcb_t cb) {
 }
 
 // schedule immediately runnable job
-void OsJob::setRunnable () {
+void OsJobBase::setRunnable () {
     hal_disableIRQs();
     // remove if job was already queued
     unlinkjob(&this->scheduler->scheduledjobs, this) || unlinkjob(&this->scheduler->runnablejobs, this);
     // fill-in job
     next = nullptr;
     // add to end of run queue
-    OsJob** pnext;
+    OsJobBase** pnext;
     for(pnext=&this->scheduler->runnablejobs; *pnext; pnext=&((*pnext)->next));
     *pnext = this;
     hal_enableIRQs();
@@ -41,7 +41,7 @@ void OsJob::setRunnable () {
     #endif
 }
 
-bool OsJob::unlinkjob (OsJob** pnext, OsJob* job) {
+bool OsJobBase::unlinkjob (OsJobBase** pnext, OsJobBase* job) {
     for( ; *pnext; pnext = &((*pnext)->next)) {
         if(*pnext == job) { // unlink
             *pnext = job->next;
@@ -52,7 +52,7 @@ bool OsJob::unlinkjob (OsJob** pnext, OsJob* job) {
 }
 
 // clear scheduled job
-void OsJob::clearCallback () {
+void OsJobBase::clearCallback () {
     hal_disableIRQs();
     bool res = unlinkjob(&this->scheduler->scheduledjobs, this) || unlinkjob(&this->scheduler->runnablejobs, this);
     hal_enableIRQs();
@@ -68,8 +68,8 @@ void OsJob::setTimedCallback (ostime_t time, osjobcb_t cb) {
 }
 
 // schedule timed job
-void OsJob::setTimed (ostime_t time) {
-    OsJob** pnext;
+void OsJobBase::setTimed (ostime_t time) {
+    OsJobBase** pnext;
     hal_disableIRQs();
     // remove if job was already queued
     clearCallback();
@@ -99,7 +99,7 @@ int32_t OsScheduler::runloopOnce() {
     #if LMIC_DEBUG_LEVEL > 1
         bool has_deadline = false;
     #endif
-    OsJob* j = NULL;
+    OsJobBase* j = NULL;
     hal_disableIRQs();
     // check for runnable jobs
     if(runnablejobs) {

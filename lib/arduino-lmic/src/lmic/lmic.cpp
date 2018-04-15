@@ -807,7 +807,7 @@ ostime_t Lmic::nextJoinState (void) {
 #endif
 
 
-void Lmic::runEngineUpdate (OsJob* osjob) {
+void Lmic::runEngineUpdate (OsJobBase* osjob) {
     engineUpdate();
 }
 
@@ -818,7 +818,7 @@ void Lmic::reportEvent (ev_t ev) {
 }
 
 
-void Lmic::runReset (OsJob* osjob) {
+void Lmic::runReset (OsJobBase* osjob) {
     // Disable session
     reset();
 #if !defined(DISABLE_JOIN)
@@ -1149,7 +1149,7 @@ void Lmic::txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func) {
 
 
 #if !defined(DISABLE_JOIN)
-void Lmic::onJoinFailed (OsJob* osjob) {
+void Lmic::onJoinFailed (OsJobBase* osjob) {
     // Notify app - must call reset() to stop joining
     // otherwise join procedure continues.
     reportEvent(EV_JOIN_FAILED);
@@ -1249,31 +1249,31 @@ bool Lmic::processJoinAccept () {
 }
 
 
-void Lmic::processRx2Jacc (OsJob* osjob) {
+void Lmic::processRx2Jacc (OsJobBase* osjob) {
     if( dataLen == 0 )
         txrxFlags = 0;  // nothing in 1st/2nd DN slot
     processJoinAccept();
 }
 
 
-void Lmic::setupRx2Jacc (OsJob* osjob) {
+void Lmic::setupRx2Jacc (OsJobBase* osjob) {
     this->osjob.setCallbackFuture2(&Lmic::processRx2Jacc);
     setupRx2();
 }
 
 
-void Lmic::processRx1Jacc (OsJob* osjob) {
+void Lmic::processRx1Jacc (OsJobBase* osjob) {
     if( dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, &Lmic::setupRx2Jacc, dn2Dr);
 }
 
 
-void Lmic::setupRx1Jacc (OsJob* osjob) {
+void Lmic::setupRx1Jacc (OsJobBase* osjob) {
     setupRx1(&Lmic::processRx1Jacc);
 }
 
 
-void Lmic::jreqDone (OsJob* osjob) {
+void Lmic::jreqDone (OsJobBase* osjob) {
     txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc);
 }
 
@@ -1281,7 +1281,7 @@ void Lmic::jreqDone (OsJob* osjob) {
 
 // ======================================== Data frames
 
-void Lmic::processRx2DnData (OsJob* osjob) {
+void Lmic::processRx2DnData (OsJobBase* osjob) {
     if( dataLen == 0 ) {
         txrxFlags = 0;  // nothing in 1st/2nd DN slot
         // It could be that the gateway *is* sending a reply, but we
@@ -1295,24 +1295,24 @@ void Lmic::processRx2DnData (OsJob* osjob) {
 }
 
 
-void Lmic::setupRx2DnData (OsJob* osjob) {
+void Lmic::setupRx2DnData (OsJobBase* osjob) {
     this->osjob.setCallbackFuture2(&Lmic::processRx2DnData);
     setupRx2();
 }
 
 
-void Lmic::processRx1DnData (OsJob* osjob) {
+void Lmic::processRx1DnData (OsJobBase* osjob) {
     if( dataLen == 0 || !processDnData() )
         schedRx12(sec2osticks(rxDelay +(int)DELAY_EXTDNW2), &Lmic::setupRx2DnData, dn2Dr);
 }
 
 
-void Lmic::setupRx1DnData (OsJob* osjob) {
+void Lmic::setupRx1DnData (OsJobBase* osjob) {
     setupRx1(&Lmic::processRx1DnData);
 }
 
 
-void Lmic::updataDone (OsJob* osjob) {
+void Lmic::updataDone (OsJobBase* osjob) {
     txDone(sec2osticks(rxDelay), &Lmic::setupRx1DnData);
 }
 
@@ -1429,7 +1429,7 @@ void Lmic::buildJoinRequest (uint8_t ftype) {
     devNonce++;
 }
 
-void Lmic::startJoining (OsJob* osjob) {
+void Lmic::startJoining (OsJobBase* osjob) {
     reportEvent(EV_JOINING);
 }
 
