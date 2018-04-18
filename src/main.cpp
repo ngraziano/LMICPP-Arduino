@@ -25,13 +25,14 @@ void os_getDevEui (uint8_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 void os_getDevKey (uint8_t* buf) {  memcpy_P(buf, APPKEY, 16);}
 
-static uint8_t mydata[] = "Hello, world!";
+
+uint16_t data[2] = {}; 
 
 OsJob sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 60 * 5;
 
 const unsigned int BAUDRATE = 19200;
 
@@ -118,8 +119,15 @@ void do_send(OsJob* j){
     if (LMIC.getOpMode() & OP_TXRXPEND) {
         Serial.println(F("OP_TXRXPEND, not sending"));
     } else {
+        pinMode(9, OUTPUT);
+        digitalWrite(9, 1);
+        delay(100);
+        data[0] = analogRead(A1);
+        data[1] = analogRead(A2);
+        digitalWrite(9, 0);
+
         // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC.setTxData2(1, (uint8_t*)data, 4, 0);
         Serial.println(F("Packet queued"));
     }
     // Next TX is scheduled after TX_COMPLETE event.
@@ -131,10 +139,11 @@ void setup() {
 
     // LMIC init
     os_init();
-    PRINT_DEBUG_1("LMIC Addr=%p",&LMIC);
     
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
+
+    // set clock error to allow good connection.
     LMIC.setClockError (MAX_CLOCK_ERROR * 1 / 100);
 
     // for(int i = 1; i <= 8; i++) LMIC_disableChannel(i);
@@ -157,7 +166,7 @@ void powersave(int32_t maxTime) {
 
     int32_t duration_selected = 0;
     period_t period_selected;
-
+    // these value are base on test
     if(maxTime > 8500) {
         duration_selected = 8500;
         period_selected = SLEEP_8S;
