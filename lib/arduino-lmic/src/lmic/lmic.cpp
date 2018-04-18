@@ -271,10 +271,12 @@ int getSensitivity (rps_t rps) {
 ostime_t calcAirTime (rps_t rps, uint8_t plen) {
     uint8_t bw = getBw(rps);  // 0,1,2 = 125,250,500kHz
     uint8_t sf = getSf(rps);  // 0=FSK, 1..6 = SF7..12
+    #if !defined(DISABLE_FSK)
     if( sf == FSK ) {
         return (plen+/*preamble*/5+/*syncword*/3+/*len*/1+/*crc*/2) * /*bits/byte*/8
             * (int32_t)OSTICKS_PER_SEC / /*kbit/s*/50000;
     }
+    #endif
     uint8_t sfx = 4*(sf+(7-SF7));
     uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
     int tmp = 8*plen - sfx + 28 + (getNocrc(rps)?0:16) - (getIh(rps)?20:0);
@@ -1622,7 +1624,6 @@ void Lmic::engineUpdate () {
         if( (opmode & OP_TRACK) == 0 )
             return;
     }
-
 
   txdelay:
     osjob.setTimedCallback2(txbeg-TX_RAMPUP, &Lmic::runEngineUpdate);

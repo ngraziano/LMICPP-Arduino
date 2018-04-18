@@ -81,7 +81,7 @@ void hal_waitUntil (uint32_t time);
  *   - return 1 if target time is close
  *   - otherwise rewind timer for target time or full period and return 0
  */
-uint8_t hal_checkTimer (uint32_t targettime);
+bool hal_checkTimer (uint32_t targettime);
 
 /*
  * perform fatal failure action.

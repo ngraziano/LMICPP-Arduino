@@ -115,10 +115,6 @@ uint8_t hal_spi (uint8_t out) {
 // -----------------------------------------------------------------------------
 // TIME
 
-static void hal_time_init () {
-    // Nothing to do
-}
-
 bool is_sleep_allow = false;
 
 bool hal_is_sleep_allow() {
@@ -128,7 +124,6 @@ bool hal_is_sleep_allow() {
 void hal_allow_sleep() {
     is_sleep_allow = true;
 }
-
 
 void hal_forbid_sleep() {
     is_sleep_allow = false;
@@ -206,7 +201,7 @@ void hal_waitUntil (uint32_t time) {
 }
 
 // check and rewind for target time
-uint8_t hal_checkTimer (uint32_t time) {
+bool hal_checkTimer (uint32_t time) {
     // No need to schedule wakeup, since we're not sleeping
     return delta_time(time) <= 0;
 }
@@ -252,7 +247,6 @@ void hal_init () {
     // configure radio SPI
     hal_spi_init();
     // configure timer 
-    hal_time_init();
 #if defined(LMIC_PRINTF_TO)
     // printf support
     hal_printf_init();
