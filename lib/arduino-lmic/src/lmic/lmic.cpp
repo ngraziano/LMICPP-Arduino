@@ -536,7 +536,7 @@ ostime_t Lmic::nextTx (ostime_t now) {
     uint8_t bmap=0xF;
     do {
         ostime_t mintime = now + /*8h*/sec2osticks(28800);
-        int8_t band=-1;
+        uint8_t band= 0xFF;
         for( uint8_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - bands[bi].avail > 0 ) {
                 #if LMIC_DEBUG_LEVEL > 1
@@ -546,7 +546,7 @@ ostime_t Lmic::nextTx (ostime_t now) {
                 mintime = bands[band].avail;
             }
         }
-        if(band <0){
+        if(band == 0xFF){
             // Try to handle a strange bug wich appen afert 7 hours
             PRINT_DEBUG_2("Error No band available.");
             ostime_t resetTime = now + sec2osticks(15 * 60);
