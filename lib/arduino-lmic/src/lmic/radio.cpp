@@ -597,6 +597,10 @@ void radio_irq_handler (uint8_t dio, ostime_t trigger) {
             // read the PDU and inform the MAC that we received something
             LMIC.dataLen = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON) ?
                 readReg(LORARegPayloadLength) : readReg(LORARegRxNbBytes);
+
+            // for security clamp length of data
+            LMIC.dataLen = LMIC.dataLen < MAX_LEN_FRAME ? LMIC.dataLen : LMIC.dataLen;
+            
             // set FIFO read address pointer
             writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
             // now read the FIFO
