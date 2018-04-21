@@ -536,15 +536,29 @@ ostime_t Lmic::nextTx (ostime_t now) {
     uint8_t bmap=0xF;
     do {
         ostime_t mintime = now + /*8h*/sec2osticks(28800);
-        uint8_t band=0;
+        int8_t band=-1;
         for( uint8_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - bands[bi].avail > 0 ) {
                 #if LMIC_DEBUG_LEVEL > 1
                     lmic_printf("%lu: Considering band %d, which is available at %lu\n", os_getTime(), bi, bands[bi].avail);
                 #endif
-                mintime = bands[band = bi].avail;
+                band = bi;
+                mintime = bands[band].avail;
             }
         }
+        if(band <0){
+            // Try to handle a strange bug wich appen afert 7 hours
+            PRINT_DEBUG_2("Error No band available.");
+            ostime_t resetTime = now + sec2osticks(15 * 60);
+            for( uint8_t bi=0; bi < MAX_BANDS; bi++ ) { 
+                PRINT_DEBUG_2("Band %i Reseting avail from %lu to %lu, lastchnl: %i.", bi, bands[bi].avail,resetTime, bands[bi].lastchnl);
+                bands[bi].avail = resetTime;
+            }
+            // force band 0.
+            band = 0;
+            mintime = resetTime;
+        }
+
         // Find next channel in given band
         uint8_t chnl = bands[band].lastchnl;
         for( uint8_t ci=0; ci<MAX_CHANNELS; ci++ ) {
@@ -560,11 +574,12 @@ ostime_t Lmic::nextTx (ostime_t now) {
         #if LMIC_DEBUG_LEVEL > 1
             lmic_printf("%lu: No channel found in band %d\n", os_getTime(), band);
         #endif
-        if( (bmap &= ~(1<<band)) == 0 ) {
+        bmap &= ~(1<<band);
+        if( bmap == 0 ) {
             // No feasible channel  found!
             return mintime;
         }
-    } while(1);
+    } while(true);
 }
 
 void Lmic::setRx1Params() {
@@ -1113,7 +1128,7 @@ void Lmic::schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint
     // (again note that hsym is half a sumbol time, so no /2 needed)
     rxtime = txend + delay + PAMBL_SYMS * hsym - rxsyms * hsym;
 
-    osjob.setTimedCallback2(rxtime - RX_RAMPUP, func);
+    osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
 }
 
 void Lmic::setupRx1 (OsJobType<Lmic>::osjobcbTyped_t func) {
@@ -1121,7 +1136,7 @@ void Lmic::setupRx1 (OsJobType<Lmic>::osjobcbTyped_t func) {
     // Turn rps from TX over to RX
     rps = setNocrc(rps,1);
     dataLen = 0;
-    osjob.setCallbackFuture2(func);
+    osjob.setCallbackFuture(func);
     os_radio(RADIO_RX);
 }
 
@@ -1137,7 +1152,7 @@ void Lmic::txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func) {
     if( /* TX datarate */rxsyms == DR_FSK ) {
         rxtime = txend + delay - PRERX_FSK*us2osticksRound(160);
         rxsyms = RXLEN_FSK;
-        osjob.setTimedCallback2(rxtime - RX_RAMPUP, func);
+        osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
     }
     else
 #endif
@@ -1175,7 +1190,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
 
         // this delay is suspissisous FIXME GZOGZO
 
-        osjob.setTimedCallback2(os_getTime()+delay,
+        osjob.setTimedCallback(os_getTime()+delay,
                             (delay&1) != 0
                             ? &Lmic::onJoinFailed      // one JOIN iteration done and failed
                             : &Lmic::runEngineUpdate); // next step to be delayed
@@ -1259,7 +1274,7 @@ void Lmic::processRx2Jacc (OsJobBase* osjob) {
 
 
 void Lmic::setupRx2Jacc (OsJobBase* osjob) {
-    this->osjob.setCallbackFuture2(&Lmic::processRx2Jacc);
+    this->osjob.setCallbackFuture(&Lmic::processRx2Jacc);
     setupRx2();
 }
 
@@ -1298,7 +1313,7 @@ void Lmic::processRx2DnData (OsJobBase* osjob) {
 
 
 void Lmic::setupRx2DnData (OsJobBase* osjob) {
-    this->osjob.setCallbackFuture2(&Lmic::processRx2DnData);
+    this->osjob.setCallbackFuture(&Lmic::processRx2DnData);
     setupRx2();
 }
 
@@ -1449,7 +1464,7 @@ bool Lmic::startJoining () {
         initJoinLoop();
         opmode |= OP_JOINING;
         // reportEvent will call engineUpdate which then starts sending JOIN REQUESTS
-        osjob.setCallbackRunnable2(&Lmic::startJoining);
+        osjob.setCallbackRunnable(&Lmic::startJoining);
         return true;
     }
     return false; // already joined
@@ -1582,7 +1597,7 @@ void Lmic::engineUpdate () {
                     ftype = HDR_FTYPE_JREQ;
                 }
                 buildJoinRequest(ftype);
-                osjob.setCallbackFuture2(&Lmic::jreqDone);
+                osjob.setCallbackFuture(&Lmic::jreqDone);
             } else
 #endif // !DISABLE_JOIN
             {
@@ -1590,18 +1605,18 @@ void Lmic::engineUpdate () {
                     // Imminent roll over - proactively reset MAC
                     // Device has to react! NWK will not roll over and just stop sending.
                     // Thus, we have N frames to detect a possible lock up.
-                    osjob.setCallbackRunnable2(&Lmic::runReset);
+                    osjob.setCallbackRunnable(&Lmic::runReset);
                     return;
                 }
                 if( (txCnt==0 && seqnoUp == 0xFFFFFFFF) ) {
                     // Roll over of up seq counter
                     // Do not run RESET event callback from here!
                     // App code might do some stuff after send unaware of RESET.
-                    osjob.setCallbackRunnable2(&Lmic::runReset);
+                    osjob.setCallbackRunnable(&Lmic::runReset);
                     return;
                 }
                 buildDataFrame();
-                osjob.setCallbackFuture2(&Lmic::updataDone);
+                osjob.setCallbackFuture(&Lmic::updataDone);
             }
             rps    = setCr(updr2rps(txdr), (cr_t)errcr);
             dndr   = txdr;  // carry TX datarate (can be != datarate) over to txDone/setupRx1
@@ -1626,7 +1641,7 @@ void Lmic::engineUpdate () {
     }
 
   txdelay:
-    osjob.setTimedCallback2(txbeg-TX_RAMPUP, &Lmic::runEngineUpdate);
+    osjob.setTimedCallback(txbeg-TX_RAMPUP, &Lmic::runEngineUpdate);
 }
 
 

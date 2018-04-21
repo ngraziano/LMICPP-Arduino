@@ -285,7 +285,6 @@ class OsJobBase {
 
         static bool unlinkjob (OsJobBase** pnext, OsJobBase* job);
     protected:
-        osjobcb_t  func = nullptr;
         virtual void call() = 0;
     
     public:
@@ -322,13 +321,13 @@ template<class T> class OsJobType : public OsJobBase {
     public:
         OsJobType(T* ref): OsJobBase() { refClass = ref; };
         OsJobType(T* ref, OsScheduler& scheduler): OsJobBase(scheduler) { refClass = ref; };
-        void setCallbackFuture2(osjobcbTyped_t cb) { func = nullptr; funcTyped=cb; };
-        void setCallbackRunnable2(osjobcbTyped_t cb) {     
-            setCallbackFuture2(cb);
+        void setCallbackFuture(osjobcbTyped_t cb) { funcTyped=cb; };
+        void setCallbackRunnable(osjobcbTyped_t cb) {     
+            setCallbackFuture(cb);
             setRunnable(); 
         };
-        void setTimedCallback2 (ostime_t time, osjobcbTyped_t cb) {
-            setCallbackFuture2(cb);
+        void setTimedCallback (ostime_t time, osjobcbTyped_t cb) {
+            setCallbackFuture(cb);
             setTimed(time);
         };
 };

@@ -37,7 +37,7 @@ void OsJobBase::setRunnable () {
     *pnext = this;
     hal_enableIRQs();
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Scheduled job %p, cb %p ASAP\n", os_getTime(), this, func);
+        lmic_printf("%lu: Scheduled job %p ASAP\n", os_getTime(), this);
     #endif
 }
 
@@ -87,7 +87,7 @@ void OsJobBase::setTimed (ostime_t time) {
     *pnext = this;
     hal_enableIRQs();
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Scheduled job %p, cb %p at %lu\n", os_getTime(), this, func, time);
+        lmic_printf("%lu: Scheduled job %p, at %lu\n", os_getTime(), this, time);
     #endif
 }
 
@@ -123,7 +123,7 @@ int32_t OsScheduler::runloopOnce() {
     hal_io_check();
     if(j) { // run job callback
         #if LMIC_DEBUG_LEVEL > 1
-            lmic_printf("%lu: Running job %p, cb %p, deadline %lu\n", os_getTime(), j, j->func, has_deadline ? j->deadline : 0);
+            lmic_printf("%lu: Running job %p, deadline %lu\n", os_getTime(), j,  has_deadline ? j->deadline : 0);
         #endif
         j->call();
     } 
