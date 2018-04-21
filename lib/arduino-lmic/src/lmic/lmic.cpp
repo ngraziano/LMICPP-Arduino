@@ -532,6 +532,10 @@ void Lmic::updateTx (ostime_t txbeg) {
     #endif
 }
 
+uint8_t Lmic::getBand(uint8_t channel) {
+    return channelFreq[channel] & 0x3;
+}
+
 ostime_t Lmic::nextTx (ostime_t now) {
     uint8_t bmap=0xF;
     do {
@@ -562,18 +566,19 @@ ostime_t Lmic::nextTx (ostime_t now) {
         // Find next channel in given band
         uint8_t chnl = bands[band].lastchnl;
         for( uint8_t ci=0; ci<MAX_CHANNELS; ci++ ) {
-            if( (chnl = (chnl+1)) >= MAX_CHANNELS )
+            chnl++;
+            if(chnl >= MAX_CHANNELS)
                 chnl -=  MAX_CHANNELS;
             if( (channelMap & (1<<chnl)) != 0  &&  // channel enabled
                 (channelDrMap[chnl] & (1<<(datarate&0xF))) != 0  &&
-                band == (channelFreq[chnl] & 0x3) ) { // in selected band
+                band == getBand(chnl) ) { // in selected band
                 txChnl = bands[band].lastchnl = chnl;
                 return mintime;
             }
         }
-        #if LMIC_DEBUG_LEVEL > 1
-            lmic_printf("%lu: No channel found in band %d\n", os_getTime(), band);
-        #endif
+       
+        PRINT_DEBUG_2("No channel found in band %d", band);
+       
         bmap &= ~(1<<band);
         if( bmap == 0 ) {
             // No feasible channel  found!

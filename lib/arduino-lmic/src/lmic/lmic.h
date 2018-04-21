@@ -256,7 +256,7 @@ private:
     uint8_t mapChannels (uint8_t chpage, uint16_t chmap);
     void updateTx (ostime_t txbeg);
 
-    // GZO Maybe public
+    uint8_t getBand(uint8_t channel);
     ostime_t nextTx (ostime_t now);
     
     void setRx1Params();
