@@ -202,8 +202,17 @@ void hal_waitUntil (uint32_t time) {
 
 // check and rewind for target time
 bool hal_checkTimer (uint32_t time) {
-    // No need to schedule wakeup, since we're not sleeping
-    return delta_time(time) <= 0;
+    
+    auto delta = delta_time(time);
+    if(delta <= 0)
+        return true;
+
+    // HACK for a bug (I will track it down.)
+    if(delta >= sec2osticks(60*60)) {
+        PRINT_DEBUG_2("WARN delta is too big, execute now ref : %lu, delta : %li", time, delta);
+        return true;
+    }
+    return false;
 }
 
 static uint8_t irqlevel = 0;
