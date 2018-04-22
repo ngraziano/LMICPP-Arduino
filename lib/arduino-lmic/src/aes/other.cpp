@@ -31,8 +31,6 @@
 #include <algorithm>
 
 
-#if !defined(USE_ORIGINAL_AES)
-
 // This should be defined elsewhere
 void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
 
@@ -143,5 +141,3 @@ uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len) {
     }
     return 0;
 }
-
-#endif // !defined(USE_ORIGINAL_AES)

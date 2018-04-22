@@ -1,5 +1,4 @@
 /******************************************************************************************
-#if defined(USE_IDEETRON_AES)
 * Copyright 2015, 2016 Ideetron B.V.
 *
 * This program is free software: you can redistribute it and/or modify
@@ -43,7 +42,6 @@
 
 #include "../../lmic/oslmic.h"
 
-#if defined(USE_IDEETRON_AES)
 
 /*
 ********************************************************************************************
@@ -338,4 +336,3 @@ static void AES_Calculate_Round_Key(unsigned char Round, unsigned char *Round_Ke
   }
 }
 
-#endif // defined(USE_IDEETRON_AES)
