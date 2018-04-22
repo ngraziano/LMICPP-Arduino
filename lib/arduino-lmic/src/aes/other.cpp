@@ -28,11 +28,10 @@
  */
 
 #include "../lmic/oslmic.h"
+#include "../lmic/bufferpack.h"
 #include <algorithm>
 
-
-// This should be defined elsewhere
-void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
+#include "aes.h"
 
 // global area for passing parameters (aux, key)
 uint32_t AESAUX[16/sizeof(uint32_t)];
@@ -127,7 +126,7 @@ uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len) {
     switch (mode & ~AES_MICNOAUX) {
         case AES_MIC:
             os_aes_cmac(buf, len, /* prepend_aux */ !(mode & AES_MICNOAUX));
-            return os_rmsbf4(AESaux);
+            return rmsbf4(AESaux);
 
         case AES_ENC:
             // TODO: Check / handle when len is not a multiple of 16

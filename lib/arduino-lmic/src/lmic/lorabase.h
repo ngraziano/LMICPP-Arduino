@@ -374,8 +374,6 @@ inline dr_t  lowerDR  (dr_t dr, uint8_t n) { while(n--){dr=decDR(dr);} return dr
 // ================================================================================
 
 
-// Convert between dBm values and power codes (MCMD_LADR_XdBm)
-int8_t pow2dBm (uint8_t mcmd_ladr_p1);
 // Calculate airtime
 ostime_t calcAirTime (rps_t rps, uint8_t plen);
 // Sensitivity at given SF/BW

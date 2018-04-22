@@ -11,6 +11,8 @@
 
 //! \file
 #include "lmic.h"
+#include "bufferpack.h"
+#include "../aes/aes.h"
 #include <algorithm>
 
 #if !defined(MINRX_SYMS)
@@ -48,72 +50,9 @@ Lmic LMIC;
 
 #if !defined(HAS_os_calls)
 
-#if !defined(os_rlsbf2)
-uint16_t os_rlsbf2 (const uint8_t* buf) {
-    return (uint16_t)((uint16_t)buf[0] | ((uint16_t)buf[1]<<8));
-}
-#endif
-
-#if !defined(os_rlsbf4)
-uint32_t os_rlsbf4 (const uint8_t* buf) {
-    return (uint32_t)((uint32_t)buf[0] | ((uint32_t)buf[1]<<8) | ((uint32_t)buf[2]<<16) | ((uint32_t)buf[3]<<24));
-}
-#endif
-
-
-#if !defined(os_rmsbf4)
-uint32_t os_rmsbf4 (const uint8_t* buf) {
-    return (uint32_t)((uint32_t)buf[3] | ((uint32_t)buf[2]<<8) | ((uint32_t)buf[1]<<16) | ((uint32_t)buf[0]<<24));
-}
-#endif
-
-
-#if !defined(os_wlsbf2)
-void os_wlsbf2 (uint8_t* buf, uint16_t v) {
-    buf[0] = v;
-    buf[1] = v>>8;
-}
-#endif
-
-#if !defined(os_wlsbf4)
-void os_wlsbf4 (uint8_t* buf, uint32_t v) {
-    buf[0] = v;
-    buf[1] = v>>8;
-    buf[2] = v>>16;
-    buf[3] = v>>24;
-}
-#endif
-
-#if !defined(os_wmsbf4)
-void os_wmsbf4 (uint8_t* buf, uint32_t v) {
-    buf[3] = v;
-    buf[2] = v>>8;
-    buf[1] = v>>16;
-    buf[0] = v>>24;
-}
-#endif
-
 #if !defined(os_getBattLevel)
 uint8_t os_getBattLevel (void) {
     return MCMD_DEVS_BATT_NOINFO;
-}
-#endif
-
-#if !defined(os_crc16)
-// New CRC-16 CCITT(XMODEM) checksum for beacons:
-uint16_t os_crc16 (uint8_t* data, uint len) {
-    uint16_t remainder = 0;
-    uint16_t polynomial = 0x1021;
-    for( uint i = 0; i < len; i++ ) {
-        remainder ^= data[i] << 8;
-        for( uint8_t bit = 8; bit > 0; bit--) {
-            if( (remainder & 0x8000) )
-                remainder = (remainder << 1) ^ polynomial;
-            else
-                remainder <<= 1;
-        }
-    }
-    return remainder;
 }
 #endif
 
@@ -122,81 +61,6 @@ uint16_t os_crc16 (uint8_t* data, uint len) {
 // END OS - default implementations for certain OS suport functions
 // ================================================================================
 
-// ================================================================================
-// BEG AES
-
-static void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
-    std::fill(AESaux, AESaux+16, 0);
-    AESaux[0]  = 0x49;
-    AESaux[5]  = dndir?1:0;
-    AESaux[15] = len;
-    os_wlsbf4(AESaux+ 6,devaddr);
-    os_wlsbf4(AESaux+10,seqno);
-}
-
-
-static int aes_verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
-    micB0(devaddr, seqno, dndir, len);
-    std::copy(key, key+16, AESkey);
-    return os_aes(AES_MIC, pdu, len) == os_rmsbf4(pdu+len);
-}
-
-
-static void aes_appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
-    micB0(devaddr, seqno, dndir, len);
-    std::copy(key, key+16, AESkey);    
-    // MSB because of internal structure of AES
-    os_wmsbf4(pdu+len, os_aes(AES_MIC, pdu, len));
-}
-
-
-static void aes_appendMic0 (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
-    os_wmsbf4(pdu+len, os_aes(AES_MIC|AES_MICNOAUX, pdu, len));  // MSB because of internal structure of AES
-}
-
-
-static int aes_verifyMic0 (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
-    return os_aes(AES_MIC|AES_MICNOAUX, pdu, len) == os_rmsbf4(pdu+len);
-}
-
-
-static void aes_encrypt (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
-    os_aes(AES_ENC, pdu, len);
-}
-
-
-static void aes_cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len) {
-    if( len <= 0 )
-        return;
-    std::fill(AESaux, AESaux+16, 0);
-    AESaux[0] = AESaux[15] = 1; // mode=cipher / dir=down / block counter=1
-    AESaux[5] = dndir?1:0;
-    os_wlsbf4(AESaux+ 6,devaddr);
-    os_wlsbf4(AESaux+10,seqno);
-    std::copy(key, key+16, AESkey);    
-    os_aes(AES_CTR, payload, len);
-}
-
-
-static void aes_sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, uint8_t* artkey) {
-    std::fill(nwkkey,nwkkey+16,0);
-    nwkkey[0] = 0x01;
-    std::copy(artnonce, artnonce+LEN_ARTNONCE+LEN_NETID,nwkkey+1);
-    os_wlsbf2(nwkkey+1+LEN_ARTNONCE+LEN_NETID, devnonce);
-    std::copy(nwkkey, nwkkey+16, artkey);
-    artkey[0] = 0x02;
-
-    os_getDevKey(AESkey);
-    os_aes(AES_ENC, nwkkey, 16);
-    os_getDevKey(AESkey);
-    os_aes(AES_ENC, artkey, 16);
-}
-
-// END AES
-// ================================================================================
 
 
 // ================================================================================
@@ -495,7 +359,7 @@ void Lmic::disableChannel (uint8_t channel) {
 }
 
 static uint32_t convFreq (uint8_t* ptr) {
-    uint32_t newfreq = (os_rlsbf4(ptr-1) >> 8) * 100;
+    uint32_t newfreq = (rlsbf4(ptr-1) >> 8) * 100;
     if( newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX )
         newfreq = 0;
     return newfreq;
@@ -659,7 +523,7 @@ void Lmic::initDefaultChannels () {
 }
 
 static uint32_t convFreq (xref2uint8_t ptr) {
-    uint32_t freq = (os_rlsbf4(ptr-1) >> 8) * 100;
+    uint32_t freq = (rlsbf4(ptr-1) >> 8) * 100;
     if( freq < US915_FREQ_MIN || freq > US915_FREQ_MAX )
         freq = 0;
     return freq;
@@ -893,8 +757,8 @@ bool Lmic::decodeFrame () {
     // Validate exact frame length
     // Note: device address was already read+evaluated in order to arrive here.
     int  fct   = d[OFF_DAT_FCT];
-    uint32_t addr  = os_rlsbf4(&d[OFF_DAT_ADDR]);
-    uint32_t seqno = os_rlsbf2(&d[OFF_DAT_SEQNO]);
+    uint32_t addr  = rlsbf4(&d[OFF_DAT_ADDR]);
+    uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
     int  olen  = fct & FCT_OPTLEN;
     int  ackup = (fct & FCT_ACK) != 0 ? 1 : 0;   // ACK last up frame
     int  poff  = OFF_DAT_OPTS+olen;
@@ -971,7 +835,7 @@ bool Lmic::decodeFrame () {
         }
         case MCMD_LADR_REQ: {
             uint8_t p1     = opts[oidx+1];            // txpow + DR
-            uint16_t chmap  = os_rlsbf2(&opts[oidx+2]);// list of enabled channels
+            uint16_t chmap  = rlsbf2(&opts[oidx+2]);// list of enabled channels
             uint8_t chpage = opts[oidx+4] & MCMD_LADR_CHPAGE_MASK;     // channel page
             uint8_t uprpt  = opts[oidx+4] & MCMD_LADR_REPEAT_MASK;     // up repeat count
             oidx += 5;
@@ -1211,7 +1075,7 @@ bool Lmic::processJoinAccept () {
 
     uint8_t hdr  = frame[0];
     uint8_t dlen = dataLen;
-    uint32_t mic  = os_rlsbf4(&frame[dlen-4]); // safe before modified by encrypt!
+    uint32_t mic  = rlsbf4(&frame[dlen-4]); // safe before modified by encrypt!
     if( (dlen != LEN_JA && dlen != LEN_JAEXT)
         || (hdr & (HDR_FTYPE|HDR_MAJOR)) != (HDR_FTYPE_JACC|HDR_MAJOR_V1) ) {
             //unexpected frame
@@ -1227,9 +1091,9 @@ bool Lmic::processJoinAccept () {
         return processJoinAcceptNoJoinFrame();
     }
 
-    uint32_t addr = os_rlsbf4(frame+OFF_JA_DEVADDR);
+    uint32_t addr = rlsbf4(frame+OFF_JA_DEVADDR);
     devaddr = addr;
-    netid = os_rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
+    netid = rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
 
 #if defined(CFG_eu868)
     initDefaultChannels(false);
@@ -1401,13 +1265,13 @@ void Lmic::buildDataFrame () {
     frame[OFF_DAT_FCT] = (dnConf | adrEnabled
                               | (adrAckReq >= 0 ? FCT_ADRARQ : 0)
                               | (end-OFF_DAT_OPTS));
-    os_wlsbf4(frame+OFF_DAT_ADDR,  devaddr);
+    wlsbf4(frame+OFF_DAT_ADDR,  devaddr);
 
     if( txCnt == 0 ) {
         seqnoUp += 1;
     } else {
     }
-    os_wlsbf2(frame+OFF_DAT_SEQNO, seqnoUp-1);
+    wlsbf2(frame+OFF_DAT_SEQNO, seqnoUp-1);
 
     // Clear pending DN confirmation
     dnConf = 0;
@@ -1444,7 +1308,7 @@ void Lmic::buildJoinRequest (uint8_t ftype) {
     d[OFF_JR_HDR] = ftype;
     os_getArtEui(d + OFF_JR_ARTEUI);
     os_getDevEui(d + OFF_JR_DEVEUI);
-    os_wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
+    wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
     aes_appendMic0(d, OFF_JR_MIC);
 
     dataLen = LEN_JR;

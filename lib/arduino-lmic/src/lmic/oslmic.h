@@ -43,10 +43,7 @@ typedef const char* str_t;
 #define ON_LMIC_EVENT(ev)  onEvent(ev)
 #define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
 
-extern uint32_t AESAUX[];
-extern uint32_t AESKEY[];
-#define AESkey ((uint8_t*)AESKEY)
-#define AESaux ((uint8_t*)AESAUX)
+
 
 uint8_t radio_rand1 (void);
 
@@ -66,9 +63,7 @@ void os_init (void);
 
 #ifndef HAS_os_calls
 
-#ifndef os_getDevKey
-void os_getDevKey (uint8_t* buf);
-#endif
+
 #ifndef os_getArtEui
 void os_getArtEui (uint8_t* buf);
 #endif
@@ -88,38 +83,13 @@ void os_radio (uint8_t mode);
 uint8_t os_getBattLevel (void);
 #endif
 
-#ifndef os_rlsbf4
-//! Read 32-bit quantity from given pointer in little endian byte order.
-uint32_t os_rlsbf4 (const uint8_t* buf);
-#endif
-#ifndef os_wlsbf4
-//! Write 32-bit quntity into buffer in little endian byte order.
-void os_wlsbf4 (const uint8_t* buf, uint32_t value);
-#endif
-#ifndef os_rmsbf4
-//! Read 32-bit quantity from given pointer in big endian byte order.
-uint32_t os_rmsbf4 (const uint8_t* buf);
-#endif
-#ifndef os_wmsbf4
-//! Write 32-bit quntity into buffer in big endian byte order.
-void os_wmsbf4 (const uint8_t* buf, uint32_t value);
-#endif
-#ifndef os_rlsbf2
-//! Read 16-bit quantity from given pointer in little endian byte order.
-uint16_t os_rlsbf2 (const uint8_t* buf);
-#endif
-#ifndef os_wlsbf2
-//! Write 16-bit quntity into buffer in little endian byte order.
-void os_wlsbf2 (const uint8_t* buf, uint16_t value);
-#endif
+
 
 //! Get random number (default impl for uint16_t).
 #ifndef os_getRndU2
 #define os_getRndU2() ((uint16_t)((radio_rand1()<<8)|radio_rand1()))
 #endif
-#ifndef os_crc16
-uint16_t os_crc16 (uint8_t* d, uint len);
-#endif
+
 
 #endif // !HAS_os_calls
 
@@ -201,24 +171,7 @@ uint16_t os_crc16 (uint8_t* d, uint len);
     #define PRINT_DEBUG_2(str, ...) 
 #endif
 
-// ======================================================================
-// AES support
-// !!Keep in sync with lorabase.hpp!!
 
-#ifndef AES_ENC  // if AES_ENC is defined as macro all other values must be too
-#define AES_ENC       0x00
-#define AES_DEC       0x01
-#define AES_MIC       0x02
-#define AES_CTR       0x04
-#define AES_MICNOAUX  0x08
-#endif
-#ifndef AESkey  // if AESkey is defined as macro all other values must be too
-extern xref2uint8_t AESkey;
-extern xref2uint8_t AESaux;
-#endif
-#ifndef os_aes
-uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len);
-#endif
 
 
 class OsJobBase;
