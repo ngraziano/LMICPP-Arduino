@@ -11,6 +11,7 @@
 
 //! \file
 #include "lmic.h"
+#include <algorithm>
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -430,9 +431,8 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
 
 void Lmic::initDefaultChannels (bool join) {
     PRINT_DEBUG_2("Init Default Channel join?=%d",join);
-    os_clearMem(&channelFreq, sizeof(channelFreq));
-    os_clearMem(&channelDrMap, sizeof(channelDrMap));
-    os_clearMem(&bands, sizeof(bands));
+    std::fill(channelFreq, channelFreq + MAX_CHANNELS, 0);
+    std::fill(channelDrMap, channelDrMap + MAX_CHANNELS, 0);
     
 
     channelMap = 0x07;
