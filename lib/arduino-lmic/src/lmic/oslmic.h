@@ -37,14 +37,6 @@ typedef const char* str_t;
 #define ASSERT(cond) /**/
 #endif
 
-typedef   struct chnldef_t chnldef_t;
-typedef   struct rxsched_t rxsched_t;
-typedef   struct bcninfo_t bcninfo_t;
-#define TYPEDEF_xref2rps_t     typedef         rps_t* xref2rps_t
-#define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
-#define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
-#define TYPEDEF_xref2band_t    typedef        band_t* xref2band_t
-
 
 #define SIZEOFEXPR(x) sizeof(x)
 

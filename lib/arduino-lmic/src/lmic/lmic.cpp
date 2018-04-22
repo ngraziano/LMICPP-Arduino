@@ -519,7 +519,7 @@ void Lmic::updateTx (ostime_t txbeg) {
     // Update global/band specific duty cycle stats
     ostime_t airtime = calcAirTime(rps, dataLen);
     // Update channel/global duty cycle stats
-    xref2band_t band = &bands[freq & 0x3];
+    band_t* band = &bands[freq & 0x3];
     freq  = newfreq & ~(uint32_t)3;
     txpow = band->txpow;
     band->avail = txbeg + airtime * band->txcap;

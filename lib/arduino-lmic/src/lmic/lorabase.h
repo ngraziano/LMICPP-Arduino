@@ -27,7 +27,6 @@ typedef uint8_t bw_t;
 typedef uint8_t dr_t;
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
 typedef uint16_t rps_t;
-TYPEDEF_xref2rps_t;
 
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };

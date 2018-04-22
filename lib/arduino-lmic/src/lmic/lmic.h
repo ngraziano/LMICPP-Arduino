@@ -53,7 +53,6 @@ struct band_t {
     uint8_t     lastchnl;  // last used channel
     ostime_t avail;     // channel is blocked until this time
 };
-TYPEDEF_xref2band_t; //!< \internal
 
 #elif defined(CFG_us915)  // US915 spectrum =================================================
 
