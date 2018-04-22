@@ -12,6 +12,7 @@
 #ifndef _hal_hpp_
 #define _hal_hpp_
 
+#include <stdint.h>
 #include <stdbool.h>
 
 /*
