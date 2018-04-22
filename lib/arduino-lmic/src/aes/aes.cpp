@@ -33,9 +33,10 @@
 #include "../lmic/bufferpack.h"
 #include <algorithm>
 
+// global area for passing parameters (aux, key)
+uint8_t AESkey[16];
+uint8_t AESaux[16];
 
-// ================================================================================
-// BEG AES
 
 static void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
     std::fill(AESaux, AESaux+16, 0);
@@ -110,9 +111,6 @@ void aes_sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, 
 // END AES
 // ================================================================================
 
-// global area for passing parameters (aux, key)
-uint32_t AESAUX[16/sizeof(uint32_t)];
-uint32_t AESKEY[16/sizeof(uint32_t)];
 
 // Shift the given buffer left one bit
 static void shift_left(uint8_t* buf, uint8_t len) {

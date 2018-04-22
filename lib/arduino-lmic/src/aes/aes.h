@@ -25,11 +25,8 @@ void os_getDevKey (uint8_t* buf);
 void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
 
 
-extern uint32_t AESAUX[];
-extern uint32_t AESKEY[];
-#define AESkey ((uint8_t*)AESKEY)
-#define AESaux ((uint8_t*)AESAUX)
-
+extern uint8_t AESkey[];
+extern uint8_t AESaux[];
 
 int aes_verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
 int aes_verifyMic0 (uint8_t* pdu, int len);
