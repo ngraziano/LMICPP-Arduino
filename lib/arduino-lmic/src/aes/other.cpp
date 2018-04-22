@@ -28,6 +28,8 @@
  */
 
 #include "../lmic/oslmic.h"
+#include <algorithm>
+
 
 #if !defined(USE_ORIGINAL_AES)
 
@@ -57,7 +59,7 @@ static void os_aes_cmac(xref2uint8_t buf, uint16_t len, uint8_t prepend_aux) {
     if (prepend_aux)
         lmic_aes_encrypt(AESaux, AESkey);
     else
-        memset (AESaux, 0, 16);
+        std::fill(AESaux, AESaux+16, 0);
 
     while (len > 0) {
         uint8_t need_padding = 0;
@@ -78,7 +80,7 @@ static void os_aes_cmac(xref2uint8_t buf, uint16_t len, uint8_t prepend_aux) {
             // by encrypting the all-zeroes block and then applying some
             // shifts and xor on that.
             uint8_t final_key[16];
-            memset(final_key, 0, sizeof(final_key));
+            std::fill(final_key,final_key+16,0);            
             lmic_aes_encrypt(final_key, AESkey);
 
             // Calculate K1

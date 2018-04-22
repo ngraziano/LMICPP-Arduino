@@ -126,7 +126,7 @@ uint16_t os_crc16 (xref2uint8_t data, uint len) {
 // BEG AES
 
 static void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
-    os_clearMem(AESaux,16);
+    std::fill(AESaux, AESaux+16, 0);
     AESaux[0]  = 0x49;
     AESaux[5]  = dndir?1:0;
     AESaux[15] = len;
@@ -171,7 +171,7 @@ static void aes_encrypt (xref2uint8_t pdu, int len) {
 static void aes_cipher (xref2cuint8_t key, uint32_t devaddr, uint32_t seqno, int dndir, xref2uint8_t payload, int len) {
     if( len <= 0 )
         return;
-    os_clearMem(AESaux, 16);
+    std::fill(AESaux, AESaux+16, 0);
     AESaux[0] = AESaux[15] = 1; // mode=cipher / dir=down / block counter=1
     AESaux[5] = dndir?1:0;
     os_wlsbf4(AESaux+ 6,devaddr);
