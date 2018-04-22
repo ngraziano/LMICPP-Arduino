@@ -18,6 +18,7 @@
 // You should not, however, change the lmic.[hc]
 
 #include "config.h"
+#include "osticks.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -38,7 +39,6 @@ typedef const char* str_t;
 #endif
 
 
-#define SIZEOFEXPR(x) sizeof(x)
 
 #define ON_LMIC_EVENT(ev)  onEvent(ev)
 #define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
@@ -49,8 +49,6 @@ extern uint32_t AESKEY[];
 #define AESaux ((uint8_t*)AESAUX)
 
 uint8_t radio_rand1 (void);
-#define os_getRndU1() radio_rand1()
-
 
 void radio_init (void);
 void radio_irq_handler (uint8_t dio, int32_t trigger);
@@ -64,27 +62,6 @@ void os_init (void);
 #endif
 #ifndef TX_RAMPUP
 #define TX_RAMPUP  (us2osticks(2000))
-#endif
-
-#ifndef OSTICKS_PER_SEC
-#define OSTICKS_PER_SEC 32768
-#elif OSTICKS_PER_SEC < 10000 || OSTICKS_PER_SEC > 64516
-#error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
-#endif
-
-typedef int32_t  ostime_t;
-
-#if !HAS_ostick_conv
-#define us2osticks(us)   ((ostime_t)( ((int64_t)(us) * OSTICKS_PER_SEC) / 1000000))
-#define ms2osticks(ms)   ((ostime_t)( ((int64_t)(ms) * OSTICKS_PER_SEC)    / 1000))
-#define sec2osticks(sec) ((ostime_t)( (int64_t)(sec) * OSTICKS_PER_SEC))
-#define osticks2ms(os)   ((int32_t)(((os)*(int64_t)1000    ) / OSTICKS_PER_SEC))
-#define osticks2us(os)   ((int32_t)(((os)*(int64_t)1000000 ) / OSTICKS_PER_SEC))
-// Special versions
-#define us2osticksCeil(us)  ((ostime_t)( ((int64_t)(us) * OSTICKS_PER_SEC + 999999) / 1000000))
-#define us2osticksRound(us) ((ostime_t)( ((int64_t)(us) * OSTICKS_PER_SEC + 500000) / 1000000))
-#define ms2osticksCeil(ms)  ((ostime_t)( ((int64_t)(ms) * OSTICKS_PER_SEC + 999) / 1000))
-#define ms2osticksRound(ms) ((ostime_t)( ((int64_t)(ms) * OSTICKS_PER_SEC + 500) / 1000))
 #endif
 
 #ifndef HAS_os_calls
@@ -138,7 +115,7 @@ void os_wlsbf2 (const uint8_t* buf, uint16_t value);
 
 //! Get random number (default impl for uint16_t).
 #ifndef os_getRndU2
-#define os_getRndU2() ((uint16_t)((os_getRndU1()<<8)|os_getRndU1()))
+#define os_getRndU2() ((uint16_t)((radio_rand1()<<8)|radio_rand1()))
 #endif
 #ifndef os_crc16
 uint16_t os_crc16 (uint8_t* d, uint len);

@@ -444,13 +444,13 @@ void Lmic::initDefaultChannels (bool join) {
 
     bands[BAND_MILLI].txcap    = 1000;  // 0.1%
     bands[BAND_MILLI].txpow    = 14;
-    bands[BAND_MILLI].lastchnl = os_getRndU1() % MAX_CHANNELS;
+    bands[BAND_MILLI].lastchnl = radio_rand1() % MAX_CHANNELS;
     bands[BAND_CENTI].txcap    = 100;   // 1%
     bands[BAND_CENTI].txpow    = 14;
-    bands[BAND_CENTI].lastchnl = os_getRndU1() % MAX_CHANNELS;
+    bands[BAND_CENTI].lastchnl = radio_rand1() % MAX_CHANNELS;
     bands[BAND_DECI ].txcap    = 10;    // 10%
     bands[BAND_DECI ].txpow    = 27;
-    bands[BAND_DECI ].lastchnl = os_getRndU1() % MAX_CHANNELS;
+    bands[BAND_DECI ].lastchnl = radio_rand1() % MAX_CHANNELS;
     bands[BAND_MILLI].avail = os_getTime();
     bands[BAND_CENTI].avail = os_getTime();
     bands[BAND_DECI ].avail = os_getTime();
@@ -463,7 +463,7 @@ bool Lmic::setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap) {
     b->txpow = txpow;
     b->txcap = txcap;
     b->avail = os_getTime();
-    b->lastchnl = os_getRndU1() % MAX_CHANNELS;
+    b->lastchnl = radio_rand1() % MAX_CHANNELS;
     return true;
 }
 
@@ -593,7 +593,7 @@ void Lmic::setRx1Params() {
 
 #if !defined(DISABLE_JOIN)
 void Lmic::initJoinLoop () {
-    txChnl = os_getRndU1() % 3;
+    txChnl = radio_rand1() % 3;
     adrTxPow = 14;
     setDrJoin(DR_SF7);
     initDefaultChannels(true);
@@ -748,7 +748,7 @@ void Lmic::updateTx (ostime_t txbeg) {
 // US does not have duty cycling - return now as earliest TX time
 ostime_t Lmic::nextTx (ostime_t now) {
     if( chRnd==0 )
-        chRnd = os_getRndU1() & 0x3F;
+        chRnd = radio_rand1() & 0x3F;
     if( datarate >= DR_SF8C ) { // 500kHz
         uint8_t map = channelMap[64/16]&0xFF;
         for( uint8_t i=0; i<8; i++ ) {
@@ -799,7 +799,7 @@ ostime_t Lmic::nextJoinState (void) {
         txChnl = 64+(txChnl&7);
         setDrJoin(DR_SF8C);
     } else {
-        txChnl = os_getRndU1() & 0x3F;
+        txChnl = radio_rand1() & 0x3F;
         int8_t dr = DR_SF7 - ++txCnt;
         if( dr < DR_SF10 ) {
             dr = DR_SF10;
@@ -1705,7 +1705,7 @@ void Lmic::setTxData (void) {
 
 //
 int Lmic::setTxData2 (uint8_t port, uint8_t* data, uint8_t dlen, uint8_t confirmed) {
-    if( dlen > SIZEOFEXPR(pendTxData) )
+    if( dlen > sizeof(pendTxData) )
         return -2;
     if(data)
         std::copy(data, data+dlen, pendTxData);

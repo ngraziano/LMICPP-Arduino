@@ -558,13 +558,13 @@ uint8_t radio_rssi () {
 }
 
 static CONST_TABLE(uint16_t, LORA_RXDONE_FIXUP)[] = {
-    [FSK]  =     us2osticks(0), // (   0 ticks)
-    [SF7]  =     us2osticks(0), // (   0 ticks)
-    [SF8]  =  us2osticks(1648), // (  54 ticks)
-    [SF9]  =  us2osticks(3265), // ( 107 ticks)
-    [SF10] =  us2osticks(7049), // ( 231 ticks)
-    [SF11] = us2osticks(13641), // ( 447 ticks)
-    [SF12] = us2osticks(31189), // (1022 ticks)
+    [FSK]  = (uint16_t)    us2osticks(0), // (   0 ticks)
+    [SF7]  = (uint16_t)    us2osticks(0), // (   0 ticks)
+    [SF8]  = (uint16_t) us2osticks(1648), 
+    [SF9]  = (uint16_t) us2osticks(3265), 
+    [SF10] = (uint16_t) us2osticks(7049), 
+    [SF11] = (uint16_t)us2osticks(13641), 
+    [SF12] = (uint16_t)us2osticks(31189), 
 };
 
 // called by hal ext IRQ handler
