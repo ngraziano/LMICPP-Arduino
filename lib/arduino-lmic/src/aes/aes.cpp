@@ -50,33 +50,39 @@ void Aes::micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
 int Aes::verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
     micB0(devaddr, seqno, dndir, len);
     std::copy(key, key+16, AESkey);
-    return os_aes(AES_MIC, pdu, len) == rmsbf4(pdu+len);
+    os_aes_cmac(pdu, len,1);
+    return rmsbf4(AESaux) == rmsbf4(pdu+len);
 }
 
 
 void Aes::appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
     micB0(devaddr, seqno, dndir, len);
-    std::copy(key, key+16, AESkey);    
+    std::copy(key, key+16, AESkey);
+    os_aes_cmac(pdu, len, 1);
     // MSB because of internal structure of AES
-    wmsbf4(pdu+len, os_aes(AES_MIC, pdu, len));
+    wmsbf4(pdu+len, rmsbf4(AESaux));
 }
 
 
 void Aes::appendMic0 (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
-    wmsbf4(pdu+len, os_aes(AES_MIC|AES_MICNOAUX, pdu, len));  // MSB because of internal structure of AES
+    os_aes_cmac(pdu, len, 0);
+    wmsbf4(pdu+len, rmsbf4(AESaux));  // MSB because of internal structure of AES
 }
 
 
 int Aes::verifyMic0 (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
-    return os_aes(AES_MIC|AES_MICNOAUX, pdu, len) == rmsbf4(pdu+len);
+    os_aes_cmac(pdu, len, 0);
+    return rmsbf4(AESaux) == rmsbf4(pdu+len);
 }
 
 
 void Aes::encrypt (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
-    os_aes(AES_ENC, pdu, len);
+    // TODO: Check / handle when len is not a multiple of 16    
+    for (uint8_t i = 0; i < len; i += 16)
+        lmic_aes_encrypt(pdu+i, AESkey);
 }
 
 
@@ -88,8 +94,8 @@ void Aes::cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndi
     AESaux[5] = dndir?1:0;
     wlsbf4(AESaux+ 6,devaddr);
     wlsbf4(AESaux+10,seqno);
-    std::copy(key, key+16, AESkey);    
-    os_aes(AES_CTR, payload, len);
+    std::copy(key, key+16, AESkey);
+    os_aes_ctr(payload, len);
 }
 
 
@@ -102,9 +108,9 @@ void Aes::sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey,
     artkey[0] = 0x02;
 
     os_getDevKey(AESkey);
-    os_aes(AES_ENC, nwkkey, 16);
+    lmic_aes_encrypt(nwkkey, AESkey);
     os_getDevKey(AESkey);
-    os_aes(AES_ENC, artkey, 16);
+    lmic_aes_encrypt(artkey, AESkey);
 }
 
 // END AES
@@ -194,23 +200,4 @@ void Aes::os_aes_ctr (uint8_t* buf, uint16_t len) {
         // Increment the block index byte
         AESaux[15]++;
     }
-}
-
-uint32_t Aes::os_aes (uint8_t mode, uint8_t* buf, uint16_t len) {
-    switch (mode & ~AES_MICNOAUX) {
-        case AES_MIC:
-            os_aes_cmac(buf, len, /* prepend_aux */ !(mode & AES_MICNOAUX));
-            return rmsbf4(AESaux);
-
-        case AES_ENC:
-            // TODO: Check / handle when len is not a multiple of 16
-            for (uint8_t i = 0; i < len; i += 16)
-                lmic_aes_encrypt(buf+i, AESkey);
-            break;
-
-        case AES_CTR:
-            os_aes_ctr(buf, len);
-            break;
-    }
-    return 0;
 }

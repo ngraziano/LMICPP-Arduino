@@ -543,7 +543,7 @@ uint8_t radio_rand1 () {
     uint8_t i = randbuf[0];
     ASSERT( i != 0 );
     if( i==16 ) {
-        LMIC.aes.os_aes(AES_ENC, randbuf, 16); // encrypt seed with any key
+        LMIC.aes.encrypt(randbuf, 16); // encrypt seed with any key
         i = 0;
     }
     uint8_t v = randbuf[i++];
