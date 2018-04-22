@@ -20,23 +20,31 @@ void os_getDevKey (uint8_t* buf);
 #define AES_MICNOAUX  0x08
 #endif
 
-
-// This should be defined elsewhere
 void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
 
+class Aes {
+    private:
+    //  area for passing parameters (aux, key)
+    uint8_t AESkey[16];
+    uint8_t AESaux[16];
 
-extern uint8_t AESkey[];
-extern uint8_t AESaux[];
+    void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len);
 
-int aes_verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
-int aes_verifyMic0 (uint8_t* pdu, int len);
-void aes_cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len);
-void aes_encrypt (uint8_t* pdu, int len);
-void aes_sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, uint8_t* artkey);
-void aes_appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
-void aes_appendMic0 (uint8_t* pdu, int len);
+    void os_aes_ctr (uint8_t* buf, uint16_t len);
+    void os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux);
 
+    public:
+    int verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
+    int verifyMic0 (uint8_t* pdu, int len);
+    void cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len);
+    void encrypt (uint8_t* pdu, int len);
+    void sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, uint8_t* artkey);
+    void appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
+    void appendMic0 (uint8_t* pdu, int len);
 
-uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len);
+    // see if private
+    uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len);
+
+};
 
 #endif // __aes_h__

@@ -783,7 +783,7 @@ bool Lmic::decodeFrame () {
 
     seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
-    if( !aes_verifyMic(nwkKey, devaddr, seqno, /*dn*/1, d, pend) ) {
+    if( !aes.verifyMic(nwkKey, devaddr, seqno, /*dn*/1, d, pend) ) {
         PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
         dataLen = 0;
         return false;
@@ -923,7 +923,7 @@ bool Lmic::decodeFrame () {
         // Handle payload only if not a replay
         // Decrypt payload - if any
         if( port >= 0  &&  pend-poff > 0 )
-            aes_cipher(port <= 0 ? nwkKey : artKey, devaddr, seqno, /*dn*/1, d+poff, pend-poff);
+            aes.cipher(port <= 0 ? nwkKey : artKey, devaddr, seqno, /*dn*/1, d+poff, pend-poff);
     } else {
         // replay
         // not handle
@@ -1083,8 +1083,8 @@ bool Lmic::processJoinAccept () {
             return false;
         return processJoinAcceptNoJoinFrame();
     }
-    aes_encrypt(frame+1, dlen-1);
-    if( !aes_verifyMic0(frame, dlen-4) ) {
+    aes.encrypt(frame+1, dlen-1);
+    if( !aes.verifyMic0(frame, dlen-4) ) {
         //bad mic
         if( (txrxFlags & TXRX_DNW1) != 0 )
             return false;
@@ -1117,7 +1117,7 @@ bool Lmic::processJoinAccept () {
     }
 
     // already incremented when JOIN REQ got sent off
-    aes_sessKeys(devNonce-1, &frame[OFF_JA_ARTNONCE], nwkKey, artKey);
+    aes.sessKeys(devNonce-1, &frame[OFF_JA_ARTNONCE], nwkKey, artKey);
 
     ASSERT((opmode & (OP_JOINING|OP_REJOIN))!=0);
     if( (opmode & OP_REJOIN) != 0 ) {
@@ -1284,11 +1284,11 @@ void Lmic::buildDataFrame () {
         }
         frame[end] = pendTxPort;
         std::copy(pendTxData,pendTxData+dlen,frame+end+1);
-        aes_cipher(pendTxPort==0 ? nwkKey : artKey,
+        aes.cipher(pendTxPort==0 ? nwkKey : artKey,
                    devaddr, seqnoUp-1,
                    /*up*/0, frame+end+1, dlen);
     }
-    aes_appendMic(nwkKey, devaddr, seqnoUp-1, /*up*/0, frame, flen-4);
+    aes.appendMic(nwkKey, devaddr, seqnoUp-1, /*up*/0, frame, flen-4);
 
     dataLen = flen;
 }
@@ -1309,7 +1309,7 @@ void Lmic::buildJoinRequest (uint8_t ftype) {
     os_getArtEui(d + OFF_JR_ARTEUI);
     os_getDevEui(d + OFF_JR_DEVEUI);
     wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
-    aes_appendMic0(d, OFF_JR_MIC);
+    aes.appendMic0(d, OFF_JR_MIC);
 
     dataLen = LEN_JR;
     devNonce++;

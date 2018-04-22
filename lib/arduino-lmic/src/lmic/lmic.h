@@ -17,7 +17,7 @@
 
 #include "oslmic.h"
 #include "lorabase.h"
-
+#include "../aes/aes.h"
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -124,6 +124,7 @@ public:
     uint8_t   dndr = 0;
     int8_t    txpow = 0;     // dBm
 
+    Aes         aes;
 private:
     OsJobType<Lmic>     osjob {  this, OSS };
 
