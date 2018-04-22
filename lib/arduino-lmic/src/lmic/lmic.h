@@ -273,7 +273,7 @@ public:
     // set default/start DR/txpow
     void setDrTxpow (uint8_t dr, int8_t pow);
     void setLinkCheckMode (bool enabled);
-    void setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey);
+    void setSession (uint32_t netid, devaddr_t devaddr, uint8_t* nwkKey, uint8_t* artKey);
 
     bool setupChannel (uint8_t channel, uint32_t newfreq, uint16_t drmap, int8_t band);
     void disableChannel (uint8_t channel);
@@ -304,7 +304,7 @@ public:
     
     void clrTxData();
     void setTxData();
-    int setTxData2(uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed);
+    int setTxData2(uint8_t port, uint8_t* data, uint8_t dlen, uint8_t confirmed);
     void sendAlive();
     void setClockError(uint16_t error);
 

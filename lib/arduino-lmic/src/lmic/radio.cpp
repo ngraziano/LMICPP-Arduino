@@ -188,7 +188,7 @@ static uint8_t readReg (uint8_t addr) {
     return val;
 }
 
-static void writeBuf (uint8_t addr, xref2uint8_t buf, uint8_t len) {
+static void writeBuf (uint8_t addr, uint8_t* buf, uint8_t len) {
     hal_pin_nss(0);
     hal_spi(addr | 0x80);
     for (uint8_t i=0; i<len; i++) {
@@ -197,7 +197,7 @@ static void writeBuf (uint8_t addr, xref2uint8_t buf, uint8_t len) {
     hal_pin_nss(1);
 }
 
-static void readBuf (uint8_t addr, xref2uint8_t buf, uint8_t len) {
+static void readBuf (uint8_t addr, uint8_t* buf, uint8_t len) {
     hal_pin_nss(0);
     hal_spi(addr & 0x7F);
     for (uint8_t i=0; i<len; i++) {

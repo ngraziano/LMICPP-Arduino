@@ -49,34 +49,34 @@ Lmic LMIC;
 #if !defined(HAS_os_calls)
 
 #if !defined(os_rlsbf2)
-uint16_t os_rlsbf2 (xref2cuint8_t buf) {
+uint16_t os_rlsbf2 (const uint8_t* buf) {
     return (uint16_t)((uint16_t)buf[0] | ((uint16_t)buf[1]<<8));
 }
 #endif
 
 #if !defined(os_rlsbf4)
-uint32_t os_rlsbf4 (xref2cuint8_t buf) {
+uint32_t os_rlsbf4 (const uint8_t* buf) {
     return (uint32_t)((uint32_t)buf[0] | ((uint32_t)buf[1]<<8) | ((uint32_t)buf[2]<<16) | ((uint32_t)buf[3]<<24));
 }
 #endif
 
 
 #if !defined(os_rmsbf4)
-uint32_t os_rmsbf4 (xref2cuint8_t buf) {
+uint32_t os_rmsbf4 (const uint8_t* buf) {
     return (uint32_t)((uint32_t)buf[3] | ((uint32_t)buf[2]<<8) | ((uint32_t)buf[1]<<16) | ((uint32_t)buf[0]<<24));
 }
 #endif
 
 
 #if !defined(os_wlsbf2)
-void os_wlsbf2 (xref2uint8_t buf, uint16_t v) {
+void os_wlsbf2 (uint8_t* buf, uint16_t v) {
     buf[0] = v;
     buf[1] = v>>8;
 }
 #endif
 
 #if !defined(os_wlsbf4)
-void os_wlsbf4 (xref2uint8_t buf, uint32_t v) {
+void os_wlsbf4 (uint8_t* buf, uint32_t v) {
     buf[0] = v;
     buf[1] = v>>8;
     buf[2] = v>>16;
@@ -85,7 +85,7 @@ void os_wlsbf4 (xref2uint8_t buf, uint32_t v) {
 #endif
 
 #if !defined(os_wmsbf4)
-void os_wmsbf4 (xref2uint8_t buf, uint32_t v) {
+void os_wmsbf4 (uint8_t* buf, uint32_t v) {
     buf[3] = v;
     buf[2] = v>>8;
     buf[1] = v>>16;
@@ -101,7 +101,7 @@ uint8_t os_getBattLevel (void) {
 
 #if !defined(os_crc16)
 // New CRC-16 CCITT(XMODEM) checksum for beacons:
-uint16_t os_crc16 (xref2uint8_t data, uint len) {
+uint16_t os_crc16 (uint8_t* data, uint len) {
     uint16_t remainder = 0;
     uint16_t polynomial = 0x1021;
     for( uint i = 0; i < len; i++ ) {
@@ -135,40 +135,40 @@ static void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
 }
 
 
-static int aes_verifyMic (xref2cuint8_t key, uint32_t devaddr, uint32_t seqno, int dndir, xref2uint8_t pdu, int len) {
+static int aes_verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
     micB0(devaddr, seqno, dndir, len);
-    os_copyMem(AESkey,key,16);
+    std::copy(key, key+16, AESkey);
     return os_aes(AES_MIC, pdu, len) == os_rmsbf4(pdu+len);
 }
 
 
-static void aes_appendMic (xref2cuint8_t key, uint32_t devaddr, uint32_t seqno, int dndir, xref2uint8_t pdu, int len) {
+static void aes_appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
     micB0(devaddr, seqno, dndir, len);
-    os_copyMem(AESkey,key,16);
+    std::copy(key, key+16, AESkey);    
     // MSB because of internal structure of AES
     os_wmsbf4(pdu+len, os_aes(AES_MIC, pdu, len));
 }
 
 
-static void aes_appendMic0 (xref2uint8_t pdu, int len) {
+static void aes_appendMic0 (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
     os_wmsbf4(pdu+len, os_aes(AES_MIC|AES_MICNOAUX, pdu, len));  // MSB because of internal structure of AES
 }
 
 
-static int aes_verifyMic0 (xref2uint8_t pdu, int len) {
+static int aes_verifyMic0 (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
     return os_aes(AES_MIC|AES_MICNOAUX, pdu, len) == os_rmsbf4(pdu+len);
 }
 
 
-static void aes_encrypt (xref2uint8_t pdu, int len) {
+static void aes_encrypt (uint8_t* pdu, int len) {
     os_getDevKey(AESkey);
     os_aes(AES_ENC, pdu, len);
 }
 
 
-static void aes_cipher (xref2cuint8_t key, uint32_t devaddr, uint32_t seqno, int dndir, xref2uint8_t payload, int len) {
+static void aes_cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len) {
     if( len <= 0 )
         return;
     std::fill(AESaux, AESaux+16, 0);
@@ -176,17 +176,17 @@ static void aes_cipher (xref2cuint8_t key, uint32_t devaddr, uint32_t seqno, int
     AESaux[5] = dndir?1:0;
     os_wlsbf4(AESaux+ 6,devaddr);
     os_wlsbf4(AESaux+10,seqno);
-    os_copyMem(AESkey,key,16);
+    std::copy(key, key+16, AESkey);    
     os_aes(AES_CTR, payload, len);
 }
 
 
-static void aes_sessKeys (uint16_t devnonce, xref2cuint8_t artnonce, xref2uint8_t nwkkey, xref2uint8_t artkey) {
-    os_clearMem(nwkkey, 16);
+static void aes_sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, uint8_t* artkey) {
+    std::fill(nwkkey,nwkkey+16,0);
     nwkkey[0] = 0x01;
-    os_copyMem(nwkkey+1, artnonce, LEN_ARTNONCE+LEN_NETID);
+    std::copy(artnonce, artnonce+LEN_ARTNONCE+LEN_NETID,nwkkey+1);
     os_wlsbf2(nwkkey+1+LEN_ARTNONCE+LEN_NETID, devnonce);
-    os_copyMem(artkey, nwkkey, 16);
+    std::copy(nwkkey, nwkkey+16, artkey);
     artkey[0] = 0x02;
 
     os_getDevKey(AESkey);
@@ -494,7 +494,7 @@ void Lmic::disableChannel (uint8_t channel) {
     channelMap &= ~(1<<channel);
 }
 
-static uint32_t convFreq (xref2uint8_t ptr) {
+static uint32_t convFreq (uint8_t* ptr) {
     uint32_t newfreq = (os_rlsbf4(ptr-1) >> 8) * 100;
     if( newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX )
         newfreq = 0;
@@ -877,7 +877,7 @@ void Lmic::stateJustJoined () {
 // ================================================================================
 // Decoding frames
 bool Lmic::decodeFrame () {
-    xref2uint8_t d = frame;
+    uint8_t* d = frame;
     uint8_t hdr    = d[0];
     uint8_t ftype  = hdr & HDR_FTYPE;
     int  dlen   = dataLen;
@@ -1419,7 +1419,7 @@ void Lmic::buildDataFrame () {
             if( txCnt == 0 ) txCnt = 1;
         }
         frame[end] = pendTxPort;
-        os_copyMem(frame+end+1, pendTxData, dlen);
+        std::copy(pendTxData,pendTxData+dlen,frame+end+1);
         aes_cipher(pendTxPort==0 ? nwkKey : artKey,
                    devaddr, seqnoUp-1,
                    /*up*/0, frame+end+1, dlen);
@@ -1440,7 +1440,7 @@ void Lmic::buildDataFrame () {
 void Lmic::buildJoinRequest (uint8_t ftype) {
     // Do not use pendTxData since we might have a pending
     // user level frame in there. Use RX holding area instead.
-    xref2uint8_t d = frame;
+    uint8_t* d = frame;
     d[OFF_JR_HDR] = ftype;
     os_getArtEui(d + OFF_JR_ARTEUI);
     os_getDevEui(d + OFF_JR_DEVEUI);
@@ -1704,11 +1704,11 @@ void Lmic::setTxData (void) {
 }
 
 //
-int Lmic::setTxData2 (uint8_t port, xref2uint8_t data, uint8_t dlen, uint8_t confirmed) {
+int Lmic::setTxData2 (uint8_t port, uint8_t* data, uint8_t dlen, uint8_t confirmed) {
     if( dlen > SIZEOFEXPR(pendTxData) )
         return -2;
-    if( data != (xref2uint8_t)0 )
-        os_copyMem(pendTxData, data, dlen);
+    if(data)
+        std::copy(data, data+dlen, pendTxData);
     pendTxConf = confirmed;
     pendTxPort = port;
     pendTxLen  = dlen;
@@ -1744,13 +1744,13 @@ void Lmic::tryRejoin (void) {
 //!     If NULL the caller has copied the key into `nwkKey` before.
 //! \param artKey  the 16 byte application router session key used for message confidentiality.
 //!     If NULL the caller has copied the key into `artKey` before.
-void Lmic::setSession (uint32_t netid, devaddr_t devaddr, xref2uint8_t nwkKey, xref2uint8_t artKey) {
+void Lmic::setSession (uint32_t netid, devaddr_t devaddr, uint8_t* nwkKey, uint8_t* artKey) {
     this->netid = netid;
     this->devaddr = devaddr;
-    if( nwkKey != (xref2uint8_t)0 )
-        os_copyMem(this->nwkKey, nwkKey, 16);
-    if( artKey != (xref2uint8_t)0 )
-        os_copyMem(this->artKey, artKey, 16);
+    if(nwkKey)
+        std::copy(nwkKey, nwkKey+16, this->nwkKey);
+    if( artKey )
+        std::copy(artKey, artKey+16, this->artKey);
 
 #if defined(CFG_eu868)
     initDefaultChannels(false);

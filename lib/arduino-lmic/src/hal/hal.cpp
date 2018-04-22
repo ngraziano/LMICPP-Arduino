@@ -239,8 +239,7 @@ static int uart_putchar (char c, FILE *)
 
 void hal_printf_init() {
     // create a FILE structure to reference our UART output function
-    static FILE uartout;
-    memset(&uartout, 0, sizeof(uartout));
+    static FILE uartout = {};
 
     // fill in the UART file descriptor with pointer to writer.
     fdev_setup_stream (&uartout, uart_putchar, NULL, _FDEV_SETUP_WRITE);

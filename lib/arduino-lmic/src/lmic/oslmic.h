@@ -37,16 +37,9 @@ typedef const char* str_t;
 #define ASSERT(cond) /**/
 #endif
 
-#define os_clearMem(a,b)   memset(a,0,b)
-#define os_copyMem(a,b,c)  memcpy(a,b,c)
-
-typedef     struct osjob_t osjob_t;
-typedef      struct band_t band_t;
 typedef   struct chnldef_t chnldef_t;
 typedef   struct rxsched_t rxsched_t;
 typedef   struct bcninfo_t bcninfo_t;
-typedef        const uint8_t* xref2cuint8_t;
-typedef              uint8_t* xref2uint8_t;
 #define TYPEDEF_xref2rps_t     typedef         rps_t* xref2rps_t
 #define TYPEDEF_xref2rxsched_t typedef     rxsched_t* xref2rxsched_t
 #define TYPEDEF_xref2chnldef_t typedef     chnldef_t* xref2chnldef_t
@@ -105,13 +98,13 @@ typedef int32_t  ostime_t;
 #ifndef HAS_os_calls
 
 #ifndef os_getDevKey
-void os_getDevKey (xref2uint8_t buf);
+void os_getDevKey (uint8_t* buf);
 #endif
 #ifndef os_getArtEui
-void os_getArtEui (xref2uint8_t buf);
+void os_getArtEui (uint8_t* buf);
 #endif
 #ifndef os_getDevEui
-void os_getDevEui (xref2uint8_t buf);
+void os_getDevEui (uint8_t* buf);
 #endif
 #ifndef os_getTime
 ostime_t os_getTime (void);
@@ -128,27 +121,27 @@ uint8_t os_getBattLevel (void);
 
 #ifndef os_rlsbf4
 //! Read 32-bit quantity from given pointer in little endian byte order.
-uint32_t os_rlsbf4 (xref2cuint8_t buf);
+uint32_t os_rlsbf4 (const uint8_t* buf);
 #endif
 #ifndef os_wlsbf4
 //! Write 32-bit quntity into buffer in little endian byte order.
-void os_wlsbf4 (xref2uint8_t buf, uint32_t value);
+void os_wlsbf4 (const uint8_t* buf, uint32_t value);
 #endif
 #ifndef os_rmsbf4
 //! Read 32-bit quantity from given pointer in big endian byte order.
-uint32_t os_rmsbf4 (xref2cuint8_t buf);
+uint32_t os_rmsbf4 (const uint8_t* buf);
 #endif
 #ifndef os_wmsbf4
 //! Write 32-bit quntity into buffer in big endian byte order.
-void os_wmsbf4 (xref2uint8_t buf, uint32_t value);
+void os_wmsbf4 (const uint8_t* buf, uint32_t value);
 #endif
 #ifndef os_rlsbf2
 //! Read 16-bit quantity from given pointer in little endian byte order.
-uint16_t os_rlsbf2 (xref2cuint8_t buf);
+uint16_t os_rlsbf2 (const uint8_t* buf);
 #endif
 #ifndef os_wlsbf2
 //! Write 16-bit quntity into buffer in little endian byte order.
-void os_wlsbf2 (xref2uint8_t buf, uint16_t value);
+void os_wlsbf2 (const uint8_t* buf, uint16_t value);
 #endif
 
 //! Get random number (default impl for uint16_t).
@@ -156,7 +149,7 @@ void os_wlsbf2 (xref2uint8_t buf, uint16_t value);
 #define os_getRndU2() ((uint16_t)((os_getRndU1()<<8)|os_getRndU1()))
 #endif
 #ifndef os_crc16
-uint16_t os_crc16 (xref2uint8_t d, uint len);
+uint16_t os_crc16 (uint8_t* d, uint len);
 #endif
 
 #endif // !HAS_os_calls
@@ -255,7 +248,7 @@ extern xref2uint8_t AESkey;
 extern xref2uint8_t AESaux;
 #endif
 #ifndef os_aes
-uint32_t os_aes (uint8_t mode, xref2uint8_t buf, uint16_t len);
+uint32_t os_aes (uint8_t mode, uint8_t* buf, uint16_t len);
 #endif
 
 
