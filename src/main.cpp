@@ -23,8 +23,6 @@ void os_getDevEui (uint8_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 // practice, a key taken from ttnctl can be copied as-is.
 // The key shown here is the semtech default key.
 
-void os_getDevKey (uint8_t* buf) {  memcpy_P(buf, APPKEY, 16);}
-
 
 uint16_t data[2] = {}; 
 
@@ -143,6 +141,10 @@ void setup() {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 
+    uint8_t buf[16];
+    memcpy_P(buf, APPKEY, 16);
+    LMIC.aes.setDevKey(buf);
+
     // set clock error to allow good connection.
     LMIC.setClockError (MAX_CLOCK_ERROR * 1 / 100);
 
@@ -185,7 +187,7 @@ void powersave(int32_t maxTime) {
     } else {
         return;
     }
-    #if LMIC_DEBUG_LEVEL > 1
+    #if LMIC_DEBUG_LEVEL > 2
         Serial.print(os_getTime());
         Serial.print(": Sleep :");
         Serial.println(duration_selected);
@@ -195,7 +197,7 @@ void powersave(int32_t maxTime) {
     hal_add_time_in_sleep(duration_selected);
     Serial.begin(BAUDRATE);
     delay(100);
-    #if LMIC_DEBUG_LEVEL > 1            
+    #if LMIC_DEBUG_LEVEL > 2            
         Serial.print(os_getTime());
         Serial.println(": wakeup");
     #endif

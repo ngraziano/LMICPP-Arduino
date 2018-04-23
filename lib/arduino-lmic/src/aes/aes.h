@@ -4,28 +4,29 @@
 #include "../lmic/config.h"
 #include <stdint.h>
 
-#ifndef os_getDevKey
-void os_getDevKey (uint8_t* buf);
-#endif
 
 // ======================================================================
 // AES support
 
 
-void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
+void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
 
 class Aes {
     private:
-    //  area for passing parameters (aux, key)
-    uint8_t AESkey[16];
-    uint8_t AESaux[16];
+    uint8_t AESDevKey[16];
 
-    void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len);
 
-    void os_aes_ctr (uint8_t* buf, uint16_t len);
-    void os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux);
+
+    static void micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len, uint8_t buf[16]);
+
+    static void os_aes_ctr (uint8_t* buf, uint16_t len, const uint8_t key[16], uint8_t result[16]);
+    static void os_aes_cmac(const uint8_t* buf, uint16_t len, bool prepend_aux, const uint8_t key[16], uint8_t result[16]);
 
     public:
+    /* Set device key
+    * Key is copied.
+    */
+    void setDevKey(uint8_t key[16]);
     int verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
     int verifyMic0 (uint8_t* pdu, int len);
     void cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len);

@@ -85,7 +85,7 @@ static void AES_Calculate_Round_Key(unsigned char Round, unsigned char *Round_Ke
 *               *Key    Key to encrypt data with is a 16 byte long arry
 *****************************************************************************************
 */
-void lmic_aes_encrypt(unsigned char *Data, unsigned char *Key)
+void lmic_aes_encrypt(unsigned char *Data, const unsigned char *Key)
 {
   unsigned char i;
   unsigned char Row,Collum;

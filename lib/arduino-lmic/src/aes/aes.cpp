@@ -33,69 +33,70 @@
 #include "../lmic/bufferpack.h"
 #include <algorithm>
 
-uint8_t AESkey[16];
-uint8_t AESaux[16];
+uint8_t AESDevKey[16];
 
 
-void Aes::micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len) {
-    std::fill(AESaux, AESaux+16, 0);
-    AESaux[0]  = 0x49;
-    AESaux[5]  = dndir?1:0;
-    AESaux[15] = len;
-    wlsbf4(AESaux+ 6,devaddr);
-    wlsbf4(AESaux+10,seqno);
+void Aes::setDevKey(uint8_t key[16]) {
+    std::copy(key, key+16, AESDevKey);
+}
+
+
+void Aes::micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len, uint8_t buf[16]) {
+    buf[0]  = 0x49;
+    buf[5]  = dndir?1:0;
+    buf[15] = len;
+    wlsbf4(buf+ 6,devaddr);
+    wlsbf4(buf+10,seqno);
 }
 
 
 int Aes::verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
-    micB0(devaddr, seqno, dndir, len);
-    std::copy(key, key+16, AESkey);
-    os_aes_cmac(pdu, len,1);
-    return rmsbf4(AESaux) == rmsbf4(pdu+len);
+    uint8_t buf[16] = {0};
+    micB0(devaddr, seqno, dndir, len, buf);
+    os_aes_cmac(pdu, len,1, key, buf);
+    return rmsbf4(buf) == rmsbf4(pdu+len);
 }
 
 
 void Aes::appendMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
-    micB0(devaddr, seqno, dndir, len);
-    std::copy(key, key+16, AESkey);
-    os_aes_cmac(pdu, len, 1);
+    uint8_t buf[16] = {0};
+    micB0(devaddr, seqno, dndir, len, buf);
+    os_aes_cmac(pdu, len, 1, key, buf);
     // MSB because of internal structure of AES
-    wmsbf4(pdu+len, rmsbf4(AESaux));
+    wmsbf4(pdu+len, rmsbf4(buf));
 }
 
 
 void Aes::appendMic0 (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
-    os_aes_cmac(pdu, len, 0);
-    wmsbf4(pdu+len, rmsbf4(AESaux));  // MSB because of internal structure of AES
+    uint8_t buf[16] = {0};    
+    os_aes_cmac(pdu, len, 0, AESDevKey, buf);
+    wmsbf4(pdu+len, rmsbf4(buf));  // MSB because of internal structure of AES
 }
 
 
 int Aes::verifyMic0 (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
-    os_aes_cmac(pdu, len, 0);
-    return rmsbf4(AESaux) == rmsbf4(pdu+len);
+    uint8_t buf[16] = {0};    
+    os_aes_cmac(pdu, len, 0, AESDevKey, buf);
+    return rmsbf4(buf) == rmsbf4(pdu+len);
 }
 
 
 void Aes::encrypt (uint8_t* pdu, int len) {
-    os_getDevKey(AESkey);
     // TODO: Check / handle when len is not a multiple of 16    
     for (uint8_t i = 0; i < len; i += 16)
-        lmic_aes_encrypt(pdu+i, AESkey);
+        lmic_aes_encrypt(pdu+i, AESDevKey);
 }
 
 
 void Aes::cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len) {
     if( len <= 0 )
         return;
-    std::fill(AESaux, AESaux+16, 0);
-    AESaux[0] = AESaux[15] = 1; // mode=cipher / dir=down / block counter=1
-    AESaux[5] = dndir?1:0;
-    wlsbf4(AESaux+ 6,devaddr);
-    wlsbf4(AESaux+10,seqno);
-    std::copy(key, key+16, AESkey);
-    os_aes_ctr(payload, len);
+    uint8_t buf[16] = {0};        
+    buf[0] = buf[15] = 1; // mode=cipher / dir=down / block counter=1
+    buf[5] = dndir?1:0;
+    wlsbf4(buf+ 6,devaddr);
+    wlsbf4(buf+10,seqno);
+    os_aes_ctr(payload, len, key, buf);
 }
 
 
@@ -107,10 +108,8 @@ void Aes::sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey,
     std::copy(nwkkey, nwkkey+16, artkey);
     artkey[0] = 0x02;
 
-    os_getDevKey(AESkey);
-    lmic_aes_encrypt(nwkkey, AESkey);
-    os_getDevKey(AESkey);
-    lmic_aes_encrypt(artkey, AESkey);
+    lmic_aes_encrypt(nwkkey, AESDevKey);
+    lmic_aes_encrypt(artkey, AESDevKey);
 }
 
 // END AES
@@ -129,14 +128,12 @@ static void shift_left(uint8_t* buf, uint8_t len) {
     }
 }
 
-// Apply RFC4493 CMAC, using AESKEY as the key. If prepend_aux is true,
-// AESAUX is prepended to the message. AESAUX is used as working memory
-// in any case. The CMAC result is returned in AESAUX as well.
-void Aes::os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux) {
+// Apply RFC4493 CMAC. If prepend_aux is true,
+// result is prepended to the message. result is used as working memory
+// in any case it must be 0 before call. The CMAC result is returned in result as well.
+void Aes::os_aes_cmac(const uint8_t* buf, uint16_t len, bool prepend_aux, const uint8_t key[16], uint8_t result[16]) {
     if (prepend_aux)
-        lmic_aes_encrypt(AESaux, AESkey);
-    else
-        std::fill(AESaux, AESaux+16, 0);
+        lmic_aes_encrypt(result, key);
 
     while (len > 0) {
         uint8_t need_padding = 0;
@@ -145,11 +142,11 @@ void Aes::os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux) {
                 // The message is padded with 0x80 and then zeroes.
                 // Since zeroes are no-op for xor, we can just skip them
                 // and leave AESAUX unchanged for them.
-                AESaux[i] ^= 0x80;
+                result[i] ^= 0x80;
                 need_padding = 1;
                 break;
             }
-            AESaux[i] ^= *buf;
+            result[i] ^= *buf;
         }
 
         if (len == 0) {
@@ -158,7 +155,7 @@ void Aes::os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux) {
             // shifts and xor on that.
             uint8_t final_key[16];
             std::fill(final_key,final_key+16,0);            
-            lmic_aes_encrypt(final_key, AESkey);
+            lmic_aes_encrypt(final_key, key);
 
             // Calculate K1
             uint8_t msb = final_key[0] & 0x80;
@@ -176,28 +173,28 @@ void Aes::os_aes_cmac(const uint8_t* buf, uint16_t len, uint8_t prepend_aux) {
 
             // Xor with K1 or K2
             for (uint8_t i = 0; i < sizeof(final_key); ++i)
-                AESaux[i] ^= final_key[i];
+                result[i] ^= final_key[i];
         }
 
-        lmic_aes_encrypt(AESaux, AESkey);
+        lmic_aes_encrypt(result, key);
     }
 }
 
 // Run AES-CTR using the key in AESKEY and using AESAUX as the
 // counter block. The last byte of the counter block will be incremented
 // for every block. The given buffer will be encrypted in place.
-void Aes::os_aes_ctr (uint8_t* buf, uint16_t len) {
+void Aes::os_aes_ctr (uint8_t* buf, uint16_t len, const uint8_t key[16], uint8_t result[16]) {
     uint8_t ctr[16];
     while (len) {
         // Encrypt the counter block with the selected key
-        memcpy(ctr, AESaux, sizeof(ctr));
-        lmic_aes_encrypt(ctr, AESkey);
+        memcpy(ctr, result, sizeof(ctr));
+        lmic_aes_encrypt(ctr, key);
 
         // Xor the payload with the resulting ciphertext
         for (uint8_t i = 0; i < 16 && len > 0; i++, len--, buf++)
             *buf ^= ctr[i];
 
         // Increment the block index byte
-        AESaux[15]++;
+        result[15]++;
     }
 }
