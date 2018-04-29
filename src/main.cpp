@@ -165,10 +165,6 @@ void setup() {
 
 
 void powersave(int32_t maxTime) {
-    // fastpath
-    if(maxTime == 0)
-        return;
-
     int32_t duration_selected = 0;
     period_t period_selected;
     // these value are base on test
@@ -190,14 +186,19 @@ void powersave(int32_t maxTime) {
     } else {
         return;
     }
+
     #if LMIC_DEBUG_LEVEL > 2
         Serial.print(os_getTime());
         Serial.print(": Sleep :");
         Serial.println(duration_selected);
     #endif
     Serial.end();
-    LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
-    hal_add_time_in_sleep(duration_selected);
+
+    for(int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--) {
+        LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
+        hal_add_time_in_sleep(duration_selected);
+    }
+
     Serial.begin(BAUDRATE);
     delay(100);
     #if LMIC_DEBUG_LEVEL > 2            
@@ -209,7 +210,7 @@ void powersave(int32_t maxTime) {
 
 void loop() {
     int32_t to_wait = OSS.runloopOnce();
-    if(hal_is_sleep_allow()) {
+    if(to_wait && hal_is_sleep_allow()) {
         powersave(to_wait);
     } 
 }
