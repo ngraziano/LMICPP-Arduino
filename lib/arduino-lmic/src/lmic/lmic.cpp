@@ -136,12 +136,6 @@ int getSensitivity (rps_t rps) {
 ostime_t calcAirTime (rps_t rps, uint8_t plen) {
     uint8_t bw = getBw(rps);  // 0,1,2 = 125,250,500kHz
     uint8_t sf = getSf(rps);  // 0=FSK, 1..6 = SF7..12
-    #if !defined(DISABLE_FSK)
-    if( sf == FSK ) {
-        return (plen+/*preamble*/5+/*syncword*/3+/*len*/1+/*crc*/2) * /*bits/byte*/8
-            * (int32_t)OSTICKS_PER_SEC / /*kbit/s*/50000;
-    }
-    #endif
     uint8_t sfx = 4*(sf+(7-SF7));
     uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
     int tmp = 8*plen - sfx + 28 + (getNocrc(rps)?0:16) - (getIh(rps)?20:0);
@@ -402,6 +396,11 @@ uint8_t Lmic::getBand(uint8_t channel) {
 
 ostime_t Lmic::nextTx (ostime_t now) {
     uint8_t bmap=0xF;
+    #if LMIC_DEBUG_LEVEL > 1
+    for( uint8_t bi=0; bi<4; bi++ ) { 
+        PRINT_DEBUG_2("Band %d, available at %lu and last channel %d", bi, bands[bi].avail, bands[bi].lastchnl);
+    }
+    #endif
     do {
         ostime_t mintime = now + /*8h*/sec2osticks(28800);
         uint8_t band= 0xFF;
@@ -433,11 +432,15 @@ ostime_t Lmic::nextTx (ostime_t now) {
             chnl++;
             if(chnl >= MAX_CHANNELS)
                 chnl -=  MAX_CHANNELS;
-            if( (channelMap & (1<<chnl)) != 0  &&  // channel enabled
-                (channelDrMap[chnl] & (1<<(datarate&0xF))) != 0  &&
-                band == getBand(chnl) ) { // in selected band
-                txChnl = bands[band].lastchnl = chnl;
-                return mintime;
+            // channel enabled
+            if((channelMap & (1<<chnl)) != 0) {
+                PRINT_DEBUG_2("Considering channel %d for band %d, set band = %d, drMap = %x", chnl, band, getBand(chnl), channelDrMap[chnl]);
+                if((channelDrMap[chnl] & (1<<(datarate&0xF))) != 0  &&
+                    band == getBand(chnl) ) { // in selected band
+                    txChnl = bands[band].lastchnl = chnl;
+                    return mintime;
+                }
+
             }
         }
        
@@ -522,7 +525,7 @@ void Lmic::initDefaultChannels () {
     channelMap[4] = 0x00FF;
 }
 
-static uint32_t convFreq (xref2uint8_t ptr) {
+static uint32_t convFreq (uint8_t* ptr) {
     uint32_t freq = (rlsbf4(ptr-1) >> 8) * 100;
     if( freq < US915_FREQ_MIN || freq > US915_FREQ_MAX )
         freq = 0;
@@ -699,7 +702,8 @@ void Lmic::runEngineUpdate (OsJobBase* osjob) {
 
 
 void Lmic::reportEvent (ev_t ev) {
-    ON_LMIC_EVENT(ev);
+    if(eventCallBack)
+        eventCallBack(ev);
     engineUpdate();
 }
 
@@ -1108,7 +1112,7 @@ bool Lmic::processJoinAccept () {
         for( uint8_t chidx=3; chidx<8; chidx++, dlen+=3 ) {
             uint32_t newfreq = convFreq(&frame[dlen]);
             if( newfreq ) {
-                setupChannel(chidx, freq, 0, -1);
+                setupChannel(chidx, newfreq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
                 lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx, (unsigned long)newfreq);
 #endif
@@ -1306,8 +1310,8 @@ void Lmic::buildJoinRequest (uint8_t ftype) {
     // user level frame in there. Use RX holding area instead.
     uint8_t* d = frame;
     d[OFF_JR_HDR] = ftype;
-    os_getArtEui(d + OFF_JR_ARTEUI);
-    os_getDevEui(d + OFF_JR_DEVEUI);
+    artEuiCallBack(d + OFF_JR_ARTEUI);
+    devEuiCallBack(d + OFF_JR_DEVEUI);
     wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
     aes.appendMic0(d, OFF_JR_MIC);
 
@@ -1339,13 +1343,6 @@ bool Lmic::startJoining () {
     return false; // already joined
 }
 #endif // !DISABLE_JOIN
-
-
-// ================================================================================
-//
-//
-//
-// ================================================================================
 
 
 

@@ -102,6 +102,8 @@ enum _ev_t { EV_SCAN_TIMEOUT=1, EV_BEACON_FOUND,
              EV_RXCOMPLETE, EV_LINK_DEAD, EV_LINK_ALIVE };
 typedef enum _ev_t ev_t;
 
+using eventCallback_t = void (*) (ev_t);
+using keyCallback_t = void (*) (uint8_t*);
 enum {
         // This value represents 100% error in LMIC.clockError
         MAX_CLOCK_ERROR = 65536,
@@ -110,6 +112,8 @@ enum {
 #if defined(CFG_eu868)
 enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
 #endif
+
+
 
 class Lmic {
 public:
@@ -190,6 +194,10 @@ private:
 #if !defined(DISABLE_MCMD_DN2P_SET)
     uint8_t        dn2Ans = 0;       // 0=no answer pend, 0x80+ACKs
 #endif
+
+    eventCallback_t eventCallBack = nullptr;
+    keyCallback_t devEuiCallBack = nullptr;
+    keyCallback_t artEuiCallBack = nullptr;
 
 public:
     // Public part of MAC state
@@ -310,6 +318,10 @@ public:
 
     uint16_t getOpMode() { return opmode; };
 
+    void setEventCallBack(eventCallback_t callback) { eventCallBack = callback; };
+    void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };
+    void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
+
     // for radio to wakeup processing.
     void nextTask();
 };
@@ -319,12 +331,6 @@ extern struct Lmic LMIC; //!< \internal
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo,drhi) (((uint16_t)0xFFFF<<(drlo)) & ((uint16_t)0xFFFF>>(15-(drhi))))
-
-
-// Declare onEvent() function, to make sure any definition will have the
-// C conventions, even when in a C++ file.
-DECL_ON_LMIC_EVENT;
-
 
 
 #endif // _lmic_h_

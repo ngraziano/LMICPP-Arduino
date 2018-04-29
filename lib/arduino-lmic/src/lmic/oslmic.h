@@ -28,21 +28,13 @@
 
 //================================================================================
 //================================================================================
-// Target platform as C library
-typedef unsigned int       uint;
-typedef const char* str_t;
+
 
 #if !defined(CFG_noassert)
 #define ASSERT(cond) if(!(cond)) hal_failed(__FILE__, __LINE__)
 #else
 #define ASSERT(cond) /**/
 #endif
-
-
-
-#define ON_LMIC_EVENT(ev)  onEvent(ev)
-#define DECL_ON_LMIC_EVENT void onEvent(ev_t e)
-
 
 
 uint8_t radio_rand1 (void);
@@ -63,18 +55,8 @@ void os_init (void);
 
 #ifndef HAS_os_calls
 
-
-#ifndef os_getArtEui
-void os_getArtEui (uint8_t* buf);
-#endif
-#ifndef os_getDevEui
-void os_getDevEui (uint8_t* buf);
-#endif
 #ifndef os_getTime
 ostime_t os_getTime (void);
-#endif
-#ifndef os_getTimeSecs
-uint os_getTimeSecs (void);
 #endif
 #ifndef os_radio
 void os_radio (uint8_t mode);
