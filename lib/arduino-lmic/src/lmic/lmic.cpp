@@ -289,15 +289,15 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
 
 void Lmic::initDefaultChannels (bool join) {
     PRINT_DEBUG_2("Init Default Channel join?=%d",join);
-    std::fill(channelFreq, channelFreq + MAX_CHANNELS, 0);
-    std::fill(channelDrMap, channelDrMap + MAX_CHANNELS, 0);
+    ChannelDetail empty = {};
+    std::fill(channels, channels + MAX_CHANNELS, empty);
     
 
     channelMap = 0x07;
     uint8_t su = join ? 0 : 3;
     for( uint8_t fu=0; fu<3; fu++,su++ ) {
-        channelFreq[fu]  = TABLE_GET_U4(iniChannelFreq, su);
-        channelDrMap[fu] = DR_RANGE_MAP(DR_SF12,DR_SF7);
+        channels[fu].freq  = TABLE_GET_U4(iniChannelFreq, su);
+        channels[fu].drMap = DR_RANGE_MAP(DR_SF12,DR_SF7);
     }
 
     bands[BAND_MILLI].txcap    = 1000;  // 0.1%
@@ -330,25 +330,24 @@ bool Lmic::setupChannel (uint8_t chidx, uint32_t newfreq, uint16_t drmap, int8_t
         return false;
     if( band == -1 ) {
         if( newfreq >= 869400000 && newfreq <= 869650000 )
-            newfreq |= BAND_DECI;   // 10% 27dBm
+            band = BAND_DECI;   // 10% 27dBm
         else if( (newfreq >= 868000000 && newfreq <= 868600000) ||
                  (newfreq >= 869700000 && newfreq <= 870000000)  )
-            newfreq |= BAND_CENTI;  // 1% 14dBm
+            band = BAND_CENTI;  // 1% 14dBm
         else
-            newfreq |= BAND_MILLI;  // 0.1% 14dBm
+            band = BAND_MILLI;  // 0.1% 14dBm
     } else {
         if( band > BAND_AUX ) return 0;
-        newfreq = (newfreq&~3) | band;
     }
-    channelFreq [chidx] = newfreq;
-    channelDrMap[chidx] = drmap==0 ? DR_RANGE_MAP(DR_SF12,DR_SF7) : drmap;
+    channels[chidx].freq = (newfreq&~3) | band;
+    channels[chidx].drMap = drmap==0 ? DR_RANGE_MAP(DR_SF12,DR_SF7) : drmap;
     channelMap |= 1<<chidx;  // enabled right away
     return true;
 }
 
 void Lmic::disableChannel (uint8_t channel) {
-    channelFreq[channel] = 0;
-    channelDrMap[channel] = 0;
+    channels[channel].freq = 0;
+    channels[channel].drMap = 0;
     channelMap &= ~(1<<channel);
 }
 
@@ -364,7 +363,7 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
     if( chpage != 0 || chmap==0 || (chmap & ~channelMap) != 0 )
         return 0;  // illegal input
     for( uint8_t chnl=0; chnl<MAX_CHANNELS; chnl++ ) {
-        if( (chmap & (1<<chnl)) != 0 && channelFreq[chnl] == 0 )
+        if( (chmap & (1<<chnl)) != 0 && channels[chnl].freq == 0 )
             chmap &= ~(1<<chnl); // ignore - channel is not defined
     }
     channelMap = chmap;
@@ -373,25 +372,29 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
 
 
 void Lmic::updateTx (ostime_t txbeg) {
-    uint32_t newfreq = channelFreq[txChnl];
     // Update global/band specific duty cycle stats
     ostime_t airtime = calcAirTime(rps, dataLen);
     // Update channel/global duty cycle stats
-    band_t* band = &bands[freq & 0x3];
-    freq  = newfreq & ~(uint32_t)3;
+    band_t* band = &bands[getBand(txChnl)];
+    freq = getFreq(txChnl);
     txpow = band->txpow;
     band->avail = txbeg + airtime * band->txcap;
     if( globalDutyRate != 0 )
         globalDutyAvail = txbeg + (airtime<<globalDutyRate);
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting available time for band %d to %lu\n", os_getTime(), txbeg, airtime, freq & 0x3, band->avail);
+        lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting available time for band %d to %lu\n", os_getTime(), txbeg, airtime, freq, band->avail);
         if( globalDutyRate != 0 )
             lmic_printf("%lu: Updating global duty avail to %lu\n", os_getTime(), globalDutyAvail);
     #endif
 }
 
+
+uint32_t Lmic::getFreq(uint8_t channel) {
+    return channels[channel].freq & ~(uint32_t)3;
+}
+
 uint8_t Lmic::getBand(uint8_t channel) {
-    return channelFreq[channel] & 0x3;
+    return channels[channel].freq & 0x3;
 }
 
 ostime_t Lmic::nextTx (ostime_t now) {
@@ -434,8 +437,8 @@ ostime_t Lmic::nextTx (ostime_t now) {
                 chnl -=  MAX_CHANNELS;
             // channel enabled
             if((channelMap & (1<<chnl)) != 0) {
-                PRINT_DEBUG_2("Considering channel %d for band %d, set band = %d, drMap = %x", chnl, band, getBand(chnl), channelDrMap[chnl]);
-                if((channelDrMap[chnl] & (1<<(datarate&0xF))) != 0  &&
+                PRINT_DEBUG_2("Considering channel %d for band %d, set band = %d, drMap = %x", chnl, band, getBand(chnl), channels[chnl].drMap);
+                if((channels[chnl].drMap & (1<<(datarate&0xF))) != 0  &&
                     band == getBand(chnl) ) { // in selected band
                     txChnl = bands[band].lastchnl = chnl;
                     return mintime;

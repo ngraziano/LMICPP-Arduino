@@ -113,7 +113,11 @@ enum {
 enum { BAND_MILLI=0, BAND_CENTI=1, BAND_DECI=2, BAND_AUX=3 };
 #endif
 
-
+struct ChannelDetail {
+    // three low bit of freq is used to store band.
+    uint32_t freq;
+    uint16_t drMap;
+};
 
 class Lmic {
 public:
@@ -135,8 +139,7 @@ private:
     // Channel scheduling
 #if defined(CFG_eu868)
     band_t      bands[MAX_BANDS]  { };
-    uint32_t    channelFreq[MAX_CHANNELS] = {};
-    uint16_t    channelDrMap[MAX_CHANNELS] = {};
+    ChannelDetail channels[MAX_CHANNELS] = { };
     uint16_t    channelMap = 0;
 #elif defined(CFG_us915)
     uint32_t        xchFreq[MAX_XCHANNELS];    // extra channel frequencies (if device is behind a repeater)
@@ -259,12 +262,14 @@ private:
     #endif
     #if defined(CFG_eu868)
     void initDefaultChannels (bool join);
+    uint32_t getFreq(uint8_t channel);
+    uint8_t getBand(uint8_t channel);
     #endif
     
     uint8_t mapChannels (uint8_t chpage, uint16_t chmap);
     void updateTx (ostime_t txbeg);
 
-    uint8_t getBand(uint8_t channel);
+
     ostime_t nextTx (ostime_t now);
     
     void setRx1Params();
