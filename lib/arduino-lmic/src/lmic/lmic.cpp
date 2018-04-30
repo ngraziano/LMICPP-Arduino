@@ -290,7 +290,7 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
 void Lmic::initDefaultChannels (bool join) {
     PRINT_DEBUG_2("Init Default Channel join?=%d",join);
     ChannelDetail empty = {};
-    std::fill(channels, channels + MAX_CHANNELS, empty);
+    std::fill(channels+3, channels + MAX_CHANNELS, empty);
     
 
     channelMap = 0x07;
@@ -309,9 +309,10 @@ void Lmic::initDefaultChannels (bool join) {
     bands[BAND_DECI ].txcap    = 10;    // 10%
     bands[BAND_DECI ].txpow    = 27;
     bands[BAND_DECI ].lastchnl = radio_rand1() % MAX_CHANNELS;
-    bands[BAND_MILLI].avail = os_getTime();
-    bands[BAND_CENTI].avail = os_getTime();
-    bands[BAND_DECI ].avail = os_getTime();
+    auto now = os_getTime();
+    bands[BAND_MILLI].avail = now;
+    bands[BAND_CENTI].avail = now;
+    bands[BAND_DECI ].avail = now;
 }
 
 bool Lmic::setupBand (uint8_t bandidx, int8_t txpow, uint16_t txcap) {
