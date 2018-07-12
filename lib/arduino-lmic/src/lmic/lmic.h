@@ -121,6 +121,7 @@ struct ChannelDetail {
 
 class Lmic {
 public:
+    Aes         aes;
     // Radio settings TX/RX (also accessed by HAL)
     ostime_t  txend = 0;
     ostime_t  rxtime = 0;
@@ -132,9 +133,12 @@ public:
     uint8_t   dndr = 0;
     int8_t    txpow = 0;     // dBm
 
-    Aes         aes;
+    
 private:
     OsJobType<Lmic>     osjob {  this, OSS };
+    eventCallback_t eventCallBack = nullptr;
+    keyCallback_t devEuiCallBack = nullptr;
+    keyCallback_t artEuiCallBack = nullptr;
 
     // Channel scheduling
 #if defined(CFG_eu868)
@@ -198,17 +202,14 @@ private:
     uint8_t        dn2Ans = 0;       // 0=no answer pend, 0x80+ACKs
 #endif
 
-    eventCallback_t eventCallBack = nullptr;
-    keyCallback_t devEuiCallBack = nullptr;
-    keyCallback_t artEuiCallBack = nullptr;
 
 public:
     // Public part of MAC state
-    uint8_t        txCnt;
-    uint8_t        txrxFlags;  // transaction flags (TX-RX combo)
-    uint8_t        dataBeg;    // 0 or start of data (dataBeg-1 is port)
-    uint8_t        dataLen;    // 0 no data or zero length data, >0 byte count of data
-    uint8_t        frame[MAX_LEN_FRAME];
+    uint8_t        txCnt = 0;
+    uint8_t        txrxFlags = 0;  // transaction flags (TX-RX combo)
+    uint8_t        dataBeg = 0;    // 0 or start of data (dataBeg-1 is port)
+    uint8_t        dataLen =0;    // 0 no data or zero length data, >0 byte count of data
+    uint8_t        frame[MAX_LEN_FRAME] = {};
 
 private:
 

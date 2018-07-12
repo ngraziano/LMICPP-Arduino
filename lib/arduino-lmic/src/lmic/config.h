@@ -25,12 +25,12 @@
 // enable more verbose output. Make sure that printf is actually
 // configured (e.g. on AVR it is not by default), otherwise using it can
 // cause crashing.
-#define LMIC_DEBUG_LEVEL 1
+#define LMIC_DEBUG_LEVEL 0
 
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object). This can be easy for debugging. The
 // current implementation only works on AVR, though.
-#define LMIC_PRINTF_TO Serial
+// #define LMIC_PRINTF_TO Serial
 
 // Any runtime assertion failures are printed to this serial port (or
 // any other Print object). If this is unset, any failures just silently
@@ -39,9 +39,9 @@
 
 // Uncomment these to disable the corresponding MAC commands.
 // Class A
-//#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
-//#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
-//#define DISABLE_MCMD_SNCH_REQ // set new channel
+#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
+#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
+#define DISABLE_MCMD_SNCH_REQ // set new channel
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice
@@ -55,7 +55,6 @@
 //#define DISABLE_INVERT_IQ_ON_RX
 
 #define CFG_noassert
-#define DISABLE_FSK
 
 
 #endif // _lmic_config_h_

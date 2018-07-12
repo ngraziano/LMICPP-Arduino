@@ -171,7 +171,7 @@ void setup() {
     uint8_t nwkskey[sizeof(NWKSKEY)];
     memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
     memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
-    LMIC_setSession (0x1, DEVADDR, nwkskey, appskey);
+    LMIC.setSession (0x1, DEVADDR, nwkskey, appskey);
     #else
     // If not running an AVR with PROGMEM, just use the arrays directly
     LMIC_setSession (0x1, DEVADDR, NWKSKEY, APPSKEY);

@@ -753,7 +753,9 @@ bool Lmic::decodeFrame () {
     uint8_t hdr    = d[0];
     uint8_t ftype  = hdr & HDR_FTYPE;
     int  dlen   = dataLen;
+    #if LMIC_DEBUG_LEVEL > 0
     const char *window = (txrxFlags & TXRX_DNW1) ? "RX1" : ((txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
+    #endif
     if( dlen < OFF_DAT_OPTS+4 ||
         (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
         (ftype != HDR_FTYPE_DADN  &&  ftype != HDR_FTYPE_DCDN) ) {

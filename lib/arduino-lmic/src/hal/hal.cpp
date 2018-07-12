@@ -131,9 +131,9 @@ void hal_forbid_sleep() {
 
 uint32_t time_in_sleep = 0;
 
-void hal_add_time_in_sleep(uint32_t nb_ms)
+void hal_add_time_in_sleep(ostime_t nb_tick)
 {
-    time_in_sleep += ms2osticks(nb_ms);
+    time_in_sleep += nb_tick;
     os_getTime();
 }
 

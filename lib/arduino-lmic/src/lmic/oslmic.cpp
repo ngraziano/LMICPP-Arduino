@@ -131,7 +131,7 @@ int32_t OsScheduler::runloopOnce() {
         return 0;
     } else {
         // return the number of milisecond to wait ()
-        return osticks2ms(delta_time(scheduledjobs->deadline));
+        return delta_time(scheduledjobs->deadline);
     } 
 }
 

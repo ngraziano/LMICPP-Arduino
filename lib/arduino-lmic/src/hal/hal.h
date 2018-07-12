@@ -79,7 +79,7 @@ void hal_io_check();
  */
 uint32_t hal_ticks (void);
 
-void hal_add_time_in_sleep(uint32_t nb_ms);
+void hal_add_time_in_sleep(ostime_t nb_tick);
 
 bool hal_is_sleep_allow();
 

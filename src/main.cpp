@@ -43,71 +43,67 @@ const lmic_pinmap lmic_pins = {
 };
 
 void onEvent (ev_t ev) {
-    Serial.print(os_getTime());
-    Serial.print(": ");
     switch(ev) {
         case EV_SCAN_TIMEOUT:
-            Serial.println(F("EV_SCAN_TIMEOUT"));
+            PRINT_DEBUG_2("EV_SCAN_TIMEOUT");
             break;
         case EV_BEACON_FOUND:
-            Serial.println(F("EV_BEACON_FOUND"));
+            PRINT_DEBUG_2("EV_BEACON_FOUND");
             break;
         case EV_BEACON_MISSED:
-            Serial.println(F("EV_BEACON_MISSED"));
+            PRINT_DEBUG_2("EV_BEACON_MISSED");
             break;
         case EV_BEACON_TRACKED:
-            Serial.println(F("EV_BEACON_TRACKED"));
+            PRINT_DEBUG_2("EV_BEACON_TRACKED");
             break;
         case EV_JOINING:
-            Serial.println(F("EV_JOINING"));
+            PRINT_DEBUG_2("EV_JOINING");
             break;
         case EV_JOINED:
-            Serial.println(F("EV_JOINED"));
+            PRINT_DEBUG_2("EV_JOINED");
 
             // Disable link check validation (automatically enabled
             // during join, but not supported by TTN at this time).
             LMIC.setLinkCheckMode(false);
             break;
         case EV_RFU1:
-            Serial.println(F("EV_RFU1"));
+            PRINT_DEBUG_2("EV_RFU1");
             break;
         case EV_JOIN_FAILED:
-            Serial.println(F("EV_JOIN_FAILED"));
+            PRINT_DEBUG_2("EV_JOIN_FAILED");
             break;
         case EV_REJOIN_FAILED:
-            Serial.println(F("EV_REJOIN_FAILED"));
+            PRINT_DEBUG_2("EV_REJOIN_FAILED");
             break;
             break;
         case EV_TXCOMPLETE:
-            Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+            PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
             if (LMIC.txrxFlags & TXRX_ACK)
-              Serial.println(F("Received ack"));
+              PRINT_DEBUG_2("Received ack");
             if (LMIC.dataLen) {
-              Serial.println(F("Received "));
-              Serial.println(LMIC.dataLen);
-              Serial.println(F(" bytes of payload"));
+              PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
             }
             // Schedule next transmission
             sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
-            Serial.println(F("EV_LOST_TSYNC"));
+            PRINT_DEBUG_2("EV_LOST_TSYNC");
             break;
         case EV_RESET:
-            Serial.println(F("EV_RESET"));
+            PRINT_DEBUG_2("EV_RESET");
             break;
         case EV_RXCOMPLETE:
             // data received in ping slot
-            Serial.println(F("EV_RXCOMPLETE"));
+            PRINT_DEBUG_2("EV_RXCOMPLETE");
             break;
         case EV_LINK_DEAD:
-            Serial.println(F("EV_LINK_DEAD"));
+            PRINT_DEBUG_2("EV_LINK_DEAD");
             break;
         case EV_LINK_ALIVE:
-            Serial.println(F("EV_LINK_ALIVE"));
+            PRINT_DEBUG_2("EV_LINK_ALIVE");
             break;
          default:
-            Serial.println(F("Unknown event"));
+            PRINT_DEBUG_2("Unknown event");
             break;
     }
 }
@@ -115,7 +111,10 @@ void onEvent (ev_t ev) {
 void do_send(OsJob* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.getOpMode() & OP_TXRXPEND) {
-        Serial.println(F("OP_TXRXPEND, not sending"));
+        PRINT_DEBUG_1("OP_TXRXPEND, not sending");
+        // should not happen so reschedule anymway
+        sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+        
     } else {
         pinMode(9, OUTPUT);
         digitalWrite(9, 1);
@@ -126,14 +125,14 @@ void do_send(OsJob* j){
 
         // Prepare upstream data transmission at the next possible time.
         LMIC.setTxData2(1, (uint8_t*)data, 4, 0);
-        Serial.println(F("Packet queued"));
+        PRINT_DEBUG_1("Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
 void setup() {
-    Serial.begin(BAUDRATE);
-    Serial.println(F("Starting"));
+    // Serial.begin(BAUDRATE);
+   // Serial.println(F("Starting"));
 
     // LMIC init
     os_init();
@@ -164,24 +163,24 @@ void setup() {
 }
 
 
-void powersave(int32_t maxTime) {
-    int32_t duration_selected = 0;
+void powersave(ostime_t maxTime) {
+    ostime_t duration_selected = 0;
     period_t period_selected;
     // these value are base on test
-    if(maxTime > 8500) {
-        duration_selected = 8500;
+    if(maxTime > ms2osticks(8500)) {
+        duration_selected = ms2osticks(8500);
         period_selected = SLEEP_8S;
-    } else if (maxTime > 4500) {
-        duration_selected = 4200;
+    } else if (maxTime > ms2osticks(4500)) {
+        duration_selected = ms2osticks(4200);
         period_selected = SLEEP_4S;
-    } else if (maxTime > 2500) {
-        duration_selected = 2100;
+    } else if (maxTime > ms2osticks(2500)) {
+        duration_selected = ms2osticks(2100);
         period_selected = SLEEP_2S;
-    } else if (maxTime > 1500) {
-        duration_selected = 1000;
+    } else if (maxTime > ms2osticks(1500)) {
+        duration_selected = ms2osticks(1100);
         period_selected = SLEEP_1S;
-    } else if (maxTime > 1000) {
-        duration_selected = 510;
+    } else if (maxTime > ms2osticks(1000)) {
+        duration_selected = ms2osticks(510);
         period_selected = SLEEP_500MS;
     } else {
         return;
@@ -189,18 +188,18 @@ void powersave(int32_t maxTime) {
 
     #if LMIC_DEBUG_LEVEL > 2
         Serial.print(os_getTime());
-        Serial.print(": Sleep :");
+        Serial.print(": Sleep (ostick) :");
         Serial.println(duration_selected);
     #endif
-    Serial.end();
+    // Serial.end();
 
     for(int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--) {
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
         hal_add_time_in_sleep(duration_selected);
     }
 
-    Serial.begin(BAUDRATE);
-    delay(100);
+    // Serial.begin(BAUDRATE);
+    delay(50);
     #if LMIC_DEBUG_LEVEL > 2            
         Serial.print(os_getTime());
         Serial.println(": wakeup");
@@ -209,7 +208,7 @@ void powersave(int32_t maxTime) {
 
 
 void loop() {
-    int32_t to_wait = OSS.runloopOnce();
+    ostime_t to_wait = OSS.runloopOnce();
     if(to_wait && hal_is_sleep_allow()) {
         powersave(to_wait);
     } 
