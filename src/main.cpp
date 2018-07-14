@@ -15,7 +15,7 @@ void do_send(OsJob* j);
 void getArtEui (uint8_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
-static const uint8_t PROGMEM DEVEUI[8]={ 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+static const uint8_t PROGMEM DEVEUI[8]={ 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 void getDevEui (uint8_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
@@ -36,10 +36,10 @@ const unsigned int BAUDRATE = 19200;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
-    .nss = 14,
+    .nss = 10,
     .rxtx = LMIC_UNUSED_PIN,
-    .rst = 5,
-    .dio = {2, 3},
+    .rst = 14,
+    .dio = {4, 3},
 };
 
 void onEvent (ev_t ev) {
@@ -116,12 +116,13 @@ void do_send(OsJob* j){
         sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
         
     } else {
-        pinMode(9, OUTPUT);
-        digitalWrite(9, 1);
+        const uint8_t pinCmd = 6;
+        pinMode(pinCmd, OUTPUT);
+        digitalWrite(pinCmd, 1);
         delay(100);
         data[0] = analogRead(A1);
         data[1] = analogRead(A2);
-        digitalWrite(9, 0);
+        digitalWrite(pinCmd, 0);
 
         // Prepare upstream data transmission at the next possible time.
         LMIC.setTxData2(1, (uint8_t*)data, 4, 0);
@@ -131,8 +132,8 @@ void do_send(OsJob* j){
 }
 
 void setup() {
-    // Serial.begin(BAUDRATE);
-   // Serial.println(F("Starting"));
+     Serial.begin(BAUDRATE);
+    Serial.println(F("Starting"));
 
     // LMIC init
     os_init();
@@ -193,7 +194,10 @@ void powersave(ostime_t maxTime) {
     #endif
     // Serial.end();
 
+    int i=0;
     for(int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--) {
+        if(i++ > 80)
+            break;
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
         hal_add_time_in_sleep(duration_selected);
     }
