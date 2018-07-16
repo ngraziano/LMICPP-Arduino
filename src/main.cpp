@@ -120,8 +120,8 @@ void do_send(OsJob* j){
         pinMode(pinCmd, OUTPUT);
         digitalWrite(pinCmd, 1);
         delay(100);
-        data[0] = analogRead(A1);
-        data[1] = analogRead(A2);
+        data[0] = analogRead(A2);
+        data[1] = analogRead(A1);
         digitalWrite(pinCmd, 0);
 
         // Prepare upstream data transmission at the next possible time.
@@ -194,12 +194,16 @@ void powersave(ostime_t maxTime) {
     #endif
     // Serial.end();
 
-    int i=0;
+    
     for(int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--) {
-        if(i++ > 80)
-            break;
+        
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
         hal_add_time_in_sleep(duration_selected);
+        
+        // security to not sleep too long (hack)
+        if(nbsleep > 200)
+            break;
+        
     }
 
     // Serial.begin(BAUDRATE);
