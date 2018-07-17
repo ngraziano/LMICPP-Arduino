@@ -375,7 +375,7 @@ inline dr_t  lowerDR  (dr_t dr, uint8_t n) { while(n--){dr=decDR(dr);} return dr
 
 
 // Calculate airtime
-ostime_t calcAirTime (rps_t rps, uint8_t plen);
+OsDeltaTime calcAirTime (rps_t rps, uint8_t plen);
 // Sensitivity at given SF/BW
 int getSensitivity (rps_t rps);
 

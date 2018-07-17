@@ -51,7 +51,7 @@ struct band_t {
     uint16_t     txcap;     // duty cycle limitation: 1/txcap
     int8_t     txpow;     // maximum TX power
     uint8_t     lastchnl;  // last used channel
-    ostime_t avail;     // channel is blocked until this time
+    OsTime avail;     // channel is blocked until this time
 };
 
 #elif defined(CFG_us915)  // US915 spectrum =================================================
@@ -123,8 +123,8 @@ class Lmic {
 public:
     Aes         aes;
     // Radio settings TX/RX (also accessed by HAL)
-    ostime_t  txend = 0;
-    ostime_t  rxtime = 0;
+    OsTime  txend;
+    OsTime  rxtime;
     uint32_t  freq = 0;
     int8_t    rssi = 0;
     int8_t    snr = 0;
@@ -153,7 +153,7 @@ private:
 #endif
     uint8_t        txChnl = 0;          // channel for next TX
     uint8_t        globalDutyRate = 0;  // max rate: 1/2^k
-    ostime_t    globalDutyAvail = 0; // time device can send again
+    OsTime    globalDutyAvail; // time device can send again
 
     uint32_t        netid = 0;        // current network id (~0 - none)
     uint16_t        opmode = 0;
@@ -219,9 +219,9 @@ private:
     void processRx1DnData (OsJobBase* osjob);
     void setupRx1 (OsJobType<Lmic>::osjobcbTyped_t func);
     void setupRx2 ();
-    void schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr);
+    void schedRx12 (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr);
     
-    void txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func);
+    void txDone (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func);
 
 
     void runReset (OsJobBase* osjob);
@@ -268,20 +268,20 @@ private:
     #endif
     
     uint8_t mapChannels (uint8_t chpage, uint16_t chmap);
-    void updateTx (ostime_t txbeg);
+    void updateTx (OsTime const& txbeg);
 
 
-    ostime_t nextTx (ostime_t now);
+    OsTime nextTx (OsTime const& now);
     
     void setRx1Params();
 
-    void txDelay (ostime_t reftime, uint8_t secSpan);
+    void txDelay (OsTime const& reftime, uint8_t secSpan);
     
     void setDrJoin (dr_t dr);
     
     #if !defined(DISABLE_JOIN)
     void initJoinLoop ();
-    ostime_t nextJoinState (void);
+    bool nextJoinState ();
     #endif
 public:
     // set default/start DR/txpow

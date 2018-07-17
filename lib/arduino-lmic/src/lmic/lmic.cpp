@@ -23,21 +23,21 @@
 #define PRERX_FSK  1
 #define RXLEN_FSK  (1+5+2)
 
-#define BCN_INTV_osticks       sec2osticks(BCN_INTV_sec)
-#define TXRX_GUARD_osticks     ms2osticks(TXRX_GUARD_ms)
-#define JOIN_GUARD_osticks     ms2osticks(JOIN_GUARD_ms)
-#define DELAY_JACC1_osticks    sec2osticks(DELAY_JACC1)
-#define DELAY_JACC2_osticks    sec2osticks(DELAY_JACC2)
-#define DELAY_EXTDNW2_osticks  sec2osticks(DELAY_EXTDNW2)
-#define BCN_RESERVE_osticks    ms2osticks(BCN_RESERVE_ms)
-#define BCN_GUARD_osticks      ms2osticks(BCN_GUARD_ms)
-#define BCN_WINDOW_osticks     ms2osticks(BCN_WINDOW_ms)
-#define AIRTIME_BCN_osticks    us2osticks(AIRTIME_BCN)
+#define BCN_INTV_osticks       OsDeltaTime::from_sec(BCN_INTV_sec)
+#define TXRX_GUARD_osticks     OsDeltaTime::from_ms(TXRX_GUARD_ms)
+#define JOIN_GUARD_osticks     OsDeltaTime::from_ms(JOIN_GUARD_ms)
+#define DELAY_JACC1_osticks    OsDeltaTime::from_sec(DELAY_JACC1)
+#define DELAY_JACC2_osticks    OsDeltaTime::from_sec(DELAY_JACC2)
+#define DELAY_EXTDNW2_osticks  OsDeltaTime::from_sec(DELAY_EXTDNW2)
+#define BCN_RESERVE_osticks    OsDeltaTime::from_ms(BCN_RESERVE_ms)
+#define BCN_GUARD_osticks      OsDeltaTime::from_ms(BCN_GUARD_ms)
+#define BCN_WINDOW_osticks     OsDeltaTime::from_ms(BCN_WINDOW_ms)
+#define AIRTIME_BCN_osticks    OsDeltaTime::from_us(AIRTIME_BCN)
 #if defined(CFG_eu868)
-#define DNW2_SAFETY_ZONE       ms2osticks(3000)
+#define DNW2_SAFETY_ZONE       OsDeltaTime::from_ms(3000)
 #endif
 #if defined(CFG_us915)
-#define DNW2_SAFETY_ZONE       ms2osticks(750)
+#define DNW2_SAFETY_ZONE       OsDeltaTime::from_ms(750)
 #endif
 
 // Special APIs - for development or testing
@@ -133,7 +133,7 @@ int getSensitivity (rps_t rps) {
     return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, getSf(rps), getBw(rps));
 }
 
-ostime_t calcAirTime (rps_t rps, uint8_t plen) {
+OsDeltaTime calcAirTime (rps_t rps, uint8_t plen) {
     uint8_t bw = getBw(rps);  // 0,1,2 = 125,250,500kHz
     uint8_t sf = getSf(rps);  // 0=FSK, 1..6 = SF7..12
     uint8_t sfx = 4*(sf+(7-SF7));
@@ -164,7 +164,7 @@ ostime_t calcAirTime (rps_t rps, uint8_t plen) {
         sfx = 4;
     }
     // Need 32bit arithmetic for this last step
-    return (((ostime_t)tmp << sfx) * OSTICKS_PER_SEC + div/2) / div;
+    return (((int32_t)tmp << sfx) * OSTICKS_PER_SEC + div/2) / div;
 }
 
 extern inline rps_t updr2rps (dr_t dr);
@@ -216,17 +216,17 @@ static CONST_TABLE(uint8_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
 //
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
-static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
+static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
 #if defined(CFG_eu868)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
-    us2osticksRound(128<<7),  // DR_SF12
-    us2osticksRound(128<<6),  // DR_SF11
-    us2osticksRound(128<<5),  // DR_SF10
-    us2osticksRound(128<<4),  // DR_SF9
-    us2osticksRound(128<<3),  // DR_SF8
-    us2osticksRound(128<<2),  // DR_SF7
-    us2osticksRound(128<<1),  // DR_SF7B
-    us2osticksRound(80)       // FSK -- not used (time for 1/2 byte)
+    OsDeltaTime::from_us_round(128<<7).tick(),  // DR_SF12
+    OsDeltaTime::from_us_round(128<<6).tick(),  // DR_SF11
+    OsDeltaTime::from_us_round(128<<5).tick(),  // DR_SF10
+    OsDeltaTime::from_us_round(128<<4).tick(),  // DR_SF9
+    OsDeltaTime::from_us_round(128<<3).tick(),  // DR_SF8
+    OsDeltaTime::from_us_round(128<<2).tick(),  // DR_SF7
+    OsDeltaTime::from_us_round(128<<1).tick(),  // DR_SF7B
+    OsDeltaTime::from_us_round(80).tick()       // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7))  // map DR_SFnCR -> 0-6
     us2osticksRound(128<<5),  // DR_SF10   DR_SF12CR
@@ -239,21 +239,21 @@ static CONST_TABLE(ostime_t, DR2HSYM_osticks)[] = {
 };
 
 
-static ostime_t rndDelay (uint8_t secSpan) {
+static OsDeltaTime rndDelay (uint8_t secSpan) {
     uint16_t r = os_getRndU2();
-    ostime_t delay = r;
-    if( delay > OSTICKS_PER_SEC )
-        delay = r % (uint16_t)OSTICKS_PER_SEC;
+    OsDeltaTime delay = r;
+    if( delay > OsDeltaTime::from_sec(1))
+        delay = r % OsDeltaTime::from_sec(1).tick();
     if( secSpan > 0 )
-        delay += ((uint8_t)r % secSpan) * OSTICKS_PER_SEC;
+        delay += (r % secSpan) * OsDeltaTime::from_sec(1);
     return delay;
 }
 
 
-void Lmic::txDelay (ostime_t reftime, uint8_t secSpan) {
-    reftime += rndDelay(secSpan);
-    if( globalDutyRate == 0  ||  (reftime - globalDutyAvail) > 0 ) {
-        globalDutyAvail = reftime;
+void Lmic::txDelay (OsTime const& reftime, uint8_t secSpan) {
+    auto delayRef = reftime + rndDelay(secSpan);
+    if( globalDutyRate == 0 ||  (delayRef - globalDutyAvail) > OsDeltaTime(0) ) {
+        globalDutyAvail = delayRef;
         opmode |= OP_RNDTX;
     }
 }
@@ -372,16 +372,18 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
 }
 
 
-void Lmic::updateTx (ostime_t txbeg) {
+void Lmic::updateTx (OsTime const& txbeg) {
+    
     // Update global/band specific duty cycle stats
-    ostime_t airtime = calcAirTime(rps, dataLen);
+    OsDeltaTime airtime = calcAirTime(rps, dataLen);
     // Update channel/global duty cycle stats
     band_t* band = &bands[getBand(txChnl)];
     freq = getFreq(txChnl);
     txpow = band->txpow;
-    band->avail = txbeg + airtime * band->txcap;
+    // TODO check time calculation
+    band->avail = txbeg + band->txcap * airtime;
     if( globalDutyRate != 0 )
-        globalDutyAvail = txbeg + (airtime<<globalDutyRate);
+        globalDutyAvail = txbeg + OsDeltaTime(airtime.tick()<<globalDutyRate);
     #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting available time for band %d to %lu\n", os_getTime(), txbeg, airtime, freq, band->avail);
         if( globalDutyRate != 0 )
@@ -398,7 +400,7 @@ uint8_t Lmic::getBand(uint8_t channel) {
     return channels[channel].freq & 0x3;
 }
 
-ostime_t Lmic::nextTx (ostime_t now) {
+OsTime Lmic::nextTx (OsTime const& now) {
     uint8_t bmap=0xF;
     #if LMIC_DEBUG_LEVEL > 1
     for( uint8_t bi=0; bi<4; bi++ ) { 
@@ -406,7 +408,7 @@ ostime_t Lmic::nextTx (ostime_t now) {
     }
     #endif
     do {
-        ostime_t mintime = now + /*8h*/sec2osticks(28800);
+        OsTime mintime = now + /*8h*/OsDeltaTime::from_sec(28800);
         uint8_t band= 0xFF;
         for( uint8_t bi=0; bi<4; bi++ ) {
             if( (bmap & (1<<bi)) && mintime - bands[bi].avail > 0 ) {
@@ -420,7 +422,7 @@ ostime_t Lmic::nextTx (ostime_t now) {
         if(band == 0xFF){
             // Try to handle a strange bug wich appen afert 7 hours
             PRINT_DEBUG_2("Error No band available.");
-            ostime_t resetTime = now + sec2osticks(15 * 60);
+            OsTime resetTime = now + OsDeltaTime::from_sec(15 * 60);
             for( uint8_t bi=0; bi < MAX_BANDS; bi++ ) { 
                 PRINT_DEBUG_2("Band %i Reseting avail from %lu to %lu, lastchnl: %i.", bi, bands[bi].avail,resetTime, bands[bi].lastchnl);
                 bands[bi].avail = resetTime;
@@ -474,8 +476,8 @@ void Lmic::initJoinLoop () {
 }
 
 
-ostime_t Lmic::nextJoinState (void) {
-    uint8_t failed = 0;
+bool Lmic::nextJoinState () {
+    bool failed = 0;
 
     // Try 869.x and then 864.x with same DR
     // If both fail try next lower datarate
@@ -484,7 +486,7 @@ ostime_t Lmic::nextJoinState (void) {
     if( (++txCnt & 1) == 0 ) {
         // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
         if( datarate == DR_SF12 )
-            failed = 1; // we have tried all DR - signal EV_JOIN_FAILED
+            failed = true; // we have tried all DR - signal EV_JOIN_FAILED
         else
             setDrJoin(decDR(datarate));
     }
@@ -492,7 +494,7 @@ ostime_t Lmic::nextJoinState (void) {
     opmode &= ~OP_NEXTCHNL;
     // Move txend to randomize synchronized concurrent joins.
     // Duty cycle is based on txend.
-    ostime_t time = os_getTime();
+    OsTime time = os_getTime();
     if( time - bands[BAND_MILLI].avail < 0 )
         time = bands[BAND_MILLI].avail;
     txend = time +
@@ -509,7 +511,7 @@ ostime_t Lmic::nextJoinState (void) {
             lmic_printf("%lu: Scheduling next join at %lu\n", os_getTime(), txend);
     #endif
     // 1 - triggers EV_JOIN_FAILED event
-    return failed;
+    return !failed;
 }
 #endif // !DISABLE_JOIN
 
@@ -594,7 +596,7 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
     return 1;
 }
 
-void Lmic::updateTx (ostime_t txbeg) {
+void Lmic::updateTx (ostime txbeg) {
     uint8_t chnl = txChnl;
     if( chnl < 64 ) {
         freq = US915_125kHz_UPFBASE + chnl*US915_125kHz_UPFSTEP;
@@ -611,13 +613,13 @@ void Lmic::updateTx (ostime_t txbeg) {
 
     // Update global duty cycle stats
     if( globalDutyRate != 0 ) {
-        ostime_t airtime = calcAirTime(rps, dataLen);
+        ostime airtime = calcAirTime(rps, dataLen);
         globalDutyAvail = txbeg + (airtime<<globalDutyRate);
     }
 }
 
 // US does not have duty cycling - return now as earliest TX time
-ostime_t Lmic::nextTx (ostime_t now) {
+ostime Lmic::nextTx (ostime now) {
     if( chRnd==0 )
         chRnd = radio_rand1() & 0x3F;
     if( datarate >= DR_SF8C ) { // 500kHz
@@ -660,12 +662,12 @@ void Lmic::initJoinLoop (void) {
     setDrJoin(DR_SF7);
 }
 
-ostime_t Lmic::nextJoinState (void) {
+bool Lmic::nextJoinState () {
     // Try the following:
     //   SF7/8/9/10  on a random channel 0..63
     //   SF8C        on a random channel 64..71
     //
-    uint8_t failed = 0;
+    bool failed = false;
     if( datarate != DR_SF8C ) {
         txChnl = 64+(txChnl&7);
         setDrJoin(DR_SF8C);
@@ -674,7 +676,7 @@ ostime_t Lmic::nextJoinState (void) {
         int8_t dr = DR_SF7 - ++txCnt;
         if( dr < DR_SF10 ) {
             dr = DR_SF10;
-            failed = 1; // All DR exhausted - signal failed
+            failed = true; // All DR exhausted - signal failed
         }
         setDrJoin(dr);
     }
@@ -687,7 +689,7 @@ ostime_t Lmic::nextJoinState (void) {
          // SF10:16, SF9=8,..SF8C:1secs
          : rndDelay(16>>datarate));
     // 1 - triggers EV_JOIN_FAILED event
-    return failed;
+    return !failed;
 }
 #endif // !DISABLE_JOIN
 
@@ -978,8 +980,8 @@ void Lmic::setupRx2 () {
 }
 
 
-void Lmic::schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr) {
-    ostime_t hsym = dr2hsym(dr);
+void Lmic::schedRx12 (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr) {
+    OsDeltaTime hsym = OsDeltaTime(dr2hsym(dr));
 
     rxsyms = MINRX_SYMS;
 
@@ -989,7 +991,7 @@ void Lmic::schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint
         // Calculate how much the clock will drift maximally after delay has
         // passed. This indicates the amount of time we can be early
         // _or_ late.
-        ostime_t drift = (int64_t)delay * clockError / MAX_CLOCK_ERROR;
+        OsDeltaTime drift = OsDeltaTime(int32_t((int64_t)delay.tick() * clockError / MAX_CLOCK_ERROR));
 
         // Increase the receive window by twice the maximum drift (to
         // compensate for a slow or a fast clock).
@@ -1005,7 +1007,7 @@ void Lmic::schedRx12 (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func, uint
 
     // Center the receive window on the center of the expected preamble
     // (again note that hsym is half a sumbol time, so no /2 needed)
-    rxtime = txend + delay + PAMBL_SYMS * hsym - rxsyms * hsym;
+    rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
 
     osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
 }
@@ -1021,7 +1023,7 @@ void Lmic::setupRx1 (OsJobType<Lmic>::osjobcbTyped_t func) {
 
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in rxtime
-void Lmic::txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func) {
+void Lmic::txDone (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func) {
     // Change RX frequency / rps (US only) before we increment txChnl
     setRx1Params();
     // rxsyms carries the TX datarate (can be != datarate [confirm retries etc.])
@@ -1029,7 +1031,7 @@ void Lmic::txDone (ostime_t delay, OsJobType<Lmic>::osjobcbTyped_t func) {
     // into the middle of the 8 symbols preamble.
 #if defined(CFG_eu868)
     if( /* TX datarate */rxsyms == DR_FSK ) {
-        rxtime = txend + delay - PRERX_FSK*us2osticksRound(160);
+        rxtime = txend + delay - PRERX_FSK * OsDeltaTime::from_us_round(160);
         rxsyms = RXLEN_FSK;
         osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
     }
@@ -1062,17 +1064,17 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
             return true;
         } 
         opmode &= ~OP_TXRXPEND;
-        ostime_t delay = nextJoinState();
+        bool succes = nextJoinState();
         // Build next JOIN REQUEST with next engineUpdate call
         // Optionally, report join failed.
         // Both after a random/chosen amount of ticks.
 
         // this delay is suspissisous FIXME GZOGZO
 
-        osjob.setTimedCallback(os_getTime()+delay,
-                            (delay&1) != 0
-                            ? &Lmic::onJoinFailed      // one JOIN iteration done and failed
-                            : &Lmic::runEngineUpdate); // next step to be delayed
+        osjob.setTimedCallback(os_getTime(),
+                            succes
+                            ? &Lmic::runEngineUpdate // next step to be delayed
+                            : &Lmic::onJoinFailed ); // one JOIN iteration done and failed 
         return true;
 }
 bool Lmic::processJoinAccept () {
@@ -1199,7 +1201,7 @@ void Lmic::setupRx2DnData (OsJobBase* osjob) {
 
 void Lmic::processRx1DnData (OsJobBase* osjob) {
     if( dataLen == 0 || !processDnData() )
-        schedRx12(sec2osticks(rxDelay +(int)DELAY_EXTDNW2), &Lmic::setupRx2DnData, dn2Dr);
+        schedRx12(OsDeltaTime::from_sec(rxDelay +(int)DELAY_EXTDNW2), &Lmic::setupRx2DnData, dn2Dr);
 }
 
 
@@ -1209,7 +1211,7 @@ void Lmic::setupRx1DnData (OsJobBase* osjob) {
 
 
 void Lmic::updataDone (OsJobBase* osjob) {
-    txDone(sec2osticks(rxDelay), &Lmic::setupRx1DnData);
+    txDone(OsDeltaTime::from_sec(rxDelay), &Lmic::setupRx1DnData);
 }
 
 // ========================================
@@ -1418,8 +1420,8 @@ void Lmic::engineUpdate () {
     }
 #endif // !DISABLE_JOIN
 
-    ostime_t now    = os_getTime();
-    ostime_t txbeg  = 0;
+    OsTime now    = os_getTime();
+    OsTime txbeg = now;
 
     if( (opmode & (OP_JOINING|OP_REJOIN|OP_TXDATA|OP_POLL)) != 0 ) {
         // Need to TX some data...
@@ -1504,8 +1506,8 @@ void Lmic::engineUpdate () {
         if( (opmode & OP_TRACK) == 0 )
             goto txdelay; // We don't track the beacon - nothing else to do - so wait for the time to TX
         // Consider RX tasks
-        if( txbeg == 0 ) // zero indicates no TX pending
-            txbeg += 1;  // TX delayed by one tick (insignificant amount of time)
+        // if( txbeg == 0 ) // zero indicates no TX pending
+        //    txbeg += 1;  // TX delayed by one tick (insignificant amount of time)
     } else {
         // No TX pending - no scheduled RX
         if( (opmode & OP_TRACK) == 0 )

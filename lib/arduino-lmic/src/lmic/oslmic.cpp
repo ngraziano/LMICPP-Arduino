@@ -62,13 +62,13 @@ void OsJobBase::clearCallback () {
     #endif
 }
 
-void OsJob::setTimedCallback (ostime_t time, osjobcb_t cb) {
+void OsJob::setTimedCallback (OsTime const& time, osjobcb_t cb) {
     setCallbackFuture(cb);
     setTimed(time);
 }
 
 // schedule timed job
-void OsJobBase::setTimed (ostime_t time) {
+void OsJobBase::setTimed (OsTime const& time) {
     OsJobBase** pnext;
     hal_disableIRQs();
     // remove if job was already queued
@@ -95,11 +95,11 @@ void OsJob::call() {
     func(this);
 }
 
-int32_t OsScheduler::runloopOnce() {
+OsDeltaTime OsScheduler::runloopOnce() {
     #if LMIC_DEBUG_LEVEL > 1
         bool has_deadline = false;
     #endif
-    OsJobBase* j = NULL;
+    OsJobBase* j = nullptr;
     hal_disableIRQs();
     // check for runnable jobs
     if(runnablejobs) {
@@ -131,7 +131,7 @@ int32_t OsScheduler::runloopOnce() {
         return 0;
     } else {
         // return the number of milisecond to wait ()
-        return delta_time(scheduledjobs->deadline);
+        return scheduledjobs->deadline - hal_ticks();
     } 
 }
 
@@ -141,6 +141,6 @@ void os_init () {
     LMIC.init();
 }
 
-ostime_t os_getTime () {
+OsTime os_getTime () {
     return hal_ticks();
 }

@@ -485,9 +485,9 @@ void radio_init () {
 #else
     hal_pin_rst(1); // drive RST pin high
 #endif
-    hal_waitUntil(os_getTime()+ms2osticks(1)); // wait >100us
+    hal_waitUntil(os_getTime()+OsDeltaTime::from_ms(1)); // wait >100us
     hal_pin_rst(2); // configure RST pin floating!
-    hal_waitUntil(os_getTime()+ms2osticks(5)); // wait 5ms
+    hal_waitUntil(os_getTime()+OsDeltaTime::from_ms(5)); // wait 5ms
 
     opmode(OPMODE_SLEEP);
 
@@ -558,21 +558,21 @@ uint8_t radio_rssi () {
     return r;
 }
 
-static CONST_TABLE(uint16_t, LORA_RXDONE_FIXUP)[] = {
-    [FSK]  =     us2osticks(0), // (   0 ticks)
-    [SF7]  =     us2osticks(0), // (   0 ticks)
-    [SF8]  =  us2osticks(1648), 
-    [SF9]  =  us2osticks(3265), 
-    [SF10] =  us2osticks(7049), 
-    [SF11] = us2osticks(13641), 
-    [SF12] = us2osticks(31189), 
+static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
+    [FSK]  =     OsDeltaTime::from_us(0).tick(), // (   0 ticks)
+    [SF7]  =     OsDeltaTime::from_us(0).tick(), // (   0 ticks)
+    [SF8]  =  OsDeltaTime::from_us(1648).tick(), 
+    [SF9]  =  OsDeltaTime::from_us(3265).tick(), 
+    [SF10] =  OsDeltaTime::from_us(7049).tick(), 
+    [SF11] = OsDeltaTime::from_us(13641).tick(), 
+    [SF12] = OsDeltaTime::from_us(31189).tick(), 
 };
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void radio_irq_handler (uint8_t dio, ostime_t trigger) {
-    ostime_t now = os_getTime();
-    if(now - trigger < 2000) {
+void radio_irq_handler (uint8_t dio, OsTime const& trigger) {
+    OsTime now = os_getTime();
+    if(now - trigger < OsDeltaTime::from_sec(1)) {
         now = trigger;        
     } else {
         PRINT_DEBUG_2("Not using interupt trigger %lu", trigger);
@@ -585,14 +585,14 @@ void radio_irq_handler (uint8_t dio, ostime_t trigger) {
 #endif
         if( flags & IRQ_LORA_TXDONE_MASK ) {
             // save exact tx time
-            LMIC.txend = now - us2osticks(43); // TXDONE FIXUP
+            LMIC.txend = now - OsDeltaTime::from_us(43); // TXDONE FIXUP
             // forbid sleep to keep precise time counting.
             hal_forbid_sleep();    
             
         } else if( flags & IRQ_LORA_RXDONE_MASK ) {
             // save exact rx time
             if(getBw(LMIC.rps) == BW125) {
-                now -= TABLE_GET_U2(LORA_RXDONE_FIXUP, getSf(LMIC.rps));
+                now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, getSf(LMIC.rps)));
             }
             LMIC.rxtime = now;
             // read the PDU and inform the MAC that we received something

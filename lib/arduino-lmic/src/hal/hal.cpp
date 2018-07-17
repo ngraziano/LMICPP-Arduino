@@ -17,7 +17,7 @@
 // -----------------------------------------------------------------------------
 // I/O
 
-ostime_t last_int_trigger = 0;
+OsTime last_int_trigger;
 
 void hal_store_trigger() {
     last_int_trigger = os_getTime();
@@ -77,7 +77,6 @@ void hal_io_check() {
             if (dio_states[i])
                 radio_irq_handler(i, last_int_trigger);
         }
-        last_int_trigger = 0;
     }
 }
 
@@ -129,15 +128,15 @@ void hal_forbid_sleep() {
     is_sleep_allow = false;
 }
 
-uint32_t time_in_sleep = 0;
+OsDeltaTime time_in_sleep = 0;
 
-void hal_add_time_in_sleep(ostime_t nb_tick)
+void hal_add_time_in_sleep(OsDeltaTime const& nb_tick)
 {
     time_in_sleep += nb_tick;
     os_getTime();
 }
 
-uint32_t hal_ticks () {
+OsTime hal_ticks () {
     // Because micros() is scaled down in this function, micros() will
     // overflow before the tick timer should, causing the tick timer to
     // miss a significant part of its values if not corrected. To fix
@@ -175,40 +174,35 @@ uint32_t hal_ticks () {
     // Return the scaled value with the upper bits of stored added. The
     // overlapping bit will be equal and the lower bits will be 0, so
     // bitwise or is a no-op for them.
-    return (scaled | ((uint32_t)overflow << 24)) + time_in_sleep;
+    return OsTime((scaled | ((uint32_t)overflow << 24)) + time_in_sleep.tick());
 
     // 0 leads to correct, but overly complex code (it could just return
     // micros() unmodified), 8 leaves no room for the overlapping bit.
     static_assert(US_PER_OSTICK_EXPONENT > 0 && US_PER_OSTICK_EXPONENT < 8, "Invalid US_PER_OSTICK_EXPONENT value");
 }
 
-// Returns the number of ticks until time. Negative values indicate that
-// time has already passed.
-int32_t delta_time(uint32_t time) {
-    return (int32_t)(time - hal_ticks());
-}
 
-void hal_waitUntil (uint32_t time) {
-    int32_t delta = delta_time(time);
+void hal_waitUntil (OsTime const& time) {
+    OsDeltaTime delta = time - hal_ticks();
     // From delayMicroseconds docs: Currently, the largest value that
     // will produce an accurate delay is 16383.
-    while (delta > (16000 / US_PER_OSTICK)) {
+    while (delta >  OsDeltaTime::from_us(16000)) {
         delay(16);
-        delta -= (16000 / US_PER_OSTICK);
+        delta -= OsDeltaTime::from_us(16000);
     }
     if (delta > 0)
-        delayMicroseconds(delta * US_PER_OSTICK);
+        delayMicroseconds(delta.to_us());
 }
 
 // check and rewind for target time
-bool hal_checkTimer (uint32_t time) {
+bool hal_checkTimer (OsTime const& time) {
     
-    auto delta = delta_time(time);
-    if(delta <= 0)
+    auto delta = time - hal_ticks();
+    if(delta <= OsDeltaTime(0))
         return true;
 
     // HACK for a bug (I will track it down.)
-    if(delta >= sec2osticks(60*60)) {
+    if(delta >= OsDeltaTime::from_sec(60*60)) {
         PRINT_DEBUG_2("WARN delta is too big, execute now ref : %lu, delta : %li", time, delta);
         return true;
     }

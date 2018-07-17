@@ -40,23 +40,23 @@
 uint8_t radio_rand1 (void);
 
 void radio_init (void);
-void radio_irq_handler (uint8_t dio, int32_t trigger);
+void radio_irq_handler (uint8_t dio, OsTime const& trigger);
 void os_init (void);
 
 //================================================================================
 
 
 #ifndef RX_RAMPUP
-#define RX_RAMPUP  (us2osticks(2000))
+#define RX_RAMPUP  (OsDeltaTime::from_us(2000))
 #endif
 #ifndef TX_RAMPUP
-#define TX_RAMPUP  (us2osticks(2000))
+#define TX_RAMPUP  (OsDeltaTime::from_us(2000))
 #endif
 
 #ifndef HAS_os_calls
 
 #ifndef os_getTime
-ostime_t os_getTime (void);
+OsTime os_getTime (void);
 #endif
 #ifndef os_radio
 void os_radio (uint8_t mode);
@@ -118,9 +118,9 @@ uint8_t os_getBattLevel (void);
     TABLE_GETTER(_u4, uint32_t, dword);
     TABLE_GETTER(_s4, int32_t, dword);
 
-    // This assumes ostime_t is 4 bytes, so error out if it is not
-    typedef int check_sizeof_ostime_t[(sizeof(ostime_t) == 4) ? 0 : -1];
-    TABLE_GETTER(_ostime, ostime_t, dword);
+    // This assumes ostime is 4 bytes, so error out if it is not
+    //typedef int check_sizeof_ostime[(sizeof(ostime) == 4) ? 0 : -1];
+    TABLE_GETTER(_ostime, int32_t, dword);
 
     // For AVR, store constants in PROGMEM, saving on RAM usage
     #define CONST_TABLE(type, name) const type PROGMEM RESOLVE_TABLE(name)
@@ -134,7 +134,7 @@ uint8_t os_getBattLevel (void);
     inline int16_t table_get_s2(const int16_t *table, size_t index) { return table[index]; }
     inline uint32_t table_get_u4(const uint32_t *table, size_t index) { return table[index]; }
     inline int32_t table_get_s4(const int32_t *table, size_t index) { return table[index]; }
-    inline ostime_t table_get_ostime(const ostime_t *table, size_t index) { return table[index]; }
+    inline ostime table_get_ostime(const ostime *table, size_t index) { return table[index]; }
 
     // Declare a table
     #define CONST_TABLE(type, name) const type RESOLVE_TABLE(name)
@@ -167,7 +167,7 @@ class OsScheduler {
         OsJobBase* scheduledjobs = nullptr;
         OsJobBase* runnablejobs = nullptr;
     public:
-        int32_t runloopOnce();
+        OsDeltaTime runloopOnce();
 
 };
 
@@ -178,7 +178,7 @@ class OsJobBase {
     private:
         OsScheduler* scheduler;
         OsJobBase* next = nullptr;
-        ostime_t deadline = 0;
+        OsTime deadline;
 
         static bool unlinkjob (OsJobBase** pnext, OsJobBase* job);
     protected:
@@ -191,7 +191,7 @@ class OsJobBase {
         void setRunnable();
         void clearCallback();
         
-        void setTimed(ostime_t time);
+        void setTimed(OsTime const& time);
 };
 
 class OsJob : public OsJobBase {
@@ -201,7 +201,7 @@ class OsJob : public OsJobBase {
     public:
         void setCallbackFuture(osjobcb_t cb) { func = cb; };
         void setCallbackRunnable(osjobcb_t cb);
-        void setTimedCallback (ostime_t time, osjobcb_t cb);
+        void setTimedCallback (OsTime const& time, osjobcb_t cb);
 };
 
 template<class T> class OsJobType : public OsJobBase {
@@ -223,7 +223,7 @@ template<class T> class OsJobType : public OsJobBase {
             setCallbackFuture(cb);
             setRunnable(); 
         };
-        void setTimedCallback (ostime_t time, osjobcbTyped_t cb) {
+        void setTimedCallback (OsTime const& time, osjobcbTyped_t cb) {
             setCallbackFuture(cb);
             setTimed(time);
         };

@@ -30,7 +30,7 @@ OsJob sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60 * 5;
+OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 5);
 
 const unsigned int BAUDRATE = 19200;
 
@@ -84,7 +84,7 @@ void onEvent (ev_t ev) {
               PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
             }
             // Schedule next transmission
-            sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+            sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
             break;
         case EV_LOST_TSYNC:
             PRINT_DEBUG_2("EV_LOST_TSYNC");
@@ -113,7 +113,7 @@ void do_send(OsJob* j){
     if (LMIC.getOpMode() & OP_TXRXPEND) {
         PRINT_DEBUG_1("OP_TXRXPEND, not sending");
         // should not happen so reschedule anymway
-        sendjob.setTimedCallback(os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+        sendjob.setTimedCallback(os_getTime()+ TX_INTERVAL, do_send);
         
     } else {
         const uint8_t pinCmd = 6;
@@ -132,9 +132,10 @@ void do_send(OsJob* j){
 }
 
 void setup() {
-     Serial.begin(BAUDRATE);
+    #if LMIC_DEBUG_LEVEL > 2
+    Serial.begin(BAUDRATE);
     Serial.println(F("Starting"));
-
+    #endif
     // LMIC init
     os_init();
     
@@ -164,24 +165,24 @@ void setup() {
 }
 
 
-void powersave(ostime_t maxTime) {
-    ostime_t duration_selected = 0;
+void powersave(OsDeltaTime const& maxTime) {
+    OsDeltaTime duration_selected;
     period_t period_selected;
     // these value are base on test
-    if(maxTime > ms2osticks(8500)) {
-        duration_selected = ms2osticks(8500);
+    if(maxTime > OsDeltaTime::from_ms(8500)) {
+        duration_selected = OsDeltaTime::from_ms(8500);
         period_selected = SLEEP_8S;
-    } else if (maxTime > ms2osticks(4500)) {
-        duration_selected = ms2osticks(4200);
+    } else if (maxTime >  OsDeltaTime::from_ms(4500)) {
+        duration_selected =  OsDeltaTime::from_ms(4200);
         period_selected = SLEEP_4S;
-    } else if (maxTime > ms2osticks(2500)) {
-        duration_selected = ms2osticks(2100);
+    } else if (maxTime >  OsDeltaTime::from_ms(2500)) {
+        duration_selected =  OsDeltaTime::from_ms(2100);
         period_selected = SLEEP_2S;
-    } else if (maxTime > ms2osticks(1500)) {
-        duration_selected = ms2osticks(1100);
+    } else if (maxTime >  OsDeltaTime::from_ms(1500)) {
+        duration_selected =  OsDeltaTime::from_ms(1100);
         period_selected = SLEEP_1S;
-    } else if (maxTime > ms2osticks(1000)) {
-        duration_selected = ms2osticks(510);
+    } else if (maxTime >  OsDeltaTime::from_ms(1000)) {
+        duration_selected =  OsDeltaTime::from_ms(510);
         period_selected = SLEEP_500MS;
     } else {
         return;
@@ -191,24 +192,21 @@ void powersave(ostime_t maxTime) {
         Serial.print(os_getTime());
         Serial.print(": Sleep (ostick) :");
         Serial.println(duration_selected);
+        Serial.end();
     #endif
-    // Serial.end();
+
 
     
     for(int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--) {
         
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
         hal_add_time_in_sleep(duration_selected);
-        
-        // security to not sleep too long (hack)
-        if(nbsleep > 200)
-            break;
-        
     }
 
-    // Serial.begin(BAUDRATE);
-    delay(50);
+
     #if LMIC_DEBUG_LEVEL > 2            
+        Serial.begin(BAUDRATE);
+        delay(50);
         Serial.print(os_getTime());
         Serial.println(": wakeup");
     #endif
@@ -216,8 +214,8 @@ void powersave(ostime_t maxTime) {
 
 
 void loop() {
-    ostime_t to_wait = OSS.runloopOnce();
-    if(to_wait && hal_is_sleep_allow()) {
+     OsDeltaTime to_wait = OSS.runloopOnce();
+    if(to_wait > 0 && hal_is_sleep_allow()) {
         powersave(to_wait);
     } 
 }

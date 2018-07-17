@@ -77,9 +77,9 @@ void hal_io_check();
 /*
  * return 32-bit system time in ticks.
  */
-uint32_t hal_ticks (void);
+OsTime hal_ticks ();
 
-void hal_add_time_in_sleep(ostime_t nb_tick);
+void hal_add_time_in_sleep(OsDeltaTime const& nb_tick);
 
 bool hal_is_sleep_allow();
 
@@ -90,14 +90,14 @@ void hal_forbid_sleep();
 /*
  * busy-wait until specified timestamp (in ticks) is reached.
  */
-void hal_waitUntil (uint32_t time);
+void hal_waitUntil (OsTime const& time);
 
 /*
  * check and rewind timer for target time.
  *   - return 1 if target time is close
  *   - otherwise rewind timer for target time or full period and return 0
  */
-bool hal_checkTimer (uint32_t targettime);
+bool hal_checkTimer (OsTime const& targettime);
 
 /*
  * perform fatal failure action.
@@ -105,8 +105,6 @@ bool hal_checkTimer (uint32_t targettime);
  *   - action could be HALT or reboot
  */
 void hal_failed (const char *file, uint16_t line);
-
-int32_t delta_time(uint32_t time);
 
 
 #endif // _hal_hal_h_
