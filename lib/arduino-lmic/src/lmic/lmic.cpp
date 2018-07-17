@@ -229,12 +229,12 @@ static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
     OsDeltaTime::from_us_round(80).tick()       // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7))  // map DR_SFnCR -> 0-6
-    us2osticksRound(128<<5),  // DR_SF10   DR_SF12CR
-    us2osticksRound(128<<4),  // DR_SF9    DR_SF11CR
-    us2osticksRound(128<<3),  // DR_SF8    DR_SF10CR
-    us2osticksRound(128<<2),  // DR_SF7    DR_SF9CR
-    us2osticksRound(128<<1),  // DR_SF8C   DR_SF8CR
-    us2osticksRound(128<<0)   // ------    DR_SF7CR
+    OsDeltaTime::from_us_round(128<<5).tick(),  // DR_SF10   DR_SF12CR
+    OsDeltaTime::from_us_round(128<<4).tick(),  // DR_SF9    DR_SF11CR
+    OsDeltaTime::from_us_round(128<<3).tick(),  // DR_SF8    DR_SF10CR
+    OsDeltaTime::from_us_round(128<<2).tick(),  // DR_SF7    DR_SF9CR
+    OsDeltaTime::from_us_round(128<<1).tick(),  // DR_SF8C   DR_SF8CR
+    OsDeltaTime::from_us_round(128<<0).tick()   // ------    DR_SF7CR
 #endif
 };
 
@@ -596,7 +596,7 @@ uint8_t Lmic::mapChannels (uint8_t chpage, uint16_t chmap) {
     return 1;
 }
 
-void Lmic::updateTx (ostime txbeg) {
+void Lmic::updateTx (OsTime const& txbeg) {
     uint8_t chnl = txChnl;
     if( chnl < 64 ) {
         freq = US915_125kHz_UPFBASE + chnl*US915_125kHz_UPFSTEP;
@@ -613,13 +613,13 @@ void Lmic::updateTx (ostime txbeg) {
 
     // Update global duty cycle stats
     if( globalDutyRate != 0 ) {
-        ostime airtime = calcAirTime(rps, dataLen);
-        globalDutyAvail = txbeg + (airtime<<globalDutyRate);
+        OsDeltaTime airtime = calcAirTime(rps, dataLen);
+        globalDutyAvail = txbeg + OsDeltaTime(airtime.tick()<<globalDutyRate);
     }
 }
 
 // US does not have duty cycling - return now as earliest TX time
-ostime Lmic::nextTx (ostime now) {
+OsTime Lmic::nextTx (OsTime const& now) {
     if( chRnd==0 )
         chRnd = radio_rand1() & 0x3F;
     if( datarate >= DR_SF8C ) { // 500kHz
