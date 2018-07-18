@@ -218,7 +218,10 @@ template<class T> class OsJobType : public OsJobBase {
     public:
         OsJobType(T* ref): OsJobBase() { refClass = ref; };
         OsJobType(T* ref, OsScheduler& scheduler): OsJobBase(scheduler) { refClass = ref; };
-        void setCallbackFuture(osjobcbTyped_t cb) { funcTyped=cb; };
+        void setCallbackFuture(osjobcbTyped_t cb) {
+            funcTyped=cb;
+            PRINT_DEBUG_2("Job %p SetCallBack %p on class %p", this, funcTyped, refClass);
+        };
         void setCallbackRunnable(osjobcbTyped_t cb) {     
             setCallbackFuture(cb);
             setRunnable(); 

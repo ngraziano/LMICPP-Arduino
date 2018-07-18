@@ -87,7 +87,7 @@ void OsJobBase::setTimed (OsTime const& time) {
     *pnext = this;
     hal_enableIRQs();
     #if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Scheduled job %p, at %lu\n", os_getTime(), this, time);
+        lmic_printf("%lu: Scheduled job %p, atRun %lu\n", os_getTime(), this, time);
     #endif
 }
 

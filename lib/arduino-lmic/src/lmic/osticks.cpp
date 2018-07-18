@@ -74,11 +74,11 @@ OsDeltaTime OsDeltaTime::from_ms(int64_t ms) {
 }
 
 OsDeltaTime OsDeltaTime::from_sec(int64_t sec) {
-    return OsDeltaTime(sec*OSTICKS_PER_SEC / 1000);
+    return OsDeltaTime(sec*OSTICKS_PER_SEC);
 }
 
 OsDeltaTime OsDeltaTime::from_us_round(int64_t us) {
-    return OsDeltaTime((us*OSTICKS_PER_SEC + 999999) / 1000000);
+    return OsDeltaTime(us2osticksRound(us));
 }
 
 

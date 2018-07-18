@@ -219,22 +219,22 @@ static CONST_TABLE(uint8_t, DRADJUST)[2+TXCONF_ATTEMPTS] = {
 static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
 #if defined(CFG_eu868)
 #define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
-    OsDeltaTime::from_us_round(128<<7).tick(),  // DR_SF12
-    OsDeltaTime::from_us_round(128<<6).tick(),  // DR_SF11
-    OsDeltaTime::from_us_round(128<<5).tick(),  // DR_SF10
-    OsDeltaTime::from_us_round(128<<4).tick(),  // DR_SF9
-    OsDeltaTime::from_us_round(128<<3).tick(),  // DR_SF8
-    OsDeltaTime::from_us_round(128<<2).tick(),  // DR_SF7
-    OsDeltaTime::from_us_round(128<<1).tick(),  // DR_SF7B
-    OsDeltaTime::from_us_round(80).tick()       // FSK -- not used (time for 1/2 byte)
+    us2osticksRound(128<<7),  // DR_SF12
+    us2osticksRound(128<<6),  // DR_SF11
+    us2osticksRound(128<<5),  // DR_SF10
+    us2osticksRound(128<<4),  // DR_SF9
+    us2osticksRound(128<<3),  // DR_SF8
+    us2osticksRound(128<<2),  // DR_SF7
+    us2osticksRound(128<<1),  // DR_SF7B
+    us2osticksRound(80)       // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
-#define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7))  // map DR_SFnCR -> 0-6
-    OsDeltaTime::from_us_round(128<<5).tick(),  // DR_SF10   DR_SF12CR
-    OsDeltaTime::from_us_round(128<<4).tick(),  // DR_SF9    DR_SF11CR
-    OsDeltaTime::from_us_round(128<<3).tick(),  // DR_SF8    DR_SF10CR
-    OsDeltaTime::from_us_round(128<<2).tick(),  // DR_SF7    DR_SF9CR
-    OsDeltaTime::from_us_round(128<<1).tick(),  // DR_SF8C   DR_SF8CR
-    OsDeltaTime::from_us_round(128<<0).tick()   // ------    DR_SF7CR
+#define &&&dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7))  // map DR_SFnCR -> 0-6
+    us2osticksRound(128<<5),  // DR_SF10   DR_SF12CR
+    us2osticksRound(128<<4),  // DR_SF9    DR_SF11CR
+    us2osticksRound(128<<3),  // DR_SF8    DR_SF10CR
+    us2osticksRound(128<<2),  // DR_SF7    DR_SF9CR
+    us2osticksRound(128<<1),  // DR_SF8C   DR_SF8CR
+    us2osticksRound(128<<0)   // ------    DR_SF7CR
 #endif
 };
 
@@ -981,6 +981,8 @@ void Lmic::setupRx2 () {
 
 
 void Lmic::schedRx12 (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr) {
+    PRINT_DEBUG_2("SchedRx RX12.");
+
     OsDeltaTime hsym = OsDeltaTime(dr2hsym(dr));
 
     rxsyms = MINRX_SYMS;
@@ -1069,15 +1071,15 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
         // Optionally, report join failed.
         // Both after a random/chosen amount of ticks.
 
-        // this delay is suspissisous FIXME GZOGZO
-
-        osjob.setTimedCallback(os_getTime(),
+        osjob.setCallbackRunnable(
                             succes
                             ? &Lmic::runEngineUpdate // next step to be delayed
                             : &Lmic::onJoinFailed ); // one JOIN iteration done and failed 
         return true;
 }
 bool Lmic::processJoinAccept () {
+    PRINT_DEBUG_2("Process join accept.");
+
     ASSERT(txrxFlags != TXRX_DNW1 || dataLen != 0);
     ASSERT((opmode & OP_TXRXPEND)!=0);
 
@@ -1155,18 +1157,22 @@ void Lmic::processRx2Jacc (OsJobBase* osjob) {
 
 
 void Lmic::setupRx2Jacc (OsJobBase* osjob) {
+    PRINT_DEBUG_2("Setup RX2 join accept.");
     this->osjob.setCallbackFuture(&Lmic::processRx2Jacc);
     setupRx2();
 }
 
 
 void Lmic::processRx1Jacc (OsJobBase* osjob) {
+    //GZODEBUG
+    PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
     if( dataLen == 0 || !processJoinAccept() )
         schedRx12(DELAY_JACC2_osticks, &Lmic::setupRx2Jacc, dn2Dr);
 }
 
 
 void Lmic::setupRx1Jacc (OsJobBase* osjob) {
+    PRINT_DEBUG_2("Setup RX1 join accept.");
     setupRx1(&Lmic::processRx1Jacc);
 }
 

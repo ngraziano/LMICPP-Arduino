@@ -203,7 +203,7 @@ bool hal_checkTimer (OsTime const& time) {
 
     // HACK for a bug (I will track it down.)
     if(delta >= OsDeltaTime::from_sec(60*60)) {
-        PRINT_DEBUG_2("WARN delta is too big, execute now ref : %lu, delta : %li", time, delta);
+        PRINT_DEBUG_2("WARN delta is too big, execute now ref : %lu, delta : %li", time, delta.tick());
         return true;
     }
     return false;

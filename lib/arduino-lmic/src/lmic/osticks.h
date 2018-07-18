@@ -56,6 +56,9 @@ OsTime operator-(OsTime const& a, OsDeltaTime const& b);
 
 OsDeltaTime operator-(OsTime const& a,OsTime  const& b);
 
+// FOR constant table
+#define us2osticks(us)   ((int32_t)( ((int64_t)(us) * OSTICKS_PER_SEC) / 1000000))
+#define us2osticksRound(us) ((int32_t)( ((int64_t)(us) * OSTICKS_PER_SEC + 500000) / 1000000))
 
 
 #endif // _osticks_h_
