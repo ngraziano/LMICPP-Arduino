@@ -75,7 +75,7 @@ void hal_enableIRQs (void);
 void hal_io_check();
 
 /*
- * return 32-bit system time in ticks.
+ * return system time.
  */
 OsTime hal_ticks ();
 
@@ -88,7 +88,7 @@ void hal_allow_sleep();
 void hal_forbid_sleep();
 
 /*
- * busy-wait until specified timestamp (in ticks) is reached.
+ * busy-wait until specified timestamp is reached.
  */
 void hal_waitUntil (OsTime const& time);
 

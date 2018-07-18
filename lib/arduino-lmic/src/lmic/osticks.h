@@ -10,9 +10,6 @@
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
 
-
-
-
 class OsDeltaTime {
     public:
         OsDeltaTime(int32_t init) : value(init) {};
@@ -54,11 +51,8 @@ bool operator> (OsDeltaTime const& lhs, OsDeltaTime const& rhs);
 bool operator<=(OsDeltaTime const& lhs, OsDeltaTime const& rhs);
 bool operator>=(OsDeltaTime const& lhs, OsDeltaTime const& rhs);
 
-
 OsTime operator+(OsTime const& a, OsDeltaTime const& b);
 OsTime operator-(OsTime const& a, OsDeltaTime const& b);
-
-
 
 OsDeltaTime operator-(OsTime const& a,OsTime  const& b);
 
