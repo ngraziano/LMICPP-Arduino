@@ -983,6 +983,7 @@ void Lmic::setupRx2 () {
 void Lmic::schedRx12 (OsDeltaTime const& delay, OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr) {
     PRINT_DEBUG_2("SchedRx RX12.");
 
+    // Half symbol time for the data rate.
     OsDeltaTime hsym = OsDeltaTime(dr2hsym(dr));
 
     rxsyms = MINRX_SYMS;
@@ -1089,10 +1090,10 @@ bool Lmic::processJoinAccept () {
 
     uint8_t hdr  = frame[0];
     uint8_t dlen = dataLen;
-    uint32_t mic  = rlsbf4(&frame[dlen-4]); // safe before modified by encrypt!
+    // uint32_t mic  = rlsbf4(&frame[dlen-4]); // safe before modified by encrypt!
     if( (dlen != LEN_JA && dlen != LEN_JAEXT)
         || (hdr & (HDR_FTYPE|HDR_MAJOR)) != (HDR_FTYPE_JACC|HDR_MAJOR_V1) ) {
-            //unexpected frame
+        //unexpected frame
         if( (txrxFlags & TXRX_DNW1) != 0 )
             return false;
         return processJoinAcceptNoJoinFrame();

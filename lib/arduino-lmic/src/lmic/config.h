@@ -39,9 +39,9 @@
 
 // Uncomment these to disable the corresponding MAC commands.
 // Class A
-// #define DISABLE_MCMD_DCAP_REQ // duty cycle cap
-// #define DISABLE_MCMD_DN2P_SET // 2nd DN window param
-// #define DISABLE_MCMD_SNCH_REQ // set new channel
+#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
+#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
+#define DISABLE_MCMD_SNCH_REQ // set new channel
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice

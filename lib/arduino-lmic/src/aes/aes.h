@@ -27,8 +27,8 @@ class Aes {
     * Key is copied.
     */
     void setDevKey(uint8_t key[16]);
-    int verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
-    int verifyMic0 (uint8_t* pdu, int len);
+    bool verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len);
+    bool verifyMic0 (uint8_t* pdu, int len);
     void cipher (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* payload, int len);
     void encrypt (uint8_t* pdu, int len);
     void sessKeys (uint16_t devnonce, const uint8_t* artnonce, uint8_t* nwkkey, uint8_t* artkey);

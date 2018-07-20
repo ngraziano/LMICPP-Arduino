@@ -50,7 +50,7 @@ void Aes::micB0 (uint32_t devaddr, uint32_t seqno, int dndir, int len, uint8_t b
 }
 
 
-int Aes::verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
+bool Aes::verifyMic (const uint8_t* key, uint32_t devaddr, uint32_t seqno, int dndir, uint8_t* pdu, int len) {
     uint8_t buf[16] = {0};
     micB0(devaddr, seqno, dndir, len, buf);
     os_aes_cmac(pdu, len,1, key, buf);
@@ -74,7 +74,7 @@ void Aes::appendMic0 (uint8_t* pdu, int len) {
 }
 
 
-int Aes::verifyMic0 (uint8_t* pdu, int len) {
+bool Aes::verifyMic0 (uint8_t* pdu, int len) {
     uint8_t buf[16] = {0};    
     os_aes_cmac(pdu, len, 0, AESDevKey, buf);
     return rmsbf4(buf) == rmsbf4(pdu+len);
