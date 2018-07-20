@@ -6,22 +6,27 @@
 #include <SPI.h>
 #include <LowPower.h>
 
+#include "lorakeys.h"
+
 void do_send(OsJob* j);
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first. When copying an EUI from ttnctl output, this means to reverse
 // the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
 // 0x70.
+// defined in lorakeys.h
 void getArtEui (uint8_t* buf) { memcpy_P(buf, APPEUI, 8);}
 
 // This should also be in little endian format, see above.
-static const uint8_t PROGMEM DEVEUI[8]={ 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+// defined in lorakeys.h
+// static const uint8_t PROGMEM DEVEUI[8]={ 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 void getDevEui (uint8_t* buf) { memcpy_P(buf, DEVEUI, 8);}
 
 // This key should be in big endian format (or, since it is not really a
 // number but a block of memory, endianness does not really apply). In
 // practice, a key taken from ttnctl can be copied as-is.
 // The key shown here is the semtech default key.
+// defined in lorakeys.h
 
 
 uint16_t data[2] = {}; 
@@ -61,10 +66,6 @@ void onEvent (ev_t ev) {
             break;
         case EV_JOINED:
             PRINT_DEBUG_2("EV_JOINED");
-
-            // Disable link check validation (automatically enabled
-            // during join, but not supported by TTN at this time).
-            LMIC.setLinkCheckMode(false);
             break;
         case EV_RFU1:
             PRINT_DEBUG_2("EV_RFU1");
@@ -132,7 +133,7 @@ void do_send(OsJob* j){
 }
 
 void setup() {
-    #if LMIC_DEBUG_LEVEL > 2
+    #if LMIC_DEBUG_LEVEL > 0
     Serial.begin(BAUDRATE);
     Serial.println(F("Starting"));
     #endif
