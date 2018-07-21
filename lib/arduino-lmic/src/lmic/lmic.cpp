@@ -170,8 +170,8 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
 
 extern inline rps_t updr2rps(dr_t dr);
 extern inline rps_t dndr2rps(dr_t dr);
-extern inline int isFasterDR(dr_t dr1, dr_t dr2);
-extern inline int isSlowerDR(dr_t dr1, dr_t dr2);
+extern inline bool isFasterDR(dr_t dr1, dr_t dr2);
+extern inline bool isSlowerDR(dr_t dr1, dr_t dr2);
 extern inline dr_t incDR(dr_t dr);
 extern inline dr_t decDR(dr_t dr);
 extern inline dr_t assertDR(dr_t dr);

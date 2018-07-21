@@ -35,18 +35,3 @@ void wmsbf4(uint8_t *buf, uint32_t v) {
   buf[0] = v >> 24;
 }
 
-// New CRC-16 CCITT(XMODEM) checksum for beacons:
-uint16_t os_crc16(const uint8_t *data, unsigned int len) {
-  uint16_t remainder = 0;
-  uint16_t polynomial = 0x1021;
-  for (unsigned int i = 0; i < len; i++) {
-    remainder ^= data[i] << 8;
-    for (uint8_t bit = 8; bit > 0; bit--) {
-      if ((remainder & 0x8000))
-        remainder = (remainder << 1) ^ polynomial;
-      else
-        remainder <<= 1;
-    }
-  }
-  return remainder;
-}

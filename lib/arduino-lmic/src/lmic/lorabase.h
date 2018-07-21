@@ -410,8 +410,8 @@ inline rps_t updr2rps(dr_t dr) {
   return (rps_t)TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 inline rps_t dndr2rps(dr_t dr) { return setNocrc(updr2rps(dr), 1); }
-inline int isFasterDR(dr_t dr1, dr_t dr2) { return dr1 > dr2; }
-inline int isSlowerDR(dr_t dr1, dr_t dr2) { return dr1 < dr2; }
+inline bool isFasterDR(dr_t dr1, dr_t dr2) { return dr1 > dr2; }
+inline bool isSlowerDR(dr_t dr1, dr_t dr2) { return dr1 < dr2; }
 inline dr_t incDR(dr_t dr) {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 2) == ILLEGAL_RPS ? dr : (dr_t)(dr + 1);
 } // increase data rate

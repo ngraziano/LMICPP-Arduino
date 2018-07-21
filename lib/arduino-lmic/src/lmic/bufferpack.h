@@ -15,6 +15,6 @@ void wmsbf4(uint8_t *buf, uint32_t value);
 uint16_t rlsbf2(const uint8_t *buf);
 //! Write 16-bit quntity into buffer in little endian byte order.
 void wlsbf2(uint8_t *buf, uint16_t value);
-uint16_t os_crc16(const uint8_t *d, unsigned int len);
+
 
 #endif // __bufferpack_h__

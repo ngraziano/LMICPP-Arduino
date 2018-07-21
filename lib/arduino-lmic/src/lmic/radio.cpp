@@ -560,8 +560,8 @@ void radio_init_random(uint8_t randbuf[16]) {
   rxlora(RXMODE_RSSI);
   while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
-  for (int i = 1; i < 16; i++) {
-    for (int j = 0; j < 8; j++) {
+  for (uint8_t i = 1; i < 16; i++) {
+    for (uint8_t j = 0; j < 8; j++) {
       uint8_t b; // wait for two non-identical subsequent least-significant bits
       while ((b = readReg(LORARegRssiWideband) & 0x01) ==
              (readReg(LORARegRssiWideband) & 0x01))
