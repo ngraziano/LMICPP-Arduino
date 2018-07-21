@@ -896,8 +896,8 @@ bool Lmic::decodeFrame() {
       globalDutyRate = cap & 0xF;
       globalDutyAvail = os_getTime();
       dutyCapAns = 1;
-      oidx += 2;
 #endif // !DISABLE_MCMD_DCAP_REQ
+      oidx += 2;
       continue;
     }
     case MCMD_SNCH_REQ: {
