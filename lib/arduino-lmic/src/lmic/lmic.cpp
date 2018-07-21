@@ -749,7 +749,7 @@ bool Lmic::decodeFrame() {
   uint8_t *d = frame;
   uint8_t hdr = d[0];
   uint8_t ftype = hdr & HDR_FTYPE;
-  int dlen = dataLen;
+  uint8_t dlen = dataLen;
 #if LMIC_DEBUG_LEVEL > 0
   const char *window = (txrxFlags & TXRX_DNW1)
                            ? "RX1"
@@ -764,13 +764,13 @@ bool Lmic::decodeFrame() {
   }
   // Validate exact frame length
   // Note: device address was already read+evaluated in order to arrive here.
-  int fct = d[OFF_DAT_FCT];
+  uint8_t fct = d[OFF_DAT_FCT];
   uint32_t addr = rlsbf4(&d[OFF_DAT_ADDR]);
   uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
-  int olen = fct & FCT_OPTLEN;
-  int ackup = (fct & FCT_ACK) != 0 ? 1 : 0; // ACK last up frame
-  int poff = OFF_DAT_OPTS + olen;
-  int pend = dlen - 4; // MIC
+  uint8_t olen = fct & FCT_OPTLEN;
+  bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
+  uint8_t poff = OFF_DAT_OPTS + olen;
+  uint8_t pend = dlen - MIC_LEN; // MIC
 
   if (addr != devaddr) {
     PRINT_DEBUG_1("Invalid address, window=%s", window);
@@ -784,7 +784,7 @@ bool Lmic::decodeFrame() {
   }
 
   int port = -1;
-  int replayConf = 0;
+  bool replayConf = false;
 
   if (pend > poff)
     port = d[poff++];
@@ -807,7 +807,7 @@ bool Lmic::decodeFrame() {
     }
     // Replay of previous sequence number allowed only if
     // previous frame and repeated both requested confirmation
-    replayConf = 1;
+    replayConf = true;
   } else {
     if (seqno > seqnoDn) {
       // skip in sequence number
@@ -827,11 +827,11 @@ bool Lmic::decodeFrame() {
     adrAckReq = LINK_CHECK_INIT;
 
   // Process OPTS
-  int m = rssi - RSSI_OFF - getSensitivity(rps);
+  int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
   margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
   uint8_t *opts = &d[OFF_DAT_OPTS];
-  int oidx = 0;
+  uint8_t oidx = 0;
   while (oidx < olen) {
     switch (opts[oidx]) {
     case MCMD_LCHK_ANS: {
@@ -866,7 +866,7 @@ bool Lmic::decodeFrame() {
       continue;
     }
     case MCMD_DEVS_REQ: {
-      devsAns = 1;
+      devsAns = true;
       oidx += 1;
       continue;
     }
@@ -1237,7 +1237,7 @@ void Lmic::buildDataFrame() {
     frame[end + 1] = os_getBattLevel();
     frame[end + 2] = margin;
     end += 3;
-    devsAns = 0;
+    devsAns = false;
   }
   if (ladrAns) { // answer to ADR change
     frame[end + 0] = MCMD_LADR_ANS;
