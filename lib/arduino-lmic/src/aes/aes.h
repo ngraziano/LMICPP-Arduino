@@ -13,12 +13,12 @@ class Aes {
 private:
   uint8_t AESDevKey[16];
 
-  static void micB0(uint32_t devaddr, uint32_t seqno, int dndir, int len,
+  static void micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
                     uint8_t buf[16]);
 
-  static void os_aes_ctr(uint8_t *buf, uint16_t len, const uint8_t key[16],
+  static void os_aes_ctr(uint8_t *buf, uint8_t len, const uint8_t key[16],
                          uint8_t result[16]);
-  static void os_aes_cmac(const uint8_t *buf, uint16_t len, bool prepend_aux,
+  static void os_aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
                           const uint8_t key[16], uint8_t result[16]);
 
 public:
@@ -27,16 +27,16 @@ public:
    */
   void setDevKey(uint8_t key[16]);
   bool verifyMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
-                 int dndir, uint8_t *pdu, int len);
-  bool verifyMic0(uint8_t *pdu, int len);
-  void cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno, int dndir,
-              uint8_t *payload, int len);
-  void encrypt(uint8_t *pdu, int len);
+                 uint8_t dndir, uint8_t *pdu, uint8_t len);
+  bool verifyMic0(uint8_t *pdu, uint8_t len);
+  void cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno, uint8_t dndir,
+              uint8_t *payload, uint8_t len);
+  void encrypt(uint8_t *pdu, uint8_t len);
   void sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t *nwkkey,
                 uint8_t *artkey);
   void appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
-                 int dndir, uint8_t *pdu, int len);
-  void appendMic0(uint8_t *pdu, int len);
+                 uint8_t dndir, uint8_t *pdu, uint8_t len);
+  void appendMic0(uint8_t *pdu, uint8_t len);
 };
 
 #endif // __aes_h__

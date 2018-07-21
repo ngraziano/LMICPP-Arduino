@@ -1216,7 +1216,7 @@ void Lmic::buildDataFrame() {
 
   // Piggyback MAC options
   // Prioritize by importance
-  int end = OFF_DAT_OPTS;
+  uint8_t end = OFF_DAT_OPTS;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   if (dutyCapAns) {
     frame[end] = MCMD_DCAP_ANS;
