@@ -78,8 +78,6 @@ enum { MAX_TXPOW_125kHz = 30 };
 enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
 enum { KEEP_TXPOW = -128 };
 
-// purpose of receive window - lmic_t.rxState
-enum { RADIO_RST = 0, RADIO_TX = 1, RADIO_RX = 2, RADIO_RXON = 3 };
 // Netid values /  lmic_t.netid
 enum { NETID_NONE = (int)~0U, NETID_MASK = (int)0xFFFFFF };
 // MAC operation modes (lmic_t.opmode).

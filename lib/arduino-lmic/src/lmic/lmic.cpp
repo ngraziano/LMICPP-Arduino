@@ -974,7 +974,7 @@ void Lmic::setupRx2() {
   rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
-  os_radio(RADIO_RX);
+  radio_rx();
 }
 
 void Lmic::schedRx12(OsDeltaTime const &delay,
@@ -1020,7 +1020,7 @@ void Lmic::setupRx1(OsJobType<Lmic>::osjobcbTyped_t func) {
   rps = setNocrc(rps, 1);
   dataLen = 0;
   osjob.setCallbackFuture(func);
-  os_radio(RADIO_RX);
+  radio_rx();
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -1493,7 +1493,7 @@ void Lmic::engineUpdate() {
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       updateTx(txbeg);
-      os_radio(RADIO_TX);
+      radio_tx();
       return;
     }
 #if LMIC_DEBUG_LEVEL > 1
@@ -1520,12 +1520,12 @@ void Lmic::setAdrMode(bool enabled) { adrEnabled = enabled ? FCT_ADREN : 0; }
 
 void Lmic::shutdown() {
   osjob.clearCallback();
-  os_radio(RADIO_RST);
+  radio_rst();
   opmode |= OP_SHUTDOWN;
 }
 
 void Lmic::reset() {
-  os_radio(RADIO_RST);
+  radio_rst();
   osjob.clearCallback();
 
   // TODO proper reset
@@ -1553,7 +1553,7 @@ void Lmic::clrTxData(void) {
   if ((opmode & (OP_JOINING | OP_SCAN)) != 0) // do not interfere with JOINING
     return;
   osjob.clearCallback();
-  os_radio(RADIO_RST);
+  radio_rst();
   engineUpdate();
 }
 

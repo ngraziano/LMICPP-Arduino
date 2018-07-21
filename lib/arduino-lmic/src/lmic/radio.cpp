@@ -158,8 +158,6 @@
 #define MAP_DIO1_LORA_NOP 0x30    // --11----
 #define MAP_DIO2_LORA_NOP 0xC0    // ----11--
 
-
-
 #ifdef CFG_sx1276_radio
 #define LNA_RX_GAIN (0x20 | 0x1)
 #elif CFG_sx1272_radio
@@ -490,7 +488,6 @@ static void startrx(uint8_t rxmode) {
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-// get random seed from wideband noise rssi
 void radio_init() {
   hal_disableIRQs();
 
@@ -500,11 +497,11 @@ void radio_init() {
 #else
   hal_pin_rst(1); // drive RST pin high
 #endif
-// wait >100us
-  hal_wait(OsDeltaTime::from_ms(1)); 
+  // wait >100us
+  hal_wait(OsDeltaTime::from_ms(1));
   hal_pin_rst(2); // configure RST pin floating!
   // wait 5ms
-  hal_wait(OsDeltaTime::from_ms(5)); 
+  hal_wait(OsDeltaTime::from_ms(5));
 
   opmode(OPMODE_SLEEP);
 
@@ -519,7 +516,6 @@ void radio_init() {
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
-
 
 #ifdef CFG_sx1276mb1_board
   // chain calibration
@@ -556,11 +552,11 @@ void radio_init() {
   hal_enableIRQs();
 }
 
-
+// get random seed from wideband noise rssi
 void radio_init_random(uint8_t randbuf[16]) {
   hal_disableIRQs();
 
-    // seed 15-byte randomness via noise rssi
+  // seed 15-byte randomness via noise rssi
   rxlora(RXMODE_RSSI);
   while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
@@ -576,9 +572,7 @@ void radio_init_random(uint8_t randbuf[16]) {
   randbuf[0] = 16; // set initial index
   opmode(OPMODE_SLEEP);
   hal_enableIRQs();
-
 }
-
 
 uint8_t radio_rssi() {
   hal_disableIRQs();
@@ -656,30 +650,32 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
   LMIC.nextTask();
 }
 
-void os_radio(uint8_t mode) {
+void radio_rst() {
   hal_disableIRQs();
-  switch (mode) {
-  case RADIO_RST:
-    // put radio to sleep
-    opmode(OPMODE_SLEEP);
-    hal_allow_sleep();
-    break;
+  // put radio to sleep
+  opmode(OPMODE_SLEEP);
+  hal_allow_sleep();
+  hal_enableIRQs();
+}
 
-  case RADIO_TX:
-    // transmit frame now
-    starttx(); // buf=LMIC.frame, len=LMIC.dataLen
-    break;
+void radio_tx() {
+  hal_disableIRQs();
+  // transmit frame now
+  starttx(); // buf=LMIC.frame, len=LMIC.dataLen
+  hal_enableIRQs();
+}
 
-  case RADIO_RX:
-    // receive frame now (exactly at rxtime)
-    startrx(
-        RXMODE_SINGLE); // buf=LMIC.frame, time=LMIC.rxtime, timeout=LMIC.rxsyms
-    break;
+void radio_rx() {
+  hal_disableIRQs();
+  // receive frame now (exactly at rxtime)
+  startrx(
+      RXMODE_SINGLE); // buf=LMIC.frame, time=LMIC.rxtime, timeout=LMIC.rxsyms
+  hal_enableIRQs();
+}
 
-  case RADIO_RXON:
-    // start scanning for beacon now
-    startrx(RXMODE_SCAN); // buf=LMIC.frame
-    break;
-  }
+void radio_rxon() {
+  hal_disableIRQs();
+  // start scanning for beacon now
+  startrx(RXMODE_SCAN); // buf=LMIC.frame
   hal_enableIRQs();
 }
