@@ -10,6 +10,7 @@
 
 #include "hal.h"
 #include "../lmic.h"
+#include "../lmic/radio.h"
 #include <Arduino.h>
 #include <SPI.h>
 #include <stdio.h>

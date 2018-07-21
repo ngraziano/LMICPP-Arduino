@@ -10,6 +10,7 @@
  *******************************************************************************/
 
 #include "lmic.h"
+#include "radio.h"
 #include <stdbool.h>
 
 OsScheduler OSS;

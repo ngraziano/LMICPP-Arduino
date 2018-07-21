@@ -13,6 +13,7 @@
 #include "lmic.h"
 #include "../aes/aes.h"
 #include "bufferpack.h"
+#include "radio.h"
 #include <algorithm>
 
 #if !defined(MINRX_SYMS)
@@ -459,7 +460,8 @@ OsTime Lmic::nextTx(OsTime const &now) {
   } while (true);
 }
 
-void Lmic::setRx1Params() { /*freq/rps remain unchanged*/ }
+void Lmic::setRx1Params() { /*freq/rps remain unchanged*/
+}
 
 #if !defined(DISABLE_JOIN)
 void Lmic::initJoinLoop() {
@@ -1169,9 +1171,7 @@ void Lmic::setupRx1Jacc() {
   setupRx1(&Lmic::processRx1Jacc);
 }
 
-void Lmic::jreqDone() {
-  txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc);
-}
+void Lmic::jreqDone() { txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc); }
 
 #endif // !DISABLE_JOIN
 
@@ -1201,9 +1201,7 @@ void Lmic::processRx1DnData() {
               &Lmic::setupRx2DnData, dn2Dr);
 }
 
-void Lmic::setupRx1DnData() {
-  setupRx1(&Lmic::processRx1DnData);
-}
+void Lmic::setupRx1DnData() { setupRx1(&Lmic::processRx1DnData); }
 
 void Lmic::updataDone() {
   txDone(OsDeltaTime::from_sec(rxDelay), &Lmic::setupRx1DnData);

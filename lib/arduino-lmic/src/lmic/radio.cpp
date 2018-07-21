@@ -9,6 +9,7 @@
  *    IBM Zurich Research Lab - initial API, implementation and documentation
  *******************************************************************************/
 
+#include "radio.h"
 #include "../aes/aes.h"
 #include "lmic.h"
 

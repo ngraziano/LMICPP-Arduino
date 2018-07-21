@@ -36,10 +36,9 @@
 #define ASSERT(cond) /**/
 #endif
 
-uint8_t radio_rand1(void);
 
-void radio_init(void);
-void radio_irq_handler(uint8_t dio, OsTime const &trigger);
+
+
 void os_init(void);
 
 //================================================================================
@@ -55,9 +54,6 @@ void os_init(void);
 
 #ifndef os_getTime
 OsTime os_getTime(void);
-#endif
-#ifndef os_radio
-void os_radio(uint8_t mode);
 #endif
 #ifndef os_getBattLevel
 uint8_t os_getBattLevel(void);
