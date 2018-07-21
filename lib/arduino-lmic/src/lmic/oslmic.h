@@ -59,10 +59,6 @@ OsTime os_getTime(void);
 uint8_t os_getBattLevel(void);
 #endif
 
-//! Get random number (default impl for uint16_t).
-#ifndef os_getRndU2
-#define os_getRndU2() ((uint16_t)((radio_rand1() << 8) | radio_rand1()))
-#endif
 
 #endif // !HAS_os_calls
 

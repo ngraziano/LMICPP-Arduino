@@ -36,6 +36,21 @@ extern const lmic_pinmap lmic_pins;
 void hal_init(void);
 
 /*
+ * intialize random generator
+ */
+void hal_init_random();
+
+/*
+ * random number (8bit)
+ */
+uint8_t hal_rand1();
+
+/*
+ * random number (16bit)
+ */
+uint16_t hal_rand2();
+
+/*
  * drive radio NSS pin (0=low, 1=high).
  */
 void hal_pin_nss(uint8_t val);
@@ -91,6 +106,11 @@ void hal_forbid_sleep();
  * busy-wait until specified timestamp is reached.
  */
 void hal_waitUntil(OsTime const &time);
+
+/*
+ * wait this interval.
+ */ 
+void hal_wait(OsDeltaTime time);
 
 /*
  * check and rewind timer for target time.

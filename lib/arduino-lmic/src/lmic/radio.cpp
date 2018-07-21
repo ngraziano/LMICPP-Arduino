@@ -158,9 +158,7 @@
 #define MAP_DIO1_LORA_NOP 0x30    // --11----
 #define MAP_DIO2_LORA_NOP 0xC0    // ----11--
 
-// RADIO STATE
-// (initialized by radio_init(), used by radio_rand1())
-static uint8_t randbuf[16];
+
 
 #ifdef CFG_sx1276_radio
 #define LNA_RX_GAIN (0x20 | 0x1)
@@ -502,14 +500,18 @@ void radio_init() {
 #else
   hal_pin_rst(1); // drive RST pin high
 #endif
-  hal_waitUntil(os_getTime() + OsDeltaTime::from_ms(1)); // wait >100us
+// wait >100us
+  hal_wait(OsDeltaTime::from_ms(1)); 
   hal_pin_rst(2); // configure RST pin floating!
-  hal_waitUntil(os_getTime() + OsDeltaTime::from_ms(5)); // wait 5ms
+  // wait 5ms
+  hal_wait(OsDeltaTime::from_ms(5)); 
 
   opmode(OPMODE_SLEEP);
 
+#if !defined(CFG_noassert)
   // some sanity checks, e.g., read version number
   uint8_t v = readReg(RegVersion);
+#endif
 #ifdef CFG_sx1276_radio
   ASSERT(v == 0x12);
 #elif CFG_sx1272_radio
@@ -517,20 +519,7 @@ void radio_init() {
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
-  // seed 15-byte randomness via noise rssi
-  rxlora(RXMODE_RSSI);
-  while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
-    ; // continuous rx
-  for (int i = 1; i < 16; i++) {
-    for (int j = 0; j < 8; j++) {
-      uint8_t b; // wait for two non-identical subsequent least-significant bits
-      while ((b = readReg(LORARegRssiWideband) & 0x01) ==
-             (readReg(LORARegRssiWideband) & 0x01))
-        ;
-      randbuf[i] = (randbuf[i] << 1) | b;
-    }
-  }
-  randbuf[0] = 16; // set initial index
+
 
 #ifdef CFG_sx1276mb1_board
   // chain calibration
@@ -567,19 +556,29 @@ void radio_init() {
   hal_enableIRQs();
 }
 
-// return next random byte derived from seed buffer
-// (buf[0] holds index of next byte to be returned)
-uint8_t radio_rand1() {
-  uint8_t i = randbuf[0];
-  ASSERT(i != 0);
-  if (i == 16) {
-    LMIC.aes.encrypt(randbuf, 16); // encrypt seed with any key
-    i = 0;
+
+void radio_init_random(uint8_t randbuf[16]) {
+  hal_disableIRQs();
+
+    // seed 15-byte randomness via noise rssi
+  rxlora(RXMODE_RSSI);
+  while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
+    ; // continuous rx
+  for (int i = 1; i < 16; i++) {
+    for (int j = 0; j < 8; j++) {
+      uint8_t b; // wait for two non-identical subsequent least-significant bits
+      while ((b = readReg(LORARegRssiWideband) & 0x01) ==
+             (readReg(LORARegRssiWideband) & 0x01))
+        ;
+      randbuf[i] = (randbuf[i] << 1) | b;
+    }
   }
-  uint8_t v = randbuf[i++];
-  randbuf[0] = i;
-  return v;
+  randbuf[0] = 16; // set initial index
+  opmode(OPMODE_SLEEP);
+  hal_enableIRQs();
+
 }
+
 
 uint8_t radio_rssi() {
   hal_disableIRQs();

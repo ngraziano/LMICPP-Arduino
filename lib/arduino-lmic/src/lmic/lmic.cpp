@@ -237,8 +237,9 @@ static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
 #endif
 };
 
-static OsDeltaTime rndDelay(uint8_t secSpan) {
-  uint16_t r = os_getRndU2();
+
+OsDeltaTime rndDelay(uint8_t secSpan) {
+  uint16_t r = hal_rand2();
   OsDeltaTime delay = r;
   if (delay > OsDeltaTime::from_sec(1))
     delay = r % OsDeltaTime::from_sec(1).tick();
@@ -297,13 +298,13 @@ void Lmic::initDefaultChannels(bool join) {
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
   bands[BAND_MILLI].txpow = 14;
-  bands[BAND_MILLI].lastchnl = radio_rand1() % MAX_CHANNELS;
+  bands[BAND_MILLI].lastchnl = hal_rand1() % MAX_CHANNELS;
   bands[BAND_CENTI].txcap = 100; // 1%
   bands[BAND_CENTI].txpow = 14;
-  bands[BAND_CENTI].lastchnl = radio_rand1() % MAX_CHANNELS;
+  bands[BAND_CENTI].lastchnl = hal_rand1() % MAX_CHANNELS;
   bands[BAND_DECI].txcap = 10; // 10%
   bands[BAND_DECI].txpow = 27;
-  bands[BAND_DECI].lastchnl = radio_rand1() % MAX_CHANNELS;
+  bands[BAND_DECI].lastchnl = hal_rand1() % MAX_CHANNELS;
   auto now = os_getTime();
   bands[BAND_MILLI].avail = now;
   bands[BAND_CENTI].avail = now;
@@ -317,7 +318,7 @@ bool Lmic::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
   b->txpow = txpow;
   b->txcap = txcap;
   b->avail = os_getTime();
-  b->lastchnl = radio_rand1() % MAX_CHANNELS;
+  b->lastchnl = hal_rand1() % MAX_CHANNELS;
   return true;
 }
 
@@ -465,7 +466,7 @@ void Lmic::setRx1Params() { /*freq/rps remain unchanged*/
 
 #if !defined(DISABLE_JOIN)
 void Lmic::initJoinLoop() {
-  txChnl = radio_rand1() % 3;
+  txChnl = hal_rand1() % 3;
   adrTxPow = 14;
   setDrJoin(DR_SF7);
   initDefaultChannels(true);
@@ -1530,7 +1531,7 @@ void Lmic::reset() {
   // TODO proper reset
   // os_clearMem((xref2uint8_t)&LMIC,SIZEOFEXPR(LMIC));
   devaddr = 0;
-  devNonce = os_getRndU2();
+  devNonce = hal_rand2();
   opmode = OP_NONE;
   errcr = CR_4_5;
   adrEnabled = FCT_ADREN;
@@ -1542,7 +1543,9 @@ void Lmic::reset() {
 #endif
 }
 
-void Lmic::init(void) { opmode = OP_SHUTDOWN; }
+void Lmic::init(void) {
+  opmode = OP_SHUTDOWN;
+}
 
 void Lmic::clrTxData(void) {
   opmode &= ~(OP_TXDATA | OP_TXRXPEND | OP_POLL);
