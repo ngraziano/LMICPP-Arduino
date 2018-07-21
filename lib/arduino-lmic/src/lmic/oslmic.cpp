@@ -93,7 +93,7 @@ void OsJobBase::setTimed(OsTime const &time) {
 #endif
 }
 
-void OsJob::call() { func(this); }
+void OsJob::call() { func(); }
 
 OsDeltaTime OsScheduler::runloopOnce() {
 #if LMIC_DEBUG_LEVEL > 1

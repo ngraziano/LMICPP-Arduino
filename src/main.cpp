@@ -8,7 +8,7 @@
 
 #include "lorakeys.h"
 
-void do_send(OsJob* j);
+void do_send();
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first. When copying an EUI from ttnctl output, this means to reverse
@@ -109,7 +109,7 @@ void onEvent (ev_t ev) {
     }
 }
 
-void do_send(OsJob* j){
+void do_send(){
     // Check if there is not a current TX/RX job running
     if (LMIC.getOpMode() & OP_TXRXPEND) {
         PRINT_DEBUG_1("OP_TXRXPEND, not sending");
@@ -162,7 +162,7 @@ void setup() {
     // LMIC_setDrTxpow(DR_SF9,14);
     
     // Start job (sending automatically starts OTAA too)
-    do_send(&sendjob);
+    do_send();
 }
 
 

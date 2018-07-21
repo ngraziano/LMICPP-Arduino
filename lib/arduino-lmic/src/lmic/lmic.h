@@ -245,7 +245,7 @@ public:
 private:
   // callbacks
 
-  void processRx1DnData(OsJobBase *osjob);
+  void processRx1DnData();
   void setupRx1(OsJobType<Lmic>::osjobcbTyped_t func);
   void setupRx2();
   void schedRx12(OsDeltaTime const &delay, OsJobType<Lmic>::osjobcbTyped_t func,
@@ -253,30 +253,30 @@ private:
 
   void txDone(OsDeltaTime const &delay, OsJobType<Lmic>::osjobcbTyped_t func);
 
-  void runReset(OsJobBase *osjob);
-  void runEngineUpdate(OsJobBase *osjob);
+  void runReset();
+  void runEngineUpdate();
 
 #if !defined(DISABLE_JOIN)
-  void onJoinFailed(OsJobBase *osjob);
+  void onJoinFailed();
   bool processJoinAcceptNoJoinFrame();
   bool processJoinAccept();
-  void processRx1Jacc(OsJobBase *osjob);
-  void processRx2Jacc(OsJobBase *osjob);
-  void setupRx1Jacc(OsJobBase *osjob);
-  void setupRx2Jacc(OsJobBase *osjob);
-  void jreqDone(OsJobBase *osjob);
-  void startJoining(OsJobBase *osjob);
+  void processRx1Jacc();
+  void processRx2Jacc();
+  void setupRx1Jacc();
+  void setupRx2Jacc();
+  void jreqDone();
+  void startJoiningCallBack();
 
   void buildJoinRequest(uint8_t ftype);
 
 #endif
 
-  void processRx2DnData(OsJobBase *osjob);
+  void processRx2DnData();
 
-  void setupRx1DnData(OsJobBase *osjob);
-  void setupRx2DnData(OsJobBase *osjob);
+  void setupRx1DnData();
+  void setupRx2DnData();
 
-  void updataDone(OsJobBase *osjob);
+  void updataDone();
 
   void stateJustJoined();
 

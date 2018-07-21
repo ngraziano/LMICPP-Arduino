@@ -169,7 +169,7 @@ inline ostime table_get_ostime(const ostime *table, size_t index) {
 class OsJobBase;
 class OsJob;
 
-using osjobcb_t = void (*)(OsJob *);
+using osjobcb_t = void (*)();
 
 class OsScheduler {
   friend class OsJobBase;
@@ -220,7 +220,7 @@ public:
 
 template <class T> class OsJobType : public OsJobBase {
 public:
-  using osjobcbTyped_t = void (T::*)(OsJobBase *);
+  using osjobcbTyped_t = void (T::*)();
 
 private:
   T *refClass;
@@ -229,7 +229,7 @@ private:
 protected:
   virtual void call() {
     PRINT_DEBUG_2("Run func %p on class %p", funcTyped, refClass);
-    (refClass->*funcTyped)(this);
+    (refClass->*funcTyped)();
   };
 
 public:

@@ -699,7 +699,7 @@ bool Lmic::nextJoinState() {
 #error Unsupported frequency band!
 #endif
 
-void Lmic::runEngineUpdate(OsJobBase *osjob) { engineUpdate(); }
+void Lmic::runEngineUpdate() { engineUpdate(); }
 
 void Lmic::reportEvent(ev_t ev) {
   if (eventCallBack)
@@ -707,7 +707,7 @@ void Lmic::reportEvent(ev_t ev) {
   engineUpdate();
 }
 
-void Lmic::runReset(OsJobBase *osjob) {
+void Lmic::runReset() {
   // Disable session
   reset();
 #if !defined(DISABLE_JOIN)
@@ -1044,7 +1044,7 @@ void Lmic::txDone(OsDeltaTime const &delay,
 // ======================================== Join frames
 
 #if !defined(DISABLE_JOIN)
-void Lmic::onJoinFailed(OsJobBase *osjob) {
+void Lmic::onJoinFailed() {
   // Notify app - must call reset() to stop joining
   // otherwise join procedure continues.
   reportEvent(EV_JOIN_FAILED);
@@ -1145,31 +1145,31 @@ bool Lmic::processJoinAccept() {
   return true;
 }
 
-void Lmic::processRx2Jacc(OsJobBase *osjob) {
+void Lmic::processRx2Jacc() {
   if (dataLen == 0)
     txrxFlags = 0; // nothing in 1st/2nd DN slot
   processJoinAccept();
 }
 
-void Lmic::setupRx2Jacc(OsJobBase *osjob) {
+void Lmic::setupRx2Jacc() {
   PRINT_DEBUG_2("Setup RX2 join accept.");
   this->osjob.setCallbackFuture(&Lmic::processRx2Jacc);
   setupRx2();
 }
 
-void Lmic::processRx1Jacc(OsJobBase *osjob) {
+void Lmic::processRx1Jacc() {
   // GZODEBUG
   PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
   if (dataLen == 0 || !processJoinAccept())
     schedRx12(DELAY_JACC2_osticks, &Lmic::setupRx2Jacc, dn2Dr);
 }
 
-void Lmic::setupRx1Jacc(OsJobBase *osjob) {
+void Lmic::setupRx1Jacc() {
   PRINT_DEBUG_2("Setup RX1 join accept.");
   setupRx1(&Lmic::processRx1Jacc);
 }
 
-void Lmic::jreqDone(OsJobBase *osjob) {
+void Lmic::jreqDone() {
   txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc);
 }
 
@@ -1177,7 +1177,7 @@ void Lmic::jreqDone(OsJobBase *osjob) {
 
 // ======================================== Data frames
 
-void Lmic::processRx2DnData(OsJobBase *osjob) {
+void Lmic::processRx2DnData() {
   if (dataLen == 0) {
     txrxFlags = 0; // nothing in 1st/2nd DN slot
     // It could be that the gateway *is* sending a reply, but we
@@ -1190,22 +1190,22 @@ void Lmic::processRx2DnData(OsJobBase *osjob) {
   processDnData();
 }
 
-void Lmic::setupRx2DnData(OsJobBase *osjob) {
+void Lmic::setupRx2DnData() {
   this->osjob.setCallbackFuture(&Lmic::processRx2DnData);
   setupRx2();
 }
 
-void Lmic::processRx1DnData(OsJobBase *osjob) {
+void Lmic::processRx1DnData() {
   if (dataLen == 0 || !processDnData())
     schedRx12(OsDeltaTime::from_sec(rxDelay + (int)DELAY_EXTDNW2),
               &Lmic::setupRx2DnData, dn2Dr);
 }
 
-void Lmic::setupRx1DnData(OsJobBase *osjob) {
+void Lmic::setupRx1DnData() {
   setupRx1(&Lmic::processRx1DnData);
 }
 
-void Lmic::updataDone(OsJobBase *osjob) {
+void Lmic::updataDone() {
   txDone(OsDeltaTime::from_sec(rxDelay), &Lmic::setupRx1DnData);
 }
 
@@ -1320,7 +1320,7 @@ void Lmic::buildJoinRequest(uint8_t ftype) {
   devNonce++;
 }
 
-void Lmic::startJoining(OsJobBase *osjob) { reportEvent(EV_JOINING); }
+void Lmic::startJoiningCallBack() { reportEvent(EV_JOINING); }
 
 // Start join procedure if not already joined.
 bool Lmic::startJoining() {
@@ -1337,7 +1337,7 @@ bool Lmic::startJoining() {
     opmode |= OP_JOINING;
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS
-    osjob.setCallbackRunnable(&Lmic::startJoining);
+    osjob.setCallbackRunnable(&Lmic::startJoiningCallBack);
     return true;
   }
   return false; // already joined
