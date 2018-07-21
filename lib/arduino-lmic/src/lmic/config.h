@@ -56,5 +56,4 @@
 
 #define CFG_noassert
 
-
 #endif // _lmic_config_h_
