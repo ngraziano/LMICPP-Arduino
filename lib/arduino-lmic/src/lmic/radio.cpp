@@ -601,9 +601,9 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
 
   if ((readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
     uint8_t flags = readReg(LORARegIrqFlags);
-#if LMIC_DEBUG_LEVEL > 1
-    lmic_printf("%lu: irq: dio: 0x%x flags: 0x%x\n", now, dio, flags);
-#endif
+
+    PRINT_DEBUG_2("irq: dio: 0x%x flags: 0x%x\n", dio, flags);
+    
     if (flags & IRQ_LORA_TXDONE_MASK) {
       // save exact tx time
       LMIC.txend = now - OsDeltaTime::from_us(43); // TXDONE FIXUP

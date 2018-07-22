@@ -37,9 +37,8 @@ void OsJobBase::setRunnable() {
     ;
   *pnext = this;
   hal_enableIRQs();
-#if LMIC_DEBUG_LEVEL > 1
-  lmic_printf("%lu: Scheduled job %p ASAP\n", os_getTime(), this);
-#endif
+
+  PRINT_DEBUG_2("Scheduled job %p ASAP\n", this);
 }
 
 bool OsJobBase::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
@@ -58,10 +57,9 @@ void OsJobBase::clearCallback() {
   bool res = unlinkjob(&this->scheduler->scheduledjobs, this) ||
              unlinkjob(&this->scheduler->runnablejobs, this);
   hal_enableIRQs();
-#if LMIC_DEBUG_LEVEL > 1
-  if (res)
-    lmic_printf("%lu: Cleared job %p\n", os_getTime(), this);
-#endif
+  if (res) {
+    PRINT_DEBUG_2("Cleared job %p\n", this);
+  }
 }
 
 void OsJob::setTimedCallback(OsTime const &time, osjobcb_t cb) {
@@ -89,9 +87,7 @@ void OsJobBase::setTimed(OsTime const &time) {
   }
   *pnext = this;
   hal_enableIRQs();
-#if LMIC_DEBUG_LEVEL > 1
-  lmic_printf("%lu: Scheduled job %p, atRun %lu\n", os_getTime(), this, time);
-#endif
+  PRINT_DEBUG_2("Scheduled job %p, atRun %lu\n", this, time);
 }
 
 void OsJob::call() { func(); }
@@ -125,10 +121,8 @@ OsDeltaTime OsScheduler::runloopOnce() {
   // we would otherwise get for running SPI transfers inside ISRs
   hal_io_check();
   if (j) { // run job callback
-#if LMIC_DEBUG_LEVEL > 1
-    lmic_printf("%lu: Running job %p, deadline %lu\n", os_getTime(), j,
-                has_deadline ? j->deadline : 0);
-#endif
+    PRINT_DEBUG_2("Running job %p, deadline %lu\n", j,
+                  has_deadline ? j->deadline : 0);
     j->call();
   }
   if (runnablejobs) {
