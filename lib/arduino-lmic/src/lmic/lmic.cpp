@@ -226,8 +226,7 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
     us2osticksRound(128 << 1), // DR_SF7B
     us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
-#define &&&dr2hsym(dr)(                                                        \
-    TABLE_GET_S4(DR2HSYM, (dr)&7)) // map DR_SFnCR -> 0-6
+#define dr2hsym(dr)(TABLE_GET_S4(DR2HSYM, (dr)&7)) // map DR_SFnCR -> 0-6
     us2osticksRound(128 << 5), // DR_SF10   DR_SF12CR
     us2osticksRound(128 << 4), // DR_SF9    DR_SF11CR
     us2osticksRound(128 << 3), // DR_SF8    DR_SF10CR
@@ -621,7 +620,7 @@ void Lmic::updateTx(OsTime const &txbeg) {
 // US does not have duty cycling - return now as earliest TX time
 OsTime Lmic::nextTx(OsTime const &now) {
   if (chRnd == 0)
-    chRnd = radio_rand1() & 0x3F;
+    chRnd = hal_rand1() & 0x3F;
   if (datarate >= DR_SF8C) { // 500kHz
     uint8_t map = channelMap[64 / 16] & 0xFF;
     for (uint8_t i = 0; i < 8; i++) {
@@ -672,7 +671,7 @@ bool Lmic::nextJoinState() {
     txChnl = 64 + (txChnl & 7);
     setDrJoin(DR_SF8C);
   } else {
-    txChnl = radio_rand1() & 0x3F;
+    txChnl = hal_rand1() & 0x3F;
     int8_t dr = DR_SF7 - ++txCnt;
     if (dr < DR_SF10) {
       dr = DR_SF10;
@@ -994,8 +993,7 @@ void Lmic::setupRx2() {
   radio_rx();
 }
 
-void Lmic::schedRx12(OsDeltaTime const &delay,
-                     OsJobType<Lmic>::osjobcbTyped_t func, uint8_t dr) {
+void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
   PRINT_DEBUG_2("SchedRx RX12.");
 
   // Half symbol time for the data rate.
@@ -1028,7 +1026,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay,
   // (again note that hsym is half a sumbol time, so no /2 needed)
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
 
-  osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
+  osjob.setTimed(rxtime - RX_RAMPUP);
 }
 
 void Lmic::setupRx1() {
@@ -1041,11 +1039,10 @@ void Lmic::setupRx1() {
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime
-void Lmic::txDone(OsDeltaTime const &delay,
-                  OsJobType<Lmic>::osjobcbTyped_t func) {
+void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
   setRx1Params();
-  schedRx12(delay, func, dndr);
+  schedRx12(delay, dndr);
 }
 
 // ======================================== Join frames
@@ -1168,8 +1165,10 @@ void Lmic::setupRx2Jacc() {
 
 void Lmic::processRx1Jacc() {
   PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
-  if (dataLen == 0 || !processJoinAccept())
-    schedRx12(DELAY_JACC2_osticks, &Lmic::setupRx2Jacc, dn2Dr);
+  if (dataLen == 0 || !processJoinAccept()) {
+    osjob.setCallbackFuture(&Lmic::setupRx2Jacc);
+    schedRx12(DELAY_JACC2_osticks, dn2Dr);
+  }
 }
 
 void Lmic::setupRx1Jacc() {
@@ -1178,7 +1177,10 @@ void Lmic::setupRx1Jacc() {
   setupRx1();
 }
 
-void Lmic::jreqDone() { txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc); }
+void Lmic::jreqDone() { 
+  osjob.setCallbackFuture(&Lmic::setupRx1Jacc);
+  txDone(DELAY_JACC1_osticks); 
+  }
 
 #endif // !DISABLE_JOIN
 
@@ -1203,9 +1205,10 @@ void Lmic::setupRx2DnData() {
 }
 
 void Lmic::processRx1DnData() {
-  if (dataLen == 0 || !processDnData())
-    schedRx12(OsDeltaTime::from_sec(rxDelay + (int)DELAY_EXTDNW2),
-              &Lmic::setupRx2DnData, dn2Dr);
+  if (dataLen == 0 || !processDnData()) {
+    osjob.setCallbackFuture(&Lmic::setupRx2DnData);
+    schedRx12(OsDeltaTime::from_sec(rxDelay + (int)DELAY_EXTDNW2), dn2Dr);
+  }
 }
 
 void Lmic::setupRx1DnData() {
@@ -1214,7 +1217,8 @@ void Lmic::setupRx1DnData() {
 }
 
 void Lmic::updataDone() {
-  txDone(OsDeltaTime::from_sec(rxDelay), &Lmic::setupRx1DnData);
+  osjob.setCallbackFuture(&Lmic::setupRx1DnData);
+  txDone(OsDeltaTime::from_sec(rxDelay));
 }
 
 // ========================================

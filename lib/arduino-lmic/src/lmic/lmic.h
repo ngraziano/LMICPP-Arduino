@@ -246,10 +246,10 @@ private:
   void processRx1DnData();
   void setupRx1();
   void setupRx2();
-  void schedRx12(OsDeltaTime const &delay, OsJobType<Lmic>::osjobcbTyped_t func,
+  void schedRx12(OsDeltaTime const &delay,
                  uint8_t dr);
 
-  void txDone(OsDeltaTime const &delay, OsJobType<Lmic>::osjobcbTyped_t func);
+  void txDone(OsDeltaTime const &delay);
 
   void runReset();
   void runEngineUpdate();
