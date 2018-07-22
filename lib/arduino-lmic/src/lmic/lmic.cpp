@@ -1144,9 +1144,12 @@ bool Lmic::processJoinAccept() {
   dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
   // Not implemented
   // rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
-  rxDelay = frame[OFF_JA_RXDLY];
-  if (rxDelay == 0)
-    rxDelay = 1;
+  
+  if(frame[OFF_JA_RXDLY] == 0) {
+    rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
+  } else {
+    rxDelay = OsDeltaTime::from_sec(frame[OFF_JA_RXDLY]);
+  }
   reportEvent(EV_JOINED);
   return true;
 }
@@ -1207,7 +1210,7 @@ void Lmic::setupRx2DnData() {
 void Lmic::processRx1DnData() {
   if (dataLen == 0 || !processDnData()) {
     osjob.setCallbackFuture(&Lmic::setupRx2DnData);
-    schedRx12(OsDeltaTime::from_sec(rxDelay + (int)DELAY_EXTDNW2), dn2Dr);
+    schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2), dn2Dr);
   }
 }
 
@@ -1218,7 +1221,7 @@ void Lmic::setupRx1DnData() {
 
 void Lmic::updataDone() {
   osjob.setCallbackFuture(&Lmic::setupRx1DnData);
-  txDone(OsDeltaTime::from_sec(rxDelay));
+  txDone(rxDelay);
 }
 
 // ========================================
@@ -1550,7 +1553,7 @@ void Lmic::reset() {
   adrEnabled = FCT_ADREN;
   dn2Dr = DR_DNW2;     // we need this for 2nd DN window of join accept
   dn2Freq = FREQ_DNW2; // ditto
-  rxDelay = DELAY_DNW1;
+  rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
 #if defined(CFG_us915)
   initDefaultChannels();
 #endif

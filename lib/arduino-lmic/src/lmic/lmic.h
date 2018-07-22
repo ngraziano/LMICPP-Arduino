@@ -212,7 +212,7 @@ private:
   int8_t adrAckReq = 0; // counter until we reset data rate (0=off)
   uint8_t adrChanged = 0;
 
-  uint8_t rxDelay = 0; // Rx delay after TX
+  OsDeltaTime rxDelay = OsDeltaTime::from_sec(DELAY_DNW1); // Rx delay after TX
 
   uint8_t margin = 0;
   bool ladrAns = false; // link adr adapt answer pending
