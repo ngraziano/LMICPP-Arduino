@@ -266,15 +266,22 @@ enum {
 // MAC downlink commands
 enum {
   // Class A
-  MCMD_LCHK_ANS = 0x02, // link check answer  : u1:margin 0-254,255=unknown
-                        // margin / u1:gwcnt
-  MCMD_LADR_REQ =
-      0x03, // link ADR request   : u1:DR/TXPow, u2:chmask, u1:chpage/repeat
-  MCMD_DCAP_REQ =
-      0x04, // duty cycle cap     : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
-  MCMD_DN2P_SET = 0x05, // 2nd DN window param: u1:7-4:RFU/3-0:datarate, u3:freq
-  MCMD_DEVS_REQ = 0x06, // device status req  : -
-  MCMD_SNCH_REQ = 0x07, // set new channel    : u1:chidx, u3:freq, u1:DRrange
+  // link check answer  : u1:margin 0-254,255=unknown margin / u1:gwcnt
+  MCMD_LCHK_ANS = 0x02,
+  // link ADR request   : u1:DR/TXPow, u2:chmask, u1:chpage/repeat
+  MCMD_LADR_REQ = 0x03,
+  // duty cycle cap     : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
+  MCMD_DCAP_REQ = 0x04,
+  // 2nd DN window param: u1:7-4:RFU/3-0:datarate, u3:freq
+  MCMD_DN2P_SET = 0x05, 
+  // device status req  : -
+  MCMD_DEVS_REQ = 0x06, 
+  // set new channel    : u1:chidx, u3:freq, u1:DRrange
+  MCMD_SNCH_REQ = 0x07, 
+  // Sets the timing of the of the reception slots  u1: [7-4]:RFU, [3-0]:del
+  MCMD_RXTimingSetup_REQ = 0x08,
+  //  set the maximum allowed dwell time 
+  MCMD_TxParamSetup_REQ = 0x09,
   // Class B
   MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
   MCMD_BCNI_ANS =
@@ -291,9 +298,10 @@ enum {
   MCMD_LADR_ANS_CHACK = 0x01,  // 0=unknown channel enabled
 };
 enum {
-  MCMD_DN2P_ANS_RFU = 0xFC,   // RFU bits
-  MCMD_DN2P_ANS_DRACK = 0x02, // 0=unknown data rate
-  MCMD_DN2P_ANS_CHACK = 0x01, // 0=unknown channel enabled
+  MCMD_DN2P_ANS_RFU = 0xF8,            // RFU bits
+  MCMD_DN2P_ANS_RX1DrOffsetAck = 0x04, // 0=dr2 not allowed
+  MCMD_DN2P_ANS_DRACK = 0x02,          // 0=unknown data rate
+  MCMD_DN2P_ANS_CHACK = 0x01,          // 0=unknown channel enabled
 };
 enum {
   MCMD_SNCH_ANS_RFU = 0xFC,   // RFU bits

@@ -742,6 +742,118 @@ void Lmic::stateJustJoined() {
   dn2Freq = FREQ_DNW2;
 }
 
+void Lmic::parseMacCommands(uint8_t *opts, uint8_t olen) {
+  uint8_t oidx = 0;
+  while (oidx < olen) {
+    switch (opts[oidx]) {
+    case MCMD_LCHK_ANS: {
+      // int gwmargin = opts[oidx+1];
+      // int ngws = opts[oidx+2];
+      oidx += 3;
+      continue;
+    }
+    case MCMD_LADR_REQ: {
+      uint8_t p1 = opts[oidx + 1];              // txpow + DR
+      uint16_t chmap = rlsbf2(&opts[oidx + 2]); // list of enabled channels
+      uint8_t chpage = opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
+      uint8_t uprpt = opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
+      oidx += 5;
+
+      ladrAns = 0x80 | // Include an answer into next frame up
+                MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
+                MCMD_LADR_ANS_DRACK;
+      if (!mapChannels(chpage, chmap))
+        ladrAns &= ~MCMD_LADR_ANS_CHACK;
+      dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
+      if (!validDR(dr)) {
+        ladrAns &= ~MCMD_LADR_ANS_DRACK;
+      }
+      if ((ladrAns & 0x7F) ==
+          (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
+        // Nothing went wrong - use settings
+        upRepeat = uprpt;
+        setDrTxpow(dr, pow2dBm(p1));
+      }
+      adrChanged = 1; // Trigger an ACK to NWK
+      continue;
+    }
+    case MCMD_DEVS_REQ: {
+      devsAns = true;
+      oidx += 1;
+      continue;
+    }
+    case MCMD_DN2P_SET: {
+#if !defined(DISABLE_MCMD_DN2P_SET)
+      dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
+      // not implemented
+      // uint8_t rx1DrOffset = ((opts[oidx+1] & 0x70) >> 4);
+      uint32_t newfreq = convFreq(&opts[oidx + 2]);
+      dn2Ans = 0x80; // answer pending
+      if (validDR(dr))
+        dn2Ans |= MCMD_DN2P_ANS_DRACK;
+      if (newfreq != 0)
+        dn2Ans |= MCMD_DN2P_ANS_CHACK;
+      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_DRACK | MCMD_DN2P_ANS_CHACK)) {
+        dn2Dr = dr;
+        dn2Freq = newfreq;
+      }
+#endif // !DISABLE_MCMD_DN2P_SET
+      oidx += 5;
+      continue;
+    }
+    case MCMD_DCAP_REQ: {
+#if !defined(DISABLE_MCMD_DCAP_REQ)
+      uint8_t cap = opts[oidx + 1];
+      // A value cap=0xFF means device is OFF unless enabled again manually.
+      if (cap == 0xFF)
+        opmode |= OP_SHUTDOWN; // stop any sending
+      globalDutyRate = cap & 0xF;
+      globalDutyAvail = os_getTime();
+      dutyCapAns = 1;
+#endif // !DISABLE_MCMD_DCAP_REQ
+      oidx += 2;
+      continue;
+    }
+    case MCMD_SNCH_REQ: {
+#if !defined(DISABLE_MCMD_SNCH_REQ)
+      uint8_t chidx = opts[oidx + 1];               // channel
+      uint32_t newfreq = convFreq(&opts[oidx + 2]); // freq
+      uint8_t drs = opts[oidx + 5];                 // datarate span
+      snchAns = 0x80;
+      if (newfreq != 0 &&
+          setupChannel(chidx, newfreq, DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
+        snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
+#endif // !DISABLE_MCMD_SNCH_REQ
+      oidx += 6;
+      continue;
+    }
+    case MCMD_RXTimingSetup_REQ: {
+      // NOT IMPLEMENTED !
+      oidx += 2;
+      continue;
+    }
+    case MCMD_TxParamSetup_REQ: {
+      // NOT IMPLEMENTED / NOT NEED IN EU868
+      oidx += 2;
+      continue;
+    }
+    case MCMD_PING_SET: {
+      oidx += 4;
+      continue;
+    }
+    case MCMD_BCNI_ANS: {
+      oidx += 4;
+      continue;
+    }
+    }
+    break;
+  }
+  if (oidx != olen) {
+    // corrupted frame or unknown command
+    PRINT_DEBUG_1("Parse of MAC command incompleted.");
+  }
+}
+
 // ================================================================================
 // Decoding frames
 bool Lmic::decodeFrame() {
@@ -830,103 +942,7 @@ bool Lmic::decodeFrame() {
   margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
   uint8_t *opts = &d[OFF_DAT_OPTS];
-  uint8_t oidx = 0;
-  while (oidx < olen) {
-    switch (opts[oidx]) {
-    case MCMD_LCHK_ANS: {
-      // int gwmargin = opts[oidx+1];
-      // int ngws = opts[oidx+2];
-      oidx += 3;
-      continue;
-    }
-    case MCMD_LADR_REQ: {
-      uint8_t p1 = opts[oidx + 1];              // txpow + DR
-      uint16_t chmap = rlsbf2(&opts[oidx + 2]); // list of enabled channels
-      uint8_t chpage = opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
-      uint8_t uprpt = opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
-      oidx += 5;
-
-      ladrAns = 0x80 | // Include an answer into next frame up
-                MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
-                MCMD_LADR_ANS_DRACK;
-      if (!mapChannels(chpage, chmap))
-        ladrAns &= ~MCMD_LADR_ANS_CHACK;
-      dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
-      if (!validDR(dr)) {
-        ladrAns &= ~MCMD_LADR_ANS_DRACK;
-      }
-      if ((ladrAns & 0x7F) ==
-          (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
-        // Nothing went wrong - use settings
-        upRepeat = uprpt;
-        setDrTxpow(dr, pow2dBm(p1));
-      }
-      adrChanged = 1; // Trigger an ACK to NWK
-      continue;
-    }
-    case MCMD_DEVS_REQ: {
-      devsAns = true;
-      oidx += 1;
-      continue;
-    }
-    case MCMD_DN2P_SET: {
-#if !defined(DISABLE_MCMD_DN2P_SET)
-      dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
-      uint32_t newfreq = convFreq(&opts[oidx + 2]);
-      dn2Ans = 0x80; // answer pending
-      if (validDR(dr))
-        dn2Ans |= MCMD_DN2P_ANS_DRACK;
-      if (newfreq != 0)
-        dn2Ans |= MCMD_DN2P_ANS_CHACK;
-      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_DRACK | MCMD_DN2P_ANS_CHACK)) {
-        dn2Dr = dr;
-        dn2Freq = newfreq;
-      }
-#endif // !DISABLE_MCMD_DN2P_SET
-      oidx += 5;
-      continue;
-    }
-    case MCMD_DCAP_REQ: {
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-      uint8_t cap = opts[oidx + 1];
-      // A value cap=0xFF means device is OFF unless enabled again manually.
-      if (cap == 0xFF)
-        opmode |= OP_SHUTDOWN; // stop any sending
-      globalDutyRate = cap & 0xF;
-      globalDutyAvail = os_getTime();
-      dutyCapAns = 1;
-#endif // !DISABLE_MCMD_DCAP_REQ
-      oidx += 2;
-      continue;
-    }
-    case MCMD_SNCH_REQ: {
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-      uint8_t chidx = opts[oidx + 1];               // channel
-      uint32_t newfreq = convFreq(&opts[oidx + 2]); // freq
-      uint8_t drs = opts[oidx + 5];                 // datarate span
-      snchAns = 0x80;
-      if (newfreq != 0 &&
-          setupChannel(chidx, newfreq, DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
-        snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
-#endif // !DISABLE_MCMD_SNCH_REQ
-      oidx += 6;
-      continue;
-    }
-    case MCMD_PING_SET: {
-      oidx += 4;
-      continue;
-    }
-    case MCMD_BCNI_ANS: {
-      oidx += 4;
-      continue;
-    }
-    }
-    break;
-  }
-  if (oidx != olen) {
-    // corrupted frame
-    // log ?
-  }
+  parseMacCommands(opts, olen);
 
   if (!replayConf) {
     // Handle payload only if not a replay
@@ -955,6 +971,8 @@ bool Lmic::decodeFrame() {
     txrxFlags |= TXRX_NOPORT;
     dataBeg = poff;
     dataLen = 0;
+  } else if (port == 0) {
+    parseMacCommands(d + poff, pend - poff);
   } else {
     txrxFlags |= TXRX_PORT;
     dataBeg = poff;
@@ -1127,6 +1145,8 @@ bool Lmic::processJoinAccept() {
   txCnt = 0;
   stateJustJoined();
   dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
+  // Not implemented
+  // rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
   rxDelay = frame[OFF_JA_RXDLY];
   if (rxDelay == 0)
     rxDelay = 1;

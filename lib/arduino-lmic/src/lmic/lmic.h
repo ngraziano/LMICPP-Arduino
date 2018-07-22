@@ -282,6 +282,7 @@ private:
 
   void buildDataFrame();
   void engineUpdate();
+  void parseMacCommands (uint8_t* opts, uint8_t olen);
   bool decodeFrame();
   bool processDnData();
 
@@ -359,9 +360,8 @@ public:
   // for radio to wakeup processing.
   void nextTask();
 };
-//! \var struct lmic_t LMIC
-//! The state of LMIC MAC layer is encapsulated in this variable.
-extern struct Lmic LMIC; //!< \internal
+// The state of LMIC MAC layer is encapsulated in this class.
+extern Lmic LMIC; 
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo, drhi)                                               \
