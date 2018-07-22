@@ -79,12 +79,8 @@ uint8_t os_getBattLevel(void);
 // Accessors for table elements
 #define TABLE_GET_U1(table, index) table_get_u1(RESOLVE_TABLE(table), index)
 #define TABLE_GET_S1(table, index) table_get_s1(RESOLVE_TABLE(table), index)
-#define TABLE_GET_U2(table, index) table_get_u2(RESOLVE_TABLE(table), index)
-#define TABLE_GET_S2(table, index) table_get_s2(RESOLVE_TABLE(table), index)
 #define TABLE_GET_U4(table, index) table_get_u4(RESOLVE_TABLE(table), index)
 #define TABLE_GET_S4(table, index) table_get_s4(RESOLVE_TABLE(table), index)
-#define TABLE_GET_OSTIME(table, index)                                         \
-  table_get_ostime(RESOLVE_TABLE(table), index)
 #define TABLE_GET_U1_TWODIM(table, index1, index2)                             \
   table_get_u1(RESOLVE_TABLE(table)[index1], index2)
 
@@ -102,14 +98,8 @@ uint8_t os_getBattLevel(void);
 
 TABLE_GETTER(_u1, uint8_t, byte);
 TABLE_GETTER(_s1, int8_t, byte);
-TABLE_GETTER(_u2, uint16_t, word);
-TABLE_GETTER(_s2, int16_t, word);
 TABLE_GETTER(_u4, uint32_t, dword);
 TABLE_GETTER(_s4, int32_t, dword);
-
-// This assumes ostime is 4 bytes, so error out if it is not
-// typedef int check_sizeof_ostime[(sizeof(ostime) == 4) ? 0 : -1];
-TABLE_GETTER(_ostime, int32_t, dword);
 
 // For AVR, store constants in PROGMEM, saving on RAM usage
 #define CONST_TABLE(type, name) const type PROGMEM RESOLVE_TABLE(name)
@@ -123,19 +113,10 @@ inline uint8_t table_get_u1(const uint8_t *table, size_t index) {
 inline int8_t table_get_s1(const int8_t *table, size_t index) {
   return table[index];
 }
-inline uint16_t table_get_u2(const uint16_t *table, size_t index) {
-  return table[index];
-}
-inline int16_t table_get_s2(const int16_t *table, size_t index) {
-  return table[index];
-}
 inline uint32_t table_get_u4(const uint32_t *table, size_t index) {
   return table[index];
 }
 inline int32_t table_get_s4(const int32_t *table, size_t index) {
-  return table[index];
-}
-inline ostime table_get_ostime(const ostime *table, size_t index) {
   return table[index];
 }
 

@@ -214,9 +214,9 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
 //
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
-static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
+static CONST_TABLE(int32_t, DR2HSYM)[] = {
 #if defined(CFG_eu868)
-#define dr2hsym(dr) (TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)))
+#define dr2hsym(dr) (TABLE_GET_S4(DR2HSYM, (dr)))
     us2osticksRound(128 << 7), // DR_SF12
     us2osticksRound(128 << 6), // DR_SF11
     us2osticksRound(128 << 5), // DR_SF10
@@ -227,7 +227,7 @@ static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
     us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
 #define &&&dr2hsym(dr)(                                                        \
-    TABLE_GET_OSTIME(DR2HSYM_osticks, (dr)&7)) // map DR_SFnCR -> 0-6
+    TABLE_GET_S4(DR2HSYM, (dr)&7)) // map DR_SFnCR -> 0-6
     us2osticksRound(128 << 5), // DR_SF10   DR_SF12CR
     us2osticksRound(128 << 4), // DR_SF9    DR_SF11CR
     us2osticksRound(128 << 3), // DR_SF8    DR_SF10CR
