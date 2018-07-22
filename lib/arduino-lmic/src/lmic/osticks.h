@@ -19,6 +19,7 @@ public:
   static OsDeltaTime from_ms(int64_t us);
   static OsDeltaTime from_sec(int64_t us);
   static OsDeltaTime from_us_round(int64_t us);
+  static OsDeltaTime rnd_delay(uint8_t sec_span);
 
   int32_t to_us() const;
   int32_t to_ms() const;

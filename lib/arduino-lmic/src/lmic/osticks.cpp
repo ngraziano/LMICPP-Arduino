@@ -1,5 +1,6 @@
 
 #include "osticks.h"
+#include "../hal/hal.h"
 
 int32_t OsDeltaTime::tick() const { return value; }
 
@@ -81,6 +82,16 @@ OsDeltaTime OsDeltaTime::from_sec(int64_t sec) {
 
 OsDeltaTime OsDeltaTime::from_us_round(int64_t us) {
   return OsDeltaTime(us2osticksRound(us));
+}
+
+OsDeltaTime OsDeltaTime::rnd_delay(uint8_t secSpan) {
+  uint16_t r = hal_rand2();
+  int16_t delay = r;
+  if (delay > OSTICKS_PER_SEC)
+    delay = r % (uint16_t)OSTICKS_PER_SEC;
+  if (secSpan > 0)
+    delay += (r % secSpan) * OSTICKS_PER_SEC;
+  return OsDeltaTime(delay);
 }
 
 int32_t OsDeltaTime::to_ms() const {

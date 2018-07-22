@@ -236,18 +236,8 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
 #endif
 };
 
-OsDeltaTime rndDelay(uint8_t secSpan) {
-  uint16_t r = hal_rand2();
-  OsDeltaTime delay = r;
-  if (delay > OsDeltaTime::from_sec(1))
-    delay = r % OsDeltaTime::from_sec(1).tick();
-  if (secSpan > 0)
-    delay += (r % secSpan) * OsDeltaTime::from_sec(1);
-  return delay;
-}
-
 void Lmic::txDelay(OsTime const &reftime, uint8_t secSpan) {
-  auto delayRef = reftime + rndDelay(secSpan);
+  auto delayRef = reftime + OsDeltaTime::rnd_delay(secSpan);
   if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
     globalDutyAvail = delayRef;
     opmode |= OP_RNDTX;
@@ -469,7 +459,7 @@ void Lmic::initJoinLoop() {
   setDrJoin(DR_SF7);
   initDefaultChannels(true);
   ASSERT((opmode & OP_NEXTCHNL) == 0);
-  txend = bands[BAND_MILLI].avail + rndDelay(8);
+  txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(8);
   PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail,
                 txend);
 }
@@ -501,7 +491,7 @@ bool Lmic::nextJoinState() {
                       ? DNW2_SAFETY_ZONE
                       // Otherwise: randomize join (street lamp case):
                       // SF12:255, SF11:127, .., SF7:8secs
-                      : DNW2_SAFETY_ZONE + rndDelay(255 >> datarate));
+                      : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(255 >> datarate));
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
     lmic_printf("%lu: Join failed\n", os_getTime());
@@ -686,7 +676,7 @@ bool Lmic::nextJoinState() {
                               ? DNW2_SAFETY_ZONE
                               // Otherwise: randomize join (street lamp case):
                               // SF10:16, SF9=8,..SF8C:1secs
-                              : rndDelay(16 >> datarate));
+                              : OsDeltaTime::rnd_delay(16 >> datarate));
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }
