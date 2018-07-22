@@ -244,7 +244,7 @@ private:
   // callbacks
 
   void processRx1DnData();
-  void setupRx1(OsJobType<Lmic>::osjobcbTyped_t func);
+  void setupRx1();
   void setupRx2();
   void schedRx12(OsDeltaTime const &delay, OsJobType<Lmic>::osjobcbTyped_t func,
                  uint8_t dr);

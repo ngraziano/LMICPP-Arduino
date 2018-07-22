@@ -237,7 +237,6 @@ static CONST_TABLE(int32_t, DR2HSYM_osticks)[] = {
 #endif
 };
 
-
 OsDeltaTime rndDelay(uint8_t secSpan) {
   uint16_t r = hal_rand2();
   OsDeltaTime delay = r;
@@ -1014,12 +1013,11 @@ void Lmic::schedRx12(OsDeltaTime const &delay,
   osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
 }
 
-void Lmic::setupRx1(OsJobType<Lmic>::osjobcbTyped_t func) {
+void Lmic::setupRx1() {
   txrxFlags = TXRX_DNW1;
   // Turn rps from TX over to RX
   rps = setNocrc(rps, 1);
   dataLen = 0;
-  osjob.setCallbackFuture(func);
   radio_rx();
 }
 
@@ -1029,19 +1027,7 @@ void Lmic::txDone(OsDeltaTime const &delay,
                   OsJobType<Lmic>::osjobcbTyped_t func) {
   // Change RX frequency / rps (US only) before we increment txChnl
   setRx1Params();
-  // rxsyms carries the TX datarate (can be != datarate [confirm retries etc.])
-  // Setup receive - rxtime is preloaded with 1.5 symbols offset to tune
-  // into the middle of the 8 symbols preamble.
-#if defined(CFG_eu868)
-  if (/* TX datarate */ rxsyms == DR_FSK) {
-    rxtime = txend + delay - PRERX_FSK * OsDeltaTime::from_us_round(160);
-    rxsyms = RXLEN_FSK;
-    osjob.setTimedCallback(rxtime - RX_RAMPUP, func);
-  } else
-#endif
-  {
-    schedRx12(delay, func, dndr);
-  }
+  schedRx12(delay, func, dndr);
 }
 
 // ======================================== Join frames
@@ -1161,7 +1147,6 @@ void Lmic::setupRx2Jacc() {
 }
 
 void Lmic::processRx1Jacc() {
-  // GZODEBUG
   PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
   if (dataLen == 0 || !processJoinAccept())
     schedRx12(DELAY_JACC2_osticks, &Lmic::setupRx2Jacc, dn2Dr);
@@ -1169,7 +1154,8 @@ void Lmic::processRx1Jacc() {
 
 void Lmic::setupRx1Jacc() {
   PRINT_DEBUG_2("Setup RX1 join accept.");
-  setupRx1(&Lmic::processRx1Jacc);
+  this->osjob.setCallbackFuture(&Lmic::processRx1Jacc);
+  setupRx1();
 }
 
 void Lmic::jreqDone() { txDone(DELAY_JACC1_osticks, &Lmic::setupRx1Jacc); }
@@ -1192,7 +1178,7 @@ void Lmic::processRx2DnData() {
 }
 
 void Lmic::setupRx2DnData() {
-  this->osjob.setCallbackFuture(&Lmic::processRx2DnData);
+  osjob.setCallbackFuture(&Lmic::processRx2DnData);
   setupRx2();
 }
 
@@ -1202,7 +1188,10 @@ void Lmic::processRx1DnData() {
               &Lmic::setupRx2DnData, dn2Dr);
 }
 
-void Lmic::setupRx1DnData() { setupRx1(&Lmic::processRx1DnData); }
+void Lmic::setupRx1DnData() {
+  osjob.setCallbackFuture(&Lmic::processRx1DnData);
+  setupRx1();
+}
 
 void Lmic::updataDone() {
   txDone(OsDeltaTime::from_sec(rxDelay), &Lmic::setupRx1DnData);
@@ -1543,9 +1532,7 @@ void Lmic::reset() {
 #endif
 }
 
-void Lmic::init(void) {
-  opmode = OP_SHUTDOWN;
-}
+void Lmic::init(void) { opmode = OP_SHUTDOWN; }
 
 void Lmic::clrTxData(void) {
   opmode &= ~(OP_TXDATA | OP_TXRXPEND | OP_POLL);
