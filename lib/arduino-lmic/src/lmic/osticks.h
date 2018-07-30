@@ -56,6 +56,10 @@ bool operator>=(OsDeltaTime const &lhs, OsDeltaTime const &rhs);
 
 OsTime operator+(OsTime const &a, OsDeltaTime const &b);
 OsTime operator-(OsTime const &a, OsDeltaTime const &b);
+bool operator<(OsTime const &lhs, OsTime const &rhs);
+bool operator>(OsTime const &lhs, OsTime const &rhs);
+bool operator<=(OsTime const &lhs, OsTime const &rhs);
+bool operator>=(OsTime const &lhs, OsTime const &rhs);
 
 OsDeltaTime operator-(OsTime const &a, OsTime const &b);
 

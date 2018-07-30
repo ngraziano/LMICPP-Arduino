@@ -72,14 +72,15 @@ void OsJobBase::setTimed(OsTime const &time) {
   OsJobBase **pnext;
   hal_disableIRQs();
   // remove if job was already queued
-  clearCallback();
+  unlinkjob(&this->scheduler->scheduledjobs, this);
+  unlinkjob(&this->scheduler->runnablejobs, this);
   // fill-in job
   deadline = time;
   next = nullptr;
   // insert into schedule
   for (pnext = &this->scheduler->scheduledjobs; *pnext;
        pnext = &((*pnext)->next)) {
-    if ((*pnext)->deadline - time > 0) { // (cmp diff, not abs!)
+    if ((*pnext)->deadline - time > 0) {
       // enqueue before next element and stop
       next = *pnext;
       break;

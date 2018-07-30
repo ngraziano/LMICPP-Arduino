@@ -101,3 +101,17 @@ int32_t OsDeltaTime::to_ms() const {
 int32_t OsDeltaTime::to_us() const {
   return value * (int64_t)1000000 / OSTICKS_PER_SEC;
 }
+
+
+bool operator<(OsTime const &lhs, OsTime const &rhs) {
+  return lhs - rhs < OsDeltaTime(0);
+}
+bool operator>(OsTime const &lhs, OsTime const &rhs) {
+  return rhs < lhs;
+}
+bool operator<=(OsTime const &lhs, OsTime const &rhs) {
+  return !(lhs > rhs);
+}
+bool operator>=(OsTime const &lhs, OsTime const &rhs) {
+  return !(lhs < rhs);
+}
