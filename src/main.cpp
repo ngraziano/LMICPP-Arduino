@@ -139,7 +139,7 @@ void do_send(){
             digitalWrite(pinCmd, 0);
 
         // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(1, (uint8_t*)data, 4, 0);
+        LMIC.setTxData2(1, (uint8_t*)data, 4, false);
         PRINT_DEBUG_1("Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.

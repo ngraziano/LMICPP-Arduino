@@ -712,7 +712,6 @@ void Lmic::stateJustJoined() {
   seqnoUp = 0;
   rejoinCnt = 0;
   dnConf = 0;
-  adrChanged = 0;
   ladrAns = false;
   devsAns = false;
 #if !defined(DISABLE_MCMD_SNCH_REQ)
@@ -763,7 +762,10 @@ void Lmic::parseMacCommands(uint8_t *opts, uint8_t olen) {
         upRepeat = uprpt;
         setDrTxpow(dr, pow2dBm(p1));
       }
-      adrChanged = 1; // Trigger an ACK to NWK
+      if (adrAckReq != LINK_CHECK_OFF) {
+        // force ack to NWK.
+        adrAckReq = 0;
+      }
       continue;
     }
     case MCMD_DEVS_REQ: {
@@ -922,7 +924,7 @@ bool Lmic::decodeFrame() {
     opmode |= OP_POLL;
 
   // We heard from network
-  adrChanged = rejoinCnt = 0;
+  rejoinCnt = 0;
   if (adrAckReq != LINK_CHECK_OFF)
     adrAckReq = LINK_CHECK_INIT;
 
@@ -1218,7 +1220,6 @@ void Lmic::updataDone() {
 
 void Lmic::buildDataFrame() {
   bool txdata = ((opmode & (OP_TXDATA | OP_POLL)) != OP_POLL);
-  uint8_t dlen = txdata ? pendTxLen : 0;
 
   // Piggyback MAC options
   // Prioritize by importance
@@ -1251,11 +1252,6 @@ void Lmic::buildDataFrame() {
     end += 2;
     ladrAns = 0;
   }
-  if (adrChanged) {
-    if (adrAckReq < 0)
-      adrAckReq = 0;
-    adrChanged = 0;
-  }
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   if (snchAns) {
     frame[end + 0] = MCMD_SNCH_ANS;
@@ -1266,7 +1262,7 @@ void Lmic::buildDataFrame() {
 #endif // !DISABLE_MCMD_SNCH_REQ
   ASSERT(end <= OFF_DAT_OPTS + 16);
 
-  uint8_t flen = end + (txdata ? 5 + dlen : 4);
+  uint8_t flen = end + (txdata ? 5 + pendTxLen : 4);
   if (flen > MAX_LEN_FRAME) {
     // Options and payload too big - delay payload
     txdata = 0;
@@ -1295,9 +1291,9 @@ void Lmic::buildDataFrame() {
         txCnt = 1;
     }
     frame[end] = pendTxPort;
-    std::copy(pendTxData, pendTxData + dlen, frame + end + 1);
+    std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
     aes.cipher(pendTxPort == 0 ? nwkKey : artKey, devaddr, seqnoUp - 1,
-               /*up*/ 0, frame + end + 1, dlen);
+               /*up*/ 0, frame + end + 1, pendTxLen);
   }
   aes.appendMic(nwkKey, devaddr, seqnoUp - 1, /*up*/ 0, frame, flen - 4);
 
@@ -1570,7 +1566,7 @@ void Lmic::setTxData(void) {
 
 //
 int Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
-                     uint8_t confirmed) {
+                     bool confirmed) {
   if (dlen > sizeof(pendTxData))
     return -2;
   if (data)
@@ -1638,7 +1634,6 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
 // nor is the datarate changed.
 // This must be called only if a session is established (e.g. after EV_JOINED)
 void Lmic::setLinkCheckMode(bool enabled) {
-  adrChanged = 0;
   adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
 

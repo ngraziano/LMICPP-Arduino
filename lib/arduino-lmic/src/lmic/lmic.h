@@ -196,21 +196,32 @@ private:
   uint16_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                            // represents +/-100% error
 
-  uint8_t pendTxPort = 0;
-  uint8_t pendTxConf = 0; // confirmed data
-  uint8_t pendTxLen = 0;  // +0x80 = confirmed
-  uint8_t pendTxData[MAX_LEN_PAYLOAD] = {0};
+  // pending data length
+  uint8_t pendTxLen = 0;
+  // pending data ask for confirmation
+  bool pendTxConf;
+  // pending data port
+  uint8_t pendTxPort;
+  // pending data
+  uint8_t pendTxData[MAX_LEN_PAYLOAD];
 
-  uint16_t devNonce = 0;    // last generated nonce
-  uint8_t nwkKey[16] = {0}; // network session key
-  uint8_t artKey[16] = {0}; // application router session key
-  devaddr_t devaddr = 0;
-  uint32_t seqnoDn = 0; // device level down stream seqno
-  uint32_t seqnoUp = 0;
-
-  uint8_t dnConf = 0;   // dn frame confirm pending: LORA::FCT_ACK or 0
-  int8_t adrAckReq = 0; // counter until we reset data rate (0=off)
-  uint8_t adrChanged = 0;
+  // last generated nonce
+  // set at random value at reset.
+  uint16_t devNonce;      
+  uint8_t nwkKey[16];     // network session key
+  uint8_t artKey[16];     // application router session key
+  // device address, set at 0 at reset.
+  devaddr_t devaddr;
+  // device level down stream seqno, reset after join.
+  uint32_t seqnoDn;
+  // device level up stream seqno, reset after join.
+  uint32_t seqnoUp;
+  // dn frame confirm pending: LORA::FCT_ACK or 0, reset after join
+  uint8_t dnConf;
+  // counter until we reset data rate (-128=off), reset after join
+  // ask for confirmation if > 0
+  // lower data rate if > LINK_CHECK_DEAD
+  int8_t adrAckReq;
 
   OsDeltaTime rxDelay = OsDeltaTime::from_sec(DELAY_DNW1); // Rx delay after TX
 
@@ -347,7 +358,7 @@ public:
 
   void clrTxData();
   void setTxData();
-  int setTxData2(uint8_t port, uint8_t *data, uint8_t dlen, uint8_t confirmed);
+  int setTxData2(uint8_t port, uint8_t *data, uint8_t dlen, bool confirmed);
   void sendAlive();
   void setClockError(uint16_t error);
 
