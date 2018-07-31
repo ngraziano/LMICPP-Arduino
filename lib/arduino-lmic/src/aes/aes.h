@@ -32,8 +32,8 @@ public:
   void cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno, uint8_t dndir,
               uint8_t *payload, uint8_t len);
   void encrypt(uint8_t *pdu, uint8_t len);
-  void sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t *nwkkey,
-                uint8_t *artkey);
+  void sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t nwkkey[16],
+                uint8_t artkey[16]);
   void appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                  uint8_t dndir, uint8_t *pdu, uint8_t len);
   void appendMic0(uint8_t *pdu, uint8_t len);

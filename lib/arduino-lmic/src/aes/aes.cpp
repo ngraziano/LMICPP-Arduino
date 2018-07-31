@@ -12,21 +12,6 @@
  * NO WARRANTY OF ANY KIND IS PROVIDED.
  *******************************************************************************/
 
-/*
- * The original LMIC AES implementation integrates raw AES encryption
- * with CMAC and AES-CTR in a single piece of code. Most other AES
- * implementations (only) offer raw single block AES encryption, so this
- * file contains an implementation of CMAC and AES-CTR, and offers the
- * same API through the os_aes() function as the original AES
- * implementation. This file assumes that there is an encryption
- * function available with this signature:
- *
- *      extern "C" void lmic_aes_encrypt(uint8_t *data, uint8_t *key);
- *
- *  That takes a single 16-byte buffer and encrypts it wit the given
- *  16-byte key.
- */
-
 #include "aes.h"
 #include "../lmic/bufferpack.h"
 #include "../lmic/lorabase.h"
@@ -34,6 +19,7 @@
 
 void Aes::setDevKey(uint8_t key[16]) { std::copy(key, key + 16, AESDevKey); }
 
+// Get B0 value in buf
 void Aes::micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
                 uint8_t buf[16]) {
   buf[0] = 0x49;
@@ -49,6 +35,7 @@ void Aes::micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
 
 }
 
+// Verify MIC
 bool Aes::verifyMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                     uint8_t dndir, uint8_t *pdu, uint8_t len) {
   uint8_t buf[16];
@@ -57,6 +44,7 @@ bool Aes::verifyMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   return std::equal(buf, buf + MIC_LEN, pdu+len);
 }
 
+// Append MIC
 void Aes::appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                     uint8_t dndir, uint8_t *pdu, uint8_t len) {
   uint8_t buf[16];
@@ -66,6 +54,7 @@ void Aes::appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   std::copy(buf, buf + MIC_LEN, pdu + len);
 }
 
+// Append join MIC
 void Aes::appendMic0(uint8_t *pdu, uint8_t len) {
   uint8_t buf[16] = {0};
   os_aes_cmac(pdu, len, false, AESDevKey, buf);
@@ -73,6 +62,7 @@ void Aes::appendMic0(uint8_t *pdu, uint8_t len) {
   std::copy(buf, buf + MIC_LEN, pdu + len);
 }
 
+// Verify join MIC
 bool Aes::verifyMic0(uint8_t *pdu, uint8_t len) {
   uint8_t buf[16] = {0};
   os_aes_cmac(pdu, len, 0, AESDevKey, buf);
@@ -85,6 +75,7 @@ void Aes::encrypt(uint8_t *pdu, uint8_t len) {
     lmic_aes_encrypt(pdu + i, AESDevKey);
 }
 
+// cipher a buffer with corresponding data
 void Aes::cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                  uint8_t dndir, uint8_t *payload, uint8_t len) {
 
@@ -102,8 +93,9 @@ void Aes::cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   os_aes_ctr(payload, len, key, buf);
 }
 
-void Aes::sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t *nwkkey,
-                   uint8_t *artkey) {
+// Extract session keys
+void Aes::sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t nwkkey[16],
+                   uint8_t artkey[16]) {
   std::fill(nwkkey, nwkkey + 16, 0);
   nwkkey[0] = 0x01;
   std::copy(artnonce, artnonce + LEN_ARTNONCE + LEN_NETID, nwkkey + 1);
@@ -115,8 +107,6 @@ void Aes::sessKeys(uint16_t devnonce, const uint8_t *artnonce, uint8_t *nwkkey,
   lmic_aes_encrypt(artkey, AESDevKey);
 }
 
-// END AES
-// ================================================================================
 
 // Shift the given buffer left one bit
 static void shift_left(uint8_t *buf, uint8_t len) {
@@ -184,15 +174,16 @@ void Aes::os_aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
   }
 }
 
-// Run AES-CTR using the key in AESKEY and using AESAUX as the
+// Run AES-CTR using the key in key and using ctrbuffer as the
 // counter block. The last byte of the counter block will be incremented
-// for every block. The given buffer will be encrypted in place.
+// for every block.
+// The given buffer will be encrypted in place.
 void Aes::os_aes_ctr(uint8_t *buf, uint8_t len, const uint8_t key[16],
-                     uint8_t result[16]) {
+                     uint8_t ctrbuffer[16]) {
   uint8_t ctr[16];
   while (len) {
     // Encrypt the counter block with the selected key
-    memcpy(ctr, result, sizeof(ctr));
+    memcpy(ctr, ctrbuffer, sizeof(ctr));
     lmic_aes_encrypt(ctr, key);
 
     // Xor the payload with the resulting ciphertext
@@ -200,6 +191,6 @@ void Aes::os_aes_ctr(uint8_t *buf, uint8_t len, const uint8_t key[16],
       *buf ^= ctr[i];
 
     // Increment the block index byte
-    result[15]++;
+    ctrbuffer[15]++;
   }
 }
