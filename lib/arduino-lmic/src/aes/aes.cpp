@@ -37,23 +37,29 @@ void Aes::setDevKey(uint8_t key[16]) { std::copy(key, key + 16, AESDevKey); }
 void Aes::micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
                 uint8_t buf[16]) {
   buf[0] = 0x49;
+  buf[1] = 0;
+  buf[2] = 0;
+  buf[3] = 0;
+  buf[4] = 0;
   buf[5] = dndir ? 1 : 0;
-  buf[15] = len;
   wlsbf4(buf + 6, devaddr);
   wlsbf4(buf + 10, seqno);
+  buf[14] = 0;
+  buf[15] = len;
+
 }
 
 bool Aes::verifyMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                     uint8_t dndir, uint8_t *pdu, uint8_t len) {
-  uint8_t buf[16] = {0};
+  uint8_t buf[16];
   micB0(devaddr, seqno, dndir, len, buf);
   os_aes_cmac(pdu, len, 1, key, buf);
-  return rmsbf4(buf) == rmsbf4(pdu + len);
+  return std::equal(buf, buf+4, pdu+len);
 }
 
 void Aes::appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                     uint8_t dndir, uint8_t *pdu, uint8_t len) {
-  uint8_t buf[16] = {0};
+  uint8_t buf[16];
   micB0(devaddr, seqno, dndir, len, buf);
   os_aes_cmac(pdu, len, true, key, buf);
   // MSB because of internal structure of AES
@@ -118,8 +124,8 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 }
 
 // Apply RFC4493 CMAC. If prepend_aux is true,
-// result is prepended to the message. result is used as working memory
-// in any case it must be 0 before call. The CMAC result is returned in result
+// result is prepended to the message. result is used as working memory,
+// it can be set to "B0" for MIC. The CMAC result is returned in result
 // as well.
 void Aes::os_aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
                       const uint8_t key[16], uint8_t result[16]) {
