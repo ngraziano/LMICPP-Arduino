@@ -54,7 +54,7 @@ bool Aes::verifyMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   uint8_t buf[16];
   micB0(devaddr, seqno, dndir, len, buf);
   os_aes_cmac(pdu, len, 1, key, buf);
-  return std::equal(buf, buf+4, pdu+len);
+  return std::equal(buf, buf + MIC_LEN, pdu+len);
 }
 
 void Aes::appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
@@ -62,20 +62,21 @@ void Aes::appendMic(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   uint8_t buf[16];
   micB0(devaddr, seqno, dndir, len, buf);
   os_aes_cmac(pdu, len, true, key, buf);
-  // MSB because of internal structure of AES
-  wmsbf4(pdu + len, rmsbf4(buf));
+  // Copy MIC at the end
+  std::copy(buf, buf + MIC_LEN, pdu + len);
 }
 
 void Aes::appendMic0(uint8_t *pdu, uint8_t len) {
   uint8_t buf[16] = {0};
   os_aes_cmac(pdu, len, false, AESDevKey, buf);
-  wmsbf4(pdu + len, rmsbf4(buf)); // MSB because of internal structure of AES
+  // Copy MIC0 at the end
+  std::copy(buf, buf + MIC_LEN, pdu + len);
 }
 
 bool Aes::verifyMic0(uint8_t *pdu, uint8_t len) {
   uint8_t buf[16] = {0};
   os_aes_cmac(pdu, len, 0, AESDevKey, buf);
-  return rmsbf4(buf) == rmsbf4(pdu + len);
+  return std::equal(buf, buf + MIC_LEN, pdu+len);
 }
 
 void Aes::encrypt(uint8_t *pdu, uint8_t len) {
@@ -87,11 +88,17 @@ void Aes::encrypt(uint8_t *pdu, uint8_t len) {
 void Aes::cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
                  uint8_t dndir, uint8_t *payload, uint8_t len) {
 
-  uint8_t buf[16] = {0};
-  buf[0] = buf[15] = 1; // mode=cipher / dir=down / block counter=1
+  uint8_t buf[16];
+  buf[0] = 1; // mode=cipher
+  buf[1] = 0;
+  buf[2] = 0;
+  buf[3] = 0;
+  buf[4] = 0;
   buf[5] = dndir ? 1 : 0;
   wlsbf4(buf + 6, devaddr);
   wlsbf4(buf + 10, seqno);
+  buf[14] = 0;
+  buf[15] = 1; // block counter=1
   os_aes_ctr(payload, len, key, buf);
 }
 
