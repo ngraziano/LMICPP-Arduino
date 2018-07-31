@@ -185,13 +185,18 @@ private:
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
   OsTime globalDutyAvail;     // time device can send again
 
-  uint32_t netid = 0; // current network id (~0 - none)
-  uint16_t opmode = 0;
-  uint8_t upRepeat = 0;  // configured up repeat
-  int8_t adrTxPow = 0;   // ADR adjusted TX power
+  uint32_t netid; // current network id (~0 - none)
+  // curent opmode set at init
+  uint16_t opmode;
+  // configured up repeat reset after join.
+  uint8_t upRepeat;  
+  // ADR adjusted TX power not used ?
+  int8_t adrTxPow = 0;
   dr_t datarate = 0;     // current data rate
-  uint8_t errcr = 0;     // error coding rate (used for TX only)
-  uint8_t rejoinCnt = 0; // adjustment for rejoin datarate
+  // error coding rate (used for TX only), init at reset
+  cr_t errcr;
+  // adjustment for rejoin datarate
+  uint8_t rejoinCnt; 
 
   uint16_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                            // represents +/-100% error
@@ -223,24 +228,30 @@ private:
   // lower data rate if > LINK_CHECK_DEAD
   int8_t adrAckReq;
 
-  OsDeltaTime rxDelay = OsDeltaTime::from_sec(DELAY_DNW1); // Rx delay after TX
+  // // Rx delay after TX, init at reset
+  OsDeltaTime rxDelay; 
 
   uint8_t margin = 0;
-  bool ladrAns = false; // link adr adapt answer pending
-  bool devsAns = false; // device status answer pending
-  uint8_t adrEnabled = 0;
-  uint8_t moreData = 0; // NWK has more data pending
+  // link adr adapt answer pending, init after join
+  bool ladrAns;
+  // device status answer pending, init after join 
+  bool devsAns;
+  // adr Mode, init at reset
+  uint8_t adrEnabled;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-  bool dutyCapAns = false; // have to ACK duty cycle settings
+  // have to ACK duty cycle settings, init after join
+  bool dutyCapAns; 
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
-  uint8_t snchAns = 0; // answer set new channel
+ // answer set new channel, init afet join.
+  uint8_t snchAns;
 #endif
-  // 2nd RX window (after up stream)
-  uint8_t dn2Dr = 0;
-  uint32_t dn2Freq = 0;
+  // 2nd RX window (after up stream), init at reset
+  uint8_t dn2Dr;
+  uint32_t dn2Freq;
 #if !defined(DISABLE_MCMD_DN2P_SET)
-  uint8_t dn2Ans = 0; // 0=no answer pend, 0x80+ACKs
+  // 0=no answer pend, 0x80+ACKs, init after join
+  uint8_t dn2Ans;
 #endif
 
 public:

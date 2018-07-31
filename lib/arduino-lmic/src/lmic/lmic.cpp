@@ -720,9 +720,8 @@ void Lmic::stateJustJoined() {
 #if !defined(DISABLE_MCMD_DN2P_SET)
   dn2Ans = 0;
 #endif
-  moreData = 0;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-  dutyCapAns = 0;
+  dutyCapAns = false;
 #endif
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
@@ -800,7 +799,7 @@ void Lmic::parseMacCommands(uint8_t *opts, uint8_t olen) {
         opmode |= OP_SHUTDOWN; // stop any sending
       globalDutyRate = cap & 0xF;
       globalDutyAvail = os_getTime();
-      dutyCapAns = 1;
+      dutyCapAns = true;
 #endif // !DISABLE_MCMD_DCAP_REQ
       oidx += 2;
       continue;
@@ -1228,7 +1227,7 @@ void Lmic::buildDataFrame() {
   if (dutyCapAns) {
     frame[end] = MCMD_DCAP_ANS;
     end += 1;
-    dutyCapAns = 0;
+    dutyCapAns = false;
   }
 #endif // !DISABLE_MCMD_DCAP_REQ
 #if !defined(DISABLE_MCMD_DN2P_SET)
@@ -1490,7 +1489,7 @@ void Lmic::engineUpdate() {
         buildDataFrame();
         osjob.setCallbackFuture(&Lmic::updataDone);
       }
-      rps = setCr(updr2rps(txdr), (cr_t)errcr);
+      rps = setCr(updr2rps(txdr), errcr);
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
