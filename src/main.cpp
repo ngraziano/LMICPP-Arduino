@@ -33,6 +33,8 @@ uint16_t data[2] = {};
 
 OsJob sendjob;
 
+bool nosleep = false;
+
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 5);
@@ -121,9 +123,20 @@ void do_send(){
         pinMode(pinCmd, OUTPUT);
         digitalWrite(pinCmd, 1);
         delay(100);
+        // battery
         data[0] = analogRead(A2);
+
+        if(data[0] > (int)(4.1 * 1024 / 6.6)) {
+            // use battery...
+            nosleep = true;
+        } else {
+            nosleep = false;
+        }
+
+        // humidity
         data[1] = analogRead(A1);
-        digitalWrite(pinCmd, 0);
+        if(!nosleep)
+            digitalWrite(pinCmd, 0);
 
         // Prepare upstream data transmission at the next possible time.
         LMIC.setTxData2(1, (uint8_t*)data, 4, 0);
@@ -216,7 +229,7 @@ void powersave(OsDeltaTime const& maxTime) {
 
 void loop() {
      OsDeltaTime to_wait = OSS.runloopOnce();
-    if(to_wait > 0 && hal_is_sleep_allow()) {
+    if(!nosleep && to_wait > 0 && hal_is_sleep_allow()) {
         powersave(to_wait);
     } 
 }
