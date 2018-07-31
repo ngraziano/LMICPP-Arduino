@@ -1462,7 +1462,7 @@ void Lmic::engineUpdate() {
 #endif
       // We could send right now!
       txbeg = now;
-      dr_t txdr = (dr_t)datarate;
+      dr_t txdr = datarate;
 #if !defined(DISABLE_JOIN)
       if (jacc) {
         uint8_t ftype;
