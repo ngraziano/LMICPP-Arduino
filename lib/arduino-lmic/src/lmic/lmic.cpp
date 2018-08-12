@@ -892,7 +892,7 @@ bool Lmic::decodeFrame() {
 
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
-  if (!aes.verifyMic(nwkKey, devaddr, seqno, /*dn*/ 1, d, pend)) {
+  if (!aes.verifyMic(nwkKey, devaddr, seqno, DIR_DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
     dataLen = 0;
     return false;
@@ -938,7 +938,7 @@ bool Lmic::decodeFrame() {
     // Handle payload only if not a replay
     // Decrypt payload - if any
     if (port >= 0 && pend - poff > 0)
-      aes.cipher(port <= 0 ? nwkKey : artKey, devaddr, seqno, /*dn*/ 1,
+      aes.framePayloadEncryption(port <= 0 ? nwkKey : artKey, devaddr, seqno, DIR_DOWN,
                  d + poff, pend - poff);
   } else {
     // replay
@@ -1078,7 +1078,7 @@ bool Lmic::processJoinAccept() {
 
   uint8_t hdr = frame[0];
   uint8_t dlen = dataLen;
-  // uint32_t mic  = rlsbf4(&frame[dlen-4]); // safe before modified by encrypt!
+
   if ((dlen != LEN_JA && dlen != LEN_JAEXT) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
     // unexpected frame
@@ -1087,7 +1087,7 @@ bool Lmic::processJoinAccept() {
     return processJoinAcceptNoJoinFrame();
   }
   aes.encrypt(frame + 1, dlen - 1);
-  if (!aes.verifyMic0(frame, dlen - 4)) {
+  if (!aes.verifyMic0(frame, dlen)) {
     // bad mic
     if ((txrxFlags & TXRX_DNW1) != 0)
       return false;
@@ -1291,10 +1291,10 @@ void Lmic::buildDataFrame() {
     }
     frame[end] = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
-    aes.cipher(pendTxPort == 0 ? nwkKey : artKey, devaddr, seqnoUp - 1,
-               /*up*/ 0, frame + end + 1, pendTxLen);
+    aes.framePayloadEncryption(pendTxPort == 0 ? nwkKey : artKey, devaddr, seqnoUp - 1,
+               DIR_UP, frame + end + 1, pendTxLen);
   }
-  aes.appendMic(nwkKey, devaddr, seqnoUp - 1, /*up*/ 0, frame, flen - 4);
+  aes.appendMic(nwkKey, devaddr, seqnoUp - 1, DIR_UP, frame, flen);
 
   dataLen = flen;
 }
@@ -1314,7 +1314,7 @@ void Lmic::buildJoinRequest(uint8_t ftype) {
   artEuiCallBack(d + OFF_JR_ARTEUI);
   devEuiCallBack(d + OFF_JR_DEVEUI);
   wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
-  aes.appendMic0(d, OFF_JR_MIC);
+  aes.appendMic0(d, LEN_JR);
 
   dataLen = LEN_JR;
   devNonce++;

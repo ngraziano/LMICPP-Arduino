@@ -208,6 +208,10 @@ enum {
   OFF_DAT_OPTS = 8,
 };
 enum { MIC_LEN = 4 };
+enum { 
+  DIR_UP = 0,
+  DIR_DOWN =1,
+};
 enum { MAX_LEN_PAYLOAD = MAX_LEN_FRAME - (int)OFF_DAT_OPTS - 4 };
 enum {
   // Bitfields in frame format octet
