@@ -15,9 +15,6 @@ private:
 
   static void micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
                     uint8_t buf[16]);
-
-  static void os_aes_ctr(uint8_t *buf, uint8_t len, const uint8_t key[16],
-                         uint8_t result[16]);
   static void os_aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
                           const uint8_t key[16], uint8_t result[16]);
 

@@ -90,7 +90,22 @@ void Aes::cipher(const uint8_t *key, uint32_t devaddr, uint32_t seqno,
   wlsbf4(buf + 10, seqno);
   buf[14] = 0;
   buf[15] = 1; // block counter=1
-  os_aes_ctr(payload, len, key, buf);
+
+
+  uint8_t ctr[16];
+  while (len) {
+    // Encrypt the counter block with the selected key
+    memcpy(ctr, buf, sizeof(ctr));
+    lmic_aes_encrypt(ctr, key);
+
+    // Xor the payload with the resulting ciphertext
+    for (uint8_t i = 0; i < 16 && len > 0; i++, len--, payload++)
+      *payload ^= ctr[i];
+
+    // Increment the block index byte
+    buf[15]++;
+  }
+
 }
 
 // Extract session keys
@@ -174,23 +189,3 @@ void Aes::os_aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
   }
 }
 
-// Run AES-CTR using the key in key and using ctrbuffer as the
-// counter block. The last byte of the counter block will be incremented
-// for every block.
-// The given buffer will be encrypted in place.
-void Aes::os_aes_ctr(uint8_t *buf, uint8_t len, const uint8_t key[16],
-                     uint8_t ctrbuffer[16]) {
-  uint8_t ctr[16];
-  while (len) {
-    // Encrypt the counter block with the selected key
-    memcpy(ctr, ctrbuffer, sizeof(ctr));
-    lmic_aes_encrypt(ctr, key);
-
-    // Xor the payload with the resulting ciphertext
-    for (uint8_t i = 0; i < 16 && len > 0; i++, len--, buf++)
-      *buf ^= ctr[i];
-
-    // Increment the block index byte
-    ctrbuffer[15]++;
-  }
-}
