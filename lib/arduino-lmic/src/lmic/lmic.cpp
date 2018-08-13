@@ -226,7 +226,7 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
     us2osticksRound(128 << 1), // DR_SF7B
     us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
 #elif defined(CFG_us915)
-#define dr2hsym(dr)(TABLE_GET_S4(DR2HSYM, (dr)&7)) // map DR_SFnCR -> 0-6
+#define dr2hsym(dr) (TABLE_GET_S4(DR2HSYM, (dr)&7)) // map DR_SFnCR -> 0-6
     us2osticksRound(128 << 5), // DR_SF10   DR_SF12CR
     us2osticksRound(128 << 4), // DR_SF9    DR_SF11CR
     us2osticksRound(128 << 3), // DR_SF8    DR_SF10CR
@@ -485,13 +485,14 @@ bool Lmic::nextJoinState() {
   OsTime time = os_getTime();
   if (time - bands[BAND_MILLI].avail < 0)
     time = bands[BAND_MILLI].avail;
-  txend = time + (isTESTMODE()
-                      // Avoid collision with JOIN ACCEPT @ SF12 being sent by
-                      // GW (but we missed it)
-                      ? DNW2_SAFETY_ZONE
-                      // Otherwise: randomize join (street lamp case):
-                      // SF12:255, SF11:127, .., SF7:8secs
-                      : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(255 >> datarate));
+  txend =
+      time + (isTESTMODE()
+                  // Avoid collision with JOIN ACCEPT @ SF12 being sent by
+                  // GW (but we missed it)
+                  ? DNW2_SAFETY_ZONE
+                  // Otherwise: randomize join (street lamp case):
+                  // SF12:255, SF11:127, .., SF7:8secs
+                  : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(255 >> datarate));
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
     lmic_printf("%lu: Join failed\n", os_getTime());
@@ -847,15 +848,22 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
 // ================================================================================
 // Decoding frames
 bool Lmic::decodeFrame() {
-  uint8_t *d = frame;
-  uint8_t hdr = d[0];
-  uint8_t ftype = hdr & HDR_FTYPE;
-  uint8_t dlen = dataLen;
 #if LMIC_DEBUG_LEVEL > 0
   const char *window = (txrxFlags & TXRX_DNW1)
                            ? "RX1"
                            : ((txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
 #endif
+
+  if (dataLen == 0) {
+    PRINT_DEBUG_1("No downlink data, window=%s", window);
+    return false;
+  }
+
+  uint8_t *d = frame;
+  uint8_t hdr = d[0];
+  uint8_t ftype = hdr & HDR_FTYPE;
+  uint8_t dlen = dataLen;
+
   if (dlen < OFF_DAT_OPTS + 4 || (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
       (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
     // Basic sanity checks failed
@@ -884,11 +892,7 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  int port = -1;
   bool replayConf = false;
-
-  if (pend > poff)
-    port = d[poff++];
 
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
@@ -933,12 +937,25 @@ bool Lmic::decodeFrame() {
 
   parseMacCommands(d + OFF_DAT_OPTS, olen);
 
+  uint8_t port = -1;
   if (!replayConf) {
     // Handle payload only if not a replay
-    // Decrypt payload - if any
-    if (port >= 0 && pend - poff > 0)
-      aes.framePayloadEncryption(port, devaddr, seqno, DIR_DOWN,
-                 d + poff, pend - poff);
+    if (pend > poff) {
+      port = d[poff++];
+      // Decrypt payload - if any
+      aes.framePayloadEncryption(port, devaddr, seqno, DIR_DOWN, d + poff,
+                                 pend - poff);
+      txrxFlags |= TXRX_PORT;
+      dataBeg = poff;
+      dataLen = pend - poff;
+      if (port == 0) {
+        parseMacCommands(d + poff, pend - poff);
+      }
+    } else {
+      txrxFlags |= TXRX_NOPORT;
+      dataBeg = poff;
+      dataLen = 0;
+    }
   } else {
     // replay
     // not handle
@@ -956,17 +973,6 @@ bool Lmic::decodeFrame() {
   if (txCnt != 0) // we requested an ACK
     txrxFlags |= ackup ? TXRX_ACK : TXRX_NACK;
 
-  if (port < 0) {
-    txrxFlags |= TXRX_NOPORT;
-    dataBeg = poff;
-    dataLen = 0;
-  } else if (port == 0) {
-    parseMacCommands(d + poff, pend - poff);
-  } else {
-    txrxFlags |= TXRX_PORT;
-    dataBeg = poff;
-    dataLen = pend - poff;
-  }
   PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, port,
                 ackup);
   return true;
@@ -1134,8 +1140,8 @@ bool Lmic::processJoinAccept() {
   dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
   // Not implemented
   // rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
-  
-  if(frame[OFF_JA_RXDLY] == 0) {
+
+  if (frame[OFF_JA_RXDLY] == 0) {
     rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   } else {
     rxDelay = OsDeltaTime::from_sec(frame[OFF_JA_RXDLY]);
@@ -1170,10 +1176,10 @@ void Lmic::setupRx1Jacc() {
   setupRx1();
 }
 
-void Lmic::jreqDone() { 
+void Lmic::jreqDone() {
   osjob.setCallbackFuture(&Lmic::setupRx1Jacc);
-  txDone(DELAY_JACC1_osticks); 
-  }
+  txDone(DELAY_JACC1_osticks);
+}
 
 #endif // !DISABLE_JOIN
 
@@ -1198,7 +1204,7 @@ void Lmic::setupRx2DnData() {
 }
 
 void Lmic::processRx1DnData() {
-  if (dataLen == 0 || !processDnData()) {
+  if (!processDnData()) {
     osjob.setCallbackFuture(&Lmic::setupRx2DnData);
     schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2), dn2Dr);
   }
@@ -1290,8 +1296,8 @@ void Lmic::buildDataFrame() {
     }
     frame[end] = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
-    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1,
-               DIR_UP, frame + end + 1, pendTxLen);
+    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1, DIR_UP,
+                               frame + end + 1, pendTxLen);
   }
   aes.appendMic(devaddr, seqnoUp - 1, DIR_UP, frame, flen);
 
@@ -1346,8 +1352,12 @@ bool Lmic::startJoining() {
 bool Lmic::processDnData() {
   ASSERT((opmode & OP_TXRXPEND) != 0);
 
-  if (dataLen == 0) {
-  norx:
+  if (!decodeFrame()) {
+    // first RX windows, do nothing wait for second windows.
+    if ((txrxFlags & TXRX_DNW1) != 0)
+      return false;
+
+    // retry send if need
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt += 1;
@@ -1357,7 +1367,7 @@ bool Lmic::processDnData() {
         txDelay(rxtime, RETRY_PERIOD_secs);
         opmode &= ~OP_TXRXPEND;
         engineUpdate();
-        return 1;
+        return true;
       }
       txrxFlags = TXRX_NACK | TXRX_NOPORT;
     } else {
@@ -1367,33 +1377,28 @@ bool Lmic::processDnData() {
     if (adrAckReq != LINK_CHECK_OFF)
       adrAckReq += 1;
     dataBeg = dataLen = 0;
-  txcomplete:
-    opmode &= ~(OP_TXDATA | OP_TXRXPEND);
-    if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2 | TXRX_PING)) != 0 &&
-        (opmode & OP_LINKDEAD) != 0) {
-      opmode &= ~OP_LINKDEAD;
-      reportEvent(EV_LINK_ALIVE);
-    }
-    reportEvent(EV_TXCOMPLETE);
-    // If we haven't heard from NWK in a while although we asked for a sign
-    // assume link is dead - notify application and keep going
-    if (adrAckReq > LINK_CHECK_DEAD) {
-      // We haven't heard from NWK for some time although we
-      // asked for a response for some time - assume we're disconnected. Lower
-      // DR one notch.
-      setDrTxpow(decDR(datarate), KEEP_TXPOW);
-      adrAckReq = LINK_CHECK_CONT;
-      opmode |= OP_REJOIN | OP_LINKDEAD;
-      reportEvent(EV_LINK_DEAD);
-    }
-    return 1;
   }
-  if (!decodeFrame()) {
-    if ((txrxFlags & TXRX_DNW1) != 0)
-      return 0;
-    goto norx;
+
+  opmode &= ~(OP_TXDATA | OP_TXRXPEND);
+  if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2 | TXRX_PING )) != 0 &&
+      (opmode & OP_LINKDEAD) != 0) {
+    opmode &= ~OP_LINKDEAD;
+    reportEvent(EV_LINK_ALIVE);
   }
-  goto txcomplete;
+  reportEvent(EV_TXCOMPLETE);
+  // If we haven't heard from NWK in a while although we asked for a sign
+  // assume link is dead - notify application and keep going
+  if (adrAckReq > LINK_CHECK_DEAD) {
+    // We haven't heard from NWK for some time although we
+    // asked for a response for some time - assume we're disconnected. Lower
+    // DR one notch.
+    setDrTxpow(decDR(datarate), KEEP_TXPOW);
+    adrAckReq = LINK_CHECK_CONT;
+    opmode |= OP_REJOIN | OP_LINKDEAD;
+    reportEvent(EV_LINK_DEAD);
+  }
+  return true;
+
 }
 
 // Decide what to do next for the MAC layer of a device
