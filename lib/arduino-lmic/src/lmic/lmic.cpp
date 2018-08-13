@@ -338,7 +338,7 @@ void Lmic::disableChannel(uint8_t channel) {
   channelMap &= ~(1 << channel);
 }
 
-static uint32_t convFreq(uint8_t *ptr) {
+static uint32_t convFreq(const uint8_t *ptr) {
   uint32_t newfreq = (rlsbf4(ptr - 1) >> 8) * 100;
   if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX)
     newfreq = 0;
@@ -519,7 +519,7 @@ void Lmic::initDefaultChannels() {
   channelMap[4] = 0x00FF;
 }
 
-static uint32_t convFreq(uint8_t *ptr) {
+static uint32_t convFreq(const uint8_t *ptr) {
   uint32_t freq = (rlsbf4(ptr - 1) >> 8) * 100;
   if (freq < US915_FREQ_MIN || freq > US915_FREQ_MAX)
     freq = 0;
@@ -729,7 +729,7 @@ void Lmic::stateJustJoined() {
   dn2Freq = FREQ_DNW2;
 }
 
-void Lmic::parseMacCommands(uint8_t *opts, uint8_t olen) {
+void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
     switch (opts[oidx]) {
@@ -892,7 +892,7 @@ bool Lmic::decodeFrame() {
 
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
-  if (!aes.verifyMic(nwkKey, devaddr, seqno, DIR_DOWN, d, dlen)) {
+  if (!aes.verifyMic(devaddr, seqno, DIR_DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
     dataLen = 0;
     return false;
@@ -931,14 +931,13 @@ bool Lmic::decodeFrame() {
   int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
   margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
-  uint8_t *opts = &d[OFF_DAT_OPTS];
-  parseMacCommands(opts, olen);
+  parseMacCommands(d + OFF_DAT_OPTS, olen);
 
   if (!replayConf) {
     // Handle payload only if not a replay
     // Decrypt payload - if any
     if (port >= 0 && pend - poff > 0)
-      aes.framePayloadEncryption(port <= 0 ? nwkKey : artKey, devaddr, seqno, DIR_DOWN,
+      aes.framePayloadEncryption(port, devaddr, seqno, DIR_DOWN,
                  d + poff, pend - poff);
   } else {
     // replay
@@ -1121,7 +1120,7 @@ bool Lmic::processJoinAccept() {
   }
 
   // already incremented when JOIN REQ got sent off
-  aes.sessKeys(devNonce - 1, &frame[OFF_JA_ARTNONCE], nwkKey, artKey);
+  aes.sessKeys(devNonce - 1, &frame[OFF_JA_ARTNONCE]);
 
   ASSERT((opmode & (OP_JOINING | OP_REJOIN)) != 0);
   if ((opmode & OP_REJOIN) != 0) {
@@ -1291,10 +1290,10 @@ void Lmic::buildDataFrame() {
     }
     frame[end] = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
-    aes.framePayloadEncryption(pendTxPort == 0 ? nwkKey : artKey, devaddr, seqnoUp - 1,
+    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1,
                DIR_UP, frame + end + 1, pendTxLen);
   }
-  aes.appendMic(nwkKey, devaddr, seqnoUp - 1, DIR_UP, frame, flen);
+  aes.appendMic(devaddr, seqnoUp - 1, DIR_UP, frame, flen);
 
   dataLen = flen;
 }
@@ -1611,9 +1610,9 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
   this->netid = netid;
   this->devaddr = devaddr;
   if (nwkKey)
-    std::copy(nwkKey, nwkKey + 16, this->nwkKey);
+    aes.setNetworkSessionKey(nwkKey);
   if (artKey)
-    std::copy(artKey, artKey + 16, this->artKey);
+    aes.setApplicationSessionKey(artKey);
 
 #if defined(CFG_eu868)
   initDefaultChannels(false);

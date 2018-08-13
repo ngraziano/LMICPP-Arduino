@@ -213,8 +213,7 @@ private:
   // last generated nonce
   // set at random value at reset.
   uint16_t devNonce;      
-  uint8_t nwkKey[16];     // network session key
-  uint8_t artKey[16];     // application router session key
+  
   // device address, set at 0 at reset.
   devaddr_t devaddr;
   // device level down stream seqno, reset after join.
@@ -304,7 +303,7 @@ private:
 
   void buildDataFrame();
   void engineUpdate();
-  void parseMacCommands (uint8_t* opts, uint8_t olen);
+  void parseMacCommands (const uint8_t* opts, uint8_t olen);
   bool decodeFrame();
   bool processDnData();
 
@@ -336,7 +335,7 @@ public:
   // set default/start DR/txpow
   void setDrTxpow(uint8_t dr, int8_t pow);
   void setLinkCheckMode(bool enabled);
-  void setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
+  void setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkSKey,
                   uint8_t *artKey);
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
