@@ -588,9 +588,9 @@ bool Lmic::processJoinAccept() {
   devaddr = addr;
   netid = rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
 
-#if defined(CFG_eu868)
+
   initDefaultChannels(false);
-#endif
+  
   if (dlen > LEN_JA) {
 #if defined(CFG_us915)
     if ((txrxFlags & TXRX_DNW1) != 0)
@@ -1021,8 +1021,6 @@ void Lmic::reset() {
   radio_rst();
   osjob.clearCallback();
 
-  // TODO proper reset
-  // os_clearMem((xref2uint8_t)&LMIC,SIZEOFEXPR(LMIC));
   devaddr = 0;
   devNonce = hal_rand2();
   opmode = OP_NONE;
@@ -1031,9 +1029,8 @@ void Lmic::reset() {
   dn2Dr = DR_DNW2;     // we need this for 2nd DN window of join accept
   dn2Freq = FREQ_DNW2; // ditto
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
-#if defined(CFG_us915)
-  initDefaultChannels();
-#endif
+
+  initDefaultChannels(true);
 }
 
 void Lmic::init(void) { opmode = OP_SHUTDOWN; }
@@ -1105,9 +1102,8 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
   if (artKey)
     aes.setApplicationSessionKey(artKey);
 
-#if defined(CFG_eu868)
+
   initDefaultChannels(false);
-#endif
 
   opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI);
   opmode |= OP_NEXTCHNL;

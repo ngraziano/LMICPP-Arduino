@@ -312,15 +312,15 @@ private:
   bool decodeFrame();
   bool processDnData();
 
+  void initDefaultChannels(bool join);
 #if defined(CFG_us915)
-  void initDefaultChannels();
   void enableChannel(uint8_t channel);
   void enableSubBand(uint8_t band);
   void disableSubBand(uint8_t band);
   void selectSubBand(uint8_t band);
 #endif
 #if defined(CFG_eu868)
-  void initDefaultChannels(bool join);
+  
   uint32_t getFreq(uint8_t channel);
   uint8_t getBand(uint8_t channel);
   bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);

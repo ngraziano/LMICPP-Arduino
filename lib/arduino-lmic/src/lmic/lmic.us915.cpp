@@ -82,7 +82,11 @@ OsDeltaTime Lmic::dr2hsym(dr_t dr) {
 // BEG: US915 related stuff
 //
 
-void Lmic::initDefaultChannels() {
+void Lmic::initDefaultChannels(bool join) {
+  // only init in first phase.
+  if(!join)
+    return;
+
   for (uint8_t i = 0; i < 4; i++)
     channelMap[i] = 0xFFFF;
   channelMap[4] = 0x00FF;
