@@ -56,4 +56,7 @@
 
 #define CFG_noassert
 
+// Special APIs - for development or testing
+#define isTESTMODE() 0
+
 #endif // _lmic_config_h_

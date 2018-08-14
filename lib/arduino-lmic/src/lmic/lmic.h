@@ -264,6 +264,10 @@ public:
 
 private:
   // callbacks
+  static uint32_t convFreq(const uint8_t *ptr);
+  static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
+  static OsDeltaTime getDwn2SafetyZone();
+  static OsDeltaTime dr2hsym(dr_t dr);
 
   void processRx1DnData();
   void setupRx1();
@@ -310,11 +314,16 @@ private:
 
 #if defined(CFG_us915)
   void initDefaultChannels();
+  void enableChannel(uint8_t channel);
+  void enableSubBand(uint8_t band);
+  void disableSubBand(uint8_t band);
+  void selectSubBand(uint8_t band);
 #endif
 #if defined(CFG_eu868)
   void initDefaultChannels(bool join);
   uint32_t getFreq(uint8_t channel);
   uint8_t getBand(uint8_t channel);
+  bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
 #endif
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
@@ -345,17 +354,6 @@ public:
 
   // set ADR mode (if mobile turn off)
   void setAdrMode(bool enabled);
-
-#if defined(CFG_us915)
-  void enableChannel(uint8_t channel);
-  void enableSubBand(uint8_t band);
-  void disableSubBand(uint8_t band);
-  void selectSubBand(uint8_t band);
-#endif
-
-#if defined(CFG_eu868)
-  bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
-#endif
 
 #if !defined(DISABLE_JOIN)
   bool startJoining();
