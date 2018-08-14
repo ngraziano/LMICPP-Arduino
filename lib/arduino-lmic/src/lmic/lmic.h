@@ -49,31 +49,6 @@ enum {
   RETRY_PERIOD_secs = 3
 }; // secs - random period for retrying a confirmed send
 
-#if defined(CFG_eu868) // EU868 spectrum
-                       // ====================================================
-
-enum { MAX_CHANNELS = 16 }; //!< Max supported channels
-enum { MAX_BANDS = 4 };
-
-enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
-//! \internal
-struct band_t {
-  uint16_t txcap;   // duty cycle limitation: 1/txcap
-  int8_t txpow;     // maximum TX power
-  uint8_t lastchnl; // last used channel
-  OsTime avail;     // channel is blocked until this time
-};
-
-#elif defined(CFG_us915) // US915 spectrum
-                         // =================================================
-
-enum {
-  MAX_XCHANNELS = 2
-}; // extra channels in RAM, channels 0-71 are immutable
-enum { MAX_TXPOW_125kHz = 30 };
-
-#endif // ==========================================================================
-
 // Keep in sync with evdefs.hpp::drChange
 enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
 enum { KEEP_TXPOW = -128 };
@@ -138,15 +113,110 @@ enum {
   MAX_CLOCK_ERROR = 65536,
 };
 
-#if defined(CFG_eu868)
-enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
-#endif
 
 struct ChannelDetail {
   // three low bit of freq is used to store band.
   uint32_t freq;
   uint16_t drMap;
 };
+
+#if defined(CFG_eu868) // EU868 spectrum
+
+enum { MAX_CHANNELS = 16 }; //!< Max supported channels
+enum { MAX_BANDS = 4 };
+
+enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
+//! \internal
+struct band_t {
+  uint16_t txcap;   // duty cycle limitation: 1/txcap
+  int8_t txpow;     // maximum TX power
+  uint8_t lastchnl; // last used channel
+  OsTime avail;     // channel is blocked until this time
+};
+
+enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
+
+class LmicEu868 {
+public:
+  static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
+  static OsDeltaTime getDwn2SafetyZone();
+  static OsDeltaTime dr2hsym(dr_t dr);
+  static uint32_t convFreq(const uint8_t *ptr);
+
+  void initDefaultChannels(bool join);
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
+                    int8_t band);
+  void disableChannel(uint8_t channel);
+  uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
+  void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
+                OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
+                int8_t &txpow, OsTime &globalDutyAvail);
+  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
+  void setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq, rps_t &rps);
+#if !defined(DISABLE_JOIN)
+  void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
+                    OsTime &txend);
+  bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
+                     OsTime &txend);
+#endif
+
+private:
+  band_t bands[MAX_BANDS]{};
+  ChannelDetail channels[MAX_CHANNELS] = {};
+  uint16_t channelMap = 0;
+
+  uint32_t getFreq(uint8_t channel);
+  uint8_t getBand(uint8_t channel);
+  bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
+};
+
+#elif defined(CFG_us915) // US915 spectrum
+
+enum {
+  MAX_XCHANNELS = 2
+}; // extra channels in RAM, channels 0-71 are immutable
+enum { MAX_TXPOW_125kHz = 30 };
+
+
+class LmicUs915 {
+public:
+  static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
+  static OsDeltaTime getDwn2SafetyZone();
+  static OsDeltaTime dr2hsym(dr_t dr);
+  static uint32_t convFreq(const uint8_t *ptr);
+
+  void initDefaultChannels(bool join);
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
+                    int8_t band);
+  void disableChannel(uint8_t channel);
+  uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
+  void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
+                OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
+                int8_t &txpow, OsTime &globalDutyAvail);
+  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
+  void setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq, rps_t &rps);
+#if !defined(DISABLE_JOIN)
+  void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
+                    OsTime &txend);
+  bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
+                     OsTime &txend);
+#endif
+
+private:
+  uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is
+                                   // behind a repeater)
+  uint16_t
+      xchDrMap[MAX_XCHANNELS]; // extra channel datarate ranges  ---XXX: ditto
+  uint16_t channelMap[(72 + MAX_XCHANNELS + 15) / 16]; // enabled bits
+  uint16_t chRnd;
+
+  void enableChannel(uint8_t channel);
+  void enableSubBand(uint8_t band);
+  void disableSubBand(uint8_t band);
+  void selectSubBand(uint8_t band);
+};
+
+#endif
 
 class Lmic {
 public:
@@ -170,17 +240,11 @@ private:
 
   // Channel scheduling
 #if defined(CFG_eu868)
-  band_t bands[MAX_BANDS]{};
-  ChannelDetail channels[MAX_CHANNELS] = {};
-  uint16_t channelMap = 0;
+  LmicEu868 regionLMic;
 #elif defined(CFG_us915)
-  uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is
-                                   // behind a repeater)
-  uint16_t
-      xchDrMap[MAX_XCHANNELS]; // extra channel datarate ranges  ---XXX: ditto
-  uint16_t channelMap[(72 + MAX_XCHANNELS + 15) / 16]; // enabled bits
-  uint16_t chRnd;                                      // channel randomizer
+  LmicUs915 regionLMic;
 #endif
+
   uint8_t txChnl = 0;         // channel for next TX
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
   OsTime globalDutyAvail;     // time device can send again
@@ -190,14 +254,14 @@ private:
   uint16_t opmode;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
-  uint8_t upRepeat;  
+  uint8_t upRepeat;
   // ADR adjusted TX power not used ?
   int8_t adrTxPow = 0;
-  dr_t datarate = 0;     // current data rate
+  dr_t datarate = 0; // current data rate
   // error coding rate (used for TX only), init at reset
   cr_t errcr;
   // adjustment for rejoin datarate
-  uint8_t rejoinCnt; 
+  uint8_t rejoinCnt;
 
   uint16_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                            // represents +/-100% error
@@ -213,8 +277,8 @@ private:
 
   // last generated nonce
   // set at random value at reset.
-  uint16_t devNonce;      
-  
+  uint16_t devNonce;
+
   // device address, set at 0 at reset.
   devaddr_t devaddr;
   // device level down stream seqno, reset after join.
@@ -229,21 +293,21 @@ private:
   int8_t adrAckReq;
 
   // // Rx delay after TX, init at reset
-  OsDeltaTime rxDelay; 
+  OsDeltaTime rxDelay;
 
   uint8_t margin = 0;
   // link adr adapt answer pending, init after join
   bool ladrAns;
-  // device status answer pending, init after join 
+  // device status answer pending, init after join
   bool devsAns;
   // adr Mode, init at reset
   uint8_t adrEnabled;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   // have to ACK duty cycle settings, init after join
-  bool dutyCapAns; 
+  bool dutyCapAns;
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
- // answer set new channel, init afet join.
+  // answer set new channel, init afet join.
   uint8_t snchAns;
 #endif
   // 2nd RX window (after up stream), init at reset
@@ -264,16 +328,10 @@ public:
 
 private:
   // callbacks
-  static uint32_t convFreq(const uint8_t *ptr);
-  static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
-  static OsDeltaTime getDwn2SafetyZone();
-  static OsDeltaTime dr2hsym(dr_t dr);
-
   void processRx1DnData();
   void setupRx1();
   void setupRx2();
-  void schedRx12(OsDeltaTime const &delay,
-                 uint8_t dr);
+  void schedRx12(OsDeltaTime const &delay, uint8_t dr);
 
   void txDone(OsDeltaTime const &delay);
 
@@ -308,49 +366,20 @@ private:
 
   void buildDataFrame();
   void engineUpdate();
-  void parseMacCommands (const uint8_t* opts, uint8_t olen);
+  void parseMacCommands(const uint8_t *opts, uint8_t olen);
   bool decodeFrame();
   bool processDnData();
-
-  void initDefaultChannels(bool join);
-#if defined(CFG_us915)
-  void enableChannel(uint8_t channel);
-  void enableSubBand(uint8_t band);
-  void disableSubBand(uint8_t band);
-  void selectSubBand(uint8_t band);
-#endif
-#if defined(CFG_eu868)
-  
-  uint32_t getFreq(uint8_t channel);
-  uint8_t getBand(uint8_t channel);
-  bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
-#endif
-
-  uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
-  void updateTx(OsTime const &txbeg);
-
-  OsTime nextTx(OsTime const &now);
-
-  void setRx1Params();
 
   void txDelay(OsTime const &reftime, uint8_t secSpan);
 
   void setDrJoin(dr_t dr);
 
-#if !defined(DISABLE_JOIN)
-  void initJoinLoop();
-  bool nextJoinState();
-#endif
 public:
   // set default/start DR/txpow
   void setDrTxpow(uint8_t dr, int8_t pow);
   void setLinkCheckMode(bool enabled);
   void setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkSKey,
                   uint8_t *artKey);
-
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                    int8_t band);
-  void disableChannel(uint8_t channel);
 
   // set ADR mode (if mobile turn off)
   void setAdrMode(bool enabled);
@@ -381,7 +410,7 @@ public:
   void nextTask();
 };
 // The state of LMIC MAC layer is encapsulated in this class.
-extern Lmic LMIC; 
+extern Lmic LMIC;
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo, drhi)                                               \

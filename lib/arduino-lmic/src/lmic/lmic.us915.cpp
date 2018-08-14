@@ -10,10 +10,8 @@
  *******************************************************************************/
 
 //! \file
-#include "lmic.h"
-#include "../aes/aes.h"
 #include "bufferpack.h"
-#include "radio.h"
+#include "lmic.h"
 #include <algorithm>
 
 #if defined(CFG_us915) // ========================================
@@ -43,13 +41,11 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
       MAKERPS(SF7, BW500, CR_4_5, 0, 0),
       ILLEGAL_RPS};
 
-int8_t Lmic::pow2dBm(uint8_t mcmd_ladr_p1) {
+int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) {
   return ((int8_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK) << 1)));
 }
 
-OsDeltaTime Lmic::getDwn2SafetyZone() {
-  return DNW2_SAFETY_ZONE;
-}
+OsDeltaTime LmicUs915::getDwn2SafetyZone() { return DNW2_SAFETY_ZONE; }
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -72,19 +68,18 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
 };
 
 // map DR_SFnCR -> 0-6
-OsDeltaTime Lmic::dr2hsym(dr_t dr) {
- return OsDeltaTime(TABLE_GET_S4(DR2HSYM,  (dr)&7));
+OsDeltaTime LmicUs915::dr2hsym(dr_t dr) {
+  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)&7));
 }
-
 
 // ================================================================================
 //
 // BEG: US915 related stuff
 //
 
-void Lmic::initDefaultChannels(bool join) {
+void LmicUs915::initDefaultChannels(bool join) {
   // only init in first phase.
-  if(!join)
+  if (!join)
     return;
 
   for (uint8_t i = 0; i < 4; i++)
@@ -92,15 +87,15 @@ void Lmic::initDefaultChannels(bool join) {
   channelMap[4] = 0x00FF;
 }
 
-uint32_t Lmic::convFreq(const uint8_t *ptr) {
+uint32_t LmicUs915::convFreq(const uint8_t *ptr) {
   uint32_t freq = (rlsbf4(ptr - 1) >> 8) * 100;
   if (freq < US915_FREQ_MIN || freq > US915_FREQ_MAX)
     freq = 0;
   return freq;
 }
 
-bool Lmic::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
-                        int8_t band) {
+bool LmicUs915::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
+                             int8_t band) {
   if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)
     return false; // channels 0..71 are hardwired
   chidx -= 72;
@@ -110,31 +105,31 @@ bool Lmic::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
   return true;
 }
 
-void Lmic::disableChannel(uint8_t channel) {
+void LmicUs915::disableChannel(uint8_t channel) {
   if (channel < 72 + MAX_XCHANNELS)
     channelMap[channel >> 4] &= ~(1 << (channel & 0xF));
 }
 
-void Lmic::enableChannel(uint8_t channel) {
+void LmicUs915::enableChannel(uint8_t channel) {
   if (channel < 72 + MAX_XCHANNELS)
     channelMap[channel >> 4] |= (1 << (channel & 0xF));
 }
 
-void Lmic::enableSubBand(uint8_t band) {
+void LmicUs915::enableSubBand(uint8_t band) {
   ASSERT(band < 8);
   uint8_t start = band * 8;
   uint8_t end = start + 8;
   for (int channel = start; channel < end; ++channel)
     enableChannel(channel);
 }
-void Lmic::disableSubBand(uint8_t band) {
+void LmicUs915::disableSubBand(uint8_t band) {
   ASSERT(band < 8);
   uint8_t start = band * 8;
   uint8_t end = start + 8;
   for (int channel = start; channel < end; ++channel)
     disableChannel(channel);
 }
-void Lmic::selectSubBand(uint8_t band) {
+void LmicUs915::selectSubBand(uint8_t band) {
   ASSERT(band < 8);
   for (int b = 0; b < 8; ++b) {
     if (band == b)
@@ -144,7 +139,7 @@ void Lmic::selectSubBand(uint8_t band) {
   }
 }
 
-uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
     uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
@@ -158,7 +153,10 @@ uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void Lmic::updateTx(OsTime const &txbeg) {
+void LmicUs915::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
+                         OsDeltaTime const &airtime, uint8_t txChnl,
+                         uint32_t &freq, int8_t &txpow,
+                         OsTime &globalDutyAvail) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
@@ -175,13 +173,12 @@ void Lmic::updateTx(OsTime const &txbeg) {
 
   // Update global duty cycle stats
   if (globalDutyRate != 0) {
-    OsDeltaTime airtime = calcAirTime(rps, dataLen);
     globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
   }
 }
 
 // US does not have duty cycling - return now as earliest TX time
-OsTime Lmic::nextTx(OsTime const &now) {
+OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   if (chRnd == 0)
     chRnd = hal_rand1() & 0x3F;
   if (datarate >= DR_SF8C) { // 500kHz
@@ -205,7 +202,8 @@ OsTime Lmic::nextTx(OsTime const &now) {
   return now;
 }
 
-void Lmic::setRx1Params() {
+void LmicUs915::setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq,
+                             rps_t &rps) {
   freq = US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
   if (/* TX datarate */ dndr < DR_SF8C)
     dndr += DR_SF10CR - DR_SF10;
@@ -215,16 +213,18 @@ void Lmic::setRx1Params() {
 }
 
 #if !defined(DISABLE_JOIN)
-void Lmic::initJoinLoop(void) {
+void LmicUs915::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
+                             OsTime &txend) {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
   ASSERT((opmode & OP_NEXTCHNL) == 0);
   txend = os_getTime();
-  setDrJoin(DR_SF7);
+  newDr = DR_SF7;
 }
 
-bool Lmic::nextJoinState() {
+bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
+                              OsTime &txend) {
   // Try the following:
   //   SF7/8/9/10  on a random channel 0..63
   //   SF8C        on a random channel 64..71
@@ -232,7 +232,7 @@ bool Lmic::nextJoinState() {
   bool failed = false;
   if (datarate != DR_SF8C) {
     txChnl = 64 + (txChnl & 7);
-    setDrJoin(DR_SF8C);
+    datarate = DR_SF8C;
   } else {
     txChnl = hal_rand1() & 0x3F;
     int8_t dr = DR_SF7 - ++txCnt;
@@ -240,9 +240,9 @@ bool Lmic::nextJoinState() {
       dr = DR_SF10;
       failed = true; // All DR exhausted - signal failed
     }
-    setDrJoin(dr);
+    datarate = dr;
   }
-  opmode &= ~OP_NEXTCHNL;
+
   txend = os_getTime() + (isTESTMODE()
                               // Avoid collision with JOIN ACCEPT being sent by
                               // GW (but we missed it - GW is still busy)
@@ -254,6 +254,5 @@ bool Lmic::nextJoinState() {
   return !failed;
 }
 #endif // !DISABLE_JOIN
-
 
 #endif // ================================================

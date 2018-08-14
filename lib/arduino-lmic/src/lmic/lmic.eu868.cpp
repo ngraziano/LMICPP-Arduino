@@ -10,12 +10,9 @@
  *******************************************************************************/
 
 //! \file
-#include "lmic.h"
-#include "../aes/aes.h"
 #include "bufferpack.h"
-#include "radio.h"
+#include "lmic.h"
 #include <algorithm>
-
 
 #if defined(CFG_eu868) // ========================================
 
@@ -40,14 +37,12 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {20, 14, 11, 8, 5, 2, 0, 0,
                                              0,  0,  0,  0, 0, 0, 0, 0};
 
-int8_t Lmic::pow2dBm(uint8_t mcmd_ladr_p1) {
-  return TABLE_GET_S1(TXPOWLEVELS,
-                (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT);
-} 
-
-OsDeltaTime Lmic::getDwn2SafetyZone() {
-  return DNW2_SAFETY_ZONE;
+int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) {
+  return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >>
+                                       MCMD_LADR_POW_SHIFT);
 }
+
+OsDeltaTime LmicEu868::getDwn2SafetyZone() { return DNW2_SAFETY_ZONE; }
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -71,8 +66,8 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
     us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
 };
 
-OsDeltaTime Lmic::dr2hsym(dr_t dr) {
- return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
+OsDeltaTime LmicEu868::dr2hsym(dr_t dr) {
+  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
 }
 
 // ================================================================================
@@ -91,7 +86,7 @@ static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
     EU868_F3 | BAND_CENTI,
 };
 
-void Lmic::initDefaultChannels(bool join) {
+void LmicEu868::initDefaultChannels(bool join) {
   PRINT_DEBUG_2("Init Default Channel join?=%d", join);
   ChannelDetail empty = {};
   std::fill(channels + 3, channels + MAX_CHANNELS, empty);
@@ -118,7 +113,7 @@ void Lmic::initDefaultChannels(bool join) {
   bands[BAND_DECI].avail = now;
 }
 
-bool Lmic::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
+bool LmicEu868::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
   if (bandidx > BAND_AUX)
     return false;
   band_t *b = &bands[bandidx];
@@ -129,8 +124,8 @@ bool Lmic::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
   return true;
 }
 
-bool Lmic::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
-                        int8_t band) {
+bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
+                             int8_t band) {
   if (chidx >= MAX_CHANNELS)
     return false;
   if (band == -1) {
@@ -151,22 +146,22 @@ bool Lmic::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
   return true;
 }
 
-void Lmic::disableChannel(uint8_t channel) {
+void LmicEu868::disableChannel(uint8_t channel) {
   channels[channel].freq = 0;
   channels[channel].drMap = 0;
   channelMap &= ~(1 << channel);
 }
 
-uint32_t Lmic::convFreq(const uint8_t *ptr) {
+uint32_t LmicEu868::convFreq(const uint8_t *ptr) {
   uint32_t newfreq = (rlsbf4(ptr - 1) >> 8) * 100;
   if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX)
     newfreq = 0;
   return newfreq;
 }
 
-uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
-  // FIXME ChMaskCntl=6 => All channels ON 
+  // FIXME ChMaskCntl=6 => All channels ON
   // Bad page, disable all channel, enable non-existent
   if (chMaskCntl != 0 || chMask == 0 || (chMask & ~channelMap) != 0)
     return 0; // illegal input
@@ -178,10 +173,13 @@ uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void Lmic::updateTx(OsTime const &txbeg) {
+void LmicEu868::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
+                         OsDeltaTime const &airtime, uint8_t txChnl,
+                         uint32_t &freq, int8_t &txpow,
+                         OsTime &globalDutyAvail) {
 
   // Update global/band specific duty cycle stats
-  OsDeltaTime airtime = calcAirTime(rps, dataLen);
+
   // Update channel/global duty cycle stats
   band_t *band = &bands[getBand(txChnl)];
   freq = getFreq(txChnl);
@@ -200,13 +198,15 @@ void Lmic::updateTx(OsTime const &txbeg) {
 #endif
 }
 
-uint32_t Lmic::getFreq(uint8_t channel) {
+uint32_t LmicEu868::getFreq(uint8_t channel) {
   return channels[channel].freq & ~(uint32_t)3;
 }
 
-uint8_t Lmic::getBand(uint8_t channel) { return channels[channel].freq & 0x3; }
+uint8_t LmicEu868::getBand(uint8_t channel) {
+  return channels[channel].freq & 0x3;
+}
 
-OsTime Lmic::nextTx(OsTime const &now) {
+OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   uint8_t bmap = 0xF;
 #if LMIC_DEBUG_LEVEL > 1
   for (uint8_t bi = 0; bi < 4; bi++) {
@@ -270,14 +270,16 @@ OsTime Lmic::nextTx(OsTime const &now) {
   } while (true);
 }
 
-void Lmic::setRx1Params() { /*freq/rps remain unchanged*/
+void LmicEu868::setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq,
+                             rps_t &rps) { /*freq/rps remain unchanged*/
 }
 
 #if !defined(DISABLE_JOIN)
-void Lmic::initJoinLoop() {
+void LmicEu868::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
+                             OsTime &txend) {
   txChnl = hal_rand1() % 3;
   adrTxPow = 14;
-  setDrJoin(DR_SF7);
+  newDr = DR_SF7;
   initDefaultChannels(true);
   ASSERT((opmode & OP_NEXTCHNL) == 0);
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(8);
@@ -285,7 +287,8 @@ void Lmic::initJoinLoop() {
                 txend);
 }
 
-bool Lmic::nextJoinState() {
+bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
+                              OsTime &txend) {
   bool failed = 0;
 
   // Try 869.x and then 864.x with same DR
@@ -297,10 +300,9 @@ bool Lmic::nextJoinState() {
     if (datarate == DR_SF12)
       failed = true; // we have tried all DR - signal EV_JOIN_FAILED
     else
-      setDrJoin(decDR(datarate));
+      datarate = decDR(datarate);
   }
-  // Clear NEXTCHNL because join state engine controls channel hopping
-  opmode &= ~OP_NEXTCHNL;
+
   // Move txend to randomize synchronized concurrent joins.
   // Duty cycle is based on txend.
   OsTime time = os_getTime();
@@ -324,7 +326,5 @@ bool Lmic::nextJoinState() {
   return !failed;
 }
 #endif // !DISABLE_JOIN
-
-
 
 #endif
