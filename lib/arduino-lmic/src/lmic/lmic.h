@@ -29,13 +29,6 @@ enum { TXCONF_ATTEMPTS = 8 };  //!< Transmit attempts for confirmed frames
 enum { MAX_MISSED_BCNS = 20 }; // threshold for triggering rejoin requests
 enum { MAX_RXSYMS = 100 };     // stop tracking beacon beyond this
 
-enum {
-  LINK_CHECK_CONT = 12, // continue with this after reported dead link
-  LINK_CHECK_DEAD =
-      24, // after this UP frames and no response from NWK assume link is dead
-  LINK_CHECK_INIT = -12, // UP frame count until we inc datarate
-  LINK_CHECK_OFF = -128
-}; // link check disabled
 
 enum { TIME_RESYNC = 6 * 128 }; // secs
 enum {
@@ -122,6 +115,10 @@ struct ChannelDetail {
 
 #if defined(CFG_eu868) // EU868 spectrum
 
+enum {
+  ADR_ACK_DELAY = 32,
+  ADR_ACK_LIMIT = 64
+};
 enum { MAX_CHANNELS = 16 }; //!< Max supported channels
 enum { MAX_BANDS = 4 };
 
@@ -174,6 +171,11 @@ private:
 #elif defined(CFG_us915) // US915 spectrum
 
 enum {
+  ADR_ACK_DELAY = 32,
+  ADR_ACK_LIMIT = 64
+};
+
+enum {
   MAX_XCHANNELS = 2
 }; // extra channels in RAM, channels 0-71 are immutable
 enum { MAX_TXPOW_125kHz = 30 };
@@ -219,6 +221,19 @@ private:
 };
 
 #endif
+
+
+enum {
+  // continue with this after reported dead link
+  LINK_CHECK_CONT = 0, 
+  // after this UP frames and no response from NWK assume link is dead
+  LINK_CHECK_DEAD = ADR_ACK_DELAY, 
+  // UP frame count until we ask for ADRACKReq
+  LINK_CHECK_INIT = -ADR_ACK_LIMIT, 
+  LINK_CHECK_OFF = -128
+}; // link check disabled
+
+
 
 class Lmic {
 public:
