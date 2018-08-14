@@ -345,15 +345,17 @@ static uint32_t convFreq(const uint8_t *ptr) {
   return newfreq;
 }
 
-uint8_t Lmic::mapChannels(uint8_t chpage, uint16_t chmap) {
+uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+  // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
+  // FIXME ChMaskCntl=6 => All channels ON 
   // Bad page, disable all channel, enable non-existent
-  if (chpage != 0 || chmap == 0 || (chmap & ~channelMap) != 0)
+  if (chMaskCntl != 0 || chMask == 0 || (chMask & ~channelMap) != 0)
     return 0; // illegal input
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
-    if ((chmap & (1 << chnl)) != 0 && channels[chnl].freq == 0)
-      chmap &= ~(1 << chnl); // ignore - channel is not defined
+    if ((chMask & (1 << chnl)) != 0 && channels[chnl].freq == 0)
+      chMask &= ~(1 << chnl); // ignore - channel is not defined
   }
-  channelMap = chmap;
+  channelMap = chMask;
   return 1;
 }
 
@@ -572,16 +574,16 @@ void Lmic::selectSubBand(uint8_t band) {
   }
 }
 
-uint8_t Lmic::mapChannels(uint8_t chpage, uint16_t chmap) {
-  if (chpage == MCMD_LADR_CHP_125ON || chpage == MCMD_LADR_CHP_125OFF) {
-    uint16_t en125 = chpage == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
+uint8_t Lmic::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+  if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
+    uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
       channelMap[u] = en125;
-    channelMap[64 / 16] = chmap;
+    channelMap[64 / 16] = chMask;
   } else {
-    if (chpage >= (72 + MAX_XCHANNELS + 15) / 16)
+    if (chMaskCntl >= (72 + MAX_XCHANNELS + 15) / 16)
       return 0;
-    channelMap[chpage] = chmap;
+    channelMap[chMaskCntl] = chMask;
   }
   return 1;
 }
@@ -734,23 +736,27 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
     switch (opts[oidx]) {
+    // LinkCheckReq LoRaWAN™ Specification §5.1
     case MCMD_LCHK_ANS: {
       // int gwmargin = opts[oidx+1];
       // int ngws = opts[oidx+2];
       oidx += 3;
       continue;
     }
+    // LinkADRReq LoRaWAN™ Specification §5.2
     case MCMD_LADR_REQ: {
+      // FIXME multiple LinkAdrReq not handled properly in continous block
+      // must be handle atomic.
       uint8_t p1 = opts[oidx + 1];              // txpow + DR
-      uint16_t chmap = rlsbf2(&opts[oidx + 2]); // list of enabled channels
-      uint8_t chpage = opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
-      uint8_t uprpt = opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
+      uint16_t chMask = rlsbf2(&opts[oidx + 2]); // list of enabled channels
+      uint8_t chMaskCntl = opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
+      uint8_t nbTrans = opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
       oidx += 5;
 
       ladrAns = 0x80 | // Include an answer into next frame up
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
                 MCMD_LADR_ANS_DRACK;
-      if (!mapChannels(chpage, chmap))
+      if (!mapChannels(chMaskCntl, chMask))
         ladrAns &= ~MCMD_LADR_ANS_CHACK;
       dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
       if (!validDR(dr)) {
@@ -759,7 +765,7 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       if ((ladrAns & 0x7F) ==
           (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
         // Nothing went wrong - use settings
-        upRepeat = uprpt;
+        upRepeat = nbTrans;
         setDrTxpow(dr, pow2dBm(p1));
       }
       if (adrAckReq != LINK_CHECK_OFF) {
@@ -768,11 +774,13 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       }
       continue;
     }
+    // DevStatusReq LoRaWAN™ Specification §5.5
     case MCMD_DEVS_REQ: {
       devsAns = true;
       oidx += 1;
       continue;
     }
+    // RXParamSetupReq LoRaWAN™ Specification §5.4
     case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
       dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
@@ -972,6 +980,13 @@ bool Lmic::decodeFrame() {
 
   if (txCnt != 0) // we requested an ACK
     txrxFlags |= ackup ? TXRX_ACK : TXRX_NACK;
+
+#if !defined(DISABLE_MCMD_DN2P_SET)
+  // stop sending RXParamSetupAns when receive dowlink message
+  dn2Ans = 0;
+#endif
+
+
 
   PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, port,
                 ackup);
@@ -1236,16 +1251,19 @@ void Lmic::buildDataFrame() {
   }
 #endif // !DISABLE_MCMD_DCAP_REQ
 #if !defined(DISABLE_MCMD_DN2P_SET)
+  // RXParamSetupAns LoRaWAN™ Specification §5.4  
   if (dn2Ans) {
     frame[end + 0] = MCMD_DN2P_ANS;
     frame[end + 1] = dn2Ans & ~MCMD_DN2P_ANS_RFU;
     end += 2;
-    dn2Ans = 0;
+    // dn2Ans reset when downlink packet receive
   }
 #endif           // !DISABLE_MCMD_DN2P_SET
+  // DevStatusAns LoRaWAN™ Specification §5.5  
   if (devsAns) { // answer to device status
     frame[end + 0] = MCMD_DEVS_ANS;
     frame[end + 1] = os_getBattLevel();
+    // TODO check margin calculation (normaly 6bit signed integer) 
     frame[end + 2] = margin;
     end += 3;
     devsAns = false;
@@ -1606,10 +1624,8 @@ void Lmic::tryRejoin(void) {
 //!    to ensure that different devices use different numbers with high
 //!    probability.
 //! \param nwkKey  the 16 byte network session key used for message integrity.
-//!     If NULL the caller has copied the key into `nwkKey` before.
 //! \param artKey  the 16 byte application router session key used for message
 //! confidentiality.
-//!     If NULL the caller has copied the key into `artKey` before.
 void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
                       uint8_t *artKey) {
   this->netid = netid;

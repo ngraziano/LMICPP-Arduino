@@ -188,7 +188,8 @@ private:
   uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
   uint16_t opmode;
-  // configured up repeat reset after join.
+  // configured up repeat for unconfirmed message, reset after join.
+  // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;  
   // ADR adjusted TX power not used ?
   int8_t adrTxPow = 0;
