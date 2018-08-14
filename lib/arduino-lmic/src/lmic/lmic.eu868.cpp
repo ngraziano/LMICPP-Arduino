@@ -70,6 +70,10 @@ OsDeltaTime LmicEu868::dr2hsym(dr_t dr) {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
 }
 
+bool LmicEu868::validRx1DrOffset(uint8_t drOffset) {
+  return drOffset  < 6;
+}
+
 // ================================================================================
 //
 // BEG: EU868 related stuff
@@ -198,11 +202,11 @@ void LmicEu868::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
 #endif
 }
 
-uint32_t LmicEu868::getFreq(uint8_t channel) {
+uint32_t LmicEu868::getFreq(uint8_t channel) const {
   return channels[channel].freq & ~(uint32_t)3;
 }
 
-uint8_t LmicEu868::getBand(uint8_t channel) {
+uint8_t LmicEu868::getBand(uint8_t channel) const {
   return channels[channel].freq & 0x3;
 }
 
@@ -270,8 +274,10 @@ OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   } while (true);
 }
 
-void LmicEu868::setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq,
-                             rps_t &rps) { /*freq/rps remain unchanged*/
+void LmicEu868::setRx1Params(uint8_t txChnl,uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq,
+                             rps_t &rps) { /*freq remain unchanged*/
+  lowerDR(dndr, rx1DrOffset);
+  rps = dndr2rps(dndr);
 }
 
 #if !defined(DISABLE_JOIN)

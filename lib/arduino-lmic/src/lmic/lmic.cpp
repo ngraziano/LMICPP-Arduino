@@ -194,6 +194,7 @@ void Lmic::stateJustJoined() {
 #endif
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
+  rx1DrOffset = 0;
   dn2Dr = DR_DNW2;
   dn2Freq = FREQ_DNW2;
 }
@@ -252,17 +253,19 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
       dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
-      // not implemented
-      // uint8_t rx1DrOffset = ((opts[oidx+1] & 0x70) >> 4);
+      uint8_t newRx1DrOffset = ((opts[oidx+1] & 0x70) >> 4);
       uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]);
       dn2Ans = 0x80; // answer pending
+      if(regionLMic.validRx1DrOffset(newRx1DrOffset))
+        dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
       if (validDR(dr))
         dn2Ans |= MCMD_DN2P_ANS_DRACK;
       if (newfreq != 0)
         dn2Ans |= MCMD_DN2P_ANS_CHACK;
-      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_DRACK | MCMD_DN2P_ANS_CHACK)) {
+      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK | MCMD_DN2P_ANS_CHACK)) {
         dn2Dr = dr;
         dn2Freq = newfreq;
+        rx1DrOffset = newRx1DrOffset;
       }
 #endif // !DISABLE_MCMD_DN2P_SET
       oidx += 5;
@@ -472,7 +475,7 @@ void Lmic::setupRx2() {
 }
 
 void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
-  PRINT_DEBUG_2("SchedRx RX12.");
+  PRINT_DEBUG_2("SchedRx RX1/2.");
 
   // Half symbol time for the data rate.
   OsDeltaTime hsym = regionLMic.dr2hsym(dr);
@@ -519,7 +522,7 @@ void Lmic::setupRx1() {
 // rxtime
 void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
-  regionLMic.setRx1Params(dndr, txChnl, freq, rps);
+  regionLMic.setRx1Params(txChnl, rx1DrOffset, dndr, freq, rps);
   schedRx12(delay, dndr);
 }
 
@@ -621,8 +624,7 @@ bool Lmic::processJoinAccept() {
   txCnt = 0;
   stateJustJoined();
   dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
-  // Not implemented
-  // rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
+  rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
 
   if (frame[OFF_JA_RXDLY] == 0) {
     rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
@@ -824,6 +826,8 @@ bool Lmic::startJoining() {
     opmode &= ~(OP_SCAN | OP_REJOIN | OP_LINKDEAD | OP_NEXTCHNL);
     // Setup state
     rejoinCnt = txCnt = 0;
+    // remove rx 1 offset
+    rx1DrOffset = 0;
     dr_t newDr;
     regionLMic.initJoinLoop(txChnl, adrTxPow, newDr, txend);
     setDrJoin(newDr);

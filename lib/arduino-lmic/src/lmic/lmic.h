@@ -142,6 +142,7 @@ public:
   static OsDeltaTime getDwn2SafetyZone();
   static OsDeltaTime dr2hsym(dr_t dr);
   static uint32_t convFreq(const uint8_t *ptr);
+  static bool validRx1DrOffset(uint8_t drOffset);
 
   void initDefaultChannels(bool join);
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
@@ -152,7 +153,7 @@ public:
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
                 int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq, rps_t &rps);
+  void setRx1Params( uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq, rps_t &rps);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);
@@ -165,8 +166,8 @@ private:
   ChannelDetail channels[MAX_CHANNELS] = {};
   uint16_t channelMap = 0;
 
-  uint32_t getFreq(uint8_t channel);
-  uint8_t getBand(uint8_t channel);
+  uint32_t getFreq(uint8_t channel) const;
+  uint8_t getBand(uint8_t channel) const;
   bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
 };
 
@@ -184,6 +185,7 @@ public:
   static OsDeltaTime getDwn2SafetyZone();
   static OsDeltaTime dr2hsym(dr_t dr);
   static uint32_t convFreq(const uint8_t *ptr);
+  static bool validRx1DrOffset(uint8_t drOffset);
 
   void initDefaultChannels(bool join);
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
@@ -194,7 +196,7 @@ public:
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
                 int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params(dr_t dndr, uint8_t txChnl, uint32_t &freq, rps_t &rps);
+  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq, rps_t &rps);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);
@@ -227,6 +229,7 @@ public:
   uint32_t freq = 0;
   int8_t rssi = 0;
   int8_t snr = 0;
+  // radio parameters set
   rps_t rps = 0;
   uint8_t rxsyms = 0;
   uint8_t dndr = 0;
@@ -310,6 +313,8 @@ private:
   // answer set new channel, init afet join.
   uint8_t snchAns;
 #endif
+  // 1 RX window DR offset 
+  uint8_t rx1DrOffset;
   // 2nd RX window (after up stream), init at reset
   uint8_t dn2Dr;
   uint32_t dn2Freq;
