@@ -196,7 +196,7 @@ public:
                     int8_t band);
   void disableChannel(uint8_t channel);
   void handleCFList(const uint8_t *ptr);
-  
+
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
@@ -322,6 +322,8 @@ private:
   bool ladrAns;
   // device status answer pending, init after join
   bool devsAns;
+  // RX timing setup answer pending, init after join 
+  bool rxTimingSetupAns;
   // adr Mode, init at reset
   uint8_t adrEnabled;
 #if !defined(DISABLE_MCMD_DCAP_REQ)

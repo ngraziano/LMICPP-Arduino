@@ -260,6 +260,8 @@ enum {
   MCMD_DEVS_ANS = 0x06, // -  device status ans  : u1:battery 0,1-254,255=?,
                         // u1:7-6:RFU,5-0:margin(-32..31)
   MCMD_SNCH_ANS = 0x07, // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK
+  // Ack to new RX 1 timing.
+  MCMD_RXTimingSetup_ANS = 0x08, 
   // Class B
   MCMD_PING_IND =
       0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate

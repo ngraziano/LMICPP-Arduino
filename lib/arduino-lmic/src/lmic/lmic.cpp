@@ -183,6 +183,7 @@ void Lmic::stateJustJoined() {
   dnConf = 0;
   ladrAns = false;
   devsAns = false;
+  rxTimingSetupAns = false;
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   snchAns = 0;
 #endif
@@ -271,12 +272,17 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       oidx += 5;
       continue;
     }
+    // DutyCycleReq LoRaWAN™ Specification §5.3
     case MCMD_DCAP_REQ: {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
       uint8_t cap = opts[oidx + 1];
+      
+      // cap=0xFF is not in specification...
       // A value cap=0xFF means device is OFF unless enabled again manually.
       if (cap == 0xFF)
         opmode |= OP_SHUTDOWN; // stop any sending
+      
+
       globalDutyRate = cap & 0xF;
       globalDutyAvail = os_getTime();
       dutyCapAns = true;
@@ -284,6 +290,7 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       oidx += 2;
       continue;
     }
+    // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
       uint8_t chidx = opts[oidx + 1];                          // channel
@@ -298,8 +305,13 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       oidx += 6;
       continue;
     }
+    // RXTimingSetupReq LoRaWAN™ Specification §5.7
     case MCMD_RXTimingSetup_REQ: {
-      // NOT IMPLEMENTED !
+      uint8_t newDelay =  opts[oidx + 1] & 0x0F;
+      if (newDelay == 0)
+        newDelay = 1;
+      rxDelay = OsDeltaTime::from_sec(newDelay);
+      rxTimingSetupAns = true;
       oidx += 2;
       continue;
     }
@@ -457,6 +469,8 @@ bool Lmic::decodeFrame() {
   // stop sending RXParamSetupAns when receive dowlink message
   dn2Ans = 0;
 #endif
+  // stop sending rxTimingSetupAns when receive dowlink message
+  rxTimingSetupAns = false;
 
   PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, port,
                 ackup);
@@ -730,6 +744,11 @@ void Lmic::buildDataFrame() {
     frame[end + 1] = ladrAns & ~MCMD_LADR_ANS_RFU;
     end += 2;
     ladrAns = 0;
+  }
+  if(rxTimingSetupAns) {
+    frame[end + 0] = MCMD_RXTimingSetup_ANS;
+    end += 1;
+    // rxTimingSetupAns reset when downlink packet receive
   }
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   if (snchAns) {
