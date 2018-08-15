@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+//! Read 24-bit quantity from given pointer in little endian byte order (but in uint32_t).
+uint32_t rlsbf3(const uint8_t *buf);
 //! Read 32-bit quantity from given pointer in little endian byte order.
 uint32_t rlsbf4(const uint8_t *buf);
 //! Write 32-bit quntity into buffer in little endian byte order.

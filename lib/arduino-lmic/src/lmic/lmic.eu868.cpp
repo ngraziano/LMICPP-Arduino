@@ -70,9 +70,7 @@ OsDeltaTime LmicEu868::dr2hsym(dr_t dr) {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
 }
 
-bool LmicEu868::validRx1DrOffset(uint8_t drOffset) {
-  return drOffset  < 6;
-}
+bool LmicEu868::validRx1DrOffset(uint8_t drOffset) { return drOffset < 6; }
 
 // ================================================================================
 //
@@ -157,10 +155,24 @@ void LmicEu868::disableChannel(uint8_t channel) {
 }
 
 uint32_t LmicEu868::convFreq(const uint8_t *ptr) {
-  uint32_t newfreq = (rlsbf4(ptr - 1) >> 8) * 100;
+  uint32_t newfreq = rlsbf3(ptr) * 100;
   if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX)
     newfreq = 0;
   return newfreq;
+}
+
+void LmicEu868::handleCFList(const uint8_t *ptr) {
+
+  for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
+    uint32_t newfreq = convFreq(ptr);
+    if (newfreq) {
+      setupChannel(chidx, newfreq, 0, -1);
+#if LMIC_DEBUG_LEVEL > 1
+      lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx,
+                  newfreq);
+#endif
+    }
+  }
 }
 
 uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
@@ -274,7 +286,8 @@ OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   } while (true);
 }
 
-void LmicEu868::setRx1Params(uint8_t txChnl,uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq,
+void LmicEu868::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
+                             uint32_t &freq,
                              rps_t &rps) { /*freq remain unchanged*/
   lowerDR(dndr, rx1DrOffset);
   rps = dndr2rps(dndr);

@@ -145,6 +145,8 @@ public:
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
                     int8_t band);
   void disableChannel(uint8_t channel);
+  void handleCFList(const uint8_t *ptr);
+
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
@@ -193,6 +195,8 @@ public:
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
                     int8_t band);
   void disableChannel(uint8_t channel);
+  void handleCFList(const uint8_t *ptr);
+  
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,

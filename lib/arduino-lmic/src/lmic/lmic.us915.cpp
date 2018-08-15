@@ -98,6 +98,10 @@ uint32_t LmicUs915::convFreq(const uint8_t *ptr) {
   return freq;
 }
 
+void LmicUs915::handleCFList(const uint8_t *ptr) { 
+  // just ignore cflist
+}
+
 bool LmicUs915::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
                              int8_t band) {
   if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)

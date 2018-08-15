@@ -593,22 +593,9 @@ bool Lmic::processJoinAccept() {
   regionLMic.initDefaultChannels(false);
 
   if (dlen > LEN_JA) {
-#if defined(CFG_us915)
-    if ((txrxFlags & TXRX_DNW1) != 0)
-      return false;
-    return processJoinAcceptNoJoinFrame();
-#endif
-    dlen = OFF_CFLIST;
-    for (uint8_t chidx = 3; chidx < 8; chidx++, dlen += 3) {
-      uint32_t newfreq = regionLMic.convFreq(&frame[dlen]);
-      if (newfreq) {
-        regionLMic.setupChannel(chidx, newfreq, 0, -1);
-#if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(),
-                    chidx, (unsigned long)newfreq);
-#endif
-      }
-    }
+    // some region just ignore cflist.
+    regionLMic.handleCFList(frame + OFF_CFLIST);
+
   }
 
   // already incremented when JOIN REQ got sent off
