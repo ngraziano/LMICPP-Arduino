@@ -1,3 +1,5 @@
+OBSOLETE FILE.
+
 Arduino-LMIC library
 ====================
 This repository contains the IBM LMIC (LoraMAC-in-C) library, slightly
