@@ -900,9 +900,7 @@ bool Lmic::processDnData() {
 
 // Decide what to do next for the MAC layer of a device
 void Lmic::engineUpdate() {
-#if LMIC_DEBUG_LEVEL > 0
-  lmic_printf("%lu: engineUpdate, opmode=0x%x\n", os_getTime(), opmode);
-#endif
+  PRINT_DEBUG_1("engineUpdate, opmode=0x%x.", opmode);
   // Check for ongoing state: scan or TX/RX transaction
   if ((opmode & (OP_SCAN | OP_TXRXPEND | OP_SHUTDOWN)) != 0)
     return;
@@ -931,31 +929,23 @@ void Lmic::engineUpdate() {
     if ((opmode & OP_NEXTCHNL) != 0) {
       txbeg = txend = regionLMic.nextTx(now, datarate, txChnl);
       opmode &= ~OP_NEXTCHNL;
-#if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Airtime available at %lu (channel duty limit)\n",
-                  os_getTime(), txbeg);
-#endif
+      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
+                  txbeg);
     } else {
       txbeg = txend;
-#if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Airtime available at %lu (previously determined)\n",
-                  os_getTime(), txbeg);
-#endif
+      PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
+                   txbeg);
     }
     // Delayed TX or waiting for duty cycle?
     if ((globalDutyRate != 0 || (opmode & OP_RNDTX) != 0) &&
         (txbeg - globalDutyAvail) < 0) {
       txbeg = globalDutyAvail;
-#if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Airtime available at %lu (global duty limit)\n",
-                  os_getTime(), txbeg);
-#endif
+      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)",
+                   txbeg);
     }
     // Earliest possible time vs overhead to setup radio
     if (txbeg - (now + TX_RAMPUP) < 0) {
-#if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Ready for uplink\n", os_getTime());
-#endif
+      PRINT_DEBUG_2("Ready for uplink");
       // We could send right now!
       txbeg = now;
       dr_t txdr = datarate;
@@ -1000,9 +990,7 @@ void Lmic::engineUpdate() {
       radio_tx();
       return;
     }
-#if LMIC_DEBUG_LEVEL > 1
-    lmic_printf("%lu: Uplink delayed until %lu\n", os_getTime(), txbeg);
-#endif
+    PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
     // Cannot yet TX
     if ((opmode & OP_TRACK) == 0)
       goto txdelay; // We don't track the beacon - nothing else to do - so wait
