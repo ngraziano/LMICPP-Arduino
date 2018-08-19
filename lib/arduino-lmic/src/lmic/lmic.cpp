@@ -67,19 +67,19 @@ static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
 };
 
 int getSensitivity(rps_t rps) {
-  return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, getSf(rps), getBw(rps));
+  return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bw);
 }
 
 OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
-  uint8_t bw = getBw(rps); // 0,1,2 = 125,250,500kHz
-  uint8_t sf = getSf(rps); // 0=FSK, 1..6 = SF7..12
+  uint8_t bw = rps.bw; // 0,1,2 = 125,250,500kHz
+  uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
   uint8_t sfx = 4 * (sf + (7 - SF7));
   uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
   int tmp =
-      8 * plen - sfx + 28 + (getNocrc(rps) ? 0 : 16) - (getIh(rps) ? 20 : 0);
+      8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
-    tmp *= getCr(rps) + 5;
+    tmp *= rps.cr + 5;
     tmp += 8;
   } else {
     tmp = 8;
@@ -115,17 +115,6 @@ extern inline dr_t assertDR(dr_t dr);
 extern inline bool validDR(dr_t dr);
 extern inline dr_t lowerDR(dr_t dr, uint8_t n);
 
-extern inline sf_t getSf(rps_t params);
-extern inline rps_t setSf(rps_t params, sf_t sf);
-extern inline bw_t getBw(rps_t params);
-extern inline rps_t setBw(rps_t params, bw_t cr);
-extern inline cr_t getCr(rps_t params);
-extern inline rps_t setCr(rps_t params, cr_t cr);
-extern inline int getNocrc(rps_t params);
-extern inline rps_t setNocrc(rps_t params, int nocrc);
-extern inline int getIh(rps_t params);
-extern inline rps_t setIh(rps_t params, int ih);
-extern inline rps_t makeRps(sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc);
 extern inline int sameSfBw(rps_t r1, rps_t r2);
 
 // END LORA
@@ -527,7 +516,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
 void Lmic::setupRx1() {
   txrxFlags = TXRX_DNW1;
   // Turn rps from TX over to RX
-  rps = setNocrc(rps, 1);
+  rps.nocrc=1;
   dataLen = 0;
   radio_rx();
 }
@@ -980,7 +969,9 @@ void Lmic::engineUpdate() {
         buildDataFrame();
         osjob.setCallbackFuture(&Lmic::updataDone);
       }
-      rps = setCr(updr2rps(txdr), errcr);
+      rps = updr2rps(txdr);
+      rps.cr = errcr;
+      
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
@@ -1019,7 +1010,7 @@ void Lmic::shutdown() {
 void Lmic::reset() {
   radio_rst();
   osjob.clearCallback();
-
+  rps.rawValue = 0;
   devaddr = 0;
   devNonce = hal_rand2();
   opmode = OP_NONE;

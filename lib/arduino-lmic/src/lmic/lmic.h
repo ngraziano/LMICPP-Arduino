@@ -249,7 +249,7 @@ public:
   int8_t rssi = 0;
   int8_t snr = 0;
   // radio parameters set
-  rps_t rps = 0;
+  rps_t rps;
   uint8_t rxsyms = 0;
   uint8_t dndr = 0;
   int8_t txpow = 0; // dBm

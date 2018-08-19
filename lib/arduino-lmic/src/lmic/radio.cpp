@@ -213,12 +213,12 @@ static void opmodeLora() {
 
 // configure LoRa modem (cfg1, cfg2)
 static void configLoraModem() {
-  sf_t sf = getSf(LMIC.rps);
+  sf_t sf = LMIC.rps.sf;
 
 #ifdef CFG_sx1276_radio
   uint8_t mc1 = 0, mc2 = 0, mc3 = 0;
 
-  switch (getBw(LMIC.rps)) {
+  switch (LMIC.rps.bw) {
   case BW125:
     mc1 |= SX1276_MC1_BW_125;
     break;
@@ -231,7 +231,7 @@ static void configLoraModem() {
   default:
     ASSERT(0);
   }
-  switch (getCr(LMIC.rps)) {
+  switch (LMIC.rps.cr) {
   case CR_4_5:
     mc1 |= SX1276_MC1_CR_4_5;
     break;
@@ -248,21 +248,21 @@ static void configLoraModem() {
     ASSERT(0);
   }
 
-  if (getIh(LMIC.rps)) {
+  if (LMIC.rps.ih) {
     mc1 |= SX1276_MC1_IMPLICIT_HEADER_MODE_ON;
-    writeReg(LORARegPayloadLength, getIh(LMIC.rps)); // required length
+    writeReg(LORARegPayloadLength, LMIC.rps.ih); // required length
   }
   // set ModemConfig1
   writeReg(LORARegModemConfig1, mc1);
 
   mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
-  if (getNocrc(LMIC.rps) == 0) {
+  if (!LMIC.rps.nocrc) {
     mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
   }
   writeReg(LORARegModemConfig2, mc2);
 
   mc3 = SX1276_MC3_AGCAUTO;
-  if ((sf == SF11 || sf == SF12) && getBw(LMIC.rps) == BW125) {
+  if ((sf == SF11 || sf == SF12) && LMIC.rps.bw == BW125) {
     mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
   }
   writeReg(LORARegModemConfig3, mc3);
@@ -612,8 +612,8 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
 
     } else if (flags & IRQ_LORA_RXDONE_MASK) {
       // save exact rx time
-      if (getBw(LMIC.rps) == BW125) {
-        now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, getSf(LMIC.rps)));
+      if (LMIC.rps.bw == BW125) {
+        now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, LMIC.rps.sf));
       }
       LMIC.rxtime = now;
       // read the PDU and inform the MAC that we received something

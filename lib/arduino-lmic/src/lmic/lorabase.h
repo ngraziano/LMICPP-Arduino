@@ -26,7 +26,18 @@ typedef uint8_t sf_t;
 typedef uint8_t bw_t;
 typedef uint8_t dr_t;
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-typedef uint16_t rps_t;
+// typedef uint16_t rps_t;
+union rps_t {
+  uint16_t rawValue;
+  struct {
+    sf_t sf :3;
+    bw_t bw :2;
+    cr_t cr :2;
+    bool nocrc:1;
+    uint8_t ih:8;
+  };
+};
+
 
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };
@@ -348,41 +359,24 @@ typedef uint32_t devaddr_t;
 // RX quality (device)
 enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
 
-inline sf_t getSf(rps_t params) { return (sf_t)(params & 0x7); }
-inline rps_t setSf(rps_t params, sf_t sf) {
-  return (rps_t)((params & ~0x7) | sf);
-}
-inline bw_t getBw(rps_t params) { return (bw_t)((params >> 3) & 0x3); }
-inline rps_t setBw(rps_t params, bw_t cr) {
-  return (rps_t)((params & ~0x18) | (cr << 3));
-}
-inline cr_t getCr(rps_t params) { return (cr_t)((params >> 5) & 0x3); }
-inline rps_t setCr(rps_t params, cr_t cr) {
-  return (rps_t)((params & ~0x60) | (cr << 5));
-}
-inline int getNocrc(rps_t params) { return ((params >> 7) & 0x1); }
-inline rps_t setNocrc(rps_t params, int nocrc) {
-  return (rps_t)((params & ~0x80) | (nocrc << 7));
-}
-inline int getIh(rps_t params) { return ((params >> 8) & 0xFF); }
-inline rps_t setIh(rps_t params, int ih) {
-  return (rps_t)((params & ~0xFF00) | (ih << 8));
-}
-inline rps_t makeRps(sf_t sf, bw_t bw, cr_t cr, int ih, int nocrc) {
-  return sf | (bw << 3) | (cr << 5) | (nocrc ? (1 << 7) : 0) |
-         ((ih & 0xFF) << 8);
-}
+
 #define MAKERPS(sf, bw, cr, ih, nocrc)                                         \
-  ((rps_t)((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |       \
+  (((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |       \
            ((ih & 0xFF) << 8)))
 // Two frames with params r1/r2 would interfere on air: same SFx + BWx
-inline int sameSfBw(rps_t r1, rps_t r2) { return ((r1 ^ r2) & 0x1F) == 0; }
+inline int sameSfBw(rps_t r1, rps_t r2) { return (r1.sf == r2.sf) && (r1.bw == r2.bw); }
 
 extern CONST_TABLE(uint8_t, _DR2RPS_CRC)[];
 inline rps_t updr2rps(dr_t dr) {
-  return (rps_t)TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
+  rps_t result;
+  result.rawValue = TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
+  return result;
 }
-inline rps_t dndr2rps(dr_t dr) { return setNocrc(updr2rps(dr), 1); }
+inline rps_t dndr2rps(dr_t dr) {
+    auto val = updr2rps(dr);
+    val.nocrc = 1;
+    return val;
+   }
 inline bool isFasterDR(dr_t dr1, dr_t dr2) { return dr1 > dr2; }
 inline bool isSlowerDR(dr_t dr1, dr_t dr2) { return dr1 < dr2; }
 inline dr_t incDR(dr_t dr) {
