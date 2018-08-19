@@ -152,7 +152,7 @@ public:
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
                 int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params( uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq, rps_t &rps);
+  void setRx1Params( uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);
@@ -202,7 +202,7 @@ public:
                 OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
                 int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq, rps_t &rps);
+  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);

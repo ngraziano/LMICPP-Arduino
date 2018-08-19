@@ -287,10 +287,8 @@ OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
 }
 
 void LmicEu868::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                             uint32_t &freq,
-                             rps_t &rps) { /*freq remain unchanged*/
+                             uint32_t &freq) { /*freq remain unchanged*/
   lowerDR(dndr, rx1DrOffset);
-  rps = dndr2rps(dndr);
 }
 
 #if !defined(DISABLE_JOIN)

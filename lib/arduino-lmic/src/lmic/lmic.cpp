@@ -515,8 +515,6 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
 
 void Lmic::setupRx1() {
   txrxFlags = TXRX_DNW1;
-  // Turn rps from TX over to RX
-  rps.nocrc=1;
   dataLen = 0;
   radio_rx();
 }
@@ -525,7 +523,8 @@ void Lmic::setupRx1() {
 // rxtime
 void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
-  regionLMic.setRx1Params(txChnl, rx1DrOffset, dndr, freq, rps);
+  regionLMic.setRx1Params(txChnl, rx1DrOffset, dndr, freq);
+  rps = dndr2rps(dndr);
   schedRx12(delay, dndr);
 }
 

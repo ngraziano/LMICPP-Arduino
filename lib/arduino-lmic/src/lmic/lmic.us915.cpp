@@ -210,15 +210,13 @@ OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   return now;
 }
 
-void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq,
-                             rps_t &rps) {
+void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq) {
   //TODO handle offset
   freq = US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
   if (/* TX datarate */ dndr < DR_SF8C)
     dndr += DR_SF10CR - DR_SF10;
   else if (dndr == DR_SF8C)
     dndr = DR_SF7CR;
-  rps = dndr2rps(dndr);
 }
 
 #if !defined(DISABLE_JOIN)
