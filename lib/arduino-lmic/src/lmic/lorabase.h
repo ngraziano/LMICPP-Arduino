@@ -30,14 +30,13 @@ typedef uint8_t dr_t;
 union rps_t {
   uint16_t rawValue;
   struct {
-    sf_t sf :3;
-    bw_t bw :2;
-    cr_t cr :2;
-    bool nocrc:1;
-    uint8_t ih:8;
+    sf_t sf : 3;
+    bw_t bw : 2;
+    cr_t cr : 2;
+    bool nocrc : 1;
+    uint8_t ih : 8;
   };
 };
-
 
 enum { ILLEGAL_RPS = 0xFF };
 enum { DR_PAGE_EU868 = 0x00 };
@@ -219,9 +218,9 @@ enum {
   OFF_DAT_OPTS = 8,
 };
 enum { MIC_LEN = 4 };
-enum { 
+enum {
   DIR_UP = 0,
-  DIR_DOWN =1,
+  DIR_DOWN = 1,
 };
 enum { MAX_LEN_PAYLOAD = MAX_LEN_FRAME - (int)OFF_DAT_OPTS - 4 };
 enum {
@@ -272,7 +271,7 @@ enum {
                         // u1:7-6:RFU,5-0:margin(-32..31)
   MCMD_SNCH_ANS = 0x07, // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK
   // Ack to new RX 1 timing.
-  MCMD_RXTimingSetup_ANS = 0x08, 
+  MCMD_RXTimingSetup_ANS = 0x08,
   // Class B
   MCMD_PING_IND =
       0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate
@@ -290,14 +289,14 @@ enum {
   // duty cycle cap     : u1:255 dead [7-4]:RFU, [3-0]:cap 2^-k
   MCMD_DCAP_REQ = 0x04,
   // 2nd DN window param: u1:7-4:RFU/3-0:datarate, u3:freq
-  MCMD_DN2P_SET = 0x05, 
+  MCMD_DN2P_SET = 0x05,
   // device status req  : -
-  MCMD_DEVS_REQ = 0x06, 
+  MCMD_DEVS_REQ = 0x06,
   // set new channel    : u1:chidx, u3:freq, u1:DRrange
-  MCMD_SNCH_REQ = 0x07, 
+  MCMD_SNCH_REQ = 0x07,
   // Sets the timing of the of the reception slots  u1: [7-4]:RFU, [3-0]:del
   MCMD_RXTimingSetup_REQ = 0x08,
-  //  set the maximum allowed dwell time 
+  //  set the maximum allowed dwell time
   MCMD_TxParamSetup_REQ = 0x09,
   // Class B
   MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
@@ -359,12 +358,13 @@ typedef uint32_t devaddr_t;
 // RX quality (device)
 enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
 
-
 #define MAKERPS(sf, bw, cr, ih, nocrc)                                         \
-  (((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |       \
-           ((ih & 0xFF) << 8)))
+  (((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |              \
+    ((ih & 0xFF) << 8)))
 // Two frames with params r1/r2 would interfere on air: same SFx + BWx
-inline int sameSfBw(rps_t r1, rps_t r2) { return (r1.sf == r2.sf) && (r1.bw == r2.bw); }
+inline int sameSfBw(rps_t r1, rps_t r2) {
+  return (r1.sf == r2.sf) && (r1.bw == r2.bw);
+}
 
 extern CONST_TABLE(uint8_t, _DR2RPS_CRC)[];
 inline rps_t updr2rps(dr_t dr) {
@@ -373,10 +373,10 @@ inline rps_t updr2rps(dr_t dr) {
   return result;
 }
 inline rps_t dndr2rps(dr_t dr) {
-    auto val = updr2rps(dr);
-    val.nocrc = 1;
-    return val;
-   }
+  auto val = updr2rps(dr);
+  val.nocrc = 1;
+  return val;
+}
 inline bool isFasterDR(dr_t dr1, dr_t dr2) { return dr1 > dr2; }
 inline bool isSlowerDR(dr_t dr1, dr_t dr2) { return dr1 < dr2; }
 inline dr_t incDR(dr_t dr) {

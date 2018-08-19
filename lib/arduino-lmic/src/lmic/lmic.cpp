@@ -75,8 +75,7 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
   uint8_t sfx = 4 * (sf + (7 - SF7));
   uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
-  int tmp =
-      8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
+  int tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
     tmp *= rps.cr + 5;
@@ -243,16 +242,17 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
       dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
-      uint8_t newRx1DrOffset = ((opts[oidx+1] & 0x70) >> 4);
+      uint8_t newRx1DrOffset = ((opts[oidx + 1] & 0x70) >> 4);
       uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]);
       dn2Ans = 0x80; // answer pending
-      if(regionLMic.validRx1DrOffset(newRx1DrOffset))
+      if (regionLMic.validRx1DrOffset(newRx1DrOffset))
         dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
       if (validDR(dr))
         dn2Ans |= MCMD_DN2P_ANS_DRACK;
       if (newfreq != 0)
         dn2Ans |= MCMD_DN2P_ANS_CHACK;
-      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK | MCMD_DN2P_ANS_CHACK)) {
+      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
+                     MCMD_DN2P_ANS_CHACK)) {
         dn2Dr = dr;
         dn2Freq = newfreq;
         rx1DrOffset = newRx1DrOffset;
@@ -265,12 +265,11 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     case MCMD_DCAP_REQ: {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
       uint8_t cap = opts[oidx + 1];
-      
+
       // cap=0xFF is not in specification...
       // A value cap=0xFF means device is OFF unless enabled again manually.
       if (cap == 0xFF)
         opmode |= OP_SHUTDOWN; // stop any sending
-      
 
       globalDutyRate = cap & 0xF;
       globalDutyAvail = os_getTime();
@@ -296,7 +295,7 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     }
     // RXTimingSetupReq LoRaWAN™ Specification §5.7
     case MCMD_RXTimingSetup_REQ: {
-      uint8_t newDelay =  opts[oidx + 1] & 0x0F;
+      uint8_t newDelay = opts[oidx + 1] & 0x0F;
       if (newDelay == 0)
         newDelay = 1;
       rxDelay = OsDeltaTime::from_sec(newDelay);
@@ -597,7 +596,6 @@ bool Lmic::processJoinAccept() {
   if (dlen > LEN_JA) {
     // some region just ignore cflist.
     regionLMic.handleCFList(frame + OFF_CFLIST);
-
   }
 
   // already incremented when JOIN REQ got sent off
@@ -733,7 +731,7 @@ void Lmic::buildDataFrame() {
     end += 2;
     ladrAns = 0;
   }
-  if(rxTimingSetupAns) {
+  if (rxTimingSetupAns) {
     frame[end + 0] = MCMD_RXTimingSetup_ANS;
     end += 1;
     // rxTimingSetupAns reset when downlink packet receive
@@ -917,19 +915,16 @@ void Lmic::engineUpdate() {
     if ((opmode & OP_NEXTCHNL) != 0) {
       txbeg = txend = regionLMic.nextTx(now, datarate, txChnl);
       opmode &= ~OP_NEXTCHNL;
-      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
-                  txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg);
     } else {
       txbeg = txend;
-      PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
-                   txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg);
     }
     // Delayed TX or waiting for duty cycle?
     if ((globalDutyRate != 0 || (opmode & OP_RNDTX) != 0) &&
         (txbeg - globalDutyAvail) < 0) {
       txbeg = globalDutyAvail;
-      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)",
-                   txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg);
     }
     // Earliest possible time vs overhead to setup radio
     if (txbeg - (now + TX_RAMPUP) < 0) {
@@ -970,7 +965,7 @@ void Lmic::engineUpdate() {
       }
       rps = updr2rps(txdr);
       rps.cr = errcr;
-      
+
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;

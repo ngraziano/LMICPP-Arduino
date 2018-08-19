@@ -36,9 +36,6 @@
 #define ASSERT(cond) /**/
 #endif
 
-
-
-
 void os_init(void);
 
 //================================================================================
@@ -58,7 +55,6 @@ OsTime os_getTime(void);
 #ifndef os_getBattLevel
 uint8_t os_getBattLevel(void);
 #endif
-
 
 #endif // !HAS_os_calls
 
