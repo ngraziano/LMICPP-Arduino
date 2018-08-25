@@ -24,14 +24,14 @@ CONST_TABLE(uint8_t, maxFrameLens)[] = {64, 64, 64, 123};
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS,
-      (uint8_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF11, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF10, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF9, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF8, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF7, BW125, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(SF7, BW250, CR_4_5, 0, 0),
-      (uint8_t)MAKERPS(FSK, BW125, CR_4_5, 0, 0),
+      (uint8_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0), // DR0
+      (uint8_t)MAKERPS(SF11, BW125, CR_4_5, 0, 0), // DR1
+      (uint8_t)MAKERPS(SF10, BW125, CR_4_5, 0, 0), // DR2
+      (uint8_t)MAKERPS(SF9, BW125, CR_4_5, 0, 0),  // DR3
+      (uint8_t)MAKERPS(SF8, BW125, CR_4_5, 0, 0),  // DR4
+      (uint8_t)MAKERPS(SF7, BW125, CR_4_5, 0, 0),  // DR5
+      (uint8_t)MAKERPS(SF7, BW250, CR_4_5, 0, 0),  // DR6
+      (uint8_t)MAKERPS(FSK, BW125, CR_4_5, 0, 0),  // DR7
       ILLEGAL_RPS};
 
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {20, 14, 11, 8, 5, 2, 0, 0,
