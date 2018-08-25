@@ -384,14 +384,14 @@ static void txlora() {
   hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
-  uint8_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
-  uint8_t bw = getBw(LMIC.rps);
-  uint8_t cr = getCr(LMIC.rps);
+  uint8_t sf = LMIC.rps.sf + 6; // 1 == SF7
+  uint8_t bw = LMIC.rps.bw;
+  uint8_t cr = LMIC.rps.cr;
   lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
               os_getTime(), LMIC.freq, LMIC.dataLen, sf,
               bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
               cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
-              getIh(LMIC.rps));
+              LMIC.rps.ih);
 #endif
 }
 
@@ -466,9 +466,9 @@ static void rxlora(uint8_t rxmode) {
   if (rxmode == RXMODE_RSSI) {
     lmic_printf("RXMODE_RSSI\n");
   } else {
-    uint8_t sf = getSf(LMIC.rps) + 6; // 1 == SF7
-    uint8_t bw = getBw(LMIC.rps);
-    uint8_t cr = getCr(LMIC.rps);
+    uint8_t sf = LMIC.rps.sf + 6; // 1 == SF7
+    uint8_t bw = LMIC.rps.bw;
+    uint8_t cr = LMIC.rps.cr;
     lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
                 os_getTime(),
                 rxmode == RXMODE_SINGLE
@@ -476,7 +476,7 @@ static void rxlora(uint8_t rxmode) {
                     : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
                 LMIC.freq, sf, bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
                 cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
-                getIh(LMIC.rps));
+                LMIC.rps.ih);
   }
 #endif
 }
