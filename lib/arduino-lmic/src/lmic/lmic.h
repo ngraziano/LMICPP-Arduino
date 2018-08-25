@@ -319,7 +319,8 @@ private:
 
   uint8_t margin = 0;
   // link adr adapt answer pending, init after join
-  bool ladrAns;
+  // use bit 15 as flag, other as value for acq
+  uint8_t ladrAns;
   // device status answer pending, init after join
   bool devsAns;
   // RX timing setup answer pending, init after join 

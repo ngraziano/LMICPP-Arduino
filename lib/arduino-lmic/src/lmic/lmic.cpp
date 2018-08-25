@@ -169,7 +169,7 @@ void Lmic::stateJustJoined() {
   seqnoUp = 0;
   rejoinCnt = 0;
   dnConf = 0;
-  ladrAns = false;
+  ladrAns = 0;
   devsAns = false;
   rxTimingSetupAns = false;
 #if !defined(DISABLE_MCMD_SNCH_REQ)
@@ -214,10 +214,13 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
       ladrAns = 0x80 | // Include an answer into next frame up
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
                 MCMD_LADR_ANS_DRACK;
-      if (!regionLMic.mapChannels(chMaskCntl, chMask))
+      if (!regionLMic.mapChannels(chMaskCntl, chMask)) {
+        PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i", chMaskCntl, chMask);
         ladrAns &= ~MCMD_LADR_ANS_CHACK;
+      }
       dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
       if (!validDR(dr)) {
+        PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
         ladrAns &= ~MCMD_LADR_ANS_DRACK;
       }
       if ((ladrAns & 0x7F) ==
