@@ -212,13 +212,13 @@ static void opmodeLora() {
 }
 
 // configure LoRa modem (cfg1, cfg2)
-static void configLoraModem() {
-  sf_t sf = LMIC.rps.sf;
+static void configLoraModem(rps_t rps) {
+  sf_t sf = rps.sf;
 
 #ifdef CFG_sx1276_radio
   uint8_t mc1 = 0, mc2 = 0, mc3 = 0;
 
-  switch (LMIC.rps.bw) {
+  switch (rps.bw) {
   case BW125:
     mc1 |= SX1276_MC1_BW_125;
     break;
@@ -231,7 +231,7 @@ static void configLoraModem() {
   default:
     ASSERT(0);
   }
-  switch (LMIC.rps.cr) {
+  switch (rps.cr) {
   case CR_4_5:
     mc1 |= SX1276_MC1_CR_4_5;
     break;
@@ -248,28 +248,28 @@ static void configLoraModem() {
     ASSERT(0);
   }
 
-  if (LMIC.rps.ih) {
+  if (rps.ih) {
     mc1 |= SX1276_MC1_IMPLICIT_HEADER_MODE_ON;
-    writeReg(LORARegPayloadLength, LMIC.rps.ih); // required length
+    writeReg(LORARegPayloadLength, rps.ih); // required length
   }
   // set ModemConfig1
   writeReg(LORARegModemConfig1, mc1);
 
   mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
-  if (!LMIC.rps.nocrc) {
+  if (!rps.nocrc) {
     mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
   }
   writeReg(LORARegModemConfig2, mc2);
 
   mc3 = SX1276_MC3_AGCAUTO;
-  if ((sf == SF11 || sf == SF12) && LMIC.rps.bw == BW125) {
+  if ((sf == SF11 || sf == SF12) && rps.bw == BW125) {
     mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
   }
   writeReg(LORARegModemConfig3, mc3);
 #elif CFG_sx1272_radio
-  uint8_t mc1 = (getBw(LMIC.rps) << 6);
+  uint8_t mc1 = (rps.bw << 6);
 
-  switch (getCr(LMIC.rps)) {
+  switch (rps.cr) {
   case CR_4_5:
     mc1 |= SX1272_MC1_CR_4_5;
     break;
@@ -284,17 +284,17 @@ static void configLoraModem() {
     break;
   }
 
-  if ((sf == SF11 || sf == SF12) && getBw(LMIC.rps) == BW125) {
+  if ((sf == SF11 || sf == SF12) && rps.bw == BW125) {
     mc1 |= SX1272_MC1_LOW_DATA_RATE_OPTIMIZE;
   }
 
-  if (getNocrc(LMIC.rps) == 0) {
+  if (rps.nocrc == 0) {
     mc1 |= SX1272_MC1_RX_PAYLOAD_CRCON;
   }
 
-  if (getIh(LMIC.rps)) {
+  if (rps.ih) {
     mc1 |= SX1272_MC1_IMPLICIT_HEADER_MODE_ON;
-    writeReg(LORARegPayloadLength, getIh(LMIC.rps)); // required length
+    writeReg(LORARegPayloadLength, rps.ih); // required length
   }
   // set ModemConfig1
   writeReg(LORARegModemConfig1, mc1);
@@ -306,9 +306,9 @@ static void configLoraModem() {
 #endif /* CFG_sx1272_radio */
 }
 
-static void configChannel() {
+static void configChannel(uint32_t freq) {
   // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
-  uint64_t frf = ((uint64_t)LMIC.freq << 19) / 32000000;
+  uint64_t frf = ((uint64_t)freq << 19) / 32000000;
   writeReg(RegFrfMsb, (uint8_t)(frf >> 16));
   writeReg(RegFrfMid, (uint8_t)(frf >> 8));
   writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
@@ -331,7 +331,6 @@ static void configPower(int8_t pw) {
 
 #elif CFG_sx1272_radio
   // set PA config (2-17 dBm using PA_BOOST)
-  int8_t pw = (int8_t)LMIC.txpow;
   if (pw > 17) {
     pw = 17;
   } else if (pw < 2) {
@@ -343,7 +342,7 @@ static void configPower(int8_t pw) {
 #endif /* CFG_sx1272_radio */
 }
 
-static void txlora() {
+static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame, uint8_t dataLen) {
   // select LoRa modem (from sleep mode)
   // writeReg(RegOpMode, OPMODE_LORA);
   opmodeLora();
@@ -352,13 +351,13 @@ static void txlora() {
   // enter standby mode (required for FIFO loading))
   opmode(OPMODE_STANDBY);
   // configure LoRa modem (cfg1, cfg2)
-  configLoraModem();
+  configLoraModem(rps);
   // configure frequency
-  configChannel();
+  configChannel(freq);
   // configure output power
   writeReg(RegPaRamp,
            (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
-  configPower(LMIC.txpow);
+  configPower(txpow);
   // set sync word
   writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
@@ -373,10 +372,10 @@ static void txlora() {
   // initialize the payload size and address pointers
   writeReg(LORARegFifoTxBaseAddr, 0x00);
   writeReg(LORARegFifoAddrPtr, 0x00);
-  writeReg(LORARegPayloadLength, LMIC.dataLen);
+  writeReg(LORARegPayloadLength, dataLen);
 
   // download buffer to the radio FIFO
-  writeBuf(RegFifo, LMIC.frame, LMIC.dataLen);
+  writeBuf(RegFifo, frame, dataLen);
 
   // enable antenna switch for TX
   hal_pin_rxtx(1);
@@ -386,21 +385,21 @@ static void txlora() {
   hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
-  uint8_t sf = LMIC.rps.sf + 6; // 1 == SF7
-  uint8_t bw = LMIC.rps.bw;
-  uint8_t cr = LMIC.rps.cr;
+  uint8_t sf = rps.sf + 6; // 1 == SF7
+  uint8_t bw = rps.bw;
+  uint8_t cr = rps.cr;
   lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-              os_getTime(), LMIC.freq, LMIC.dataLen, sf,
+              os_getTime(), freq, dataLen, sf,
               bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
               cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
-              LMIC.rps.ih);
+              rps.ih);
 #endif
 }
 
-// start transmitter (buf=LMIC.frame, len=LMIC.dataLen)
-static void starttx() {
+// start transmitter
+static void starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame, uint8_t dataLen) {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
-  txlora();
+  txlora(freq, rps,txpow, frame,dataLen);
   // the radio will go back to STANDBY mode as soon as the TX is finished
   // the corresponding IRQ will inform us about completion.
 }
@@ -427,9 +426,9 @@ static void rxlora(uint8_t rxmode) {
     writeReg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
   } else { // single or continuous rx mode
     // configure LoRa modem (cfg1, cfg2)
-    configLoraModem();
+    configLoraModem(LMIC.rps);
     // configure frequency
-    configChannel();
+    configChannel(LMIC.freq);
   }
   // set LNA gain
   writeReg(RegLna, LNA_RX_GAIN);
@@ -661,10 +660,10 @@ void radio_rst() {
   hal_enableIRQs();
 }
 
-void radio_tx() {
+void radio_tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame, uint8_t dataLen) {
   hal_disableIRQs();
   // transmit frame now
-  starttx(); // buf=LMIC.frame, len=LMIC.dataLen
+  starttx(freq, rps, txpow, frame, dataLen);
   hal_enableIRQs();
 }
 

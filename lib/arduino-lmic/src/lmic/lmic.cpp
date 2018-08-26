@@ -986,7 +986,7 @@ void Lmic::engineUpdate() {
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow, freq, txpow,
                           globalDutyAvail);
-      radio_tx();
+      radio_tx(freq, rps, txpow, frame, dataLen);
       return;
     }
     PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
