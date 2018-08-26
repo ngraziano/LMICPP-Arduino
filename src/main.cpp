@@ -68,6 +68,7 @@ void onEvent (ev_t ev) {
             break;
         case EV_JOINED:
             PRINT_DEBUG_2("EV_JOINED");
+            // LMIC.setDrTxpow(DR_SF9, KEEP_TXPOW);
             break;
         case EV_RFU1:
             PRINT_DEBUG_2("EV_RFU1");
@@ -202,11 +203,11 @@ void powersave(OsDeltaTime const& maxTime) {
         return;
     }
 
-    #if LMIC_DEBUG_LEVEL > 2
-        Serial.print(os_getTime());
+    #if LMIC_DEBUG_LEVEL > 0
+        Serial.print(os_getTime().tick());
         Serial.print(": Sleep (ostick) :");
-        Serial.println(duration_selected);
-        Serial.end();
+        Serial.println(duration_selected.tick());
+        Serial.flush();
     #endif
 
 
@@ -218,10 +219,8 @@ void powersave(OsDeltaTime const& maxTime) {
     }
 
 
-    #if LMIC_DEBUG_LEVEL > 2            
-        Serial.begin(BAUDRATE);
-        delay(50);
-        Serial.print(os_getTime());
+    #if LMIC_DEBUG_LEVEL > 0
+        Serial.print(os_getTime().tick());
         Serial.println(": wakeup");
     #endif
 }

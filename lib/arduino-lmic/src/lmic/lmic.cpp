@@ -663,7 +663,7 @@ void Lmic::jreqDone() {
 
 void Lmic::processRx2DnData() {
   if (dataLen == 0) {
-    txrxFlags = 0; // nothing in 1st/2nd DN slot
+    // nothing in 1st/2nd DN slot
     // It could be that the gateway *is* sending a reply, but we
     // just didn't pick it up. To avoid TX'ing again while the
     // gateay is not listening anyway, delay the next transmission
@@ -878,11 +878,21 @@ bool Lmic::processDnData() {
   // assume link is dead - notify application and keep going
   if (adrAckReq > LINK_CHECK_DEAD) {
     // We haven't heard from NWK for some time although we
-    // asked for a response for some time - assume we're disconnected. Lower
-    // DR one notch.
-    setDrTxpow(decDR(datarate), KEEP_TXPOW);
+    // asked for a response for some time - assume we're disconnected.
+    // Restore max power if it not the case
+    if(adrTxPow != regionLMic.pow2dBm(0)) 
+    {
+      setDrTxpow(datarate, regionLMic.pow2dBm(0));
+      opmode |= OP_LINKDEAD;
+    } else if(decDR(datarate) != datarate) {
+      // Lower DR one notch.
+      setDrTxpow(decDR(datarate), KEEP_TXPOW);
+      opmode |= OP_LINKDEAD;
+    } else {
+      // we are at max pow and max DR
+      opmode |= OP_REJOIN | OP_LINKDEAD;
+    }
     adrAckReq = LINK_CHECK_CONT;
-    opmode |= OP_REJOIN | OP_LINKDEAD;
     reportEvent(EV_LINK_DEAD);
   }
   return true;
