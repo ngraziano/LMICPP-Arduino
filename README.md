@@ -35,6 +35,14 @@ static const uint8_t PROGMEM APPKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 
 
 In ``main.cpp`` replace the content of ``do_send()`` with the data you want to send.
 
+## Main functional change from LMIC
+
+* Try to implement ADR a little more correctl:
+  * Handle Txpower
+  * ADR_ACK_LIMIT set to 64
+  * ADR_ACK_DELAY set to 32
+* Correct set of power for SX1276
+
 ## License
 
 Most source files in this repository are made available under the Eclipse Public License v1.0.
