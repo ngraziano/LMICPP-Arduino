@@ -34,7 +34,7 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
       (uint8_t)MAKERPS(FSK, BW125, CR_4_5, 0, 0),  // DR7
       ILLEGAL_RPS};
 
-static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {20, 14, 11, 8, 5, 2, 0, 0,
+static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,
                                              0,  0,  0,  0, 0, 0, 0, 0};
 
 int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) {
@@ -191,7 +191,7 @@ uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
 
 void LmicEu868::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                          OsDeltaTime const &airtime, uint8_t txChnl,
-                         uint32_t &freq, int8_t &txpow,
+                         int8_t adrTxPow, uint32_t &freq, int8_t &txpow,
                          OsTime &globalDutyAvail) {
 
   // Update global/band specific duty cycle stats
@@ -200,6 +200,8 @@ void LmicEu868::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
   band_t *band = &bands[getBand(txChnl)];
   freq = getFreq(txChnl);
   txpow = band->txpow;
+  // limit power to value ask in adr
+  txpow = txpow > adrTxPow ? adrTxPow : txpow;
   // TODO check time calculation
   band->avail = txbeg + band->txcap * airtime;
   if (globalDutyRate != 0)

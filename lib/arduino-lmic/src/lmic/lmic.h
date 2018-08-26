@@ -29,7 +29,6 @@ enum { TXCONF_ATTEMPTS = 8 };  //!< Transmit attempts for confirmed frames
 enum { MAX_MISSED_BCNS = 20 }; // threshold for triggering rejoin requests
 enum { MAX_RXSYMS = 100 };     // stop tracking beacon beyond this
 
-
 enum { TIME_RESYNC = 6 * 128 }; // secs
 enum {
   TXRX_GUARD_ms = 6000
@@ -106,7 +105,6 @@ enum {
   MAX_CLOCK_ERROR = 65536,
 };
 
-
 struct ChannelDetail {
   // three low bit of freq is used to store band.
   uint32_t freq;
@@ -115,10 +113,7 @@ struct ChannelDetail {
 
 #if defined(CFG_eu868) // EU868 spectrum
 
-enum {
-  ADR_ACK_DELAY = 32,
-  ADR_ACK_LIMIT = 64
-};
+enum { ADR_ACK_DELAY = 32, ADR_ACK_LIMIT = 64 };
 enum { MAX_CHANNELS = 16 }; //!< Max supported channels
 enum { MAX_BANDS = 4 };
 
@@ -149,10 +144,11 @@ public:
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
-                int8_t &txpow, OsTime &globalDutyAvail);
+                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
+                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params( uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq);
+  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
+                    uint32_t &freq);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);
@@ -172,16 +168,12 @@ private:
 
 #elif defined(CFG_us915) // US915 spectrum
 
-enum {
-  ADR_ACK_DELAY = 32,
-  ADR_ACK_LIMIT = 64
-};
+enum { ADR_ACK_DELAY = 32, ADR_ACK_LIMIT = 64 };
 
 enum {
   MAX_XCHANNELS = 2
 }; // extra channels in RAM, channels 0-71 are immutable
 enum { MAX_TXPOW_125kHz = 30 };
-
 
 class LmicUs915 {
 public:
@@ -199,10 +191,11 @@ public:
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                OsDeltaTime const &airtime, uint8_t txChnl, uint32_t &freq,
-                int8_t &txpow, OsTime &globalDutyAvail);
+                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
+                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail);
   OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
-  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq);
+  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
+                    uint32_t &freq);
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                     OsTime &txend);
@@ -226,18 +219,15 @@ private:
 
 #endif
 
-
 enum {
   // continue with this after reported dead link
-  LINK_CHECK_CONT = 0, 
+  LINK_CHECK_CONT = 0,
   // after this UP frames and no response from NWK assume link is dead
-  LINK_CHECK_DEAD = ADR_ACK_DELAY, 
+  LINK_CHECK_DEAD = ADR_ACK_DELAY,
   // UP frame count until we ask for ADRACKReq
-  LINK_CHECK_INIT = -ADR_ACK_LIMIT, 
+  LINK_CHECK_INIT = -ADR_ACK_LIMIT,
   LINK_CHECK_OFF = -128
 }; // link check disabled
-
-
 
 class Lmic {
 public:
@@ -277,8 +267,8 @@ private:
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
-  // ADR adjusted TX power not used ?
-  int8_t adrTxPow = 0;
+  // ADR adjusted TX power, limit power to this value.
+  int8_t adrTxPow;
   dr_t datarate = 0; // current data rate
   // error coding rate (used for TX only), init at reset
   cr_t errcr;
@@ -323,7 +313,7 @@ private:
   uint8_t ladrAns;
   // device status answer pending, init after join
   bool devsAns;
-  // RX timing setup answer pending, init after join 
+  // RX timing setup answer pending, init after join
   bool rxTimingSetupAns;
   // adr Mode, init at reset
   uint8_t adrEnabled;
@@ -335,7 +325,7 @@ private:
   // answer set new channel, init afet join.
   uint8_t snchAns;
 #endif
-  // 1 RX window DR offset 
+  // 1 RX window DR offset
   uint8_t rx1DrOffset;
   // 2nd RX window (after up stream), init at reset
   uint8_t dn2Dr;

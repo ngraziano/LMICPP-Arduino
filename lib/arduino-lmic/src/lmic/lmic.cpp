@@ -227,6 +227,7 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
           (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
         // Nothing went wrong - use settings
         upRepeat = nbTrans;
+        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, p1 & MCMD_LADR_POW_MASK);
         setDrTxpow(dr, regionLMic.pow2dBm(p1));
       }
       if (adrAckReq != LINK_CHECK_OFF) {
@@ -973,7 +974,7 @@ void Lmic::engineUpdate() {
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
-      regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, freq, txpow,
+      regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow, freq, txpow,
                           globalDutyAvail);
       radio_tx();
       return;

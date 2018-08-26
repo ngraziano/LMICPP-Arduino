@@ -72,9 +72,7 @@ OsDeltaTime LmicUs915::dr2hsym(dr_t dr) {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)&7));
 }
 
-bool LmicUs915::validRx1DrOffset(uint8_t drOffset) {
-  return drOffset  < 4;
-}
+bool LmicUs915::validRx1DrOffset(uint8_t drOffset) { return drOffset < 4; }
 
 // ================================================================================
 //
@@ -98,7 +96,7 @@ uint32_t LmicUs915::convFreq(const uint8_t *ptr) {
   return freq;
 }
 
-void LmicUs915::handleCFList(const uint8_t *ptr) { 
+void LmicUs915::handleCFList(const uint8_t *ptr) {
   // just ignore cflist
 }
 
@@ -163,7 +161,7 @@ uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
 
 void LmicUs915::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                          OsDeltaTime const &airtime, uint8_t txChnl,
-                         uint32_t &freq, int8_t &txpow,
+                         int8_t adrTxPow, uint32_t &freq, int8_t &txpow,
                          OsTime &globalDutyAvail) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
@@ -210,8 +208,9 @@ OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   return now;
 }
 
-void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr, uint32_t &freq) {
-  //TODO handle offset
+void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
+                             uint32_t &freq) {
+  // TODO handle offset
   freq = US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
   if (/* TX datarate */ dndr < DR_SF8C)
     dndr += DR_SF10CR - DR_SF10;

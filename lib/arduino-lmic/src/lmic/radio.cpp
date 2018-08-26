@@ -67,7 +67,7 @@
 // #define RegAgcThresh3                              0x46 // common
 // #define RegPllHop                                  0x4B // common
 // #define RegTcxo                                    0x58 // common
-#define RegPaDac 0x5A // common
+#define RegPaDac 0x4D // common
 // #define RegPll                                     0x5C // common
 // #define RegPllLowPn                                0x5E // common
 // #define RegFormerTemp                              0x6C // common
@@ -314,18 +314,20 @@ static void configChannel() {
   writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
 }
 
-static void configPower() {
+static void configPower(int8_t pw) {
 #ifdef CFG_sx1276_radio
-  // no boost used for now
-  int8_t pw = (int8_t)LMIC.txpow;
-  if (pw >= 17) {
-    pw = 15;
+  // no boost +20dB used for now
+  if (pw > 17) {
+    pw = 17;
   } else if (pw < 2) {
     pw = 2;
   }
+  pw -= 2;
   // check board type for BOOST pin
-  writeReg(RegPaConfig, (uint8_t)(0x80 | (pw & 0xf)));
-  writeReg(RegPaDac, readReg(RegPaDac) | 0x4);
+  // output on PA_BOOST
+  writeReg(RegPaConfig, (uint8_t)(0x80 | pw));
+  // no boost +20dB
+  writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
 
 #elif CFG_sx1272_radio
   // set PA config (2-17 dBm using PA_BOOST)
@@ -356,7 +358,7 @@ static void txlora() {
   // configure output power
   writeReg(RegPaRamp,
            (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
-  configPower();
+  configPower(LMIC.txpow);
   // set sync word
   writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
@@ -505,9 +507,10 @@ void radio_init() {
 
   opmode(OPMODE_SLEEP);
 
-#if !defined(CFG_noassert)
+#if !defined(CFG_noassert) || LMIC_DEBUG_LEVEL > 0
   // some sanity checks, e.g., read version number
   uint8_t v = readReg(RegVersion);
+  PRINT_DEBUG_1 ("Chip version : %i",v);
 #endif
 #ifdef CFG_sx1276_radio
   ASSERT(v == 0x12);
