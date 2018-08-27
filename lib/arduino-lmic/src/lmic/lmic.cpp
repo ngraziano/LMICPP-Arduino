@@ -215,7 +215,8 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
                 MCMD_LADR_ANS_DRACK;
       if (!regionLMic.mapChannels(chMaskCntl, chMask)) {
-        PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i", chMaskCntl, chMask);
+        PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i",
+                      chMaskCntl, chMask);
         ladrAns &= ~MCMD_LADR_ANS_CHACK;
       }
       dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
@@ -227,7 +228,8 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
           (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
         // Nothing went wrong - use settings
         upRepeat = nbTrans;
-        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, p1 & MCMD_LADR_POW_MASK);
+        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr,
+                      p1 & MCMD_LADR_POW_MASK);
         setDrTxpow(dr, regionLMic.pow2dBm(p1));
       }
       if (adrAckReq != LINK_CHECK_OFF) {
@@ -477,7 +479,7 @@ void Lmic::setupRx2() {
   rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
-  radio_rx();
+  radio_rx(freq, rps, rxsyms, &rxtime, frame, &dataLen);
 }
 
 void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
@@ -519,7 +521,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
 void Lmic::setupRx1() {
   txrxFlags = TXRX_DNW1;
   dataLen = 0;
-  radio_rx();
+  radio_rx(freq, rps, rxsyms, &rxtime, frame, &dataLen);
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -880,11 +882,10 @@ bool Lmic::processDnData() {
     // We haven't heard from NWK for some time although we
     // asked for a response for some time - assume we're disconnected.
     // Restore max power if it not the case
-    if(adrTxPow != regionLMic.pow2dBm(0)) 
-    {
+    if (adrTxPow != regionLMic.pow2dBm(0)) {
       setDrTxpow(datarate, regionLMic.pow2dBm(0));
       opmode |= OP_LINKDEAD;
-    } else if(decDR(datarate) != datarate) {
+    } else if (decDR(datarate) != datarate) {
       // Lower DR one notch.
       setDrTxpow(decDR(datarate), KEEP_TXPOW);
       opmode |= OP_LINKDEAD;
@@ -984,9 +985,9 @@ void Lmic::engineUpdate() {
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
-      regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow, freq, txpow,
-                          globalDutyAvail);
-      radio_tx(freq, rps, txpow, frame, dataLen);
+      regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow,
+                          freq, txpow, globalDutyAvail);
+      radio_tx(freq, rps, txpow, frame, dataLen, &txend);
       return;
     }
     PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);

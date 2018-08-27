@@ -40,10 +40,7 @@ static void hal_io_init() {
   if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
     pinMode(lmic_pins.dio[1], INPUT);
 
-  attachInterrupt(digitalPinToInterrupt(lmic_pins.dio[0]), hal_store_trigger,
-                  RISING);
-  attachInterrupt(digitalPinToInterrupt(lmic_pins.dio[1]), hal_store_trigger,
-                  RISING);
+
 }
 
 // val == 1  => tx 1

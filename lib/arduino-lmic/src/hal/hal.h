@@ -126,4 +126,7 @@ bool hal_checkTimer(OsTime const &targettime);
  */
 void hal_failed(const char *file, uint16_t line);
 
+
+void hal_store_trigger();
+
 #endif // _hal_hal_h_
