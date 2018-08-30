@@ -101,7 +101,9 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
     sfx = 4;
   }
   // Need 32bit arithmetic for this last step
-  return (((int32_t)tmp << sfx) * OSTICKS_PER_SEC + div / 2) / div;
+  OsDeltaTime val = (((int32_t)tmp << sfx) * OSTICKS_PER_SEC + div / 2) / div;
+  PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
+  return val;
 }
 
 extern inline rps_t updr2rps(dr_t dr);

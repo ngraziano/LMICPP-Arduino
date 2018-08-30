@@ -609,7 +609,7 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
   if (now - trigger < OsDeltaTime::from_sec(1)) {
     now = trigger;
   } else {
-    PRINT_DEBUG_2("Not using interupt trigger %lu", trigger);
+    PRINT_DEBUG_1("Not using interupt trigger %lu", trigger);
   }
 
   if ((readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
@@ -622,13 +622,15 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
       if (txendPtr)
         *txendPtr = now; // - OsDeltaTime::from_us(43); // TXDONE FIXUP
       // forbid sleep to keep precise time counting.
-      hal_forbid_sleep();
+      // hal_forbid_sleep();
+      hal_allow_sleep();
 
     } else if (flags & IRQ_LORA_RXDONE_MASK && framePtr) {
       // save exact rx time
       if (currentRps.bw == BW125) {
         now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
       }
+      PRINT_DEBUG_1 (" Start RX - End RX : %li us ", (*rxtimePtr - now).to_us()); 
       *rxtimePtr = now;
       // read the PDU and inform the MAC that we received something
       *frameLengthPtr =

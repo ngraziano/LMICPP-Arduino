@@ -198,7 +198,7 @@ void setup()
     LMIC.setArtEuiCallback(getArtEui);
 
     // set clock error to allow good connection.
-    LMIC.setClockError(MAX_CLOCK_ERROR * 1 / 100);
+    LMIC.setClockError(MAX_CLOCK_ERROR * 5 / 100);
 
     // for(int i = 1; i <= 8; i++) LMIC_disableChannel(i);
     // LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);
@@ -217,19 +217,19 @@ void powersave(OsDeltaTime const &maxTime)
     OsDeltaTime duration_selected;
     period_t period_selected;
     // these value are base on test
-    if (maxTime > OsDeltaTime::from_ms(8500))
+    if (maxTime > OsDeltaTime::from_ms(8700))
     {
-        duration_selected = OsDeltaTime::from_ms(8500);
+        duration_selected = OsDeltaTime::from_ms(8600);
         period_selected = SLEEP_8S;
     }
-    else if (maxTime > OsDeltaTime::from_ms(4500))
+    else if (maxTime > OsDeltaTime::from_ms(4600))
     {
-        duration_selected = OsDeltaTime::from_ms(4200);
+        duration_selected = OsDeltaTime::from_ms(4300);
         period_selected = SLEEP_4S;
     }
-    else if (maxTime > OsDeltaTime::from_ms(2500))
+    else if (maxTime > OsDeltaTime::from_ms(2600))
     {
-        duration_selected = OsDeltaTime::from_ms(2100);
+        duration_selected = OsDeltaTime::from_ms(2150);
         period_selected = SLEEP_2S;
     }
     else if (maxTime > OsDeltaTime::from_ms(1500))
@@ -237,10 +237,15 @@ void powersave(OsDeltaTime const &maxTime)
         duration_selected = OsDeltaTime::from_ms(1100);
         period_selected = SLEEP_1S;
     }
-    else if (maxTime > OsDeltaTime::from_ms(1000))
+    else if (maxTime > OsDeltaTime::from_ms(800))
     {
         duration_selected = OsDeltaTime::from_ms(510);
         period_selected = SLEEP_500MS;
+    }
+    else if (maxTime > OsDeltaTime::from_ms(500))
+    {
+        duration_selected = OsDeltaTime::from_ms(260);
+        period_selected = SLEEP_250MS;
     }
     else
     {
@@ -250,7 +255,9 @@ void powersave(OsDeltaTime const &maxTime)
 #if LMIC_DEBUG_LEVEL > 0
     Serial.print(os_getTime().tick());
     Serial.print(": Sleep (ostick) :");
-    Serial.println(duration_selected.tick());
+    Serial.print(duration_selected.to_ms());
+    Serial.print("x");
+    Serial.println(maxTime / duration_selected);
     Serial.flush();
 #endif
 
