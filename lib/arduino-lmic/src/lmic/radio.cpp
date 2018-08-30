@@ -414,8 +414,7 @@ static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
     [RXMODE_RSSI] = 0x00,
 };
 
-// start LoRa receiver (time=LMIC.rxtime, timeout=LMIC.rxsyms,
-// result=LMIC.frame[LMIC.dataLen])
+// start LoRa receiver
 static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
                    OsTime const &rxtime) {
   // select LoRa modem (from sleep mode)
@@ -492,7 +491,7 @@ static void startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-void radio_init() {
+void Radio::init() {
   hal_disableIRQs();
 
   // manually reset radio
@@ -558,7 +557,7 @@ void radio_init() {
 }
 
 // get random seed from wideband noise rssi
-void radio_init_random(uint8_t randbuf[16]) {
+void Radio::init_random(uint8_t randbuf[16]) {
   hal_disableIRQs();
 
   // seed 15-byte randomness via noise rssi
@@ -581,7 +580,7 @@ void radio_init_random(uint8_t randbuf[16]) {
   hal_enableIRQs();
 }
 
-uint8_t radio_rssi() {
+uint8_t Radio::rssi() {
   hal_disableIRQs();
   uint8_t r = readReg(LORARegRssiValue);
   hal_enableIRQs();
@@ -596,15 +595,9 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
     [SF12] = us2osticks(31189),
 };
 
-OsTime *txendPtr = nullptr;
-uint8_t *framePtr = nullptr;
-uint8_t *frameLengthPtr;
-rps_t currentRps;
-OsTime *rxtimePtr;
-
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
+void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
   OsTime now = os_getTime();
   if (now - trigger < OsDeltaTime::from_sec(1)) {
     now = trigger;
@@ -619,33 +612,31 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
 
     if (flags & IRQ_LORA_TXDONE_MASK) {
       // save exact tx time
-      if (txendPtr)
-        *txendPtr = now; // - OsDeltaTime::from_us(43); // TXDONE FIXUP
+      txEnd = now; // - OsDeltaTime::from_us(43); // TXDONE FIXUP
       // forbid sleep to keep precise time counting.
       // hal_forbid_sleep();
       hal_allow_sleep();
 
-    } else if (flags & IRQ_LORA_RXDONE_MASK && framePtr) {
+    } else if (flags & IRQ_LORA_RXDONE_MASK) {
       // save exact rx time
       if (currentRps.bw == BW125) {
         now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
       }
-      PRINT_DEBUG_1 (" Start RX - End RX : %li us ", (*rxtimePtr - now).to_us()); 
-      *rxtimePtr = now;
+      PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
+      rxTime = now;
       // read the PDU and inform the MAC that we received something
-      *frameLengthPtr =
+      frameLength =
           (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
               ? readReg(LORARegPayloadLength)
               : readReg(LORARegRxNbBytes);
 
       // for security clamp length of data
-      *frameLengthPtr =
-          *frameLengthPtr < MAX_LEN_FRAME ? *frameLengthPtr : MAX_LEN_FRAME;
+      frameLength = frameLength < MAX_LEN_FRAME ? frameLength : MAX_LEN_FRAME;
 
       // set FIFO read address pointer
       writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
       // now read the FIFO
-      readBuf(RegFifo, framePtr, *frameLengthPtr);
+      readBuf(RegFifo, framePtr, frameLength);
       // read rx quality parameters
       // TODO restore
       // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
@@ -654,7 +645,7 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
       hal_allow_sleep();
     } else if (flags & IRQ_LORA_RXTOUT_MASK) {
       // indicate timeout
-      frameLengthPtr = 0;
+      frameLength = 0;
       hal_allow_sleep();
     }
     // mask all radio IRQs
@@ -668,7 +659,7 @@ void radio_irq_handler(uint8_t dio, OsTime const &trigger) {
   LMIC.nextTask();
 }
 
-void radio_rst() {
+void Radio::rst() {
   hal_disableIRQs();
   // put radio to sleep
   opmode(OPMODE_SLEEP);
@@ -676,35 +667,31 @@ void radio_rst() {
   hal_enableIRQs();
 }
 
-void radio_tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
-              uint8_t dataLen, OsTime *txend) {
+void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow) {
   hal_disableIRQs();
-  txendPtr = txend;
   // transmit frame now
-  starttx(freq, rps, txpow, frame, dataLen);
+  starttx(freq, rps, txpow, framePtr, frameLength);
   hal_enableIRQs();
 }
 
-void radio_rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime *rxtime,
-              uint8_t *frame, uint8_t *dataLen) {
+void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime const &rxtime) {
   hal_disableIRQs();
-  framePtr = frame;
-  frameLengthPtr = dataLen;
   currentRps = rps;
-  rxtimePtr = rxtime;
   // receive frame now (exactly at rxtime)
-  startrx(RXMODE_SINGLE, freq, rps, rxsyms, *rxtime);
+  startrx(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
   hal_enableIRQs();
 }
 
-void radio_rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime *rxtime,
-                uint8_t *frame, uint8_t *dataLen) {
+void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
+                 OsTime const &rxtime) {
   hal_disableIRQs();
-  framePtr = frame;
-  frameLengthPtr = dataLen;
   currentRps = rps;
-  rxtimePtr = rxtime;
   // start scanning for beacon now
-  startrx(RXMODE_SCAN, freq, rps, rxsyms, *rxtime);
+  startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
   hal_enableIRQs();
 }
+
+Radio::Radio(uint8_t *frame, uint8_t &framLength, OsTime &reftxEnd,
+             OsTime &refrxTime)
+    : framePtr(frame), frameLength(framLength), txEnd(reftxEnd),
+      rxTime(refrxTime) {}

@@ -73,7 +73,7 @@ void hal_io_check() {
     if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
       dio_states[i] = !dio_states[i];
       if (dio_states[i])
-        radio_irq_handler(i, last_int_trigger);
+        LMIC.radio.irq_handler(i, last_int_trigger);
     }
   }
 }
@@ -250,7 +250,7 @@ void hal_init() {
 }
 
 void hal_init_random() {
-  radio_init_random(randbuf);
+  LMIC.radio.init_random(randbuf);
 }
 
 // return next random byte derived from seed buffer

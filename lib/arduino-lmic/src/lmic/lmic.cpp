@@ -481,7 +481,7 @@ void Lmic::setupRx2() {
   rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
-  radio_rx(freq, rps, rxsyms, &rxtime, frame, &dataLen);
+  radio.rx(freq, rps, rxsyms, rxtime);
 }
 
 void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
@@ -516,6 +516,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
   // Center the receive window on the center of the expected preamble
   // (again note that hsym is half a sumbol time, so no /2 needed)
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
+  PRINT_DEBUG_1("Rx delay : %i ms", (rxtime - txend).to_ms());
 
   osjob.setTimed(rxtime - RX_RAMPUP);
 }
@@ -523,7 +524,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
 void Lmic::setupRx1() {
   txrxFlags = TXRX_DNW1;
   dataLen = 0;
-  radio_rx(freq, rps, rxsyms, &rxtime, frame, &dataLen);
+  radio.rx(freq, rps, rxsyms, rxtime);
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -989,7 +990,7 @@ void Lmic::engineUpdate() {
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow,
                           freq, txpow, globalDutyAvail);
-      radio_tx(freq, rps, txpow, frame, dataLen, &txend);
+      radio.tx(freq, rps, txpow);
       return;
     }
     PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
@@ -1014,12 +1015,12 @@ void Lmic::setAdrMode(bool enabled) { adrEnabled = enabled ? FCT_ADREN : 0; }
 
 void Lmic::shutdown() {
   osjob.clearCallback();
-  radio_rst();
+  radio.rst();
   opmode |= OP_SHUTDOWN;
 }
 
 void Lmic::reset() {
-  radio_rst();
+  radio.rst();
   osjob.clearCallback();
   rps.rawValue = 0;
   devaddr = 0;
@@ -1034,7 +1035,11 @@ void Lmic::reset() {
   regionLMic.initDefaultChannels(true);
 }
 
-void Lmic::init(void) { opmode = OP_SHUTDOWN; }
+void Lmic::init(void) {
+  radio.init();
+  hal_init_random();
+  opmode = OP_SHUTDOWN;
+}
 
 void Lmic::clrTxData(void) {
   opmode &= ~(OP_TXDATA | OP_TXRXPEND | OP_POLL);
@@ -1042,7 +1047,7 @@ void Lmic::clrTxData(void) {
   if ((opmode & (OP_JOINING | OP_SCAN)) != 0) // do not interfere with JOINING
     return;
   osjob.clearCallback();
-  radio_rst();
+  radio.rst();
   engineUpdate();
 }
 
@@ -1128,3 +1133,5 @@ void Lmic::setLinkCheckMode(bool enabled) {
 void Lmic::setClockError(uint16_t error) { clockError = error; }
 
 void Lmic::nextTask() { osjob.setRunnable(); }
+
+Lmic::Lmic() : radio(frame, dataLen, txend, rxtime) {}

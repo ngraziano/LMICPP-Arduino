@@ -136,8 +136,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
 
 void os_init() {
   hal_init();
-  radio_init();
-  hal_init_random();
+
   LMIC.init();
 }
 

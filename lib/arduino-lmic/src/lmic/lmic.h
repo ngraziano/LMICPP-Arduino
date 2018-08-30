@@ -18,6 +18,7 @@
 #include "../aes/aes.h"
 #include "lorabase.h"
 #include "oslmic.h"
+#include "radio.h"
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -232,6 +233,7 @@ enum {
 class Lmic {
 public:
   Aes aes;
+  Radio radio;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime txend;
   OsTime rxtime;
@@ -342,7 +344,7 @@ public:
   uint8_t dataBeg = 0;   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataLen = 0;   // 0 no data or zero length data, >0 byte count of data
   uint8_t frame[MAX_LEN_FRAME] = {};
-
+  
 private:
   // callbacks
   void processRx1DnData();
@@ -425,6 +427,8 @@ public:
 
   // for radio to wakeup processing.
   void nextTask();
+
+  Lmic();
 };
 // The state of LMIC MAC layer is encapsulated in this class.
 extern Lmic LMIC;
