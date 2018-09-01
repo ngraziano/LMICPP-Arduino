@@ -624,19 +624,22 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
       }
       PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
       rxTime = now;
+       
       // read the PDU and inform the MAC that we received something
-      frameLength =
+      uint8_t length =
           (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
               ? readReg(LORARegPayloadLength)
               : readReg(LORARegRxNbBytes);
 
       // for security clamp length of data
-      frameLength = frameLength < MAX_LEN_FRAME ? frameLength : MAX_LEN_FRAME;
+      length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
 
       // set FIFO read address pointer
       writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
       // now read the FIFO
-      readBuf(RegFifo, framePtr, frameLength);
+      readBuf(RegFifo, framePtr, length);
+      frameLength = length;
+      
       // read rx quality parameters
       // TODO restore
       // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
