@@ -103,7 +103,7 @@ using eventCallback_t = void (*)(ev_t);
 using keyCallback_t = void (*)(uint8_t *);
 enum {
   // This value represents 100% error in LMIC.clockError
-  MAX_CLOCK_ERROR = 65536,
+  MAX_CLOCK_ERROR = 256,
 };
 
 struct ChannelDetail {
@@ -277,7 +277,7 @@ private:
   // adjustment for rejoin datarate
   uint8_t rejoinCnt;
 
-  uint16_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
+  uint8_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                            // represents +/-100% error
 
   // pending data length
@@ -415,9 +415,9 @@ public:
 
   void clrTxData();
   void setTxData();
-  int setTxData2(uint8_t port, uint8_t *data, uint8_t dlen, bool confirmed);
+  int8_t setTxData2(uint8_t port, uint8_t *data, uint8_t dlen, bool confirmed);
   void sendAlive();
-  void setClockError(uint16_t error);
+  void setClockError(uint8_t error);
 
   uint16_t getOpMode() { return opmode; };
 

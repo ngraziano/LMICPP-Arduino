@@ -15,7 +15,7 @@
 
 #include "../lmic/osticks.h"
 
-static const int NUM_DIO = 2;
+static const uint8_t NUM_DIO = 2;
 
 struct lmic_pinmap {
   uint8_t nss;

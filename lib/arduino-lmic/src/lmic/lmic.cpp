@@ -66,7 +66,7 @@ static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
     {141 - 141, 141 - 138, 141 - 135}  // SF12
 };
 
-int getSensitivity(rps_t rps) {
+int16_t getSensitivity(rps_t rps) {
   return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bw);
 }
 
@@ -75,7 +75,7 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
   uint8_t sfx = 4 * (sf + (7 - SF7));
   uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
-  int tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
+  int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
     tmp *= rps.cr + 5;
@@ -94,7 +94,7 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   // 3 => counter reduced divisor 125000/8 => 15625
   // 2 => counter 2 shift on tmp
   sfx = sf + (7 - SF7) - (3 + 2) - bw;
-  int div = 15625;
+  uint16_t div = 15625;
   if (sfx > 4) {
     // prevent 32bit signed int overflow in last step
     div >>= sfx - 4;
@@ -116,7 +116,7 @@ extern inline dr_t assertDR(dr_t dr);
 extern inline bool validDR(dr_t dr);
 extern inline dr_t lowerDR(dr_t dr, uint8_t n);
 
-extern inline int sameSfBw(rps_t r1, rps_t r2);
+extern inline bool sameSfBw(rps_t r1, rps_t r2);
 
 // END LORA
 // ================================================================================
@@ -498,8 +498,8 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
     // Calculate how much the clock will drift maximally after delay has
     // passed. This indicates the amount of time we can be early
     // _or_ late.
-    OsDeltaTime drift = OsDeltaTime(
-        int32_t((int64_t)delay.tick() * clockError / MAX_CLOCK_ERROR));
+    OsDeltaTime drift =
+        OsDeltaTime(delay.tick() * clockError / MAX_CLOCK_ERROR);
 
     // Increase the receive window by twice the maximum drift (to
     // compensate for a slow or a fast clock).
@@ -1059,7 +1059,7 @@ void Lmic::setTxData(void) {
 }
 
 //
-int Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
+int8_t Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
                      bool confirmed) {
   if (dlen > sizeof(pendTxData))
     return -2;
@@ -1130,7 +1130,7 @@ void Lmic::setLinkCheckMode(bool enabled) {
 // Sets the max clock error to compensate for (defaults to 0, which
 // allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
-void Lmic::setClockError(uint16_t error) { clockError = error; }
+void Lmic::setClockError(uint8_t error) { clockError = error; }
 
 void Lmic::nextTask() { osjob.setRunnable(); }
 

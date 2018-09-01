@@ -261,7 +261,7 @@ void powersave(OsDeltaTime const &maxTime)
     Serial.flush();
 #endif
 
-    for (int nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--)
+    for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--)
     {
 
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);

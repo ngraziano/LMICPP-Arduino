@@ -362,7 +362,7 @@ enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
   (((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |              \
     ((ih & 0xFF) << 8)))
 // Two frames with params r1/r2 would interfere on air: same SFx + BWx
-inline int sameSfBw(rps_t r1, rps_t r2) {
+inline bool sameSfBw(rps_t r1, rps_t r2) {
   return (r1.sf == r2.sf) && (r1.bw == r2.bw);
 }
 
@@ -403,8 +403,8 @@ inline dr_t lowerDR(dr_t dr, uint8_t n) {
 // ================================================================================
 
 // Calculate airtime
-OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
+OsDeltaTime calcAirTime(uint8_t plen);
 // Sensitivity at given SF/BW
-int getSensitivity(rps_t rps);
+int16_t getSensitivity(rps_t rps);
 
 #endif // _lorabase_h_

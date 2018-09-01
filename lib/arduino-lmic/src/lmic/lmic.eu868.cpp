@@ -335,6 +335,7 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
                   // Otherwise: randomize join (street lamp case):
                   // SF12:255, SF11:127, .., SF7:8secs
                   : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(255 >> datarate));
+  PRINT_DEBUG_1 (" Next available : %li , Choosen %li", time.tick(), txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
     lmic_printf("%lu: Join failed\n", os_getTime());
