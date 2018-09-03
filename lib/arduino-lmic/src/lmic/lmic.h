@@ -232,8 +232,10 @@ enum {
 
 class Lmic {
 public:
-  Aes aes;
   Radio radio;
+
+private:
+  OsJobType<Lmic> osjob{*this, OSS};
   // Radio settings TX/RX (also accessed by HAL)
   OsTime txend;
   OsTime rxtime;
@@ -246,18 +248,9 @@ public:
   uint8_t dndr = 0;
   int8_t txpow = 0; // dBm
 
-private:
-  OsJobType<Lmic> osjob{this, OSS};
   eventCallback_t eventCallBack = nullptr;
   keyCallback_t devEuiCallBack = nullptr;
   keyCallback_t artEuiCallBack = nullptr;
-
-  // Channel scheduling
-#if defined(CFG_eu868)
-  LmicEu868 regionLMic;
-#elif defined(CFG_us915)
-  LmicUs915 regionLMic;
-#endif
 
   uint8_t txChnl = 0;         // channel for next TX
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
@@ -278,7 +271,7 @@ private:
   uint8_t rejoinCnt;
 
   uint8_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
-                           // represents +/-100% error
+                          // represents +/-100% error
 
   // pending data length
   uint8_t pendTxLen = 0;
@@ -343,9 +336,18 @@ public:
   uint8_t txrxFlags = 0; // transaction flags (TX-RX combo)
   uint8_t dataBeg = 0;   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataLen = 0;   // 0 no data or zero length data, >0 byte count of data
-  uint8_t frame[MAX_LEN_FRAME] = {};
-  
+  uint8_t frame[MAX_LEN_FRAME];
+
+  Aes aes;
+
 private:
+  // Channel scheduling
+#if defined(CFG_eu868)
+  LmicEu868 regionLMic;
+#elif defined(CFG_us915)
+  LmicUs915 regionLMic;
+#endif
+
   // callbacks
   void processRx1DnData();
   void setupRx1();

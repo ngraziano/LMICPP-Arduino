@@ -1060,7 +1060,7 @@ void Lmic::setTxData(void) {
 
 //
 int8_t Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
-                     bool confirmed) {
+                        bool confirmed) {
   if (dlen > sizeof(pendTxData))
     return -2;
   if (data)

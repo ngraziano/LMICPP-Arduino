@@ -192,20 +192,19 @@ public:
   using osjobcbTyped_t = void (T::*)();
 
 private:
-  T *refClass;
+  T &refClass;
   osjobcbTyped_t funcTyped;
 
 protected:
   virtual void call() {
     PRINT_DEBUG_2("Run func %p on class %p", funcTyped, refClass);
-    (refClass->*funcTyped)();
+    (refClass.*funcTyped)();
   };
 
 public:
-  OsJobType(T *ref) : OsJobBase() { refClass = ref; };
-  OsJobType(T *ref, OsScheduler &scheduler) : OsJobBase(scheduler) {
-    refClass = ref;
-  };
+  OsJobType(T &ref) : OsJobBase(), refClass(ref){};
+  OsJobType(T &ref, OsScheduler &scheduler)
+      : OsJobBase(scheduler), refClass(ref){};
   void setCallbackFuture(osjobcbTyped_t cb) {
     funcTyped = cb;
     PRINT_DEBUG_2("Job %p SetCallBack %p on class %p", this, funcTyped,
