@@ -128,10 +128,11 @@ OsDeltaTime OsScheduler::runloopOnce() {
   }
   if (runnablejobs) {
     return 0;
-  } else {
+  } else if(scheduledjobs) {
     // return the number of milisecond to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
+  return 0;
 }
 
 void os_init() {
