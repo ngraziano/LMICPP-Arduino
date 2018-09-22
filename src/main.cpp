@@ -219,32 +219,32 @@ void powersave(OsDeltaTime const &maxTime)
     // these value are base on test
     if (maxTime > OsDeltaTime::from_ms(8700))
     {
-        duration_selected = OsDeltaTime::from_ms(8600);
+        duration_selected = OsDeltaTime::from_ms(8050);
         period_selected = SLEEP_8S;
     }
     else if (maxTime > OsDeltaTime::from_ms(4600))
     {
-        duration_selected = OsDeltaTime::from_ms(4300);
+        duration_selected = OsDeltaTime::from_ms(4050);
         period_selected = SLEEP_4S;
     }
     else if (maxTime > OsDeltaTime::from_ms(2600))
     {
-        duration_selected = OsDeltaTime::from_ms(2150);
+        duration_selected = OsDeltaTime::from_ms(2000);
         period_selected = SLEEP_2S;
     }
     else if (maxTime > OsDeltaTime::from_ms(1500))
     {
-        duration_selected = OsDeltaTime::from_ms(1100);
+        duration_selected = OsDeltaTime::from_ms(1000);
         period_selected = SLEEP_1S;
     }
     else if (maxTime > OsDeltaTime::from_ms(800))
     {
-        duration_selected = OsDeltaTime::from_ms(510);
+        duration_selected = OsDeltaTime::from_ms(500);
         period_selected = SLEEP_500MS;
     }
     else if (maxTime > OsDeltaTime::from_ms(500))
     {
-        duration_selected = OsDeltaTime::from_ms(260);
+        duration_selected = OsDeltaTime::from_ms(250);
         period_selected = SLEEP_250MS;
     }
     else
