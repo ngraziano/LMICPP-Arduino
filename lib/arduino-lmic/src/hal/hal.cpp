@@ -194,13 +194,6 @@ bool hal_checkTimer(OsTime const &time) {
   auto delta = time - hal_ticks();
   if (delta <= OsDeltaTime(0))
     return true;
-
-  // HACK for a bug (I will track it down.)
-  if (delta >= OsDeltaTime::from_sec(60 * 60)) {
-    PRINT_DEBUG_2("WARN delta is too big, execute now ref : %lu, delta : %li",
-                  time, delta.tick());
-    return true;
-  }
   return false;
 }
 
