@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <LowPower.h>
 
+#define DEVICE_POSTDETECT
 #include "lorakeys.h"
 
 void do_send();
@@ -28,11 +29,11 @@ void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
 // The key shown here is the semtech default key.
 // defined in lorakeys.h
 
-uint16_t data[2] = {};
+uint8_t data[4] = {};
 
 OsJob sendjob;
 
-bool nosleep = false;
+
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
@@ -45,7 +46,7 @@ const lmic_pinmap lmic_pins = {
     .nss = 10,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 14,
-    .dio = {4, 3},
+    .dio = {9, 8},
 };
 
 void onEvent(ev_t ev)
@@ -130,22 +131,12 @@ void do_send()
         digitalWrite(pinCmd, 1);
         delay(100);
         // battery
-        data[0] = analogRead(A2);
+        data[0] = 1;
+        data[1] = 2;
+        uint16_t val = analogRead(A1) * (6.6/1024*100 );
+        data[2] = val >> 8;
+        data[3] = val;
 
-        if (data[0] > (int)(4.1 * 1024 / 6.6))
-        {
-            // use battery...
-            nosleep = true;
-        }
-        else
-        {
-            nosleep = false;
-        }
-
-        // humidity
-        data[1] = analogRead(A1);
-        if (!nosleep)
-            digitalWrite(pinCmd, 0);
 
         // Prepare upstream data transmission at the next possible time.
         LMIC.setTxData2(1, (uint8_t *)data, 4, false);
@@ -154,13 +145,13 @@ void do_send()
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
-// lmic_pins.dio[0]  = 4 => PCINT20
-// lmic_pins.dio[1]  = 3 => PCINT19
+// lmic_pins.dio[0]  = 9 => PCINT1
+// lmic_pins.dio[1]  = 8 => PCINT0
 // PCI2 PCINT[23:16]
 // PCI1 PCINT[14:8]
 // PCI0 PCINT[7:0]
 
-ISR(PCINT2_vect)
+ISR(PCINT0_vect)
 {
     // one of pins D8 to D13 has changed
     // store time, will be check in OSS.runloopOnce()
@@ -277,7 +268,7 @@ void powersave(OsDeltaTime const &maxTime)
 void loop()
 {
     OsDeltaTime to_wait = OSS.runloopOnce();
-    if (!nosleep && to_wait > 0 && hal_is_sleep_allow())
+    if (to_wait > 0 && hal_is_sleep_allow())
     {
         powersave(to_wait);
     }
