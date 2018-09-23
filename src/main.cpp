@@ -53,34 +53,17 @@ void onEvent(ev_t ev)
 {
     switch (ev)
     {
-    case EV_SCAN_TIMEOUT:
-        PRINT_DEBUG_2("EV_SCAN_TIMEOUT");
-        break;
-    case EV_BEACON_FOUND:
-        PRINT_DEBUG_2("EV_BEACON_FOUND");
-        break;
-    case EV_BEACON_MISSED:
-        PRINT_DEBUG_2("EV_BEACON_MISSED");
-        break;
-    case EV_BEACON_TRACKED:
-        PRINT_DEBUG_2("EV_BEACON_TRACKED");
-        break;
     case EV_JOINING:
         PRINT_DEBUG_2("EV_JOINING");
         break;
     case EV_JOINED:
         PRINT_DEBUG_2("EV_JOINED");
-        // LMIC.setDrTxpow(DR_SF9, KEEP_TXPOW);
-        break;
-    case EV_RFU1:
-        PRINT_DEBUG_2("EV_RFU1");
         break;
     case EV_JOIN_FAILED:
         PRINT_DEBUG_2("EV_JOIN_FAILED");
         break;
     case EV_REJOIN_FAILED:
         PRINT_DEBUG_2("EV_REJOIN_FAILED");
-        break;
         break;
     case EV_TXCOMPLETE:
         PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
@@ -93,15 +76,8 @@ void onEvent(ev_t ev)
         // Schedule next transmission
         sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
         break;
-    case EV_LOST_TSYNC:
-        PRINT_DEBUG_2("EV_LOST_TSYNC");
-        break;
     case EV_RESET:
         PRINT_DEBUG_2("EV_RESET");
-        break;
-    case EV_RXCOMPLETE:
-        // data received in ping slot
-        PRINT_DEBUG_2("EV_RXCOMPLETE");
         break;
     case EV_LINK_DEAD:
         PRINT_DEBUG_2("EV_LINK_DEAD");

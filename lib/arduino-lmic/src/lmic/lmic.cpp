@@ -1132,6 +1132,8 @@ void Lmic::setLinkCheckMode(bool enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t error) { clockError = error; }
 
-void Lmic::nextTask() { osjob.setRunnable(); }
+void Lmic::irq_handler(uint8_t dio, OsTime const &trigger) {
+   radio.irq_handler(osjob, dio, trigger);
+}
 
 Lmic::Lmic() : radio(frame, dataLen, txend, rxtime) {}

@@ -428,7 +428,7 @@ public:
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
   // for radio to wakeup processing.
-  void nextTask();
+  void irq_handler(uint8_t dio, OsTime const &trigger);
 
   Lmic();
 };

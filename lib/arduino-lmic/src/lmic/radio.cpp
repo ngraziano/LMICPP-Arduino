@@ -158,13 +158,7 @@
 #define MAP_DIO1_LORA_NOP 0x30    // --11----
 #define MAP_DIO2_LORA_NOP 0xC0    // ----11--
 
-#ifdef CFG_sx1276_radio
-#define LNA_RX_GAIN (0x20 | 0x1)
-#elif CFG_sx1272_radio
 #define LNA_RX_GAIN (0x20 | 0x03)
-#else
-#error Missing CFG_sx1272_radio/CFG_sx1276_radio
-#endif
 
 static void writeReg(uint8_t addr, uint8_t data) {
   hal_pin_nss(0);
@@ -323,8 +317,8 @@ static void configPower(int8_t pw) {
     pw = 2;
   }
   pw -= 2;
-  // check board type for BOOST pin
-  // output on PA_BOOST
+  // check board type for output pin
+  // output on PA_BOOST for RFM95W
   writeReg(RegPaConfig, (uint8_t)(0x80 | pw));
   // no boost +20dB
   writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
@@ -597,7 +591,8 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
+void Radio::irq_handler(OsJobBase &nextJob, uint8_t dio,
+                        OsTime const &trigger) {
   OsTime now = os_getTime();
   if (now - trigger < OsDeltaTime::from_sec(1)) {
     now = trigger;
@@ -612,7 +607,7 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
 
     if (flags & IRQ_LORA_TXDONE_MASK) {
       // save exact tx time
-      PRINT_DEBUG_1("End TX  %li",txEnd);
+      PRINT_DEBUG_1("End TX  %li", txEnd);
       txEnd = now; // - OsDeltaTime::from_us(43); // TXDONE FIXUP
       // forbid sleep to keep precise time counting.
       // hal_forbid_sleep();
@@ -625,7 +620,7 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
       }
       PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
       rxTime = now;
-       
+
       // read the PDU and inform the MAC that we received something
       uint8_t length =
           (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
@@ -640,7 +635,7 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
       // now read the FIFO
       readBuf(RegFifo, framePtr, length);
       frameLength = length;
-      
+
       // read rx quality parameters
       // TODO restore
       // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
@@ -648,7 +643,7 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
       //    readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
       hal_allow_sleep();
     } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-      PRINT_DEBUG_1("RX timeout  %li",now);
+      PRINT_DEBUG_1("RX timeout  %li", now);
 
       // indicate timeout
       frameLength = 0;
@@ -662,7 +657,7 @@ void Radio::irq_handler(uint8_t dio, OsTime const &trigger) {
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
   // run os job (use preset func ptr)
-  LMIC.nextTask();
+  nextJob.setRunnable();
 }
 
 void Radio::rst() {

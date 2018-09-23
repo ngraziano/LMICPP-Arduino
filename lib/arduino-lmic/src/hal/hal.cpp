@@ -73,7 +73,7 @@ void hal_io_check() {
     if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
       dio_states[i] = !dio_states[i];
       if (dio_states[i])
-        LMIC.radio.irq_handler(i, last_int_trigger);
+        LMIC.irq_handler( i, last_int_trigger);
     }
   }
 }
