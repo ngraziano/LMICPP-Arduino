@@ -164,7 +164,7 @@ private:
   static bool unlinkjob(OsJobBase **pnext, OsJobBase *job);
 
 protected:
-  virtual void call() = 0;
+  virtual void call() const = 0;
 
 public:
   OsJobBase(OsScheduler &scheduler);
@@ -176,10 +176,10 @@ public:
   void setTimed(OsTime const &time);
 };
 
-class OsJob : public OsJobBase {
+class OsJob final : public OsJobBase {
 protected:
   osjobcb_t func = nullptr;
-  virtual void call();
+  void call() const override;
 
 public:
   void setCallbackFuture(osjobcb_t cb) { func = cb; };
@@ -187,7 +187,7 @@ public:
   void setTimedCallback(OsTime const &time, osjobcb_t cb);
 };
 
-template <class T> class OsJobType : public OsJobBase {
+template <class T> class OsJobType final : public OsJobBase {
 public:
   using osjobcbTyped_t = void (T::*)();
 
@@ -196,7 +196,7 @@ private:
   osjobcbTyped_t funcTyped;
 
 protected:
-  virtual void call() {
+  void call() const override {
     PRINT_DEBUG_2("Run func %p on class %p", funcTyped, refClass);
     (refClass.*funcTyped)();
   };

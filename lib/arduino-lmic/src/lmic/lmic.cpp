@@ -384,7 +384,7 @@ bool Lmic::decodeFrame() {
 
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
-  if (!aes.verifyMic(devaddr, seqno, DIR_DOWN, d, dlen)) {
+  if (!aes.verifyMic(devaddr, seqno,  PktDir::DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
     dataLen = 0;
     return false;
@@ -431,7 +431,7 @@ bool Lmic::decodeFrame() {
     if (pend > poff) {
       port = d[poff++];
       // Decrypt payload - if any
-      aes.framePayloadEncryption(port, devaddr, seqno, DIR_DOWN, d + poff,
+      aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN, d + poff,
                                  pend - poff);
       txrxFlags |= TXRX_PORT;
       dataBeg = poff;
@@ -785,10 +785,10 @@ void Lmic::buildDataFrame() {
     }
     frame[end] = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
-    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1, DIR_UP,
+    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1, PktDir::UP,
                                frame + end + 1, pendTxLen);
   }
-  aes.appendMic(devaddr, seqnoUp - 1, DIR_UP, frame, flen);
+  aes.appendMic(devaddr, seqnoUp - 1, PktDir::UP, frame, flen);
 
   dataLen = flen;
 }

@@ -26,14 +26,14 @@ void Aes::setApplicationSessionKey(uint8_t key[16]) {
 }
 
 // Get B0 value in buf
-void Aes::micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
+void Aes::micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
                 uint8_t buf[AES_BLCK_SIZE]) {
   buf[0] = 0x49;
   buf[1] = 0;
   buf[2] = 0;
   buf[3] = 0;
   buf[4] = 0;
-  buf[5] = dndir;
+  buf[5] = static_cast<uint8_t>(dndir);
   wlsbf4(buf + 6, devaddr);
   wlsbf4(buf + 10, seqno);
   buf[14] = 0;
@@ -44,7 +44,7 @@ void Aes::micB0(uint32_t devaddr, uint32_t seqno, uint8_t dndir, uint8_t len,
  * Verify MIC
  * len : total length (MIC included)
  */
-bool Aes::verifyMic(uint32_t devaddr, uint32_t seqno, uint8_t dndir,
+bool Aes::verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
                     uint8_t *pdu, uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
   uint8_t lenWithoutMic = len - MIC_LEN;
@@ -57,7 +57,7 @@ bool Aes::verifyMic(uint32_t devaddr, uint32_t seqno, uint8_t dndir,
  * Append MIC
  * len : total length (MIC included)
  */
-void Aes::appendMic(uint32_t devaddr, uint32_t seqno, uint8_t dndir,
+void Aes::appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
                     uint8_t *pdu, uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
   uint8_t lenWithoutMic = len - MIC_LEN;
@@ -100,7 +100,7 @@ void Aes::encrypt(uint8_t *pdu, uint8_t len) const {
  *  Encrypt data frame payload.
  */
 void Aes::framePayloadEncryption(uint8_t port, uint32_t devaddr, uint32_t seqno,
-                                 uint8_t dndir, uint8_t *payload,
+                                 PktDir dndir, uint8_t *payload,
                                  uint8_t len) const {
   auto key = port == 0 ? nwkSKey : appSKey;
   // Generate
@@ -110,7 +110,7 @@ void Aes::framePayloadEncryption(uint8_t port, uint32_t devaddr, uint32_t seqno,
   blockAi[2] = 0;
   blockAi[3] = 0;
   blockAi[4] = 0;
-  blockAi[5] = dndir; // direction (0=up 1=down)
+  blockAi[5] = static_cast<uint8_t>(dndir); // direction (0=up 1=down)
   wlsbf4(blockAi + 6, devaddr);
   wlsbf4(blockAi + 10, seqno);
   blockAi[14] = 0;
