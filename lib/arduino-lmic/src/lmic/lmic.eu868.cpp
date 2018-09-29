@@ -101,13 +101,13 @@ void LmicEu868::initDefaultChannels(bool join) {
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
-  bands[BAND_MILLI].txpow = 14;
+  bands[BAND_MILLI].txpow = 16;
   bands[BAND_MILLI].lastchnl = hal_rand1() % MAX_CHANNELS;
   bands[BAND_CENTI].txcap = 100; // 1%
-  bands[BAND_CENTI].txpow = 14;
+  bands[BAND_CENTI].txpow = 16;
   bands[BAND_CENTI].lastchnl = hal_rand1() % MAX_CHANNELS;
   bands[BAND_DECI].txcap = 10; // 10%
-  bands[BAND_DECI].txpow = 27;
+  bands[BAND_DECI].txpow = 16;
   bands[BAND_DECI].lastchnl = hal_rand1() % MAX_CHANNELS;
   auto now = os_getTime();
   bands[BAND_MILLI].avail = now;
@@ -132,12 +132,12 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
     return false;
   if (band == -1) {
     if (newfreq >= 869400000 && newfreq <= 869650000)
-      band = BAND_DECI; // 10% 27dBm
+      band = BAND_DECI; // 10% 
     else if ((newfreq >= 868000000 && newfreq <= 868600000) ||
              (newfreq >= 869700000 && newfreq <= 870000000))
-      band = BAND_CENTI; // 1% 14dBm
+      band = BAND_CENTI; // 1% 
     else
-      band = BAND_MILLI; // 0.1% 14dBm
+      band = BAND_MILLI; // 0.1% 
   } else {
     if (band > BAND_AUX)
       return 0;
