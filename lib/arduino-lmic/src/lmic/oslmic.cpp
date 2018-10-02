@@ -10,7 +10,6 @@
  *******************************************************************************/
 
 #include "lmic.h"
-#include "radio.h"
 #include <stdbool.h>
 
 OsScheduler OSS;
@@ -54,7 +53,7 @@ bool OsJobBase::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
 // clear scheduled job
 void OsJobBase::clearCallback() {
   hal_disableIRQs();
-  bool res = unlinkjob(&this->scheduler->scheduledjobs, this) ||
+  const bool res = unlinkjob(&this->scheduler->scheduledjobs, this) ||
              unlinkjob(&this->scheduler->runnablejobs, this);
   hal_enableIRQs();
   if (res) {
