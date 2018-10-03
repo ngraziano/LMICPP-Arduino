@@ -43,7 +43,7 @@ SparkFun_APDS9960 apds = SparkFun_APDS9960();
 OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 60);
 
 // keep ON for one minute
-OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(1 * 60);
+OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
 
 const unsigned int BAUDRATE = 19200;
 
@@ -55,14 +55,47 @@ const lmic_pinmap lmic_pins = {
     .dio = {9, 8},
 };
 
-bool apds_flag = false;
+const uint8_t NUMBERTIME_TO_SEND = 3;
+uint8_t apds_tosend = 0;
 bool apds_new = false;
 
-void apdsInterrupt() {
-    if(apds_flag)
+
+void initProximitySensor(uint8_t threshold)
+{
+    if (apds.init())
+    {
+        Serial.println(F("APDS-9960 initialization complete"));
+    }
+    else
+    {
+        Serial.println(F("Something went wrong during APDS-9960 init!"));
+    }
+
+    // Set proximity interrupt thresholds
+    apds.setProximityIntLowThreshold(0);
+    apds.setProximityIntHighThreshold(threshold);
+    apds.setProximityGain(DEFAULT_PGAIN);
+    apds.setLEDDrive(LED_DRIVE_50MA);
+    apds.setProximityIntEnable(1);
+    apds.enablePower();
+    apds.setMode(PROXIMITY, 1);
+}
+
+void disableProximitySensor()
+{
+    apds.setMode(PROXIMITY, 0);
+    apds.disablePower();
+}
+
+void apdsInterrupt()
+{
+    // If we are still sending detect event
+    // do not try do detect another one.
+    if (apds_tosend > 0)
         return;
-    if(!digitalRead(3)) {
-        apds_flag = true;
+    if (!digitalRead(3))
+    {
+        apds_tosend = NUMBERTIME_TO_SEND;
         apds_new = true;
     }
 }
@@ -90,16 +123,30 @@ void onEvent(ev_t ev)
         if (LMIC.dataLen)
         {
             PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
+            if(LMIC.dataBeg > 0)
+            {
+                uint8_t port = LMIC.frame[LMIC.dataLen-1];
+                if(port == 9) {
+                    disableProximitySensor();
+                    delay(500);
+                    initProximitySensor(LMIC.frame[LMIC.dataLen]);
+                }
+            }
+
         }
         // we have transmit
-        if(apds_flag) {
+        if (apds_tosend)
+        {
 
             // schedule back to off
             sendjob.setTimedCallback(os_getTime() + TX_ONLENGTH, reset_and_do_send);
-        } else {
+        }
+        else
+        {
             // Schedule next transmission
             sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
         }
+
         
         break;
     case EV_RESET:
@@ -118,8 +165,11 @@ void onEvent(ev_t ev)
 }
 
 void reset_and_do_send() {
-    apds.clearProximityInt();
-    apds_flag = false;
+    // we have sent one
+    if (apds_tosend > 0)
+        apds_tosend--;
+    if (apds_tosend == 0)
+        apds.clearProximityInt();
     do_send();
 }
 
@@ -149,19 +199,16 @@ void do_send()
         data[5] = 2;
         uint8_t prox;
         apds.readProximity(prox);
-        Serial.print("SEND dist : ");
-        Serial.println(prox, DEC);
-        val = prox * 10;
+        val = prox * 100;
         data[6] = val >> 8;
         data[7] = val;
 
         data[8] = 3;
         data[9] = 0;
-        data[10] = apds_flag ? 1:0;
-
+        data[10] = apds_tosend > 0 ? 1 : 0;
 
         // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(1, (uint8_t *)data,11 , false);
+        LMIC.setTxData2(1, (uint8_t *)data, 11, false);
         PRINT_DEBUG_1("Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.
@@ -188,24 +235,6 @@ void pciSetup(byte pin)
 }
 
 
-void initProximitySensor() {
-    if ( apds.init() ) {
-        Serial.println(F("APDS-9960 initialization complete"));
-    } else {
-        Serial.println(F("Something went wrong during APDS-9960 init!"));
-    }
-
-    // Set proximity interrupt thresholds
-    apds.setProximityIntLowThreshold(0);
-    apds.setProximityIntHighThreshold(80);
-    
-    apds.enableProximitySensor(true);
-}
-
-void disableProximitySensor() {
-    apds.disablePower();
-}
-
 void setup()
 {
 #if LMIC_DEBUG_LEVEL > 0
@@ -214,7 +243,7 @@ void setup()
 #endif
     pinMode(3, INPUT);
     attachInterrupt(digitalPinToInterrupt(3), apdsInterrupt, FALLING);
-    initProximitySensor();
+    initProximitySensor(40);
 
     pciSetup(lmic_pins.dio[0]);
     pciSetup(lmic_pins.dio[1]);
@@ -280,28 +309,20 @@ void powersave(OsDeltaTime const &maxTime)
     }
 
 #if LMIC_DEBUG_LEVEL > 0
-    Serial.print(os_getTime().tick());
-    Serial.print(": Sleep (ostick) :");
-    Serial.print(duration_selected.to_ms());
-    Serial.print("x");
-    Serial.println(maxTime / duration_selected);
+    PRINT_DEBUG_1("Sleep (ostick) :%lix%i", duration_selected.to_ms(), maxTime / duration_selected);
     Serial.flush();
 #endif
 
     for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0 && !apds_new; nbsleep--)
     {
-
         LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
         hal_add_time_in_sleep(duration_selected);
 
-        // Check if we are wakeup by external pin. 
+        // Check if we are wakeup by external pin.
         apdsInterrupt();
     }
 
-#if LMIC_DEBUG_LEVEL > 0
-    Serial.print(os_getTime().tick());
-    Serial.println(": wakeup");
-#endif
+    PRINT_DEBUG_1("Wakeup");
 }
 
 void loop()
@@ -311,8 +332,9 @@ void loop()
     {
         powersave(to_wait);
     }
-    if(apds_new) {
-        Serial.println("DETECT !!!");
+    // was wakeup by interrupt, send new state.
+    if (apds_new)
+    {
         apds_new = false;
         do_send();
     }
