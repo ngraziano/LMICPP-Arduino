@@ -71,10 +71,10 @@ int16_t getSensitivity(rps_t rps) {
 }
 
 OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
-  uint8_t bw = rps.bw; // 0,1,2 = 125,250,500kHz
-  uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
-  uint8_t sfx = 4 * (sf + (7 - SF7));
-  uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
+  const uint8_t bw = rps.bw; // 0,1,2 = 125,250,500kHz
+  const uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
+  const uint8_t sfx = 4 * (sf + (7 - SF7));
+  const uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
   int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
@@ -93,15 +93,15 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   //
   // 3 => counter reduced divisor 125000/8 => 15625
   // 2 => counter 2 shift on tmp
-  sfx = sf + (7 - SF7) - (3 + 2) - bw;
+  uint8_t sfx2 = sf + (7 - SF7) - (3 + 2) - bw;
   uint16_t div = 15625;
-  if (sfx > 4) {
+  if (sfx2 > 4) {
     // prevent 32bit signed int overflow in last step
-    div >>= sfx - 4;
-    sfx = 4;
+    div >>= sfx2 - 4;
+    sfx2 = 4;
   }
   // Need 32bit arithmetic for this last step
-  OsDeltaTime val = (((int32_t)tmp << sfx) * OSTICKS_PER_SEC + div / 2) / div;
+  OsDeltaTime val = (((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div;
   PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
   return val;
 }
@@ -131,7 +131,7 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
     0, 0, 1, 0, 1, 0, 1, 0, 0};
 
 void Lmic::txDelay(OsTime const &reftime, uint8_t secSpan) {
-  auto delayRef = reftime + OsDeltaTime::rnd_delay(secSpan);
+  const auto delayRef = reftime + OsDeltaTime::rnd_delay(secSpan);
   if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
     globalDutyAvail = delayRef;
     opmode |= OP_RNDTX;
@@ -190,7 +190,7 @@ void Lmic::stateJustJoined() {
   dn2Freq = FREQ_DNW2;
 }
 
-void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
+void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
     switch (opts[oidx]) {
@@ -205,11 +205,11 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     case MCMD_LADR_REQ: {
       // FIXME multiple LinkAdrReq not handled properly in continous block
       // must be handle atomic.
-      uint8_t p1 = opts[oidx + 1];               // txpow + DR
-      uint16_t chMask = rlsbf2(&opts[oidx + 2]); // list of enabled channels
-      uint8_t chMaskCntl =
+      const uint8_t p1 = opts[oidx + 1];               // txpow + DR
+      const uint16_t chMask = rlsbf2(&opts[oidx + 2]); // list of enabled channels
+      const uint8_t chMaskCntl =
           opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
-      uint8_t nbTrans =
+      const uint8_t nbTrans =
           opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
       oidx += 5;
 
@@ -249,9 +249,9 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     // RXParamSetupReq LoRaWAN™ Specification §5.4
     case MCMD_DN2P_SET: {
 #if !defined(DISABLE_MCMD_DN2P_SET)
-      dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
-      uint8_t newRx1DrOffset = ((opts[oidx + 1] & 0x70) >> 4);
-      uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]);
+      const dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
+      const uint8_t newRx1DrOffset = ((opts[oidx + 1] & 0x70) >> 4);
+      const uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]);
       dn2Ans = 0x80; // answer pending
       if (regionLMic.validRx1DrOffset(newRx1DrOffset))
         dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
@@ -272,7 +272,7 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     // DutyCycleReq LoRaWAN™ Specification §5.3
     case MCMD_DCAP_REQ: {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-      uint8_t cap = opts[oidx + 1];
+      const uint8_t cap = opts[oidx + 1];
 
       // cap=0xFF is not in specification...
       // A value cap=0xFF means device is OFF unless enabled again manually.
@@ -289,9 +289,9 @@ void Lmic::parseMacCommands(const uint8_t *opts, uint8_t olen) {
     // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
-      uint8_t chidx = opts[oidx + 1];                          // channel
-      uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]); // freq
-      uint8_t drs = opts[oidx + 5];                            // datarate span
+      const uint8_t chidx = opts[oidx + 1];                          // channel
+      const uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]); // freq
+      const uint8_t drs = opts[oidx + 5];                            // datarate span
       snchAns = 0x80;
       if (newfreq != 0 &&
           regionLMic.setupChannel(chidx, newfreq,
@@ -347,10 +347,10 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  uint8_t *d = frame;
-  uint8_t hdr = d[0];
-  uint8_t ftype = hdr & HDR_FTYPE;
-  uint8_t dlen = dataLen;
+  uint8_t * const d = frame;
+  const uint8_t hdr = d[0];
+  const uint8_t ftype = hdr & HDR_FTYPE;
+  const uint8_t dlen = dataLen;
 
   if (dlen < OFF_DAT_OPTS + 4 || (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
       (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
@@ -361,13 +361,13 @@ bool Lmic::decodeFrame() {
   }
   // Validate exact frame length
   // Note: device address was already read+evaluated in order to arrive here.
-  uint8_t fct = d[OFF_DAT_FCT];
-  uint32_t addr = rlsbf4(&d[OFF_DAT_ADDR]);
-  uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
-  uint8_t olen = fct & FCT_OPTLEN;
-  bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
-  uint8_t poff = OFF_DAT_OPTS + olen;
-  uint8_t pend = dlen - MIC_LEN; // MIC
+  const uint8_t fct = d[OFF_DAT_FCT];
+  const uint32_t addr = rlsbf4(&d[OFF_DAT_ADDR]);
+  
+  const uint8_t olen = fct & FCT_OPTLEN;
+  const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
+  const uint8_t poff = OFF_DAT_OPTS + olen;
+  const uint8_t pend = dlen - MIC_LEN; // MIC
 
   if (addr != devaddr) {
     PRINT_DEBUG_1("Invalid address, window=%s", window);
@@ -382,6 +382,7 @@ bool Lmic::decodeFrame() {
 
   bool replayConf = false;
 
+  uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
   if (!aes.verifyMic(devaddr, seqno,  PktDir::DOWN, d, dlen)) {
@@ -420,7 +421,7 @@ bool Lmic::decodeFrame() {
     adrAckReq = LINK_CHECK_INIT;
 
   // Process OPTS
-  int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
+  const int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
   margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
   parseMacCommands(d + OFF_DAT_OPTS, olen);
@@ -429,15 +430,16 @@ bool Lmic::decodeFrame() {
   if (!replayConf) {
     // Handle payload only if not a replay
     if (pend > poff) {
-      port = d[poff++];
+      port = d[poff];
+      dataBeg = poff + 1 ;
+      dataLen = pend - dataBeg;
       // Decrypt payload - if any
-      aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN, d + poff,
-                                 pend - poff);
+      aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN, d + dataBeg,
+                                 dataLen);
       txrxFlags |= TXRX_PORT;
-      dataBeg = poff;
-      dataLen = pend - poff;
+      
       if (port == 0) {
-        parseMacCommands(d + poff, pend - poff);
+        parseMacCommands(d + dataBeg, dataLen);
       }
     } else {
       txrxFlags |= TXRX_NOPORT;
@@ -488,7 +490,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
   PRINT_DEBUG_2("SchedRx RX1/2.");
 
   // Half symbol time for the data rate.
-  OsDeltaTime hsym = regionLMic.dr2hsym(dr);
+  const OsDeltaTime hsym = regionLMic.dr2hsym(dr);
 
   rxsyms = MINRX_SYMS;
 
@@ -498,7 +500,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
     // Calculate how much the clock will drift maximally after delay has
     // passed. This indicates the amount of time we can be early
     // _or_ late.
-    OsDeltaTime drift =
+    const OsDeltaTime drift =
         OsDeltaTime(delay.tick() * clockError / MAX_CLOCK_ERROR);
 
     // Increase the receive window by twice the maximum drift (to
@@ -558,7 +560,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
   opmode &= ~OP_TXRXPEND;
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode &= ~OP_NEXTCHNL;
-  bool succes = regionLMic.nextJoinState(txChnl, txCnt, datarate, txend);
+  const bool succes = regionLMic.nextJoinState(txChnl, txCnt, datarate, txend);
   // Build next JOIN REQUEST with next engineUpdate call
   // Optionally, report join failed.
   // Both after a random/chosen amount of ticks.
@@ -578,8 +580,8 @@ bool Lmic::processJoinAccept() {
     return processJoinAcceptNoJoinFrame();
   }
 
-  uint8_t hdr = frame[0];
-  uint8_t dlen = dataLen;
+  const uint8_t hdr = frame[0];
+  const uint8_t dlen = dataLen;
 
   if ((dlen != LEN_JA && dlen != LEN_JAEXT) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
@@ -596,8 +598,7 @@ bool Lmic::processJoinAccept() {
     return processJoinAcceptNoJoinFrame();
   }
 
-  uint32_t addr = rlsbf4(frame + OFF_JA_DEVADDR);
-  devaddr = addr;
+  devaddr = rlsbf4(frame + OFF_JA_DEVADDR);
   netid = rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
 
   regionLMic.initDefaultChannels(false);
@@ -803,12 +804,11 @@ void Lmic::buildDataFrame() {
 void Lmic::buildJoinRequest(uint8_t ftype) {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
-  uint8_t *d = frame;
-  d[OFF_JR_HDR] = ftype;
-  artEuiCallBack(d + OFF_JR_ARTEUI);
-  devEuiCallBack(d + OFF_JR_DEVEUI);
-  wlsbf2(d + OFF_JR_DEVNONCE, devNonce);
-  aes.appendMic0(d, LEN_JR);
+  frame[OFF_JR_HDR] = ftype;
+  artEuiCallBack(frame + OFF_JR_ARTEUI);
+  devEuiCallBack(frame + OFF_JR_DEVEUI);
+  wlsbf2(frame + OFF_JR_DEVNONCE, devNonce);
+  aes.appendMic0(frame, LEN_JR);
 
   dataLen = LEN_JR;
   devNonce++;
@@ -916,13 +916,13 @@ void Lmic::engineUpdate() {
   }
 #endif // !DISABLE_JOIN
 
-  OsTime now = os_getTime();
+  const OsTime now = os_getTime();
   OsTime txbeg = now;
 
   if ((opmode & (OP_JOINING | OP_REJOIN | OP_TXDATA | OP_POLL)) != 0) {
     // Need to TX some data...
     // Assuming txChnl points to channel which first becomes available again.
-    bool jacc = ((opmode & (OP_JOINING | OP_REJOIN)) != 0 ? 1 : 0);
+    const bool jacc = ((opmode & (OP_JOINING | OP_REJOIN)) != 0 ? 1 : 0);
 #if LMIC_DEBUG_LEVEL > 1
     if (jacc)
       lmic_printf("%lu: Uplink join pending\n", os_getTime());
