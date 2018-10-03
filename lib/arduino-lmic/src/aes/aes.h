@@ -32,9 +32,9 @@ public:
   void setDevKey(uint8_t key[16]);
   void setNetworkSessionKey(uint8_t key[16]);
   void setApplicationSessionKey(uint8_t key[16]);
-  bool verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t *pdu,
+  bool verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, const uint8_t *pdu,
                  uint8_t len) const;
-  bool verifyMic0(uint8_t *pdu, uint8_t len) const;
+  bool verifyMic0(const uint8_t *pdu, uint8_t len) const;
   void framePayloadEncryption(uint8_t port, uint32_t devaddr, uint32_t seqno,
                               PktDir dndir, uint8_t *payload,
                               uint8_t len) const;

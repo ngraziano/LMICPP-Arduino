@@ -26,7 +26,8 @@ void Aes::setApplicationSessionKey(uint8_t key[16]) {
 }
 
 // Get B0 value in buf
-void Aes::micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
+void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
+                const PktDir dndir, const uint8_t len,
                 uint8_t buf[AES_BLCK_SIZE]) {
   buf[0] = 0x49;
   buf[1] = 0;
@@ -44,10 +45,11 @@ void Aes::micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
  * Verify MIC
  * len : total length (MIC included)
  */
-bool Aes::verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
-                    uint8_t *pdu, uint8_t len) const {
+bool Aes::verifyMic(const uint32_t devaddr, const uint32_t seqno,
+                    const PktDir dndir, const uint8_t *const pdu,
+                    const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
-  uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - MIC_LEN;
   micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
   return std::equal(buf, buf + MIC_LEN, pdu + lenWithoutMic);
@@ -57,10 +59,11 @@ bool Aes::verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
  * Append MIC
  * len : total length (MIC included)
  */
-void Aes::appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
-                    uint8_t *pdu, uint8_t len) const {
+void Aes::appendMic(const uint32_t devaddr, const uint32_t seqno,
+                    const PktDir dndir, uint8_t *const pdu,
+                    const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
-  uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - MIC_LEN;
   micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
   // Copy MIC at the end
@@ -71,9 +74,9 @@ void Aes::appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
  * Append join MIC
  * len : total length (MIC included)
  */
-void Aes::appendMic0(uint8_t *pdu, uint8_t len) const {
+void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE] = {0};
-  uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - MIC_LEN;
   aes_cmac(pdu, lenWithoutMic, false, AESDevKey, buf);
   // Copy MIC0 at the end
   std::copy(buf, buf + MIC_LEN, pdu + lenWithoutMic);
@@ -83,14 +86,14 @@ void Aes::appendMic0(uint8_t *pdu, uint8_t len) const {
  * Verify join MIC
  * len : total length (MIC included)
  */
-bool Aes::verifyMic0(uint8_t *pdu, uint8_t len) const {
+bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE] = {0};
-  uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - MIC_LEN;
   aes_cmac(pdu, lenWithoutMic, 0, AESDevKey, buf);
   return std::equal(buf, buf + MIC_LEN, pdu + lenWithoutMic);
 }
 
-void Aes::encrypt(uint8_t *pdu, uint8_t len) const {
+void Aes::encrypt(uint8_t * const pdu, const uint8_t len) const {
   // TODO: Check / handle when len is not a multiple of 16
   for (uint8_t i = 0; i < len; i += 16)
     lmic_aes_encrypt(pdu + i, AESDevKey);
@@ -99,8 +102,8 @@ void Aes::encrypt(uint8_t *pdu, uint8_t len) const {
 /**
  *  Encrypt data frame payload.
  */
-void Aes::framePayloadEncryption(uint8_t port, uint32_t devaddr, uint32_t seqno,
-                                 PktDir dndir, uint8_t *payload,
+void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, const uint32_t seqno,
+                                 const PktDir dndir, uint8_t * payload,
                                  uint8_t len) const {
   auto key = port == 0 ? nwkSKey : appSKey;
   // Generate
@@ -132,7 +135,7 @@ void Aes::framePayloadEncryption(uint8_t port, uint32_t devaddr, uint32_t seqno,
 }
 
 // Extract session keys
-void Aes::sessKeys(uint16_t devnonce, const uint8_t *artnonce) {
+void Aes::sessKeys(const uint16_t devnonce, const uint8_t * const artnonce) {
   std::fill(nwkSKey, nwkSKey + 16, 0);
   nwkSKey[0] = 0x01;
   std::copy(artnonce, artnonce + LEN_ARTNONCE + LEN_NETID, nwkSKey + 1);
@@ -160,7 +163,7 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 // result is prepended to the message. result is used as working memory,
 // it can be set to "B0" for MIC. The CMAC result is returned in result
 // as well.
-void Aes::aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
+void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
                    const uint8_t key[16], uint8_t result[AES_BLCK_SIZE]) {
   if (prepend_aux)
     lmic_aes_encrypt(result, key);
