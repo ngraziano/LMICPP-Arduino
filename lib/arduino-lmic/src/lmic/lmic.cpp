@@ -35,8 +35,6 @@
 #define BCN_WINDOW_osticks OsDeltaTime::from_ms(BCN_WINDOW_ms)
 #define AIRTIME_BCN_osticks OsDeltaTime::from_us(AIRTIME_BCN)
 
-Lmic LMIC;
-
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
 
@@ -131,7 +129,7 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
     0, 0, 1, 0, 1, 0, 1, 0, 0};
 
 void Lmic::txDelay(OsTime const &reftime, uint8_t secSpan) {
-  const auto delayRef = reftime + OsDeltaTime::rnd_delay(secSpan);
+  const auto delayRef = reftime + OsDeltaTime::rnd_delay(rand, secSpan);
   if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
     globalDutyAvail = delayRef;
     opmode |= OP_RNDTX;
@@ -621,7 +619,7 @@ bool Lmic::processJoinAccept() {
   txCnt = 0;
   stateJustJoined();
   dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
-  rx1DrOffset = (LMIC.frame[OFF_JA_DLSET] >> 4) & 0x7;
+  rx1DrOffset = (frame[OFF_JA_DLSET] >> 4) & 0x7;
 
   if (frame[OFF_JA_RXDLY] == 0) {
     rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
@@ -1024,7 +1022,7 @@ void Lmic::reset() {
   osjob.clearCallback();
   rps.rawValue = 0;
   devaddr = 0;
-  devNonce = hal_rand2();
+  devNonce = rand.uint16();
   opmode = OP_NONE;
   errcr = CR_4_5;
   adrEnabled = FCT_ADREN;
@@ -1037,7 +1035,7 @@ void Lmic::reset() {
 
 void Lmic::init(void) {
   radio.init();
-  hal_init_random(radio);
+  rand.init(radio);
   opmode = OP_SHUTDOWN;
 }
 
@@ -1136,4 +1134,6 @@ void Lmic::irq_handler(uint8_t dio, OsTime const &trigger) {
    radio.irq_handler(osjob, dio, trigger);
 }
 
-Lmic::Lmic() : radio(frame, dataLen, txend, rxtime) {}
+Lmic::Lmic() : radio(frame, dataLen, txend, rxtime),
+  rand(aes), regionLMic(rand)
+ {}

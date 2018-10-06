@@ -129,8 +129,6 @@ OsDeltaTime OsScheduler::runloopOnce() {
 
 void os_init() {
   hal_init();
-
-  LMIC.init();
 }
 
 OsTime os_getTime() { return hal_ticks(); }

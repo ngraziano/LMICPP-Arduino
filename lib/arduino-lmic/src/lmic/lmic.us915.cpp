@@ -186,7 +186,7 @@ void LmicUs915::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
 // US does not have duty cycling - return now as earliest TX time
 OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   if (chRnd == 0)
-    chRnd = hal_rand1() & 0x3F;
+    chRnd = rand.uint8() & 0x3F;
   if (datarate >= DR_SF8C) { // 500kHz
     uint8_t map = channelMap[64 / 16] & 0xFF;
     for (uint8_t i = 0; i < 8; i++) {
@@ -240,7 +240,7 @@ bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
     txChnl = 64 + (txChnl & 7);
     datarate = DR_SF8C;
   } else {
-    txChnl = hal_rand1() & 0x3F;
+    txChnl = rand.uint8() & 0x3F;
     int8_t dr = DR_SF7 - ++txCnt;
     if (dr < DR_SF10) {
       dr = DR_SF10;
@@ -255,10 +255,12 @@ bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
                               ? DNW2_SAFETY_ZONE
                               // Otherwise: randomize join (street lamp case):
                               // SF10:16, SF9=8,..SF8C:1secs
-                              : OsDeltaTime::rnd_delay(16 >> datarate));
+                              : OsDeltaTime::rnd_delay(rand, 16 >> datarate));
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }
 #endif // !DISABLE_JOIN
+
+LmicUs915::LmicUs915(LmicRand &rand) : rand(rand) {}
 
 #endif // ================================================

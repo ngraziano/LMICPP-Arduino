@@ -102,13 +102,13 @@ void LmicEu868::initDefaultChannels(bool join) {
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
   bands[BAND_MILLI].txpow = 16;
-  bands[BAND_MILLI].lastchnl = hal_rand1() % MAX_CHANNELS;
+  bands[BAND_MILLI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_CENTI].txcap = 100; // 1%
   bands[BAND_CENTI].txpow = 16;
-  bands[BAND_CENTI].lastchnl = hal_rand1() % MAX_CHANNELS;
+  bands[BAND_CENTI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_DECI].txcap = 10; // 10%
   bands[BAND_DECI].txpow = 16;
-  bands[BAND_DECI].lastchnl = hal_rand1() % MAX_CHANNELS;
+  bands[BAND_DECI].lastchnl = rand.uint8() % MAX_CHANNELS;
   auto now = os_getTime();
   bands[BAND_MILLI].avail = now;
   bands[BAND_CENTI].avail = now;
@@ -122,7 +122,7 @@ bool LmicEu868::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
   b->txpow = txpow;
   b->txcap = txcap;
   b->avail = os_getTime();
-  b->lastchnl = hal_rand1() % MAX_CHANNELS;
+  b->lastchnl = rand.uint8() % MAX_CHANNELS;
   return true;
 }
 
@@ -296,12 +296,12 @@ void LmicEu868::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
 #if !defined(DISABLE_JOIN)
 void LmicEu868::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                              OsTime &txend) {
-  txChnl = hal_rand1() % 3;
+  txChnl = rand.uint8() % 3;
   adrTxPow = 14;
   newDr = DR_SF7;
   initDefaultChannels(true);
   ASSERT((opmode & OP_NEXTCHNL) == 0);
-  txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(8);
+  txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
   PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail,
                 txend);
 }
@@ -334,7 +334,7 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
                   ? DNW2_SAFETY_ZONE
                   // Otherwise: randomize join (street lamp case):
                   // SF12:255, SF11:127, .., SF7:8secs
-                  : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(255 >> datarate));
+                  : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand,255 >> datarate));
   PRINT_DEBUG_1 (" Next available : %li , Choosen %li", time.tick(), txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
@@ -346,5 +346,7 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
   return !failed;
 }
 #endif // !DISABLE_JOIN
+
+LmicEu868::LmicEu868(LmicRand &rand) : rand(rand) {}
 
 #endif

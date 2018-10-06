@@ -10,6 +10,8 @@
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
 
+class LmicRand;
+
 class OsDeltaTime {
 public:
   OsDeltaTime(int32_t init) : value(init){};
@@ -19,7 +21,7 @@ public:
   static OsDeltaTime from_ms(int64_t us);
   static OsDeltaTime from_sec(int64_t us);
   static OsDeltaTime from_us_round(int64_t us);
-  static OsDeltaTime rnd_delay(uint8_t sec_span);
+  static OsDeltaTime rnd_delay(LmicRand& rand, uint8_t sec_span);
 
   int32_t to_us() const;
   int32_t to_ms() const;

@@ -46,6 +46,8 @@ OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
 
 const unsigned int BAUDRATE = 19200;
 
+
+Lmic LMIC;
 // Pin mapping
 const lmic_pinmap lmic_pins = {
     .nss = 10,
@@ -247,7 +249,7 @@ void setup()
 
     // LMIC init
     os_init();
-
+    LMIC.init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 

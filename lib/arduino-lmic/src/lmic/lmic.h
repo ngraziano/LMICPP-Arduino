@@ -19,6 +19,7 @@
 #include "lorabase.h"
 #include "oslmic.h"
 #include "radio.h"
+#include "lmicrand.h"
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -131,6 +132,7 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 
 class LmicEu868 {
 public:
+  LmicEu868(LmicRand &rand);
   static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
   static OsDeltaTime getDwn2SafetyZone();
   static OsDeltaTime dr2hsym(dr_t dr);
@@ -158,6 +160,7 @@ public:
 #endif
 
 private:
+  LmicRand &rand;
   band_t bands[MAX_BANDS]{};
   ChannelDetail channels[MAX_CHANNELS] = {};
   uint16_t channelMap = 0;
@@ -178,6 +181,7 @@ enum { MAX_TXPOW_125kHz = 30 };
 
 class LmicUs915 {
 public:
+  LmicUs915(LmicRand &rand);
   static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
   static OsDeltaTime getDwn2SafetyZone();
   static OsDeltaTime dr2hsym(dr_t dr);
@@ -205,6 +209,7 @@ public:
 #endif
 
 private:
+  LmicRand &rand;
   uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is
                                    // behind a repeater)
   uint16_t
@@ -339,7 +344,7 @@ public:
   uint8_t frame[MAX_LEN_FRAME];
 
   Aes aes;
-
+  LmicRand rand;
 private:
   // Channel scheduling
 #if defined(CFG_eu868)
@@ -432,8 +437,6 @@ public:
 
   Lmic();
 };
-// The state of LMIC MAC layer is encapsulated in this class.
-extern Lmic LMIC;
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo, drhi)                                               \

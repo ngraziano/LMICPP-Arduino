@@ -1,6 +1,7 @@
 
 #include "osticks.h"
 #include "../hal/hal.h"
+#include "lmicrand.h"
 
 int32_t OsDeltaTime::tick() const { return value; }
 
@@ -84,8 +85,8 @@ OsDeltaTime OsDeltaTime::from_us_round(int64_t us) {
   return OsDeltaTime(us2osticksRound(us));
 }
 
-OsDeltaTime OsDeltaTime::rnd_delay(uint8_t secSpan) {
-  uint16_t r = hal_rand2();
+OsDeltaTime OsDeltaTime::rnd_delay(LmicRand& rand, uint8_t secSpan) {
+  int16_t r = rand.uint16();
   int16_t delay = r;
   if (delay > OSTICKS_PER_SEC)
     delay = r % (uint16_t)OSTICKS_PER_SEC;

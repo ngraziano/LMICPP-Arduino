@@ -19,8 +19,7 @@
 // I/O
 
 OsTime last_int_trigger;
-// (initialized by init() with radio RSSI, used by rand1())
-uint8_t randbuf[16];
+
 
 void hal_store_trigger() { last_int_trigger = os_getTime(); }
 
@@ -241,27 +240,6 @@ void hal_init() {
   hal_printf_init();
 #endif
 }
-
-void hal_init_random(Radio &radio) {
-  radio.init_random(randbuf);
-}
-
-// return next random byte derived from seed buffer
-// (buf[0] holds index of next byte to be returned)
-uint8_t hal_rand1() {
-  uint8_t i = randbuf[0];
-
-  if (i == 16) {
-    LMIC.aes.encrypt(randbuf, 16); // encrypt seed with any key
-    i = 0;
-  }
-  uint8_t v = randbuf[i++];
-  randbuf[0] = i;
-  return v;
-}
-
-//! Get random number (default impl for uint16_t).
-uint16_t hal_rand2() { return ((uint16_t)((hal_rand1() << 8) | hal_rand1())); }
 
 void hal_failed(const char *file, uint16_t line) {
 #if defined(LMIC_FAILURE_TO)
