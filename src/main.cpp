@@ -37,7 +37,6 @@ OsJob sendjob;
 
 SparkFun_APDS9960 apds = SparkFun_APDS9960();
 
-
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 60);
@@ -58,7 +57,6 @@ const lmic_pinmap lmic_pins = {
 const uint8_t NUMBERTIME_TO_SEND = 3;
 uint8_t apds_tosend = 0;
 bool apds_new = false;
-
 
 void initProximitySensor(uint8_t threshold)
 {
@@ -123,16 +121,16 @@ void onEvent(ev_t ev)
         if (LMIC.dataLen)
         {
             PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
-            if(LMIC.dataBeg > 0)
+            if (LMIC.dataBeg > 0)
             {
-                uint8_t port = LMIC.frame[LMIC.dataLen-1];
-                if(port == 9) {
+                uint8_t port = LMIC.frame[LMIC.dataLen - 1];
+                if (port == 9)
+                {
                     disableProximitySensor();
                     delay(500);
                     initProximitySensor(LMIC.frame[LMIC.dataLen]);
                 }
             }
-
         }
         // we have transmit
         if (apds_tosend)
@@ -147,7 +145,6 @@ void onEvent(ev_t ev)
             sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
         }
 
-        
         break;
     case EV_RESET:
         PRINT_DEBUG_2("EV_RESET");
@@ -164,7 +161,8 @@ void onEvent(ev_t ev)
     }
 }
 
-void reset_and_do_send() {
+void reset_and_do_send()
+{
     // we have sent one
     if (apds_tosend > 0)
         apds_tosend--;
@@ -191,10 +189,10 @@ void do_send()
         // battery
         data[0] = 1;
         data[1] = 2;
-        uint16_t val = analogRead(A1) * (6.6/1024*100 );
+        uint16_t val = analogRead(A1) * (6.6 / 1024 * 100);
         data[2] = val >> 8;
         data[3] = val;
-        
+
         data[4] = 2;
         data[5] = 2;
         uint8_t prox;
@@ -233,7 +231,6 @@ void pciSetup(byte pin)
     PCIFR |= bit(digitalPinToPCICRbit(pin));                   // clear any outstanding interrupt
     PCICR |= bit(digitalPinToPCICRbit(pin));                   // enable interrupt for the group
 }
-
 
 void setup()
 {
@@ -331,6 +328,17 @@ void loop()
     if (to_wait > 0 && hal_is_sleep_allow())
     {
         powersave(to_wait);
+    }
+    else
+    {
+        // Instead of using proper interrupts (which are a bit tricky
+        // and/or not available on all pins on AVR), just poll the pin
+        // values. Here makes sure we check at least once every
+        // loop.
+        //
+        // As an additional bonus, this prevents the can of worms that
+        // we would otherwise get for running SPI transfers inside ISRs
+        hal_io_check(LMIC);
     }
     // was wakeup by interrupt, send new state.
     if (apds_new)

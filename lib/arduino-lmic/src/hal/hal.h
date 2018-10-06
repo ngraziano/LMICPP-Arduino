@@ -15,6 +15,9 @@
 
 #include "../lmic/osticks.h"
 
+class Lmic;
+class Radio;
+
 static const uint8_t NUM_DIO = 2;
 
 struct lmic_pinmap {
@@ -38,7 +41,7 @@ void hal_init(void);
 /*
  * intialize random generator
  */
-void hal_init_random();
+void hal_init_random(Radio &radio);
 
 /*
  * random number (8bit)
@@ -87,7 +90,7 @@ void hal_enableIRQs(void);
 /*
  * check "interrupt" pin
  */
-void hal_io_check();
+void hal_io_check(Lmic &lmic);
 
 /*
  * return system time.

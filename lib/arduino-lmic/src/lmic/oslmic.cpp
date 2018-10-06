@@ -112,14 +112,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
 #endif
   }
   hal_enableIRQs();
-  // Instead of using proper interrupts (which are a bit tricky
-  // and/or not available on all pins on AVR), just poll the pin
-  // values. Here makes sure we check at least once every
-  // loop.
-  //
-  // As an additional bonus, this prevents the can of worms that
-  // we would otherwise get for running SPI transfers inside ISRs
-  hal_io_check();
+
   if (j) { // run job callback
     PRINT_DEBUG_2("Running job %p, deadline %lu\n", j,
                   has_deadline ? j->deadline : 0);

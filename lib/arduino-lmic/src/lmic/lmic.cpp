@@ -1037,7 +1037,7 @@ void Lmic::reset() {
 
 void Lmic::init(void) {
   radio.init();
-  hal_init_random();
+  hal_init_random(radio);
   opmode = OP_SHUTDOWN;
 }
 

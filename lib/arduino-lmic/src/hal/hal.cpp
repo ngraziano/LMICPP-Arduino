@@ -64,7 +64,7 @@ void hal_pin_rst(uint8_t val) {
 
 static bool dio_states[NUM_DIO] = {0};
 
-void hal_io_check() {
+void hal_io_check(Lmic &lmic) {
   uint8_t i;
   for (i = 0; i < NUM_DIO; ++i) {
     if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
@@ -73,7 +73,7 @@ void hal_io_check() {
     if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
       dio_states[i] = !dio_states[i];
       if (dio_states[i])
-        LMIC.irq_handler( i, last_int_trigger);
+        lmic.irq_handler( i, last_int_trigger);
     }
   }
 }
@@ -242,8 +242,8 @@ void hal_init() {
 #endif
 }
 
-void hal_init_random() {
-  LMIC.radio.init_random(randbuf);
+void hal_init_random(Radio &radio) {
+  radio.init_random(randbuf);
 }
 
 // return next random byte derived from seed buffer
