@@ -9,7 +9,6 @@ struct ChannelDetail {
   uint16_t drMap;
 };
 
-
 enum { MAX_CHANNELS = 16 }; //!< Max supported channels
 enum { MAX_BANDS = 4 };
 
@@ -34,27 +33,23 @@ protected:
   bool validRx1DrOffset(uint8_t drOffset) const override;
 
   void initDefaultChannels(bool join) override;
+
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
                     int8_t band) override;
+
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
-                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail);
-  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) override;
-  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                    uint32_t &freq) override;
+  void updateTx(OsTime const &txbeg, OsDeltaTime const &airtime);
+  OsTime nextTx(OsTime const &now) override;
+  void setRx1Params() override;
 #if !defined(DISABLE_JOIN)
-  void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                    OsTime &txend) override;
-  bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                     OsTime &txend) override;
+  void initJoinLoop() override;
+  bool nextJoinState() override;
 #endif
   uint8_t defaultRX2Dr() const override;
   uint32_t defaultRX2Freq() const override;
-
 
 private:
   band_t bands[MAX_BANDS]{};

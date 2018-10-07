@@ -16,36 +16,23 @@
 #define _lmic_h_
 
 #include "../aes/aes.h"
+#include "lmicrand.h"
 #include "lorabase.h"
 #include "oslmic.h"
 #include "radio.h"
-#include "lmicrand.h"
-
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 5
 #define LMIC_VERSION_BUILD 1431528305
 
-enum { MAX_FRAME_LEN = 64 };   //!< Library cap on max frame length
-enum { TXCONF_ATTEMPTS = 8 };  //!< Transmit attempts for confirmed frames
-enum { MAX_MISSED_BCNS = 20 }; // threshold for triggering rejoin requests
-enum { MAX_RXSYMS = 100 };     // stop tracking beacon beyond this
+enum { MAX_FRAME_LEN = 64 };  //!< Library cap on max frame length
+enum { TXCONF_ATTEMPTS = 8 }; //!< Transmit attempts for confirmed frames
 
-enum { TIME_RESYNC = 6 * 128 }; // secs
-enum {
-  TXRX_GUARD_ms = 6000
-}; // msecs - don't start TX-RX transaction before beacon
-enum {
-  JOIN_GUARD_ms = 9000
-}; // msecs - don't start Join Req/Acc transaction before beacon
-enum { TXRX_BCNEXT_secs = 2 }; // secs - earliest start after beacon time
 enum {
   RETRY_PERIOD_secs = 3
 }; // secs - random period for retrying a confirmed send
 
-// Keep in sync with evdefs.hpp::drChange
-enum { DRCHG_SET, DRCHG_NOJACC, DRCHG_NOACK, DRCHG_NOADRACK, DRCHG_NWKCMD };
 enum { KEEP_TXPOW = -128 };
 
 // Netid values /  lmic_t.netid
@@ -84,18 +71,12 @@ enum {
 // Event types for event callback
 enum _ev_t {
   EV_SCAN_TIMEOUT = 1,
-  EV_BEACON_FOUND,
-  EV_BEACON_MISSED,
-  EV_BEACON_TRACKED,
   EV_JOINING,
   EV_JOINED,
-  EV_RFU1,
   EV_JOIN_FAILED,
   EV_REJOIN_FAILED,
   EV_TXCOMPLETE,
-  EV_LOST_TSYNC,
   EV_RESET,
-  EV_RXCOMPLETE,
   EV_LINK_DEAD,
   EV_LINK_ALIVE
 };
@@ -118,8 +99,6 @@ enum { ADR_ACK_DELAY = 32, ADR_ACK_LIMIT = 64 };
 
 #endif
 
-
-
 enum {
   // continue with this after reported dead link
   LINK_CHECK_CONT = 0,
@@ -137,34 +116,40 @@ public:
 private:
   OsJobType<Lmic> osjob{*this, OSS};
   // Radio settings TX/RX (also accessed by HAL)
-  OsTime txend;
+
   OsTime rxtime;
-  uint32_t freq = 0;
+
   int8_t rssi = 0;
   int8_t snr = 0;
   // radio parameters set
   rps_t rps;
   uint8_t rxsyms = 0;
-  uint8_t dndr = 0;
-  int8_t txpow = 0; // dBm
 
   eventCallback_t eventCallBack = nullptr;
   keyCallback_t devEuiCallBack = nullptr;
   keyCallback_t artEuiCallBack = nullptr;
 
+protected:
+  OsTime txend;
+  uint8_t dndr = 0;
+  uint32_t freq = 0;
   uint8_t txChnl = 0;         // channel for next TX
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
   OsTime globalDutyAvail;     // time device can send again
 
+  // ADR adjusted TX power, limit power to this value.
+  int8_t adrTxPow;
+  int8_t txpow = 0; // dBm
+
+  dr_t datarate = 0; // current data rate
+private:
   uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
   uint16_t opmode;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
-  // ADR adjusted TX power, limit power to this value.
-  int8_t adrTxPow;
-  dr_t datarate = 0; // current data rate
+
   // error coding rate (used for TX only), init at reset
   cr_t errcr;
   // adjustment for rejoin datarate
@@ -220,8 +205,11 @@ private:
   // answer set new channel, init afet join.
   uint8_t snchAns;
 #endif
+protected:
   // 1 RX window DR offset
   uint8_t rx1DrOffset;
+
+private:
   // 2nd RX window (after up stream), init at reset
   uint8_t dn2Dr;
   uint32_t dn2Freq;
@@ -239,8 +227,10 @@ public:
   uint8_t frame[MAX_LEN_FRAME];
 
   Aes aes;
+
 protected:
   LmicRand rand;
+
 private:
   // callbacks
   void processRx1DnData();
@@ -287,9 +277,8 @@ private:
 
   void txDelay(OsTime const &reftime, uint8_t secSpan);
 
-  void setDrJoin(dr_t dr);
-
 public:
+  void setDrJoin(dr_t dr);
   // set default/start DR/txpow
   void setDrTxpow(uint8_t dr, int8_t pow);
   void setLinkCheckMode(bool enabled);
@@ -329,34 +318,26 @@ protected:
 
   virtual int8_t pow2dBm(uint8_t mcmd_ladr_p1) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
-  virtual OsDeltaTime dr2hsym(dr_t dr)  const = 0;
+  virtual OsDeltaTime dr2hsym(dr_t dr) const = 0;
   virtual uint32_t convFreq(const uint8_t *ptr) const = 0;
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 
-  virtual void initDefaultChannels(bool join) =0;
+  virtual void initDefaultChannels(bool join) = 0;
   virtual bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                    int8_t band) =0;
-  virtual void disableChannel(uint8_t channel) =0;
-  virtual void handleCFList(const uint8_t *ptr) =0;
+                            int8_t band) = 0;
+  virtual void disableChannel(uint8_t channel) = 0;
+  virtual void handleCFList(const uint8_t *ptr) = 0;
 
-  virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) =0;
-  virtual void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
-                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail) =0;
-  virtual OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) =0;
-  virtual void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                    uint32_t &freq) =0;
+  virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual void updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) = 0;
+  virtual OsTime nextTx(OsTime const &now) = 0;
+  virtual void setRx1Params() = 0;
 #if !defined(DISABLE_JOIN)
-  virtual void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                    OsTime &txend) =0;
-  virtual bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                     OsTime &txend) =0;
+  virtual void initJoinLoop() = 0;
+  virtual bool nextJoinState() = 0;
 #endif
-  virtual uint8_t defaultRX2Dr() const =0;
-  virtual uint32_t defaultRX2Freq() const =0;
-
-
-
+  virtual uint8_t defaultRX2Dr() const = 0;
+  virtual uint32_t defaultRX2Freq() const = 0;
 
   rps_t updr2rps(dr_t dr) const;
   rps_t dndr2rps(dr_t dr) const;
@@ -364,7 +345,7 @@ protected:
   bool isSlowerDR(dr_t dr1, dr_t dr2) const;
   // increase data rate
   dr_t incDR(dr_t dr) const;
-  // decrease data rate 
+  // decrease data rate
   dr_t decDR(dr_t dr) const;
   // in range
   bool validDR(dr_t dr) const;

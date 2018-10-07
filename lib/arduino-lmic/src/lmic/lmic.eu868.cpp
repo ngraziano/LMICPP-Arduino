@@ -10,11 +10,9 @@
  *******************************************************************************/
 
 //! \file
-#include "bufferpack.h"
 #include "lmic.eu868.h"
+#include "bufferpack.h"
 #include <algorithm>
-
-
 
 enum _dr_eu868_t {
   DR_SF12 = 0,
@@ -59,9 +57,6 @@ enum { CHNL_BCN = 5 };
 enum { FREQ_BCN = EU868_F6 };
 enum { DR_BCN = DR_SF9 };
 
-
-
-
 #define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(3000)
 
 #define maxFrameLen(dr)                                                        \
@@ -81,7 +76,7 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
       ILLEGAL_RPS};
 
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,
-                                             0,  0,  0,  0, 0, 0, 0, 0};
+                                             0,  0,  0,  0,  0, 0, 0, 0};
 
 uint8_t LmicEu868::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
@@ -120,7 +115,9 @@ OsDeltaTime LmicEu868::dr2hsym(dr_t dr) const {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
 }
 
-bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const { return drOffset < 6; }
+bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
+  return drOffset < 6;
+}
 
 // ================================================================================
 //
@@ -182,12 +179,12 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
     return false;
   if (band == -1) {
     if (newfreq >= 869400000 && newfreq <= 869650000)
-      band = BAND_DECI; // 10% 
+      band = BAND_DECI; // 10%
     else if ((newfreq >= 868000000 && newfreq <= 868600000) ||
              (newfreq >= 869700000 && newfreq <= 870000000))
-      band = BAND_CENTI; // 1% 
+      band = BAND_CENTI; // 1%
     else
-      band = BAND_MILLI; // 0.1% 
+      band = BAND_MILLI; // 0.1%
   } else {
     if (band > BAND_AUX)
       return 0;
@@ -239,10 +236,7 @@ uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicEu868::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                         OsDeltaTime const &airtime, uint8_t txChnl,
-                         int8_t adrTxPow, uint32_t &freq, int8_t &txpow,
-                         OsTime &globalDutyAvail) {
+void LmicEu868::updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) {
 
   // Update global/band specific duty cycle stats
 
@@ -274,7 +268,7 @@ uint8_t LmicEu868::getBand(uint8_t channel) const {
   return channels[channel].freq & 0x3;
 }
 
-OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
+OsTime LmicEu868::nextTx(OsTime const &now) {
   uint8_t bmap = 0xF;
 #if LMIC_DEBUG_LEVEL > 1
   for (uint8_t bi = 0; bi < 4; bi++) {
@@ -338,17 +332,16 @@ OsTime LmicEu868::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   } while (true);
 }
 
-void LmicEu868::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                             uint32_t &freq) { /*freq remain unchanged*/
+void LmicEu868::setRx1Params() {
+  /*freq remain unchanged*/
   lowerDR(dndr, rx1DrOffset);
 }
 
 #if !defined(DISABLE_JOIN)
-void LmicEu868::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                             OsTime &txend) {
+void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = 14;
-  newDr = DR_SF7;
+  setDrJoin(DR_SF7);
   initDefaultChannels(true);
   ASSERT((opmode & OP_NEXTCHNL) == 0);
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
@@ -356,9 +349,8 @@ void LmicEu868::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
                 txend);
 }
 
-bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                              OsTime &txend) {
-  bool failed = 0;
+bool LmicEu868::nextJoinState() {
+  bool failed = false;
 
   // Try 869.x and then 864.x with same DR
   // If both fail try next lower datarate
@@ -377,15 +369,16 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
   OsTime time = os_getTime();
   if (time - bands[BAND_MILLI].avail < 0)
     time = bands[BAND_MILLI].avail;
-  txend =
-      time + (isTESTMODE()
-                  // Avoid collision with JOIN ACCEPT @ SF12 being sent by
-                  // GW (but we missed it)
-                  ? DNW2_SAFETY_ZONE
-                  // Otherwise: randomize join (street lamp case):
-                  // SF12:255, SF11:127, .., SF7:8secs
-                  : DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand,255 >> datarate));
-  PRINT_DEBUG_1 (" Next available : %li , Choosen %li", time.tick(), txend.tick());
+  txend = time + (isTESTMODE()
+                      // Avoid collision with JOIN ACCEPT @ SF12 being sent by
+                      // GW (but we missed it)
+                      ? DNW2_SAFETY_ZONE
+                      // Otherwise: randomize join (street lamp case):
+                      // SF12:255, SF11:127, .., SF7:8secs
+                      : DNW2_SAFETY_ZONE +
+                            OsDeltaTime::rnd_delay(rand, 255 >> datarate));
+  PRINT_DEBUG_1(" Next available : %li , Choosen %li", time.tick(),
+                txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
     lmic_printf("%lu: Join failed\n", os_getTime());
@@ -397,7 +390,5 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 }
 #endif // !DISABLE_JOIN
 
-
-uint8_t LmicEu868::defaultRX2Dr() const {return DR_DNW2;}
-uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2;}
-
+uint8_t LmicEu868::defaultRX2Dr() const { return DR_DNW2; }
+uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }

@@ -7,7 +7,6 @@ enum {
   MAX_XCHANNELS = 2
 }; // extra channels in RAM, channels 0-71 are immutable
 
-
 class LmicUs915 final : public Lmic {
 protected:
   uint8_t getRawRps(dr_t dr) const override;
@@ -25,20 +24,16 @@ protected:
   void handleCFList(const uint8_t *ptr) override;
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
-                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail) override;
-  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) override;
-  void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                    uint32_t &freq) override;
+  void updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) override;
+  OsTime nextTx(OsTime const &now) override;
+  void setRx1Params() override;
 #if !defined(DISABLE_JOIN)
-  void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                    OsTime &txend) override;
-  bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                     OsTime &txend) override;
-  #endif
+  void initJoinLoop() override;
+  bool nextJoinState() override;
+#endif
   uint8_t defaultRX2Dr() const override;
   uint32_t defaultRX2Freq() const override;
+
 private:
   uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is
                                    // behind a repeater)

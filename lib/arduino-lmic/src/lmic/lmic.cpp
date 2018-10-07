@@ -170,7 +170,7 @@ void Lmic::stateJustJoined() {
   dn2Freq = defaultRX2Freq();
 }
 
-void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
+void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
     switch (opts[oidx]) {
@@ -185,8 +185,9 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
     case MCMD_LADR_REQ: {
       // FIXME multiple LinkAdrReq not handled properly in continous block
       // must be handle atomic.
-      const uint8_t p1 = opts[oidx + 1];               // txpow + DR
-      const uint16_t chMask = rlsbf2(&opts[oidx + 2]); // list of enabled channels
+      const uint8_t p1 = opts[oidx + 1]; // txpow + DR
+      const uint16_t chMask =
+          rlsbf2(&opts[oidx + 2]); // list of enabled channels
       const uint8_t chMaskCntl =
           opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
       const uint8_t nbTrans =
@@ -269,13 +270,12 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
     // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
-      const uint8_t chidx = opts[oidx + 1];                          // channel
+      const uint8_t chidx = opts[oidx + 1];               // channel
       const uint32_t newfreq = convFreq(&opts[oidx + 2]); // freq
-      const uint8_t drs = opts[oidx + 5];                            // datarate span
+      const uint8_t drs = opts[oidx + 5];                 // datarate span
       snchAns = 0x80;
       if (newfreq != 0 &&
-          setupChannel(chidx, newfreq,
-                                  DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
+          setupChannel(chidx, newfreq, DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
         snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
       oidx += 6;
@@ -327,7 +327,7 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  uint8_t * const d = frame;
+  uint8_t *const d = frame;
   const uint8_t hdr = d[0];
   const uint8_t ftype = hdr & HDR_FTYPE;
   const uint8_t dlen = dataLen;
@@ -343,7 +343,7 @@ bool Lmic::decodeFrame() {
   // Note: device address was already read+evaluated in order to arrive here.
   const uint8_t fct = d[OFF_DAT_FCT];
   const uint32_t addr = rlsbf4(&d[OFF_DAT_ADDR]);
-  
+
   const uint8_t olen = fct & FCT_OPTLEN;
   const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
   const uint8_t poff = OFF_DAT_OPTS + olen;
@@ -365,7 +365,7 @@ bool Lmic::decodeFrame() {
   uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
-  if (!aes.verifyMic(devaddr, seqno,  PktDir::DOWN, d, dlen)) {
+  if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
     dataLen = 0;
     return false;
@@ -411,13 +411,13 @@ bool Lmic::decodeFrame() {
     // Handle payload only if not a replay
     if (pend > poff) {
       port = d[poff];
-      dataBeg = poff + 1 ;
+      dataBeg = poff + 1;
       dataLen = pend - dataBeg;
       // Decrypt payload - if any
-      aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN, d + dataBeg,
-                                 dataLen);
+      aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
+                                 d + dataBeg, dataLen);
       txrxFlags |= TXRX_PORT;
-      
+
       if (port == 0) {
         parseMacCommands(d + dataBeg, dataLen);
       }
@@ -513,7 +513,7 @@ void Lmic::setupRx1() {
 // rxtime
 void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
-  setRx1Params(txChnl, rx1DrOffset, dndr, freq);
+  setRx1Params();
   rps = dndr2rps(dndr);
   schedRx12(delay, dndr);
 }
@@ -540,7 +540,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
   opmode &= ~OP_TXRXPEND;
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode &= ~OP_NEXTCHNL;
-  const bool succes = nextJoinState(txChnl, txCnt, datarate, txend);
+  const bool succes = nextJoinState();
   // Build next JOIN REQUEST with next engineUpdate call
   // Optionally, report join failed.
   // Both after a random/chosen amount of ticks.
@@ -809,9 +809,9 @@ bool Lmic::startJoining() {
     rejoinCnt = txCnt = 0;
     // remove rx 1 offset
     rx1DrOffset = 0;
-    dr_t newDr;
-    initJoinLoop(txChnl, adrTxPow, newDr, txend);
-    setDrJoin(newDr);
+
+    initJoinLoop();
+
     opmode |= OP_JOINING;
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS
@@ -911,7 +911,7 @@ void Lmic::engineUpdate() {
 #endif
     // Find next suitable channel and return availability time
     if ((opmode & OP_NEXTCHNL) != 0) {
-      txbeg = txend = nextTx(now, datarate, txChnl);
+      txbeg = txend = nextTx(now);
       opmode &= ~OP_NEXTCHNL;
       PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg);
     } else {
@@ -968,8 +968,7 @@ void Lmic::engineUpdate() {
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
-      updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow,
-                          freq, txpow, globalDutyAvail);
+      updateTx(txbeg, airtime);
       radio.tx(freq, rps, txpow);
       return;
     }
@@ -1113,8 +1112,6 @@ void Lmic::setLinkCheckMode(bool enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t error) { clockError = error; }
 
-
-
 rps_t Lmic::updr2rps(dr_t dr) const {
   rps_t result;
   result.rawValue = getRawRps(dr);
@@ -1149,11 +1146,7 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
 }
 
 void Lmic::irq_handler(uint8_t dio, OsTime const &trigger) {
-   radio.irq_handler(osjob, dio, trigger);
+  radio.irq_handler(osjob, dio, trigger);
 }
 
-
-
-Lmic::Lmic() : radio(frame, dataLen, txend, rxtime),
-  rand(aes)
- {}
+Lmic::Lmic() : radio(frame, dataLen, txend, rxtime), rand(aes) {}

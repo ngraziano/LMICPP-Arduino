@@ -10,8 +10,8 @@
  *******************************************************************************/
 
 //! \file
-#include "bufferpack.h"
 #include "lmic.us915.h"
+#include "bufferpack.h"
 #include <algorithm>
 
 enum _dr_us915_t {
@@ -58,7 +58,6 @@ enum {
 }; // used only for default init of state (rotating beacon scheme)
 enum { DR_BCN = DR_SF10CR };
 
-
 #define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(750)
 
 #define maxFrameLen(dr)                                                        \
@@ -92,7 +91,7 @@ int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) const {
   return ((int8_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK) << 1)));
 }
 
-OsDeltaTime LmicUs915::getDwn2SafetyZone()  const { return DNW2_SAFETY_ZONE; }
+OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -119,7 +118,9 @@ OsDeltaTime LmicUs915::dr2hsym(dr_t dr) const {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)&7));
 }
 
-bool LmicUs915::validRx1DrOffset(uint8_t drOffset)  const { return drOffset < 4; }
+bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
+  return drOffset < 4;
+}
 
 // ================================================================================
 //
@@ -206,10 +207,7 @@ uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicUs915::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
-                         OsDeltaTime const &airtime, uint8_t txChnl,
-                         int8_t adrTxPow, uint32_t &freq, int8_t &txpow,
-                         OsTime &globalDutyAvail) {
+void LmicUs915::updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
@@ -231,7 +229,7 @@ void LmicUs915::updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
 }
 
 // US does not have duty cycling - return now as earliest TX time
-OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
+OsTime LmicUs915::nextTx(OsTime const &now) {
   if (chRnd == 0)
     chRnd = rand.uint8() & 0x3F;
   if (datarate >= DR_SF8C) { // 500kHz
@@ -255,8 +253,7 @@ OsTime LmicUs915::nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) {
   return now;
 }
 
-void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                             uint32_t &freq) {
+void LmicUs915::setRx1Params() {
   // TODO handle offset
   freq = US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
   if (/* TX datarate */ dndr < DR_SF8C)
@@ -266,18 +263,16 @@ void LmicUs915::setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
 }
 
 #if !defined(DISABLE_JOIN)
-void LmicUs915::initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                             OsTime &txend) {
+void LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
   ASSERT((opmode & OP_NEXTCHNL) == 0);
   txend = os_getTime();
-  newDr = DR_SF7;
+  setDrJoin(DR_SF7);
 }
 
-bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                              OsTime &txend) {
+bool LmicUs915::nextJoinState() {
   // Try the following:
   //   SF7/8/9/10  on a random channel 0..63
   //   SF8C        on a random channel 64..71
@@ -308,7 +303,5 @@ bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 }
 #endif // !DISABLE_JOIN
 
-uint8_t LmicUs915::defaultRX2Dr() const {return DR_DNW2;}
-uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2;}
-
-
+uint8_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
+uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
