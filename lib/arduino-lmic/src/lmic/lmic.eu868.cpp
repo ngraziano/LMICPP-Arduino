@@ -14,19 +14,18 @@
 #include "bufferpack.h"
 #include <algorithm>
 
-enum _dr_eu868_t {
-  DR_SF12 = 0,
-  DR_SF11,
-  DR_SF10,
-  DR_SF9,
-  DR_SF8,
-  DR_SF7,
-  DR_SF7B,
-  DR_FSK,
-  DR_NONE
+enum class Eu868Dr : dr_t {
+  SF12 = 0,
+  SF11,
+  SF10,
+  SF9,
+  SF8,
+  SF7,
+  SF7B,
+  FSK,
+  NONE
 };
-enum { DR_DFLTMIN = DR_SF7 };
-enum { DR_PAGE = DR_PAGE_EU868 };
+const Eu868Dr DR_DFLTMIN = Eu868Dr::SF7;
 
 // Default frequency plan for EU 868MHz ISM band
 // Bands:
@@ -49,30 +48,26 @@ enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
 
 enum { CHNL_PING = 5 };
 enum { FREQ_PING = EU868_F6 }; // default ping freq
-enum { DR_PING = DR_SF9 };     // default ping DR
 enum { CHNL_DNW2 = 5 };
 enum { FREQ_DNW2 = EU868_F6 };
-enum { DR_DNW2 = DR_SF12 };
-enum { CHNL_BCN = 5 };
-enum { FREQ_BCN = EU868_F6 };
-enum { DR_BCN = DR_SF9 };
+const Eu868Dr DR_DNW2 = Eu868Dr::SF12;
 
-#define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(3000)
+const OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 #define maxFrameLen(dr)                                                        \
-  ((dr) <= DR_SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
+  ((dr) <= Eu868Dr::SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
 CONST_TABLE(uint8_t, maxFrameLens)[] = {64, 64, 64, 123};
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS,
-      (uint8_t)MAKERPS(SF12, BW125, CR_4_5, 0, 0), // DR0
-      (uint8_t)MAKERPS(SF11, BW125, CR_4_5, 0, 0), // DR1
-      (uint8_t)MAKERPS(SF10, BW125, CR_4_5, 0, 0), // DR2
-      (uint8_t)MAKERPS(SF9, BW125, CR_4_5, 0, 0),  // DR3
-      (uint8_t)MAKERPS(SF8, BW125, CR_4_5, 0, 0),  // DR4
-      (uint8_t)MAKERPS(SF7, BW125, CR_4_5, 0, 0),  // DR5
-      (uint8_t)MAKERPS(SF7, BW250, CR_4_5, 0, 0),  // DR6
-      (uint8_t)MAKERPS(FSK, BW125, CR_4_5, 0, 0),  // DR7
+      (uint8_t)MAKERPS(SF12, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR0
+      (uint8_t)MAKERPS(SF11, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR1
+      (uint8_t)MAKERPS(SF10, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR2
+      (uint8_t)MAKERPS(SF9, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR3
+      (uint8_t)MAKERPS(SF8, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR4
+      (uint8_t)MAKERPS(SF7, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR5
+      (uint8_t)MAKERPS(SF7, BandWidth::BW250, CodingRate::CR_4_5, 0, 0),  // DR6
+      (uint8_t)MAKERPS(FSK, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR7
       ILLEGAL_RPS};
 
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,
@@ -144,17 +139,17 @@ void LmicEu868::initDefaultChannels(bool join) {
   uint8_t su = join ? 0 : 3;
   for (uint8_t fu = 0; fu < 3; fu++, su++) {
     channels[fu].freq = TABLE_GET_U4(iniChannelFreq, su);
-    channels[fu].drMap = DR_RANGE_MAP(DR_SF12, DR_SF7);
+    channels[fu].drMap = DR_RANGE_MAP(Eu868Dr::SF12, Eu868Dr::SF7);
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
-  bands[BAND_MILLI].txpow = 16;
-  bands[BAND_MILLI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_CENTI].txcap = 100; // 1%
-  bands[BAND_CENTI].txpow = 16;
-  bands[BAND_CENTI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_DECI].txcap = 10; // 10%
+  bands[BAND_MILLI].txpow = 16;
+  bands[BAND_CENTI].txpow = 16;
   bands[BAND_DECI].txpow = 16;
+  bands[BAND_MILLI].lastchnl = rand.uint8() % MAX_CHANNELS;
+  bands[BAND_CENTI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_DECI].lastchnl = rand.uint8() % MAX_CHANNELS;
   auto now = os_getTime();
   bands[BAND_MILLI].avail = now;
@@ -190,7 +185,8 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
       return 0;
   }
   channels[chidx].freq = (newfreq & ~3) | band;
-  channels[chidx].drMap = drmap == 0 ? DR_RANGE_MAP(DR_SF12, DR_SF7) : drmap;
+  channels[chidx].drMap =
+      drmap == 0 ? DR_RANGE_MAP(Eu868Dr::SF12, Eu868Dr::SF7) : drmap;
   channelMap |= 1 << chidx; // enabled right away
   return true;
 }
@@ -341,7 +337,7 @@ void LmicEu868::setRx1Params() {
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = 14;
-  setDrJoin(DR_SF7);
+  setDrJoin(static_cast<dr_t>(Eu868Dr::SF7));
   initDefaultChannels(true);
   ASSERT((opmode & OP_NEXTCHNL) == 0);
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
@@ -358,7 +354,7 @@ bool LmicEu868::nextJoinState() {
     txChnl = 0;
   if ((++txCnt & 1) == 0) {
     // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
-    if (datarate == DR_SF12)
+    if (datarate == static_cast<dr_t>(Eu868Dr::SF12))
       failed = true; // we have tried all DR - signal EV_JOIN_FAILED
     else
       datarate = decDR(datarate);
@@ -390,5 +386,5 @@ bool LmicEu868::nextJoinState() {
 }
 #endif // !DISABLE_JOIN
 
-uint8_t LmicEu868::defaultRX2Dr() const { return DR_DNW2; }
+dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }

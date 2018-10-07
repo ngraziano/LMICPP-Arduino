@@ -57,18 +57,18 @@ static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
 };
 
 int16_t getSensitivity(rps_t rps) {
-  return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bw);
+  return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bwRaw);
 }
 
 OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
-  const uint8_t bw = rps.bw; // 0,1,2 = 125,250,500kHz
+  const uint8_t bw = rps.bwRaw; // 0,1,2 = 125,250,500kHz
   const uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
   const uint8_t sfx = 4 * (sf + (7 - SF7));
   const uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
   int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
-    tmp *= rps.cr + 5;
+    tmp *= (rps.crRaw + 5);
     tmp += 8;
   } else {
     tmp = 8;
@@ -962,10 +962,9 @@ void Lmic::engineUpdate() {
         osjob.setCallbackFuture(&Lmic::updataDone);
       }
       rps = updr2rps(txdr);
-      rps.cr = errcr;
-
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
+
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       updateTx(txbeg, airtime);
@@ -1005,7 +1004,6 @@ void Lmic::reset() {
   devaddr = 0;
   devNonce = rand.uint16();
   opmode = OP_NONE;
-  errcr = CR_4_5;
   adrEnabled = FCT_ADREN;
   // we need this for 2nd DN window of join accept
   dn2Dr = defaultRX2Dr();
@@ -1113,8 +1111,7 @@ void Lmic::setLinkCheckMode(bool enabled) {
 void Lmic::setClockError(uint8_t error) { clockError = error; }
 
 rps_t Lmic::updr2rps(dr_t dr) const {
-  rps_t result;
-  result.rawValue = getRawRps(dr);
+  rps_t result(getRawRps(dr));
   return result;
 }
 

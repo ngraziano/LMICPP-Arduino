@@ -3,6 +3,10 @@
 
 #include "lmic.h"
 
+#undef min
+#undef max
+
+#include <valarray>
 struct ChannelDetail {
   // three low bit of freq is used to store band.
   uint32_t freq;
@@ -48,7 +52,7 @@ protected:
   void initJoinLoop() override;
   bool nextJoinState() override;
 #endif
-  uint8_t defaultRX2Dr() const override;
+  dr_t defaultRX2Dr() const override;
   uint32_t defaultRX2Freq() const override;
 
 private:

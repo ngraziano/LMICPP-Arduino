@@ -18,29 +18,35 @@
 // BEG: Keep in sync with lorabase.hpp
 //
 
-enum _cr_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
+enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
-enum _bw_t { BW125 = 0, BW250, BW500, BWrfu };
-typedef uint8_t cr_t;
+enum class BandWidth { BW125 = 0, BW250, BW500, BWrfu };
+
 typedef uint8_t sf_t;
-typedef uint8_t bw_t;
 typedef uint8_t dr_t;
+
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-// typedef uint16_t rps_t;
 union rps_t {
   uint16_t rawValue;
   struct {
     sf_t sf : 3;
-    bw_t bw : 2;
-    cr_t cr : 2;
+    uint8_t bwRaw : 2;
+    uint8_t crRaw : 2;
     bool nocrc : 1;
     uint8_t ih : 8;
   };
+
+  BandWidth getBw() { return static_cast<BandWidth>(bwRaw); };
+  CodingRate getCr() { return static_cast<CodingRate>(crRaw); };
+
+  constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc, uint8_t ih)
+      : sf(sf), bwRaw(static_cast<uint8_t>(bw)), crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc),
+        ih(ih){};
+  constexpr rps_t(uint16_t rawValue) : rawValue(rawValue){};
+  rps_t(){};
 };
 
-enum { ILLEGAL_RPS = 0xFF };
-enum { DR_PAGE_EU868 = 0x00 };
-enum { DR_PAGE_US915 = 0x10 };
+const uint8_t ILLEGAL_RPS = 0xFF;
 
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN = 8 };
@@ -53,19 +59,6 @@ enum { DELAY_DNW1 = 1 };    // in secs down window #1
 enum { DELAY_EXTDNW2 = 1 }; // in secs
 enum { DELAY_JACC2 = DELAY_JACC1 + (int)DELAY_EXTDNW2 }; // in secs
 enum { DELAY_DNW2 = DELAY_DNW1 + (int)DELAY_EXTDNW2 }; // in secs down window #1
-enum { BCN_INTV_exp = 7 };
-enum { BCN_INTV_sec = 1 << BCN_INTV_exp };
-enum { BCN_INTV_ms = BCN_INTV_sec * 1000L };
-enum { BCN_INTV_us = BCN_INTV_ms * 1000L };
-enum { BCN_RESERVE_ms = 2120 }; // space reserved for beacon and NWK management
-enum {
-  BCN_GUARD_ms = 3000
-}; // end of beacon period to prevent interference with beacon
-enum { BCN_SLOT_SPAN_ms = 30 }; // 2^12 reception slots a this span
-enum { BCN_WINDOW_ms = BCN_INTV_ms - (int)BCN_GUARD_ms - (int)BCN_RESERVE_ms };
-enum { BCN_RESERVE_us = 2120000 };
-enum { BCN_GUARD_us = 3000000 };
-enum { BCN_SLOT_SPAN_us = 30000 };
 
 enum {
   // Join Request frame format
@@ -97,8 +90,10 @@ enum {
   OFF_DAT_SEQNO = 6,
   OFF_DAT_OPTS = 8,
 };
-enum { MIC_LEN = 4 };
-enum class PktDir: uint8_t {
+
+const uint8_t MIC_LEN = 4;
+
+enum class PktDir : uint8_t {
   UP = 0,
   DOWN = 1,
 };
@@ -239,15 +234,12 @@ typedef uint32_t devaddr_t;
 enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
 
 #define MAKERPS(sf, bw, cr, ih, nocrc)                                         \
-  (((sf) | ((bw) << 3) | ((cr) << 5) | ((nocrc) ? (1 << 7) : 0) |              \
-    ((ih & 0xFF) << 8)))
+  (((sf) | (static_cast<uint8_t>(bw) << 3) | (static_cast<uint8_t>(cr) << 5) |                     \
+    ((nocrc) ? (1 << 7) : 0) | ((ih & 0xFF) << 8)))
 // Two frames with params r1/r2 would interfere on air: same SFx + BWx
 inline bool sameSfBw(rps_t r1, rps_t r2) {
-  return (r1.sf == r2.sf) && (r1.bw == r2.bw);
+  return (r1.sf == r2.sf) && (r1.bwRaw == r2.bwRaw);
 }
-
-
-
 
 //
 // BEG: Keep in sync with lorabase.hpp

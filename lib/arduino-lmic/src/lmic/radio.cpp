@@ -212,30 +212,30 @@ static void configLoraModem(rps_t rps) {
 #ifdef CFG_sx1276_radio
   uint8_t mc1 = 0, mc2 = 0, mc3 = 0;
 
-  switch (rps.bw) {
-  case BW125:
+  switch (rps.getBw()) {
+  case BandWidth::BW125:
     mc1 |= SX1276_MC1_BW_125;
     break;
-  case BW250:
+  case BandWidth::BW250:
     mc1 |= SX1276_MC1_BW_250;
     break;
-  case BW500:
+  case BandWidth::BW500:
     mc1 |= SX1276_MC1_BW_500;
     break;
   default:
     ASSERT(0);
   }
-  switch (rps.cr) {
-  case CR_4_5:
+  switch (rps.getCr()) {
+  case CodingRate::CR_4_5:
     mc1 |= SX1276_MC1_CR_4_5;
     break;
-  case CR_4_6:
+  case CodingRate::CR_4_6:
     mc1 |= SX1276_MC1_CR_4_6;
     break;
-  case CR_4_7:
+  case CodingRate::CR_4_7:
     mc1 |= SX1276_MC1_CR_4_7;
     break;
-  case CR_4_8:
+  case CodingRate::CR_4_8:
     mc1 |= SX1276_MC1_CR_4_8;
     break;
   default:
@@ -256,7 +256,7 @@ static void configLoraModem(rps_t rps) {
   writeReg(LORARegModemConfig2, mc2);
 
   mc3 = SX1276_MC3_AGCAUTO;
-  if ((sf == SF11 || sf == SF12) && rps.bw == BW125) {
+  if ((sf == SF11 || sf == SF12) && rps.getBw() == BandWidth::BW125) {
     mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
   }
   writeReg(LORARegModemConfig3, mc3);
@@ -381,13 +381,16 @@ static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 
 #if LMIC_DEBUG_LEVEL > 0
   uint8_t sf = rps.sf + 6; // 1 == SF7
-  uint8_t bw = rps.bw;
-  uint8_t cr = rps.cr;
-  lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-              os_getTime(), freq, dataLen, sf,
-              bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
-              cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)),
-              rps.ih);
+  BandWidth bw = rps.getBw();
+  CodingRate cr = rps.getCr();
+  lmic_printf(
+      "%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+      os_getTime(), freq, dataLen, sf,
+      bw == BandWidth::BW125 ? 125 : (bw == BandWidth::BW250 ? 250 : 500),
+      cr == CodingRate::CR_4_5
+          ? 5
+          : (cr == CodingRate::CR_4_6 ? 6 : (cr == CodingRate::CR_4_7 ? 7 : 8)),
+      rps.ih);
 #endif
 }
 
@@ -464,15 +467,19 @@ static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
     lmic_printf("RXMODE_RSSI\n");
   } else {
     uint8_t sf = rps.sf + 6; // 1 == SF7
-    uint8_t bw = rps.bw;
-    uint8_t cr = rps.cr;
+    BandWidth bw = rps.getBw();
+    CodingRate cr = rps.getCr();
     lmic_printf(
         "%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n", os_getTime(),
         rxmode == RXMODE_SINGLE
             ? "RXMODE_SINGLE"
             : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
-        freq, sf, bw == BW125 ? 125 : (bw == BW250 ? 250 : 500),
-        cr == CR_4_5 ? 5 : (cr == CR_4_6 ? 6 : (cr == CR_4_7 ? 7 : 8)), rps.ih);
+        freq, sf, bw == BandWidth::BW125 ? 125 : (bw == BandWidth::BW250 ? 250 : 500),
+        cr == CodingRate::CR_4_5
+            ? 5
+            : (cr == CodingRate::CR_4_6 ? 6
+                                        : (cr == CodingRate::CR_4_7 ? 7 : 8)),
+        rps.ih);
   }
 #endif
 }
@@ -615,7 +622,7 @@ void Radio::irq_handler(OsJobBase &nextJob, uint8_t dio,
 
     } else if (flags & IRQ_LORA_RXDONE_MASK) {
       // save exact rx time
-      if (currentRps.bw == BW125) {
+      if (currentRps.getBw() == BandWidth::BW125) {
         now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
       }
       PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());

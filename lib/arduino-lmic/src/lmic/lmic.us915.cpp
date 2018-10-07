@@ -30,7 +30,6 @@ enum _dr_us915_t {
   DR_SF7CR
 };
 enum { DR_DFLTMIN = DR_SF8C };
-enum { DR_PAGE = DR_PAGE_US915 };
 
 // Default frequency plan for US 915MHz
 enum {
@@ -67,20 +66,20 @@ CONST_TABLE(uint8_t, maxFrameLens)
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS,
-      MAKERPS(SF10, BW125, CR_4_5, 0, 0),
-      MAKERPS(SF9, BW125, CR_4_5, 0, 0),
-      MAKERPS(SF8, BW125, CR_4_5, 0, 0),
-      MAKERPS(SF7, BW125, CR_4_5, 0, 0),
-      MAKERPS(SF8, BW500, CR_4_5, 0, 0),
+      MAKERPS(SF10, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF9, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF8, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF7, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF8, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
       ILLEGAL_RPS,
       ILLEGAL_RPS,
       ILLEGAL_RPS,
-      MAKERPS(SF12, BW500, CR_4_5, 0, 0),
-      MAKERPS(SF11, BW500, CR_4_5, 0, 0),
-      MAKERPS(SF10, BW500, CR_4_5, 0, 0),
-      MAKERPS(SF9, BW500, CR_4_5, 0, 0),
-      MAKERPS(SF8, BW500, CR_4_5, 0, 0),
-      MAKERPS(SF7, BW500, CR_4_5, 0, 0),
+      MAKERPS(SF12, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF11, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF10, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF9, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF8, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      MAKERPS(SF7, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
       ILLEGAL_RPS};
 
 uint8_t LmicUs915::getRawRps(dr_t dr) const {
@@ -303,5 +302,5 @@ bool LmicUs915::nextJoinState() {
 }
 #endif // !DISABLE_JOIN
 
-uint8_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
+dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }

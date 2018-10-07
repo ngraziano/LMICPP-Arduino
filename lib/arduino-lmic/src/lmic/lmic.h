@@ -150,8 +150,6 @@ private:
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
 
-  // error coding rate (used for TX only), init at reset
-  cr_t errcr;
   // adjustment for rejoin datarate
   uint8_t rejoinCnt;
 
@@ -211,7 +209,7 @@ protected:
 
 private:
   // 2nd RX window (after up stream), init at reset
-  uint8_t dn2Dr;
+  dr_t dn2Dr;
   uint32_t dn2Freq;
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // 0=no answer pend, 0x80+ACKs, init after join
@@ -336,7 +334,7 @@ protected:
   virtual void initJoinLoop() = 0;
   virtual bool nextJoinState() = 0;
 #endif
-  virtual uint8_t defaultRX2Dr() const = 0;
+  virtual dr_t defaultRX2Dr() const = 0;
   virtual uint32_t defaultRX2Freq() const = 0;
 
   rps_t updr2rps(dr_t dr) const;
@@ -358,6 +356,6 @@ public:
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo, drhi)                                               \
-  (((uint16_t)0xFFFF << (drlo)) & ((uint16_t)0xFFFF >> (15 - (drhi))))
+  (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) & ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))))
 
 #endif // _lmic_h_
