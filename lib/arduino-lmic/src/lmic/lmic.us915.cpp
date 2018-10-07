@@ -14,7 +14,50 @@
 #include "lmic.h"
 #include <algorithm>
 
-#if defined(CFG_us915) // ========================================
+enum _dr_us915_t {
+  DR_SF10 = 0,
+  DR_SF9,
+  DR_SF8,
+  DR_SF7,
+  DR_SF8C,
+  DR_NONE,
+  // Devices behind a router:
+  DR_SF12CR = 8,
+  DR_SF11CR,
+  DR_SF10CR,
+  DR_SF9CR,
+  DR_SF8CR,
+  DR_SF7CR
+};
+enum { DR_DFLTMIN = DR_SF8C };
+enum { DR_PAGE = DR_PAGE_US915 };
+
+// Default frequency plan for US 915MHz
+enum {
+  US915_125kHz_UPFBASE = 902300000,
+  US915_125kHz_UPFSTEP = 200000,
+  US915_500kHz_UPFBASE = 903000000,
+  US915_500kHz_UPFSTEP = 1600000,
+  US915_500kHz_DNFBASE = 923300000,
+  US915_500kHz_DNFSTEP = 600000
+};
+enum { US915_FREQ_MIN = 902000000, US915_FREQ_MAX = 928000000 };
+
+enum {
+  CHNL_PING = 0
+}; // used only for default init of state (follows beacon - rotating)
+enum {
+  FREQ_PING = US915_500kHz_DNFBASE + CHNL_PING * US915_500kHz_DNFSTEP
+};                            // default ping freq
+enum { DR_PING = DR_SF10CR }; // default ping DR
+enum { CHNL_DNW2 = 0 };
+enum { FREQ_DNW2 = US915_500kHz_DNFBASE + CHNL_DNW2 * US915_500kHz_DNFSTEP };
+enum { DR_DNW2 = DR_SF12CR };
+enum {
+  CHNL_BCN = 0
+}; // used only for default init of state (rotating beacon scheme)
+enum { DR_BCN = DR_SF10CR };
+
 
 #define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(750)
 
@@ -40,6 +83,10 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
       MAKERPS(SF8, BW500, CR_4_5, 0, 0),
       MAKERPS(SF7, BW500, CR_4_5, 0, 0),
       ILLEGAL_RPS};
+
+uint8_t LmicUs915::getRawRps(dr_t dr) const {
+  return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
+}
 
 int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) {
   return ((int8_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK) << 1)));
@@ -261,6 +308,8 @@ bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 }
 #endif // !DISABLE_JOIN
 
+uint8_t LmicUs915::defaultRX2Dr() const {return DR_DNW2;}
+uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2;}
+
 LmicUs915::LmicUs915(LmicRand &rand) : rand(rand) {}
 
-#endif // ================================================

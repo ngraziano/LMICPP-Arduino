@@ -24,16 +24,8 @@
 #define PRERX_FSK 1
 #define RXLEN_FSK (1 + 5 + 2)
 
-#define BCN_INTV_osticks OsDeltaTime::from_sec(BCN_INTV_sec)
-#define TXRX_GUARD_osticks OsDeltaTime::from_ms(TXRX_GUARD_ms)
-#define JOIN_GUARD_osticks OsDeltaTime::from_ms(JOIN_GUARD_ms)
 #define DELAY_JACC1_osticks OsDeltaTime::from_sec(DELAY_JACC1)
 #define DELAY_JACC2_osticks OsDeltaTime::from_sec(DELAY_JACC2)
-#define DELAY_EXTDNW2_osticks OsDeltaTime::from_sec(DELAY_EXTDNW2)
-#define BCN_RESERVE_osticks OsDeltaTime::from_ms(BCN_RESERVE_ms)
-#define BCN_GUARD_osticks OsDeltaTime::from_ms(BCN_GUARD_ms)
-#define BCN_WINDOW_osticks OsDeltaTime::from_ms(BCN_WINDOW_ms)
-#define AIRTIME_BCN_osticks OsDeltaTime::from_us(AIRTIME_BCN)
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
@@ -103,16 +95,6 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
   return val;
 }
-
-extern inline rps_t updr2rps(dr_t dr);
-extern inline rps_t dndr2rps(dr_t dr);
-extern inline bool isFasterDR(dr_t dr1, dr_t dr2);
-extern inline bool isSlowerDR(dr_t dr1, dr_t dr2);
-extern inline dr_t incDR(dr_t dr);
-extern inline dr_t decDR(dr_t dr);
-extern inline dr_t assertDR(dr_t dr);
-extern inline bool validDR(dr_t dr);
-extern inline dr_t lowerDR(dr_t dr, uint8_t n);
 
 extern inline bool sameSfBw(rps_t r1, rps_t r2);
 
@@ -184,8 +166,8 @@ void Lmic::stateJustJoined() {
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
   rx1DrOffset = 0;
-  dn2Dr = DR_DNW2;
-  dn2Freq = FREQ_DNW2;
+  dn2Dr = regionLMic.defaultRX2Dr();
+  dn2Freq = regionLMic.defaultRX2Freq();
 }
 
 void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
@@ -220,7 +202,7 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
         ladrAns &= ~MCMD_LADR_ANS_CHACK;
       }
       dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
-      if (!validDR(dr)) {
+      if (!regionLMic.validDR(dr)) {
         PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
         ladrAns &= ~MCMD_LADR_ANS_DRACK;
       }
@@ -253,7 +235,7 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
       dn2Ans = 0x80; // answer pending
       if (regionLMic.validRx1DrOffset(newRx1DrOffset))
         dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
-      if (validDR(dr))
+      if (regionLMic.validDR(dr))
         dn2Ans |= MCMD_DN2P_ANS_DRACK;
       if (newfreq != 0)
         dn2Ans |= MCMD_DN2P_ANS_CHACK;
@@ -478,7 +460,7 @@ bool Lmic::decodeFrame() {
 
 void Lmic::setupRx2() {
   txrxFlags = TXRX_DNW2;
-  rps = dndr2rps(dn2Dr);
+  rps = regionLMic.dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
   radio.rx(freq, rps, rxsyms, rxtime);
@@ -532,7 +514,7 @@ void Lmic::setupRx1() {
 void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
   regionLMic.setRx1Params(txChnl, rx1DrOffset, dndr, freq);
-  rps = dndr2rps(dndr);
+  rps = regionLMic.dndr2rps(dndr);
   schedRx12(delay, dndr);
 }
 
@@ -612,7 +594,7 @@ bool Lmic::processJoinAccept() {
   ASSERT((opmode & (OP_JOINING | OP_REJOIN)) != 0);
   if ((opmode & OP_REJOIN) != 0) {
     // Lower DR every try below current UP DR
-    datarate = lowerDR(datarate, rejoinCnt);
+    datarate = regionLMic.lowerDR(datarate, rejoinCnt);
   }
   opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI) |
             OP_NEXTCHNL;
@@ -852,7 +834,7 @@ bool Lmic::processDnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt += 1;
-        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
+        setDrTxpow(regionLMic.lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
                    KEEP_TXPOW);
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
@@ -886,9 +868,9 @@ bool Lmic::processDnData() {
     if (adrTxPow != regionLMic.pow2dBm(0)) {
       setDrTxpow(datarate, regionLMic.pow2dBm(0));
       opmode |= OP_LINKDEAD;
-    } else if (decDR(datarate) != datarate) {
+    } else if (regionLMic.decDR(datarate) != datarate) {
       // Lower DR one notch.
-      setDrTxpow(decDR(datarate), KEEP_TXPOW);
+      setDrTxpow(regionLMic.decDR(datarate), KEEP_TXPOW);
       opmode |= OP_LINKDEAD;
     } else {
       // we are at max pow and max DR
@@ -952,7 +934,7 @@ void Lmic::engineUpdate() {
       if (jacc) {
         uint8_t ftype;
         if ((opmode & OP_REJOIN) != 0) {
-          txdr = lowerDR(txdr, rejoinCnt);
+          txdr = regionLMic.lowerDR(txdr, rejoinCnt);
           ftype = HDR_FTYPE_REJOIN;
         } else {
           ftype = HDR_FTYPE_JREQ;
@@ -979,7 +961,7 @@ void Lmic::engineUpdate() {
         buildDataFrame();
         osjob.setCallbackFuture(&Lmic::updataDone);
       }
-      rps = updr2rps(txdr);
+      rps = regionLMic.updr2rps(txdr);
       rps.cr = errcr;
 
       dndr = txdr; // carry TX datarate (can be != datarate) over to
@@ -1026,8 +1008,9 @@ void Lmic::reset() {
   opmode = OP_NONE;
   errcr = CR_4_5;
   adrEnabled = FCT_ADREN;
-  dn2Dr = DR_DNW2;     // we need this for 2nd DN window of join accept
-  dn2Freq = FREQ_DNW2; // ditto
+  // we need this for 2nd DN window of join accept
+  dn2Dr = regionLMic.defaultRX2Dr();
+  dn2Freq = regionLMic.defaultRX2Freq();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
 
   regionLMic.initDefaultChannels(true);

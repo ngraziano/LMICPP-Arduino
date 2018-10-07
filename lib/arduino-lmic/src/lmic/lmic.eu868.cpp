@@ -14,7 +14,53 @@
 #include "lmic.h"
 #include <algorithm>
 
-#if defined(CFG_eu868) // ========================================
+
+
+enum _dr_eu868_t {
+  DR_SF12 = 0,
+  DR_SF11,
+  DR_SF10,
+  DR_SF9,
+  DR_SF8,
+  DR_SF7,
+  DR_SF7B,
+  DR_FSK,
+  DR_NONE
+};
+enum { DR_DFLTMIN = DR_SF7 };
+enum { DR_PAGE = DR_PAGE_EU868 };
+
+// Default frequency plan for EU 868MHz ISM band
+// Bands:
+//  g1 :   1%  14dBm
+//  g2 : 0.1%  14dBm
+//  g3 :  10%  27dBm
+//                 freq             band     datarates
+enum {
+  EU868_F1 = 868100000, // g1   SF7-12
+  EU868_F2 = 868300000, // g1   SF7-12 FSK SF7/250
+  EU868_F3 = 868500000, // g1   SF7-12
+  EU868_F4 = 868850000, // g2   SF7-12
+  EU868_F5 = 869050000, // g2   SF7-12
+  EU868_F6 = 869525000, // g3   SF7-12
+  EU868_J4 = 864100000, // g2   SF7-12  used during join
+  EU868_J5 = 864300000, // g2   SF7-12   ditto
+  EU868_J6 = 864500000, // g2   SF7-12   ditto
+};
+enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
+
+enum { CHNL_PING = 5 };
+enum { FREQ_PING = EU868_F6 }; // default ping freq
+enum { DR_PING = DR_SF9 };     // default ping DR
+enum { CHNL_DNW2 = 5 };
+enum { FREQ_DNW2 = EU868_F6 };
+enum { DR_DNW2 = DR_SF12 };
+enum { CHNL_BCN = 5 };
+enum { FREQ_BCN = EU868_F6 };
+enum { DR_BCN = DR_SF9 };
+
+
+
 
 #define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(3000)
 
@@ -36,6 +82,10 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
 
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,
                                              0,  0,  0,  0, 0, 0, 0, 0};
+
+uint8_t LmicEu868::getRawRps(dr_t dr) const {
+  return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
+}
 
 int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) {
   return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >>
@@ -347,6 +397,8 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 }
 #endif // !DISABLE_JOIN
 
-LmicEu868::LmicEu868(LmicRand &rand) : rand(rand) {}
 
-#endif
+uint8_t LmicEu868::defaultRX2Dr() const {return DR_DNW2;}
+uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2;}
+
+LmicEu868::LmicEu868(LmicRand &rand) : rand(rand) {}
