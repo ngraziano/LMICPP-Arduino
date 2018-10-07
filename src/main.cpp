@@ -2,6 +2,8 @@
 #include <Arduino.h>
 
 #include <lmic.h>
+
+
 #include <hal/hal.h>
 #include <SPI.h>
 #include <LowPower.h>
@@ -47,7 +49,7 @@ OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
 const unsigned int BAUDRATE = 19200;
 
 
-Lmic LMIC;
+LmicEu868 LMIC;
 // Pin mapping
 const lmic_pinmap lmic_pins = {
     .nss = 10,

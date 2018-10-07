@@ -166,8 +166,8 @@ void Lmic::stateJustJoined() {
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
   rx1DrOffset = 0;
-  dn2Dr = regionLMic.defaultRX2Dr();
-  dn2Freq = regionLMic.defaultRX2Freq();
+  dn2Dr = defaultRX2Dr();
+  dn2Freq = defaultRX2Freq();
 }
 
 void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
@@ -196,13 +196,13 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
       ladrAns = 0x80 | // Include an answer into next frame up
                 MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
                 MCMD_LADR_ANS_DRACK;
-      if (!regionLMic.mapChannels(chMaskCntl, chMask)) {
+      if (!mapChannels(chMaskCntl, chMask)) {
         PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i",
                       chMaskCntl, chMask);
         ladrAns &= ~MCMD_LADR_ANS_CHACK;
       }
       dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
-      if (!regionLMic.validDR(dr)) {
+      if (!validDR(dr)) {
         PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
         ladrAns &= ~MCMD_LADR_ANS_DRACK;
       }
@@ -212,7 +212,7 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
         upRepeat = nbTrans;
         PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr,
                       p1 & MCMD_LADR_POW_MASK);
-        setDrTxpow(dr, regionLMic.pow2dBm(p1));
+        setDrTxpow(dr, pow2dBm(p1));
       }
       if (adrAckReq != LINK_CHECK_OFF) {
         // force ack to NWK.
@@ -231,11 +231,11 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
 #if !defined(DISABLE_MCMD_DN2P_SET)
       const dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
       const uint8_t newRx1DrOffset = ((opts[oidx + 1] & 0x70) >> 4);
-      const uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]);
+      const uint32_t newfreq = convFreq(&opts[oidx + 2]);
       dn2Ans = 0x80; // answer pending
-      if (regionLMic.validRx1DrOffset(newRx1DrOffset))
+      if (validRx1DrOffset(newRx1DrOffset))
         dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
-      if (regionLMic.validDR(dr))
+      if (validDR(dr))
         dn2Ans |= MCMD_DN2P_ANS_DRACK;
       if (newfreq != 0)
         dn2Ans |= MCMD_DN2P_ANS_CHACK;
@@ -270,11 +270,11 @@ void Lmic::parseMacCommands(const uint8_t * const opts, uint8_t const olen) {
     case MCMD_SNCH_REQ: {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
       const uint8_t chidx = opts[oidx + 1];                          // channel
-      const uint32_t newfreq = regionLMic.convFreq(&opts[oidx + 2]); // freq
+      const uint32_t newfreq = convFreq(&opts[oidx + 2]); // freq
       const uint8_t drs = opts[oidx + 5];                            // datarate span
       snchAns = 0x80;
       if (newfreq != 0 &&
-          regionLMic.setupChannel(chidx, newfreq,
+          setupChannel(chidx, newfreq,
                                   DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
         snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
@@ -460,7 +460,7 @@ bool Lmic::decodeFrame() {
 
 void Lmic::setupRx2() {
   txrxFlags = TXRX_DNW2;
-  rps = regionLMic.dndr2rps(dn2Dr);
+  rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
   radio.rx(freq, rps, rxsyms, rxtime);
@@ -470,7 +470,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
   PRINT_DEBUG_2("SchedRx RX1/2.");
 
   // Half symbol time for the data rate.
-  const OsDeltaTime hsym = regionLMic.dr2hsym(dr);
+  const OsDeltaTime hsym = dr2hsym(dr);
 
   rxsyms = MINRX_SYMS;
 
@@ -513,8 +513,8 @@ void Lmic::setupRx1() {
 // rxtime
 void Lmic::txDone(OsDeltaTime const &delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
-  regionLMic.setRx1Params(txChnl, rx1DrOffset, dndr, freq);
-  rps = regionLMic.dndr2rps(dndr);
+  setRx1Params(txChnl, rx1DrOffset, dndr, freq);
+  rps = dndr2rps(dndr);
   schedRx12(delay, dndr);
 }
 
@@ -540,7 +540,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
   opmode &= ~OP_TXRXPEND;
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode &= ~OP_NEXTCHNL;
-  const bool succes = regionLMic.nextJoinState(txChnl, txCnt, datarate, txend);
+  const bool succes = nextJoinState(txChnl, txCnt, datarate, txend);
   // Build next JOIN REQUEST with next engineUpdate call
   // Optionally, report join failed.
   // Both after a random/chosen amount of ticks.
@@ -581,11 +581,11 @@ bool Lmic::processJoinAccept() {
   devaddr = rlsbf4(frame + OFF_JA_DEVADDR);
   netid = rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
 
-  regionLMic.initDefaultChannels(false);
+  initDefaultChannels(false);
 
   if (dlen > LEN_JA) {
     // some region just ignore cflist.
-    regionLMic.handleCFList(frame + OFF_CFLIST);
+    handleCFList(frame + OFF_CFLIST);
   }
 
   // already incremented when JOIN REQ got sent off
@@ -594,7 +594,7 @@ bool Lmic::processJoinAccept() {
   ASSERT((opmode & (OP_JOINING | OP_REJOIN)) != 0);
   if ((opmode & OP_REJOIN) != 0) {
     // Lower DR every try below current UP DR
-    datarate = regionLMic.lowerDR(datarate, rejoinCnt);
+    datarate = lowerDR(datarate, rejoinCnt);
   }
   opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI) |
             OP_NEXTCHNL;
@@ -655,7 +655,7 @@ void Lmic::processRx2DnData() {
     // gateay is not listening anyway, delay the next transmission
     // until DNW2_SAFETY_ZONE from now, and add up to 2 seconds of
     // extra randomization.
-    txDelay(os_getTime() + regionLMic.getDwn2SafetyZone(), 2);
+    txDelay(os_getTime() + getDwn2SafetyZone(), 2);
   }
   processDnData();
 }
@@ -810,7 +810,7 @@ bool Lmic::startJoining() {
     // remove rx 1 offset
     rx1DrOffset = 0;
     dr_t newDr;
-    regionLMic.initJoinLoop(txChnl, adrTxPow, newDr, txend);
+    initJoinLoop(txChnl, adrTxPow, newDr, txend);
     setDrJoin(newDr);
     opmode |= OP_JOINING;
     // reportEvent will call engineUpdate which then starts sending JOIN
@@ -834,7 +834,7 @@ bool Lmic::processDnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt += 1;
-        setDrTxpow(regionLMic.lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
+        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
                    KEEP_TXPOW);
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
@@ -865,12 +865,12 @@ bool Lmic::processDnData() {
     // We haven't heard from NWK for some time although we
     // asked for a response for some time - assume we're disconnected.
     // Restore max power if it not the case
-    if (adrTxPow != regionLMic.pow2dBm(0)) {
-      setDrTxpow(datarate, regionLMic.pow2dBm(0));
+    if (adrTxPow != pow2dBm(0)) {
+      setDrTxpow(datarate, pow2dBm(0));
       opmode |= OP_LINKDEAD;
-    } else if (regionLMic.decDR(datarate) != datarate) {
+    } else if (decDR(datarate) != datarate) {
       // Lower DR one notch.
-      setDrTxpow(regionLMic.decDR(datarate), KEEP_TXPOW);
+      setDrTxpow(decDR(datarate), KEEP_TXPOW);
       opmode |= OP_LINKDEAD;
     } else {
       // we are at max pow and max DR
@@ -911,7 +911,7 @@ void Lmic::engineUpdate() {
 #endif
     // Find next suitable channel and return availability time
     if ((opmode & OP_NEXTCHNL) != 0) {
-      txbeg = txend = regionLMic.nextTx(now, datarate, txChnl);
+      txbeg = txend = nextTx(now, datarate, txChnl);
       opmode &= ~OP_NEXTCHNL;
       PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg);
     } else {
@@ -934,7 +934,7 @@ void Lmic::engineUpdate() {
       if (jacc) {
         uint8_t ftype;
         if ((opmode & OP_REJOIN) != 0) {
-          txdr = regionLMic.lowerDR(txdr, rejoinCnt);
+          txdr = lowerDR(txdr, rejoinCnt);
           ftype = HDR_FTYPE_REJOIN;
         } else {
           ftype = HDR_FTYPE_JREQ;
@@ -961,14 +961,14 @@ void Lmic::engineUpdate() {
         buildDataFrame();
         osjob.setCallbackFuture(&Lmic::updataDone);
       }
-      rps = regionLMic.updr2rps(txdr);
+      rps = updr2rps(txdr);
       rps.cr = errcr;
 
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
       opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
-      regionLMic.updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow,
+      updateTx(txbeg, globalDutyRate, airtime, txChnl, adrTxPow,
                           freq, txpow, globalDutyAvail);
       radio.tx(freq, rps, txpow);
       return;
@@ -1009,11 +1009,11 @@ void Lmic::reset() {
   errcr = CR_4_5;
   adrEnabled = FCT_ADREN;
   // we need this for 2nd DN window of join accept
-  dn2Dr = regionLMic.defaultRX2Dr();
-  dn2Freq = regionLMic.defaultRX2Freq();
+  dn2Dr = defaultRX2Dr();
+  dn2Freq = defaultRX2Freq();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
 
-  regionLMic.initDefaultChannels(true);
+  initDefaultChannels(true);
 }
 
 void Lmic::init(void) {
@@ -1089,7 +1089,7 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
   if (artKey)
     aes.setApplicationSessionKey(artKey);
 
-  regionLMic.initDefaultChannels(false);
+  initDefaultChannels(false);
 
   opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI);
   opmode |= OP_NEXTCHNL;
@@ -1113,10 +1113,47 @@ void Lmic::setLinkCheckMode(bool enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t error) { clockError = error; }
 
+
+
+rps_t Lmic::updr2rps(dr_t dr) const {
+  rps_t result;
+  result.rawValue = getRawRps(dr);
+  return result;
+}
+
+rps_t Lmic::dndr2rps(dr_t dr) const {
+  auto val = updr2rps(dr);
+  val.nocrc = 1;
+  return val;
+}
+
+bool Lmic::isFasterDR(dr_t dr1, dr_t dr2) const { return dr1 > dr2; }
+
+bool Lmic::isSlowerDR(dr_t dr1, dr_t dr2) const { return dr1 < dr2; }
+
+// increase data rate
+dr_t Lmic::incDR(dr_t dr) const { return validDR(dr + 1) ? dr + 1 : dr; }
+
+// decrease data rate
+dr_t Lmic::decDR(dr_t dr) const { return validDR(dr - 1) ? dr - 1 : dr; }
+
+// in range
+bool Lmic::validDR(dr_t dr) const { return getRawRps(dr) != ILLEGAL_RPS; }
+
+// decrease data rate by n steps
+dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
+  while (n--) {
+    dr = decDR(dr);
+  };
+  return dr;
+}
+
 void Lmic::irq_handler(uint8_t dio, OsTime const &trigger) {
    radio.irq_handler(osjob, dio, trigger);
 }
 
+
+
 Lmic::Lmic() : radio(frame, dataLen, txend, rxtime),
-  rand(aes), regionLMic(rand)
+  rand(aes)
  {}

@@ -20,9 +20,7 @@
 #include "oslmic.h"
 #include "radio.h"
 #include "lmicrand.h"
-#include "regionlmic.h"
-#include "lmic.eu868.h"
-#include "lmic.us915.h"
+
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -241,15 +239,9 @@ public:
   uint8_t frame[MAX_LEN_FRAME];
 
   Aes aes;
+protected:
   LmicRand rand;
 private:
-  // Channel scheduling
-#if defined(CFG_eu868)
-  LmicEu868 regionLMic;
-#elif defined(CFG_us915)
-  LmicUs915 regionLMic;
-#endif
-
   // callbacks
   void processRx1DnData();
   void setupRx1();
@@ -332,6 +324,54 @@ public:
   // for radio to wakeup processing.
   void irq_handler(uint8_t dio, OsTime const &trigger);
 
+protected:
+  virtual uint8_t getRawRps(dr_t dr) const = 0;
+
+  virtual int8_t pow2dBm(uint8_t mcmd_ladr_p1) const = 0;
+  virtual OsDeltaTime getDwn2SafetyZone() const = 0;
+  virtual OsDeltaTime dr2hsym(dr_t dr)  const = 0;
+  virtual uint32_t convFreq(const uint8_t *ptr) const = 0;
+  virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
+
+  virtual void initDefaultChannels(bool join) =0;
+  virtual bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
+                    int8_t band) =0;
+  virtual void disableChannel(uint8_t channel) =0;
+  virtual void handleCFList(const uint8_t *ptr) =0;
+
+  virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) =0;
+  virtual void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
+                OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
+                uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail) =0;
+  virtual OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) =0;
+  virtual void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
+                    uint32_t &freq) =0;
+#if !defined(DISABLE_JOIN)
+  virtual void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
+                    OsTime &txend) =0;
+  virtual bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
+                     OsTime &txend) =0;
+#endif
+  virtual uint8_t defaultRX2Dr() const =0;
+  virtual uint32_t defaultRX2Freq() const =0;
+
+
+
+
+  rps_t updr2rps(dr_t dr) const;
+  rps_t dndr2rps(dr_t dr) const;
+  bool isFasterDR(dr_t dr1, dr_t dr2) const;
+  bool isSlowerDR(dr_t dr1, dr_t dr2) const;
+  // increase data rate
+  dr_t incDR(dr_t dr) const;
+  // decrease data rate 
+  dr_t decDR(dr_t dr) const;
+  // in range
+  bool validDR(dr_t dr) const;
+  // decrease data rate by n steps
+  dr_t lowerDR(dr_t dr, uint8_t n) const;
+
+public:
   Lmic();
 };
 

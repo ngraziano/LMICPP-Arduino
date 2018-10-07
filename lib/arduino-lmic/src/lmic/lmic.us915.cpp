@@ -11,7 +11,7 @@
 
 //! \file
 #include "bufferpack.h"
-#include "lmic.h"
+#include "lmic.us915.h"
 #include <algorithm>
 
 enum _dr_us915_t {
@@ -88,11 +88,11 @@ uint8_t LmicUs915::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) {
+int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) const {
   return ((int8_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK) << 1)));
 }
 
-OsDeltaTime LmicUs915::getDwn2SafetyZone() { return DNW2_SAFETY_ZONE; }
+OsDeltaTime LmicUs915::getDwn2SafetyZone()  const { return DNW2_SAFETY_ZONE; }
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -115,11 +115,11 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
 };
 
 // map DR_SFnCR -> 0-6
-OsDeltaTime LmicUs915::dr2hsym(dr_t dr) {
+OsDeltaTime LmicUs915::dr2hsym(dr_t dr) const {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)&7));
 }
 
-bool LmicUs915::validRx1DrOffset(uint8_t drOffset) { return drOffset < 4; }
+bool LmicUs915::validRx1DrOffset(uint8_t drOffset)  const { return drOffset < 4; }
 
 // ================================================================================
 //
@@ -136,7 +136,7 @@ void LmicUs915::initDefaultChannels(bool join) {
   channelMap[4] = 0x00FF;
 }
 
-uint32_t LmicUs915::convFreq(const uint8_t *ptr) {
+uint32_t LmicUs915::convFreq(const uint8_t *ptr) const {
   uint32_t freq = (rlsbf4(ptr - 1) >> 8) * 100;
   if (freq < US915_FREQ_MIN || freq > US915_FREQ_MAX)
     freq = 0;
@@ -311,5 +311,4 @@ bool LmicUs915::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 uint8_t LmicUs915::defaultRX2Dr() const {return DR_DNW2;}
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2;}
 
-LmicUs915::LmicUs915(LmicRand &rand) : rand(rand) {}
 

@@ -1,7 +1,7 @@
 #ifndef _lmic_eu868_h_
 #define _lmic_eu868_h_
 
-#include "regionlmic.h"
+#include "lmic.h"
 
 struct ChannelDetail {
   // three low bit of freq is used to store band.
@@ -24,42 +24,39 @@ struct band_t {
 
 enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 
-class LmicEu868 final : public RegionLmic {
+class LmicEu868 final : public Lmic {
 protected:
   uint8_t getRawRps(dr_t dr) const override;
-public:
-  LmicEu868(LmicRand &rand);
-  static int8_t pow2dBm(uint8_t mcmd_ladr_p1);
-  static OsDeltaTime getDwn2SafetyZone();
-  static OsDeltaTime dr2hsym(dr_t dr);
-  static uint32_t convFreq(const uint8_t *ptr);
-  static bool validRx1DrOffset(uint8_t drOffset);
+  int8_t pow2dBm(uint8_t mcmd_ladr_p1) const override;
+  OsDeltaTime getDwn2SafetyZone() const override;
+  OsDeltaTime dr2hsym(dr_t dr) const override;
+  uint32_t convFreq(const uint8_t *ptr) const override;
+  bool validRx1DrOffset(uint8_t drOffset) const override;
 
-  void initDefaultChannels(bool join);
+  void initDefaultChannels(bool join) override;
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                    int8_t band);
-  void disableChannel(uint8_t channel);
-  void handleCFList(const uint8_t *ptr);
+                    int8_t band) override;
+  void disableChannel(uint8_t channel) override;
+  void handleCFList(const uint8_t *ptr) override;
 
-  uint8_t mapChannels(uint8_t chpage, uint16_t chmap);
+  uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
   void updateTx(OsTime const &txbeg, uint8_t globalDutyRate,
                 OsDeltaTime const &airtime, uint8_t txChnl, int8_t adrTxPow,
                 uint32_t &freq, int8_t &txpow, OsTime &globalDutyAvail);
-  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl);
+  OsTime nextTx(OsTime const &now, dr_t datarate, uint8_t &txChnl) override;
   void setRx1Params(uint8_t txChnl, uint8_t rx1DrOffset, dr_t &dndr,
-                    uint32_t &freq);
+                    uint32_t &freq) override;
 #if !defined(DISABLE_JOIN)
   void initJoinLoop(uint8_t &txChnl, int8_t &adrTxPow, dr_t &newDr,
-                    OsTime &txend);
+                    OsTime &txend) override;
   bool nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
-                     OsTime &txend);
+                     OsTime &txend) override;
 #endif
   uint8_t defaultRX2Dr() const override;
   uint32_t defaultRX2Freq() const override;
 
 
 private:
-  LmicRand &rand;
   band_t bands[MAX_BANDS]{};
   ChannelDetail channels[MAX_CHANNELS] = {};
   uint16_t channelMap = 0;

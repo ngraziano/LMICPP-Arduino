@@ -11,7 +11,7 @@
 
 //! \file
 #include "bufferpack.h"
-#include "lmic.h"
+#include "lmic.eu868.h"
 #include <algorithm>
 
 
@@ -87,12 +87,12 @@ uint8_t LmicEu868::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) {
+int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) const {
   return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >>
                                        MCMD_LADR_POW_SHIFT);
 }
 
-OsDeltaTime LmicEu868::getDwn2SafetyZone() { return DNW2_SAFETY_ZONE; }
+OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -116,11 +116,11 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
     us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
 };
 
-OsDeltaTime LmicEu868::dr2hsym(dr_t dr) {
+OsDeltaTime LmicEu868::dr2hsym(dr_t dr) const {
   return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
 }
 
-bool LmicEu868::validRx1DrOffset(uint8_t drOffset) { return drOffset < 6; }
+bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const { return drOffset < 6; }
 
 // ================================================================================
 //
@@ -204,7 +204,7 @@ void LmicEu868::disableChannel(uint8_t channel) {
   channelMap &= ~(1 << channel);
 }
 
-uint32_t LmicEu868::convFreq(const uint8_t *ptr) {
+uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
   uint32_t newfreq = rlsbf3(ptr) * 100;
   if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX)
     newfreq = 0;
@@ -401,4 +401,3 @@ bool LmicEu868::nextJoinState(uint8_t &txChnl, uint8_t &txCnt, dr_t &datarate,
 uint8_t LmicEu868::defaultRX2Dr() const {return DR_DNW2;}
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2;}
 
-LmicEu868::LmicEu868(LmicRand &rand) : rand(rand) {}
