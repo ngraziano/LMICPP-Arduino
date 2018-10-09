@@ -336,6 +336,33 @@ static void configPower(int8_t pw) {
 #endif /* CFG_sx1272_radio */
 }
 
+uint8_t crForLog(rps_t rps) {
+  switch (rps.getCr()) {
+  case CodingRate::CR_4_5:
+    return 5;
+  case CodingRate::CR_4_6:
+    return 6;
+  case CodingRate::CR_4_7:
+    return 7;
+  case CodingRate::CR_4_8:
+    return 8;
+  }
+  return 0;
+}
+
+uint16_t bwForLog(rps_t rps) {
+  switch (rps.getBw()) {
+  case BandWidth::BW125:
+    return 125;
+  case BandWidth::BW250:
+    return 250;
+  case BandWidth::BW500:
+    return 500;
+  default:
+    return 0;
+  }
+}
+
 static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
                    uint8_t dataLen) {
   // select LoRa modem (from sleep mode)
@@ -381,16 +408,9 @@ static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 
 #if LMIC_DEBUG_LEVEL > 0
   uint8_t sf = rps.sf + 6; // 1 == SF7
-  BandWidth bw = rps.getBw();
-  CodingRate cr = rps.getCr();
-  lmic_printf(
-      "%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-      os_getTime(), freq, dataLen, sf,
-      bw == BandWidth::BW125 ? 125 : (bw == BandWidth::BW250 ? 250 : 500),
-      cr == CodingRate::CR_4_5
-          ? 5
-          : (cr == CodingRate::CR_4_6 ? 6 : (cr == CodingRate::CR_4_7 ? 7 : 8)),
-      rps.ih);
+  lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+              os_getTime(), freq, dataLen, sf, bwForLog(rps), crForLog(rps),
+              rps.ih);
 #endif
 }
 
@@ -467,19 +487,12 @@ static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
     lmic_printf("RXMODE_RSSI\n");
   } else {
     uint8_t sf = rps.sf + 6; // 1 == SF7
-    BandWidth bw = rps.getBw();
-    CodingRate cr = rps.getCr();
-    lmic_printf(
-        "%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n", os_getTime(),
-        rxmode == RXMODE_SINGLE
-            ? "RXMODE_SINGLE"
-            : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
-        freq, sf, bw == BandWidth::BW125 ? 125 : (bw == BandWidth::BW250 ? 250 : 500),
-        cr == CodingRate::CR_4_5
-            ? 5
-            : (cr == CodingRate::CR_4_6 ? 6
-                                        : (cr == CodingRate::CR_4_7 ? 7 : 8)),
-        rps.ih);
+    lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+                os_getTime(),
+                rxmode == RXMODE_SINGLE
+                    ? "RXMODE_SINGLE"
+                    : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
+                freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
   }
 #endif
 }
