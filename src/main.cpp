@@ -41,10 +41,9 @@ SparkFun_APDS9960 apds = SparkFun_APDS9960();
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 60);
-
+const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(60 * 60);
 // keep ON for one minute
-OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
+const OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
 
 const unsigned int BAUDRATE = 19200;
 

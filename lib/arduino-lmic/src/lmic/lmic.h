@@ -24,7 +24,7 @@
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 5
-#define LMIC_VERSION_BUILD 1431528305
+
 
 enum { MAX_FRAME_LEN = 64 };  //!< Library cap on max frame length
 enum { TXCONF_ATTEMPTS = 8 }; //!< Transmit attempts for confirmed frames
