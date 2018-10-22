@@ -126,12 +126,12 @@ void onEvent(ev_t ev)
             PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
             if (LMIC.dataBeg > 0)
             {
-                uint8_t port = LMIC.frame[LMIC.dataLen - 1];
+                uint8_t port = LMIC.frame[LMIC.dataBeg - 1];
                 if (port == 9)
                 {
                     disableProximitySensor();
                     delay(500);
-                    initProximitySensor(LMIC.frame[LMIC.dataLen]);
+                    initProximitySensor(LMIC.frame[LMIC.dataBeg]);
                 }
             }
         }
