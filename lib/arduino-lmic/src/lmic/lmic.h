@@ -56,21 +56,41 @@ enum {
   OP_TESTMODE = 0x2000, // developer test mode
 };
 // TX-RX transaction flags - report back to user
-enum {
+enum TxRxStatus: uint8_t {
+  NONE = 0x00,
   // confirmed UP frame was acked
-  TXRX_ACK = 0x80,
+  ACK = 0x80,
   // confirmed UP frame was not acked
-  TXRX_NACK = 0x40,
+  NACK = 0x40,
   // set if a frame with a port was RXed, clr if no frame/no port
-  TXRX_NOPORT = 0x20,
+  NOPORT = 0x20,
   // set if a frame with a port was RXed,
   // LMIC.frame[LMIC.dataBeg-1] => port
-  TXRX_PORT = 0x10,
+  PORT = 0x10,
   // received in 1st DN slot
-  TXRX_DNW1 = 0x01,
+  DNW1 = 0x01,
   // received in 2dn DN slot
-  TXRX_DNW2 = 0x02,
+  DNW2 = 0x02,
 }; // received in a scheduled RX slot
+
+constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs)
+{
+  return static_cast<TxRxStatus>(
+    static_cast<uint8_t>(lhs) |
+    static_cast<uint8_t>(rhs));
+}
+
+inline TxRxStatus& operator |=(TxRxStatus& a, TxRxStatus b)
+{
+    return a = a|b;
+}
+
+constexpr bool operator&(TxRxStatus lhs, TxRxStatus rhs)
+{
+    return static_cast<bool>(
+        static_cast<uint8_t>(lhs) &
+        static_cast<uint8_t>(rhs));
+}
 
 // Event types for event callback
 enum class EventType : uint8_t {
@@ -221,7 +241,7 @@ private:
 public:
   // Public part of MAC state
   uint8_t txCnt = 0;
-  uint8_t txrxFlags = 0; // transaction flags (TX-RX combo)
+  TxRxStatus txrxFlags; // transaction flags (TX-RX combo)
   uint8_t dataBeg = 0;   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataLen = 0;   // 0 no data or zero length data, >0 byte count of data
   uint8_t frame[MAX_LEN_FRAME];

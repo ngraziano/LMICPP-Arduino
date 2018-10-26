@@ -416,13 +416,13 @@ bool Lmic::decodeFrame() {
       // Decrypt payload - if any
       aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
                                  d + dataBeg, dataLen);
-      txrxFlags |= TXRX_PORT;
+      txrxFlags |= TxRxStatus::PORT;
 
       if (port == 0) {
         parseMacCommands(d + dataBeg, dataLen);
       }
     } else {
-      txrxFlags |= TXRX_NOPORT;
+      txrxFlags |= TxRxStatus::NOPORT;
       dataBeg = poff;
       dataLen = 0;
     }
@@ -441,7 +441,7 @@ bool Lmic::decodeFrame() {
   }
 
   if (txCnt != 0) // we requested an ACK
-    txrxFlags |= ackup ? TXRX_ACK : TXRX_NACK;
+    txrxFlags |= ackup ? TxRxStatus::ACK : TxRxStatus::NACK;
 
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // stop sending RXParamSetupAns when receive dowlink message
@@ -459,7 +459,7 @@ bool Lmic::decodeFrame() {
 // TX/RX transaction support
 
 void Lmic::setupRx2() {
-  txrxFlags = TXRX_DNW2;
+  txrxFlags = TxRxStatus::DNW2;
   rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
@@ -504,7 +504,7 @@ void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
 }
 
 void Lmic::setupRx1() {
-  txrxFlags = TXRX_DNW1;
+  txrxFlags = TxRxStatus::DNW1;
   dataLen = 0;
   radio.rx(freq, rps, rxsyms, rxtime);
 }
@@ -566,14 +566,14 @@ bool Lmic::processJoinAccept() {
   if ((dlen != LEN_JA && dlen != LEN_JAEXT) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
     // unexpected frame
-    if ((txrxFlags & TXRX_DNW1) != 0)
+    if (txrxFlags & TxRxStatus::DNW1)
       return false;
     return processJoinAcceptNoJoinFrame();
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
     // bad mic
-    if ((txrxFlags & TXRX_DNW1) != 0)
+    if (txrxFlags & TxRxStatus::DNW1)
       return false;
     return processJoinAcceptNoJoinFrame();
   }
@@ -614,7 +614,7 @@ bool Lmic::processJoinAccept() {
 
 void Lmic::processRx2Jacc() {
   if (dataLen == 0)
-    txrxFlags = 0; // nothing in 1st/2nd DN slot
+    txrxFlags = TxRxStatus::NONE; // nothing in 1st/2nd DN slot
   processJoinAccept();
 }
 
@@ -827,7 +827,7 @@ bool Lmic::processDnData() {
 
   if (!decodeFrame()) {
     // first RX windows, do nothing wait for second windows.
-    if ((txrxFlags & TXRX_DNW1) != 0)
+    if (txrxFlags & TxRxStatus::DNW1)
       return false;
 
     // retry send if need
@@ -842,10 +842,10 @@ bool Lmic::processDnData() {
         engineUpdate();
         return true;
       }
-      txrxFlags = TXRX_NACK | TXRX_NOPORT;
+      txrxFlags = TxRxStatus::NACK | TxRxStatus::NOPORT;
     } else {
       // Nothing received - implies no port
-      txrxFlags = TXRX_NOPORT;
+      txrxFlags = TxRxStatus::NOPORT;
     }
     if (adrAckReq != LINK_CHECK_OFF)
       adrAckReq += 1;
@@ -853,7 +853,7 @@ bool Lmic::processDnData() {
   }
 
   opmode &= ~(OP_TXDATA | OP_TXRXPEND);
-  if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2)) != 0 &&
+  if ((txrxFlags & (TxRxStatus::DNW1 | TxRxStatus::DNW2)) &&
       (opmode & OP_LINKDEAD) != 0) {
     opmode &= ~OP_LINKDEAD;
     reportEvent(EventType::LINK_ALIVE);
