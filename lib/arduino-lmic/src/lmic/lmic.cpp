@@ -853,7 +853,7 @@ bool Lmic::processDnData() {
   }
 
   opmode &= ~(OP_TXDATA | OP_TXRXPEND);
-  if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2 | TXRX_PING)) != 0 &&
+  if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2)) != 0 &&
       (opmode & OP_LINKDEAD) != 0) {
     opmode &= ~OP_LINKDEAD;
     reportEvent(EV_LINK_ALIVE);

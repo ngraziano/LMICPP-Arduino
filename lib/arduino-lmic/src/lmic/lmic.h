@@ -25,7 +25,6 @@
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 5
 
-
 enum { MAX_FRAME_LEN = 64 };  //!< Library cap on max frame length
 enum { TXCONF_ATTEMPTS = 8 }; //!< Transmit attempts for confirmed frames
 
@@ -58,15 +57,19 @@ enum {
 };
 // TX-RX transaction flags - report back to user
 enum {
-  TXRX_ACK = 0x80,  // confirmed UP frame was acked
-  TXRX_NACK = 0x40, // confirmed UP frame was not acked
-  TXRX_NOPORT =
-      0x20, // set if a frame with a port was RXed, clr if no frame/no port
-  TXRX_PORT = 0x10, // set if a frame with a port was RXed,
-                    // LMIC.frame[LMIC.dataBeg-1] => port
-  TXRX_DNW1 = 0x01, // received in 1st DN slot
-  TXRX_DNW2 = 0x02, // received in 2dn DN slot
-  TXRX_PING = 0x04
+  // confirmed UP frame was acked
+  TXRX_ACK = 0x80,
+  // confirmed UP frame was not acked
+  TXRX_NACK = 0x40,
+  // set if a frame with a port was RXed, clr if no frame/no port
+  TXRX_NOPORT = 0x20,
+  // set if a frame with a port was RXed,
+  // LMIC.frame[LMIC.dataBeg-1] => port
+  TXRX_PORT = 0x10,
+  // received in 1st DN slot
+  TXRX_DNW1 = 0x01,
+  // received in 2dn DN slot
+  TXRX_DNW2 = 0x02,
 }; // received in a scheduled RX slot
 // Event types for event callback
 enum _ev_t {
@@ -356,6 +359,7 @@ public:
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
 #define DR_RANGE_MAP(drlo, drhi)                                               \
-  (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) & ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))))
+  (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &                          \
+   ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))))
 
 #endif // _lmic_h_
