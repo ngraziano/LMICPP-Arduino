@@ -71,19 +71,18 @@ enum {
   // received in 2dn DN slot
   TXRX_DNW2 = 0x02,
 }; // received in a scheduled RX slot
+
 // Event types for event callback
-enum _ev_t {
-  EV_SCAN_TIMEOUT = 1,
-  EV_JOINING,
-  EV_JOINED,
-  EV_JOIN_FAILED,
-  EV_REJOIN_FAILED,
-  EV_TXCOMPLETE,
-  EV_RESET,
-  EV_LINK_DEAD,
-  EV_LINK_ALIVE
+enum class ev_t : uint8_t {
+  JOINING = 1,
+  JOINED,
+  JOIN_FAILED,
+  REJOIN_FAILED,
+  TXCOMPLETE,
+  RESET,
+  LINK_DEAD,
+  LINK_ALIVE
 };
-typedef enum _ev_t ev_t;
 
 using eventCallback_t = void (*)(ev_t);
 using keyCallback_t = void (*)(uint8_t *);

@@ -105,19 +105,19 @@ void onEvent(ev_t ev)
 {
     switch (ev)
     {
-    case EV_JOINING:
+    case ev_t::JOINING:
         PRINT_DEBUG_2("EV_JOINING");
         break;
-    case EV_JOINED:
+    case ev_t::JOINED:
         PRINT_DEBUG_2("EV_JOINED");
         break;
-    case EV_JOIN_FAILED:
+    case ev_t::JOIN_FAILED:
         PRINT_DEBUG_2("EV_JOIN_FAILED");
         break;
-    case EV_REJOIN_FAILED:
+    case ev_t::REJOIN_FAILED:
         PRINT_DEBUG_2("EV_REJOIN_FAILED");
         break;
-    case EV_TXCOMPLETE:
+    case ev_t::TXCOMPLETE:
         PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
         if (LMIC.txrxFlags & TXRX_ACK)
             PRINT_DEBUG_2("Received ack");
@@ -149,13 +149,13 @@ void onEvent(ev_t ev)
         }
 
         break;
-    case EV_RESET:
+    case ev_t::RESET:
         PRINT_DEBUG_2("EV_RESET");
         break;
-    case EV_LINK_DEAD:
+    case ev_t::LINK_DEAD:
         PRINT_DEBUG_2("EV_LINK_DEAD");
         break;
-    case EV_LINK_ALIVE:
+    case ev_t::LINK_ALIVE:
         PRINT_DEBUG_2("EV_LINK_ALIVE");
         break;
     default:

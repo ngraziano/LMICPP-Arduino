@@ -143,7 +143,7 @@ void Lmic::runReset() {
 #if !defined(DISABLE_JOIN)
   startJoining();
 #endif // !DISABLE_JOIN
-  reportEvent(EV_RESET);
+  reportEvent(ev_t::RESET);
 }
 
 void Lmic::stateJustJoined() {
@@ -524,7 +524,7 @@ void Lmic::txDone(OsDeltaTime const &delay) {
 void Lmic::onJoinFailed() {
   // Notify app - must call reset() to stop joining
   // otherwise join procedure continues.
-  reportEvent(EV_JOIN_FAILED);
+  reportEvent(ev_t::JOIN_FAILED);
 }
 
 bool Lmic::processJoinAcceptNoJoinFrame() {
@@ -534,7 +534,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
     opmode &= ~(OP_REJOIN | OP_TXRXPEND);
     if (rejoinCnt < 10)
       rejoinCnt++;
-    reportEvent(EV_REJOIN_FAILED);
+    reportEvent(ev_t::REJOIN_FAILED);
     return true;
   }
   opmode &= ~OP_TXRXPEND;
@@ -608,7 +608,7 @@ bool Lmic::processJoinAccept() {
   } else {
     rxDelay = OsDeltaTime::from_sec(frame[OFF_JA_RXDLY]);
   }
-  reportEvent(EV_JOINED);
+  reportEvent(ev_t::JOINED);
   return true;
 }
 
@@ -794,7 +794,7 @@ void Lmic::buildJoinRequest(uint8_t ftype) {
   devNonce++;
 }
 
-void Lmic::startJoiningCallBack() { reportEvent(EV_JOINING); }
+void Lmic::startJoiningCallBack() { reportEvent(ev_t::JOINING); }
 
 // Start join procedure if not already joined.
 bool Lmic::startJoining() {
@@ -856,9 +856,9 @@ bool Lmic::processDnData() {
   if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2)) != 0 &&
       (opmode & OP_LINKDEAD) != 0) {
     opmode &= ~OP_LINKDEAD;
-    reportEvent(EV_LINK_ALIVE);
+    reportEvent(ev_t::LINK_ALIVE);
   }
-  reportEvent(EV_TXCOMPLETE);
+  reportEvent(ev_t::TXCOMPLETE);
   // If we haven't heard from NWK in a while although we asked for a sign
   // assume link is dead - notify application and keep going
   if (adrAckReq > LINK_CHECK_DEAD) {
@@ -877,7 +877,7 @@ bool Lmic::processDnData() {
       opmode |= OP_REJOIN | OP_LINKDEAD;
     }
     adrAckReq = LINK_CHECK_CONT;
-    reportEvent(EV_LINK_DEAD);
+    reportEvent(ev_t::LINK_DEAD);
   }
   return true;
 }
