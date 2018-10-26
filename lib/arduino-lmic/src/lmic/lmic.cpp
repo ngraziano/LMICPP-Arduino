@@ -131,7 +131,7 @@ void Lmic::setDrTxpow(uint8_t dr, int8_t pow) {
 
 void Lmic::runEngineUpdate() { engineUpdate(); }
 
-void Lmic::reportEvent(ev_t ev) {
+void Lmic::reportEvent(EventType ev) {
   if (eventCallBack)
     eventCallBack(ev);
   engineUpdate();
@@ -143,7 +143,7 @@ void Lmic::runReset() {
 #if !defined(DISABLE_JOIN)
   startJoining();
 #endif // !DISABLE_JOIN
-  reportEvent(ev_t::RESET);
+  reportEvent(EventType::RESET);
 }
 
 void Lmic::stateJustJoined() {
@@ -524,7 +524,7 @@ void Lmic::txDone(OsDeltaTime const &delay) {
 void Lmic::onJoinFailed() {
   // Notify app - must call reset() to stop joining
   // otherwise join procedure continues.
-  reportEvent(ev_t::JOIN_FAILED);
+  reportEvent(EventType::JOIN_FAILED);
 }
 
 bool Lmic::processJoinAcceptNoJoinFrame() {
@@ -534,7 +534,7 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
     opmode &= ~(OP_REJOIN | OP_TXRXPEND);
     if (rejoinCnt < 10)
       rejoinCnt++;
-    reportEvent(ev_t::REJOIN_FAILED);
+    reportEvent(EventType::REJOIN_FAILED);
     return true;
   }
   opmode &= ~OP_TXRXPEND;
@@ -608,7 +608,7 @@ bool Lmic::processJoinAccept() {
   } else {
     rxDelay = OsDeltaTime::from_sec(frame[OFF_JA_RXDLY]);
   }
-  reportEvent(ev_t::JOINED);
+  reportEvent(EventType::JOINED);
   return true;
 }
 
@@ -794,7 +794,7 @@ void Lmic::buildJoinRequest(uint8_t ftype) {
   devNonce++;
 }
 
-void Lmic::startJoiningCallBack() { reportEvent(ev_t::JOINING); }
+void Lmic::startJoiningCallBack() { reportEvent(EventType::JOINING); }
 
 // Start join procedure if not already joined.
 bool Lmic::startJoining() {
@@ -856,9 +856,9 @@ bool Lmic::processDnData() {
   if ((txrxFlags & (TXRX_DNW1 | TXRX_DNW2)) != 0 &&
       (opmode & OP_LINKDEAD) != 0) {
     opmode &= ~OP_LINKDEAD;
-    reportEvent(ev_t::LINK_ALIVE);
+    reportEvent(EventType::LINK_ALIVE);
   }
-  reportEvent(ev_t::TXCOMPLETE);
+  reportEvent(EventType::TXCOMPLETE);
   // If we haven't heard from NWK in a while although we asked for a sign
   // assume link is dead - notify application and keep going
   if (adrAckReq > LINK_CHECK_DEAD) {
@@ -877,7 +877,7 @@ bool Lmic::processDnData() {
       opmode |= OP_REJOIN | OP_LINKDEAD;
     }
     adrAckReq = LINK_CHECK_CONT;
-    reportEvent(ev_t::LINK_DEAD);
+    reportEvent(EventType::LINK_DEAD);
   }
   return true;
 }

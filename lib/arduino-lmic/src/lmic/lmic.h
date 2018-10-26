@@ -73,7 +73,7 @@ enum {
 }; // received in a scheduled RX slot
 
 // Event types for event callback
-enum class ev_t : uint8_t {
+enum class EventType : uint8_t {
   JOINING = 1,
   JOINED,
   JOIN_FAILED,
@@ -84,7 +84,7 @@ enum class ev_t : uint8_t {
   LINK_ALIVE
 };
 
-using eventCallback_t = void (*)(ev_t);
+using eventCallback_t = void (*)(EventType);
 using keyCallback_t = void (*)(uint8_t *);
 enum {
   // This value represents 100% error in LMIC.clockError
@@ -267,7 +267,7 @@ private:
 
   void stateJustJoined();
 
-  void reportEvent(ev_t ev);
+  void reportEvent(EventType ev);
 
   void buildDataFrame();
   void engineUpdate();
