@@ -25,17 +25,14 @@
 #define LMIC_VERSION_MAJOR 1
 #define LMIC_VERSION_MINOR 5
 
-enum { MAX_FRAME_LEN = 64 };  //!< Library cap on max frame length
-enum { TXCONF_ATTEMPTS = 8 }; //!< Transmit attempts for confirmed frames
+//!< Transmit attempts for confirmed frames
+const uint8_t TXCONF_ATTEMPTS = 8;
 
-enum {
-  RETRY_PERIOD_secs = 3
-}; // secs - random period for retrying a confirmed send
+// secs - random period for retrying a confirmed send
+const uint8_t RETRY_PERIOD_secs = 3;
 
-enum { KEEP_TXPOW = -128 };
+const int8_t KEEP_TXPOW = -128;
 
-// Netid values /  lmic_t.netid
-enum { NETID_NONE = (int)~0U, NETID_MASK = (int)0xFFFFFF };
 // MAC operation modes (lmic_t.opmode).
 enum class OpState : uint8_t {
   NONE = 0x00,
@@ -87,9 +84,6 @@ constexpr OpState operator~(OpState value) {
   return static_cast<OpState>(~static_cast<uint8_t>(value));
 }
 
-
-
-
 // TX-RX transaction flags - report back to user
 enum class TxRxStatus : uint8_t {
   NONE = 0x00,
@@ -134,10 +128,9 @@ enum class EventType : uint8_t {
 
 using eventCallback_t = void (*)(EventType);
 using keyCallback_t = void (*)(uint8_t *);
-enum {
-  // This value represents 100% error in LMIC.clockError
-  MAX_CLOCK_ERROR = 256,
-};
+
+// This value represents 100% error in LMIC.clockError
+const uint8_t MAX_CLOCK_ERROR = 255;
 
 #if defined(CFG_eu868) // EU868 spectrum
 
