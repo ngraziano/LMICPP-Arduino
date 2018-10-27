@@ -37,27 +37,61 @@ enum { KEEP_TXPOW = -128 };
 // Netid values /  lmic_t.netid
 enum { NETID_NONE = (int)~0U, NETID_MASK = (int)0xFFFFFF };
 // MAC operation modes (lmic_t.opmode).
-enum {
-  OP_NONE = 0x0000,
+enum class OpState : uint8_t {
+  NONE = 0x00,
   // device joining in progress (blocks other activities)
-  OP_JOINING = 0x0001,
+  JOINING = 0x01,
   // TX user data (buffered in pendTxData)
-  OP_TXDATA = 0x0002,
+  TXDATA = 0x02,
   // send empty UP frame to ACK confirmed DN/fetch more DN data
-  OP_POLL = 0x0004,
+  POLL = 0x04,
   // occasionally send JOIN REQUEST
-  OP_REJOIN = 0x0008,
+  REJOIN = 0x08,
   // prevent MAC from doing anything   
-  OP_SHUTDOWN = 0x0010,
+  SHUTDOWN = 0x10,
   // TX/RX transaction pending
-  OP_TXRXPEND = 0x0020, 
+  TXRXPEND = 0x20, 
   // prevent TX lining up after a beacon
-  OP_NEXTCHNL = 0x0040, // find a new channel
-  OP_LINKDEAD = 0x0080, // link was reported as dead
+  NEXTCHNL = 0x40, // find a new channel
+  LINKDEAD = 0x80, // link was reported as dead
 };
 
+template<typename T, typename U>
+class auto_bool
+{
+    T val_;
+public:
+    constexpr auto_bool(T val) : val_(val) {}
+    constexpr operator T() const { return val_; }
+    constexpr explicit operator bool() const
+    {
+        return static_cast<U>(val_) != 0;
+    }
+};
+
+constexpr OpState operator|(OpState lhs, OpState rhs) {
+  return static_cast<OpState>(static_cast<uint8_t>(lhs) |
+                                 static_cast<uint8_t>(rhs));
+}
+
+inline OpState &operator|=(OpState &a, OpState b) { return a = a | b; }
+
+constexpr auto_bool<OpState,uint8_t> operator&(OpState lhs, OpState rhs) {
+  return static_cast<OpState>(static_cast<uint8_t>(lhs) &
+                           static_cast<uint8_t>(rhs));
+}
+
+inline OpState &operator&=(OpState &a, OpState b) { return a = a & b; }
+
+constexpr OpState operator~(OpState value) {
+  return static_cast<OpState>(~static_cast<uint8_t>(value));
+}
+
+
+
+
 // TX-RX transaction flags - report back to user
-enum TxRxStatus : uint8_t {
+enum class TxRxStatus : uint8_t {
   NONE = 0x00,
   // confirmed UP frame was acked
   ACK = 0x80,
@@ -81,8 +115,8 @@ constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs) {
 
 inline TxRxStatus &operator|=(TxRxStatus &a, TxRxStatus b) { return a = a | b; }
 
-constexpr bool operator&(TxRxStatus lhs, TxRxStatus rhs) {
-  return static_cast<bool>(static_cast<uint8_t>(lhs) &
+constexpr auto_bool<TxRxStatus,uint8_t> operator&(TxRxStatus lhs, TxRxStatus rhs) {
+  return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) &
                            static_cast<uint8_t>(rhs));
 }
 
@@ -161,7 +195,7 @@ protected:
 private:
   uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
-  uint8_t opmode;
+  OpState opmode;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
@@ -318,7 +352,7 @@ public:
   void sendAlive();
   void setClockError(uint8_t error);
 
-  uint16_t getOpMode() { return opmode; };
+  OpState getOpMode() { return opmode; };
 
   void setEventCallBack(eventCallback_t callback) { eventCallBack = callback; };
   void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };

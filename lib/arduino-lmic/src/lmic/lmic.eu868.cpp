@@ -339,7 +339,7 @@ void LmicEu868::initJoinLoop() {
   adrTxPow = 14;
   setDrJoin(static_cast<dr_t>(Eu868Dr::SF7));
   initDefaultChannels(true);
-  ASSERT((opmode & OP_NEXTCHNL) == 0);
+  ASSERT(!(opmode & OpState::NEXTCHNL));
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
   PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail,
                 txend);

@@ -177,9 +177,9 @@ void reset_and_do_send()
 void do_send()
 {
     // Check if there is not a current TX/RX job running
-    if (LMIC.getOpMode() & OP_TXRXPEND)
+    if (LMIC.getOpMode() & OpState::TXRXPEND)
     {
-        PRINT_DEBUG_1("OP_TXRXPEND, not sending");
+        PRINT_DEBUG_1("OpState::TXRXPEND, not sending");
         // should not happen so reschedule anymway
         sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
     }
