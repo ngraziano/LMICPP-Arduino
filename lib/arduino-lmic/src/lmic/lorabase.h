@@ -124,7 +124,8 @@ enum {
   FCT_ADREN = 0x80,
   FCT_ADRARQ = 0x40,
   FCT_ACK = 0x20,
-  FCT_MORE = 0x10, // also in DN direction: Class B indicator
+  // Fpending
+  FCT_MORE = 0x10, 
   FCT_OPTLEN = 0x0F,
 };
 enum {

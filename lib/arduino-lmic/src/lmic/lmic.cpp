@@ -114,7 +114,6 @@ void Lmic::txDelay(OsTime const &reftime, uint8_t secSpan) {
   const auto delayRef = reftime + OsDeltaTime::rnd_delay(rand, secSpan);
   if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
     globalDutyAvail = delayRef;
-    opmode |= OP_RNDTX;
   }
 }
 
@@ -596,7 +595,7 @@ bool Lmic::processJoinAccept() {
     // Lower DR every try below current UP DR
     datarate = lowerDR(datarate, rejoinCnt);
   }
-  opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI) |
+  opmode &= ~(OP_JOINING  | OP_REJOIN | OP_TXRXPEND) |
             OP_NEXTCHNL;
   txCnt = 0;
   stateJustJoined();
@@ -685,7 +684,7 @@ void Lmic::updataDone() {
 // ========================================
 
 void Lmic::buildDataFrame() {
-  bool txdata = ((opmode & (OP_TXDATA | OP_POLL)) != OP_POLL);
+  bool txdata = (opmode & OP_TXDATA) != 0;
 
   // Piggyback MAC options
   // Prioritize by importance
@@ -804,7 +803,7 @@ bool Lmic::startJoining() {
     // Lift any previous duty limitation
     globalDutyRate = 0;
     // Cancel scanning
-    opmode &= ~(OP_SCAN | OP_REJOIN | OP_LINKDEAD | OP_NEXTCHNL);
+    opmode &= ~(OP_REJOIN | OP_LINKDEAD | OP_NEXTCHNL);
     // Setup state
     rejoinCnt = txCnt = 0;
     // remove rx 1 offset
@@ -886,7 +885,7 @@ bool Lmic::processDnData() {
 void Lmic::engineUpdate() {
   PRINT_DEBUG_1("engineUpdate, opmode=0x%x.", opmode);
   // Check for ongoing state: scan or TX/RX transaction
-  if ((opmode & (OP_SCAN | OP_TXRXPEND | OP_SHUTDOWN)) != 0)
+  if ((opmode & (OP_TXRXPEND | OP_SHUTDOWN)) != 0)
     return;
 
 #if !defined(DISABLE_JOIN)
@@ -919,8 +918,7 @@ void Lmic::engineUpdate() {
       PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg);
     }
     // Delayed TX or waiting for duty cycle?
-    if ((globalDutyRate != 0 || (opmode & OP_RNDTX) != 0) &&
-        (txbeg - globalDutyAvail) < 0) {
+    if ((txbeg - globalDutyAvail) < 0) {
       txbeg = globalDutyAvail;
       PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg);
     }
@@ -965,7 +963,7 @@ void Lmic::engineUpdate() {
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
 
-      opmode = (opmode & ~(OP_POLL | OP_RNDTX)) | OP_TXRXPEND | OP_NEXTCHNL;
+      opmode = (opmode & ~(OP_POLL)) | OP_TXRXPEND | OP_NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       updateTx(txbeg, airtime);
       radio.tx(freq, rps, txpow);
@@ -973,16 +971,12 @@ void Lmic::engineUpdate() {
     }
     PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
     // Cannot yet TX
-    if ((opmode & OP_TRACK) == 0)
-      goto txdelay; // We don't track the beacon - nothing else to do - so wait
-                    // for the time to TX
-                    // Consider RX tasks
-                    // if( txbeg == 0 ) // zero indicates no TX pending
-    //    txbeg += 1;  // TX delayed by one tick (insignificant amount of time)
+    //  wait for the time to TX
+    // Consider RX tasks
+    goto txdelay;   
   } else {
     // No TX pending - no scheduled RX
-    if ((opmode & OP_TRACK) == 0)
-      return;
+    return;
   }
 
 txdelay:
@@ -1022,7 +1016,7 @@ void Lmic::init(void) {
 void Lmic::clrTxData(void) {
   opmode &= ~(OP_TXDATA | OP_TXRXPEND | OP_POLL);
   pendTxLen = 0;
-  if ((opmode & (OP_JOINING | OP_SCAN)) != 0) // do not interfere with JOINING
+  if ((opmode & OP_JOINING) != 0) // do not interfere with JOINING
     return;
   osjob.clearCallback();
   radio.rst();
@@ -1088,7 +1082,7 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
 
   initDefaultChannels(false);
 
-  opmode &= ~(OP_JOINING | OP_TRACK | OP_REJOIN | OP_TXRXPEND | OP_PINGINI);
+  opmode &= ~(OP_JOINING | OP_REJOIN | OP_TXRXPEND);
   opmode |= OP_NEXTCHNL;
   stateJustJoined();
 }

@@ -39,24 +39,25 @@ enum { NETID_NONE = (int)~0U, NETID_MASK = (int)0xFFFFFF };
 // MAC operation modes (lmic_t.opmode).
 enum {
   OP_NONE = 0x0000,
-  OP_SCAN = 0x0001,    // radio scan to find a beacon
-  OP_TRACK = 0x0002,   // track my networks beacon (netid)
-  OP_JOINING = 0x0004, // device joining in progress (blocks other activities)
-  OP_TXDATA = 0x0008,  // TX user data (buffered in pendTxData)
-  OP_POLL =
-      0x0010, // send empty UP frame to ACK confirmed DN/fetch more DN data
-  OP_REJOIN = 0x0020,   // occasionally send JOIN REQUEST
-  OP_SHUTDOWN = 0x0040, // prevent MAC from doing anything
-  OP_TXRXPEND = 0x0080, // TX/RX transaction pending
-  OP_RNDTX = 0x0100,    // prevent TX lining up after a beacon
-  OP_PINGINI = 0x0200,  // pingable is initialized and scheduling active
-  OP_PINGABLE = 0x0400, // we're pingable
-  OP_NEXTCHNL = 0x0800, // find a new channel
-  OP_LINKDEAD = 0x1000, // link was reported as dead
-  OP_TESTMODE = 0x2000, // developer test mode
+  // device joining in progress (blocks other activities)
+  OP_JOINING = 0x0001,
+  // TX user data (buffered in pendTxData)
+  OP_TXDATA = 0x0002,
+  // send empty UP frame to ACK confirmed DN/fetch more DN data
+  OP_POLL = 0x0004,
+  // occasionally send JOIN REQUEST
+  OP_REJOIN = 0x0008,
+  // prevent MAC from doing anything   
+  OP_SHUTDOWN = 0x0010,
+  // TX/RX transaction pending
+  OP_TXRXPEND = 0x0020, 
+  // prevent TX lining up after a beacon
+  OP_NEXTCHNL = 0x0040, // find a new channel
+  OP_LINKDEAD = 0x0080, // link was reported as dead
 };
+
 // TX-RX transaction flags - report back to user
-enum TxRxStatus: uint8_t {
+enum TxRxStatus : uint8_t {
   NONE = 0x00,
   // confirmed UP frame was acked
   ACK = 0x80,
@@ -73,23 +74,16 @@ enum TxRxStatus: uint8_t {
   DNW2 = 0x02,
 }; // received in a scheduled RX slot
 
-constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs)
-{
-  return static_cast<TxRxStatus>(
-    static_cast<uint8_t>(lhs) |
-    static_cast<uint8_t>(rhs));
+constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs) {
+  return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) |
+                                 static_cast<uint8_t>(rhs));
 }
 
-inline TxRxStatus& operator |=(TxRxStatus& a, TxRxStatus b)
-{
-    return a = a|b;
-}
+inline TxRxStatus &operator|=(TxRxStatus &a, TxRxStatus b) { return a = a | b; }
 
-constexpr bool operator&(TxRxStatus lhs, TxRxStatus rhs)
-{
-    return static_cast<bool>(
-        static_cast<uint8_t>(lhs) &
-        static_cast<uint8_t>(rhs));
+constexpr bool operator&(TxRxStatus lhs, TxRxStatus rhs) {
+  return static_cast<bool>(static_cast<uint8_t>(lhs) &
+                           static_cast<uint8_t>(rhs));
 }
 
 // Event types for event callback
@@ -167,7 +161,7 @@ protected:
 private:
   uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
-  uint16_t opmode;
+  uint8_t opmode;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
@@ -242,8 +236,8 @@ public:
   // Public part of MAC state
   uint8_t txCnt = 0;
   TxRxStatus txrxFlags; // transaction flags (TX-RX combo)
-  uint8_t dataBeg = 0;   // 0 or start of data (dataBeg-1 is port)
-  uint8_t dataLen = 0;   // 0 no data or zero length data, >0 byte count of data
+  uint8_t dataBeg = 0;  // 0 or start of data (dataBeg-1 is port)
+  uint8_t dataLen = 0;  // 0 no data or zero length data, >0 byte count of data
   uint8_t frame[MAX_LEN_FRAME];
 
   Aes aes;
