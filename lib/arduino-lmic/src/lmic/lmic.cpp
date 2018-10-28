@@ -15,6 +15,9 @@
 #include "bufferpack.h"
 #include "radio.h"
 #include <algorithm>
+#include "lorawanpacket.h"
+
+using namespace lorawan;
 
 #if !defined(MINRX_SYMS)
 #define MINRX_SYMS 5
@@ -784,13 +787,13 @@ void Lmic::buildDataFrame() {
 void Lmic::buildJoinRequest(uint8_t ftype) {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
-  frame[OFF_JR_HDR] = ftype;
-  artEuiCallBack(frame + OFF_JR_ARTEUI);
-  devEuiCallBack(frame + OFF_JR_DEVEUI);
-  wlsbf2(frame + OFF_JR_DEVNONCE, devNonce);
-  aes.appendMic0(frame, LEN_JR);
+  frame[join_request::offset::MHDR] = ftype;
+  artEuiCallBack(frame + join_request::offset::appEUI);
+  devEuiCallBack(frame + join_request::offset::devEUI);
+  wlsbf2(frame + join_request::offset::devNonce, devNonce);
+  aes.appendMic0(frame, join_request::lengths::total);
 
-  dataLen = LEN_JR;
+  dataLen = join_request::lengths::total;
   devNonce++;
 }
 
