@@ -566,7 +566,7 @@ bool Lmic::processJoinAccept() {
   const uint8_t hdr = frame[0];
   const uint8_t dlen = dataLen;
 
-  if ((dlen != LEN_JA && dlen != LEN_JAEXT) ||
+  if ((dlen != join_accept::lengths::total && dlen != join_accept::lengths::totalWithOptional) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
     // unexpected frame
     if (txrxFlags & TxRxStatus::DNW1)
@@ -581,18 +581,18 @@ bool Lmic::processJoinAccept() {
     return processJoinAcceptNoJoinFrame();
   }
 
-  devaddr = rlsbf4(frame + OFF_JA_DEVADDR);
-  netid = rlsbf4(&frame[OFF_JA_NETID]) & 0xFFFFFF;
+  devaddr = rlsbf4(frame + join_accept::offset::devAddr);
+  netid = rlsbf4(frame+ join_accept::offset::netId) & 0xFFFFFF;
 
   initDefaultChannels(false);
 
-  if (dlen > LEN_JA) {
+  if (dlen > join_accept::lengths::total) {
     // some region just ignore cflist.
-    handleCFList(frame + OFF_CFLIST);
+    handleCFList(frame + join_accept::offset::cfList);
   }
 
   // already incremented when JOIN REQ got sent off
-  aes.sessKeys(devNonce - 1, &frame[OFF_JA_ARTNONCE]);
+  aes.sessKeys(devNonce - 1, frame + join_accept::offset::appNonce);
 
   ASSERT(opmode & (OpState::JOINING | OpState::REJOIN));
   if (opmode & OpState::REJOIN) {
@@ -604,13 +604,16 @@ bool Lmic::processJoinAccept() {
             OpState::NEXTCHNL;
   txCnt = 0;
   stateJustJoined();
-  dn2Dr = frame[OFF_JA_DLSET] & 0x0F;
-  rx1DrOffset = (frame[OFF_JA_DLSET] >> 4) & 0x7;
 
-  if (frame[OFF_JA_RXDLY] == 0) {
+  const uint8_t dlSettings = frame[join_accept::offset::dlSettings];
+  dn2Dr = dlSettings & 0x0F;
+  rx1DrOffset = (dlSettings >> 4) & 0x7;
+
+  const uint8_t configuredRxDelay = frame[join_accept::offset::rxDelay];
+  if (configuredRxDelay == 0) {
     rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   } else {
-    rxDelay = OsDeltaTime::from_sec(frame[OFF_JA_RXDLY]);
+    rxDelay = OsDeltaTime::from_sec(configuredRxDelay);
   }
   reportEvent(EventType::JOINED);
   return true;
@@ -792,9 +795,9 @@ void Lmic::buildJoinRequest() {
   artEuiCallBack(frame + join_request::offset::appEUI);
   devEuiCallBack(frame + join_request::offset::devEUI);
   wlsbf2(frame + join_request::offset::devNonce, devNonce);
-  aes.appendMic0(frame, join_request::lengths::total);
+  aes.appendMic0(frame, join_request::lengths::totalWithMic);
 
-  dataLen = join_request::lengths::total;
+  dataLen = join_request::lengths::totalWithMic;
   devNonce++;
 }
 

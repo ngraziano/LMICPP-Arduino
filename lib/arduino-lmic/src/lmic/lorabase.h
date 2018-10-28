@@ -61,19 +61,7 @@ enum { DELAY_JACC2 = DELAY_JACC1 + (int)DELAY_EXTDNW2 }; // in secs
 enum { DELAY_DNW2 = DELAY_DNW1 + (int)DELAY_EXTDNW2 }; // in secs down window #1
 
 
-enum {
-  // Join Accept frame format
-  OFF_JA_HDR = 0,
-  OFF_JA_ARTNONCE = 1,
-  OFF_JA_NETID = 4,
-  OFF_JA_DEVADDR = 7,
-  OFF_JA_RFU = 11,
-  OFF_JA_DLSET = 11,
-  OFF_JA_RXDLY = 12,
-  OFF_CFLIST = 13,
-  LEN_JA = 17,
-  LEN_JAEXT = 17 + 16
-};
+
 enum {
   // Data frame format
   OFF_DAT_HDR = 0,
