@@ -10,22 +10,40 @@
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
 
+// FOR constant table
+#define us2osticks(us) ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC) / 1000000))
+#define us2osticksRound(us)                                                    \
+  ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC + 500000) / 1000000))
+
 class LmicRand;
 
 class OsDeltaTime {
 public:
-  OsDeltaTime(int32_t init) : value(init){};
-  OsDeltaTime() : value(0){};
+  constexpr OsDeltaTime(int32_t init) : value(init){};
+  constexpr OsDeltaTime() : value(0){};
 
-  static OsDeltaTime from_us(int64_t us);
-  static OsDeltaTime from_ms(int64_t us);
-  static OsDeltaTime from_sec(int64_t us);
-  static OsDeltaTime from_us_round(int64_t us);
-  static OsDeltaTime rnd_delay(LmicRand& rand, uint8_t sec_span);
+  constexpr static OsDeltaTime from_us(int64_t us) {
+    return OsDeltaTime(us * OSTICKS_PER_SEC / 1000000);
+  };
+  constexpr static OsDeltaTime from_ms(int64_t ms) {
+    return OsDeltaTime(ms * OSTICKS_PER_SEC / 1000);
+  };
+  constexpr static OsDeltaTime from_sec(int64_t sec) {
+    return OsDeltaTime(sec * OSTICKS_PER_SEC);
+  };
+  constexpr static OsDeltaTime from_us_round(int64_t us) {
+    return OsDeltaTime(us2osticksRound(us));
+  };
+  static OsDeltaTime rnd_delay(LmicRand &rand, uint8_t sec_span);
 
-  int32_t to_us() const;
-  int32_t to_ms() const;
-  int32_t tick() const;
+  constexpr int32_t to_us() const {
+    return value * (int64_t)1000000 / OSTICKS_PER_SEC;
+  };
+  constexpr int32_t to_ms() const {
+    return value * (int64_t)1000 / OSTICKS_PER_SEC;
+  };
+  constexpr int32_t tick() const { return value; };
+
   OsDeltaTime &operator+=(const OsDeltaTime &a);
   OsDeltaTime &operator-=(const OsDeltaTime &a);
 
@@ -35,9 +53,9 @@ private:
 
 class OsTime {
 public:
-  OsTime() : OsTime(0){};
-  OsTime(uint32_t init) : value(init){};
-  uint32_t tick() const;
+  constexpr OsTime() : OsTime(0){};
+  constexpr OsTime(uint32_t init) : value(init){};
+  constexpr uint32_t tick() const { return value; };
 
   OsTime &operator+=(const OsDeltaTime &a);
   OsTime &operator-=(const OsDeltaTime &a);
@@ -46,28 +64,45 @@ private:
   uint32_t value;
 };
 
-OsDeltaTime operator+(OsDeltaTime const &a, OsDeltaTime const &b);
+constexpr OsDeltaTime operator+(OsDeltaTime const &a, OsDeltaTime const &b) {
+  return OsDeltaTime(a.tick() + b.tick());
+};
 
-OsDeltaTime operator*(int16_t const &a, OsDeltaTime const &b);
-int32_t operator/(OsDeltaTime const &a, OsDeltaTime const &b);
+constexpr OsDeltaTime operator*(int16_t const &a, OsDeltaTime const &b) {
+  return OsDeltaTime(a * b.tick());
+};
 
-bool operator<(OsDeltaTime const &lhs, OsDeltaTime const &rhs);
-bool operator>(OsDeltaTime const &lhs, OsDeltaTime const &rhs);
-bool operator<=(OsDeltaTime const &lhs, OsDeltaTime const &rhs);
-bool operator>=(OsDeltaTime const &lhs, OsDeltaTime const &rhs);
+constexpr int32_t operator/(OsDeltaTime const &a, OsDeltaTime const &b) {
+  return a.tick() / b.tick();
+};
 
-OsTime operator+(OsTime const &a, OsDeltaTime const &b);
-OsTime operator-(OsTime const &a, OsDeltaTime const &b);
+constexpr bool operator<(OsDeltaTime const &lhs, OsDeltaTime const &rhs) {
+  return lhs.tick() < rhs.tick();
+};
+constexpr bool operator>(OsDeltaTime const &lhs, OsDeltaTime const &rhs) {
+  return rhs < lhs;
+};
+constexpr bool operator<=(OsDeltaTime const &lhs, OsDeltaTime const &rhs) {
+  return !(lhs > rhs);
+};
+constexpr bool operator>=(OsDeltaTime const &lhs, OsDeltaTime const &rhs) {
+  return !(lhs < rhs);
+};
+
+constexpr OsTime operator+(OsTime const &a, OsDeltaTime const &b) {
+  return OsTime(a.tick() + b.tick());
+};
+constexpr OsTime operator-(OsTime const &a, OsDeltaTime const &b) {
+  return OsTime(a.tick() - b.tick());
+};
+
 bool operator<(OsTime const &lhs, OsTime const &rhs);
 bool operator>(OsTime const &lhs, OsTime const &rhs);
 bool operator<=(OsTime const &lhs, OsTime const &rhs);
 bool operator>=(OsTime const &lhs, OsTime const &rhs);
 
-OsDeltaTime operator-(OsTime const &a, OsTime const &b);
-
-// FOR constant table
-#define us2osticks(us) ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC) / 1000000))
-#define us2osticksRound(us)                                                    \
-  ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC + 500000) / 1000000))
+constexpr OsDeltaTime operator-(OsTime const &a, OsTime const &b) {
+  return OsDeltaTime(a.tick() - b.tick());
+};
 
 #endif // _osticks_h_
