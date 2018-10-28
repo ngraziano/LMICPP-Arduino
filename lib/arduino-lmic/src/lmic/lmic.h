@@ -295,7 +295,7 @@ private:
   void jreqDone();
   void startJoiningCallBack();
 
-  void buildJoinRequest(uint8_t ftype);
+  void buildJoinRequest();
 
 #endif
 

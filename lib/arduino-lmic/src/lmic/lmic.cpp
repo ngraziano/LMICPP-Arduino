@@ -530,9 +530,9 @@ void Lmic::onJoinFailed() {
 }
 
 bool Lmic::processJoinAcceptNoJoinFrame() {
-  if (!(opmode & OpState::JOINING)) {
-    ASSERT(opmode & OpState::REJOIN);
+  if (opmode & OpState::REJOIN) {
     // REJOIN attempt for roaming
+    // rejoin fail, continue normal operation
     opmode &= ~OpState::REJOIN;
     opmode &= ~OpState::TXRXPEND;
     if (rejoinCnt < 10)
@@ -597,6 +597,7 @@ bool Lmic::processJoinAccept() {
   ASSERT(opmode & (OpState::JOINING | OpState::REJOIN));
   if (opmode & OpState::REJOIN) {
     // Lower DR every try below current UP DR
+    // so adjust the current datarate to success join
     datarate = lowerDR(datarate, rejoinCnt);
   }
   opmode &= ~(OpState::JOINING  | OpState::REJOIN | OpState::TXRXPEND) |
@@ -784,10 +785,10 @@ void Lmic::buildDataFrame() {
 // ================================================================================
 
 #if !defined(DISABLE_JOIN)
-void Lmic::buildJoinRequest(uint8_t ftype) {
+void Lmic::buildJoinRequest() {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
-  frame[join_request::offset::MHDR] = ftype;
+  frame[join_request::offset::MHDR] = HDR_FTYPE_JREQ;
   artEuiCallBack(frame + join_request::offset::appEUI);
   devEuiCallBack(frame + join_request::offset::devEUI);
   wlsbf2(frame + join_request::offset::devNonce, devNonce);
@@ -934,14 +935,10 @@ void Lmic::engineUpdate() {
       dr_t txdr = datarate;
 #if !defined(DISABLE_JOIN)
       if (jacc) {
-        uint8_t ftype;
         if (opmode & OpState::REJOIN) {
           txdr = lowerDR(txdr, rejoinCnt);
-          ftype = HDR_FTYPE_REJOIN;
-        } else {
-          ftype = HDR_FTYPE_JREQ;
-        }
-        buildJoinRequest(ftype);
+        } 
+        buildJoinRequest();
         osjob.setCallbackFuture(&Lmic::jreqDone);
       } else
 #endif // !DISABLE_JOIN
