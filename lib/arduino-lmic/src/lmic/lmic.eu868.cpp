@@ -232,7 +232,7 @@ uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicEu868::updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) {
+void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime const &airtime) {
 
   // Update global/band specific duty cycle stats
 
@@ -264,7 +264,7 @@ uint8_t LmicEu868::getBand(uint8_t channel) const {
   return channels[channel].freq & 0x3;
 }
 
-OsTime LmicEu868::nextTx(OsTime const &now) {
+OsTime LmicEu868::nextTx(OsTime now) {
   uint8_t bmap = 0xF;
 #if LMIC_DEBUG_LEVEL > 1
   for (uint8_t bi = 0; bi < 4; bi++) {

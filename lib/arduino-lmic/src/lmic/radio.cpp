@@ -433,7 +433,7 @@ static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
 
 // start LoRa receiver
 static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                   OsTime const &rxtime) {
+                   OsTime rxtime) {
   // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
@@ -498,7 +498,7 @@ static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
 }
 
 static void startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                    OsTime const &rxtime) {
+                    OsTime rxtime) {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   rxlora(rxmode, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
@@ -612,7 +612,7 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void Radio::irq_handler(OsJobBase &nextJob, uint8_t dio,
-                        OsTime const &trigger) {
+                        OsTime trigger) {
   OsTime now = os_getTime();
   if (now - trigger < OsDeltaTime::from_sec(1)) {
     now = trigger;
@@ -695,7 +695,7 @@ void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow) {
   hal_enableIRQs();
 }
 
-void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime const &rxtime) {
+void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) {
   hal_disableIRQs();
   currentRps = rps;
   // receive frame now (exactly at rxtime)
@@ -704,7 +704,7 @@ void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime const &rxtime) {
 }
 
 void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
-                 OsTime const &rxtime) {
+                 OsTime rxtime) {
   hal_disableIRQs();
   currentRps = rps;
   // start scanning for beacon now

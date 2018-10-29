@@ -113,7 +113,7 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
     // confirmed frames
     0, 0, 1, 0, 1, 0, 1, 0, 0};
 
-void Lmic::txDelay(OsTime const &reftime, uint8_t secSpan) {
+void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
   const auto delayRef = reftime + OsDeltaTime::rnd_delay(rand, secSpan);
   if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
     globalDutyAvail = delayRef;
@@ -1140,7 +1140,7 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
   return dr;
 }
 
-void Lmic::irq_handler(uint8_t dio, OsTime const &trigger) {
+void Lmic::irq_handler(uint8_t dio, OsTime trigger) {
   radio.irq_handler(osjob, dio, trigger);
 }
 

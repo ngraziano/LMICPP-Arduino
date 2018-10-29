@@ -170,7 +170,7 @@ OsTime hal_ticks() {
                 "Invalid US_PER_OSTICK_EXPONENT value");
 }
 
-void hal_waitUntil(OsTime const &time) {
+void hal_waitUntil(OsTime time) {
   OsDeltaTime delta = time - hal_ticks();
   hal_wait(delta);
 }
@@ -188,7 +188,7 @@ void hal_wait(OsDeltaTime delta) {
 
 
 // check and rewind for target time
-bool hal_checkTimer(OsTime const &time) {
+bool hal_checkTimer(OsTime time) {
 
   auto delta = time - hal_ticks();
   if (delta <= OsDeltaTime(0))

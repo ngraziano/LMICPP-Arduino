@@ -24,8 +24,8 @@ protected:
   void handleCFList(const uint8_t *ptr) override;
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) override;
-  OsTime nextTx(OsTime const &now) override;
+  void updateTx(OsTime txbeg, OsDeltaTime const &airtime) override;
+  OsTime nextTx(OsTime now) override;
   void setRx1Params() override;
 #if !defined(DISABLE_JOIN)
   void initJoinLoop() override;

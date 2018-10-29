@@ -96,13 +96,21 @@ constexpr OsTime operator-(OsTime const &a, OsDeltaTime const &b) {
   return OsTime(a.tick() - b.tick());
 };
 
-bool operator<(OsTime const &lhs, OsTime const &rhs);
-bool operator>(OsTime const &lhs, OsTime const &rhs);
-bool operator<=(OsTime const &lhs, OsTime const &rhs);
-bool operator>=(OsTime const &lhs, OsTime const &rhs);
-
 constexpr OsDeltaTime operator-(OsTime const &a, OsTime const &b) {
   return OsDeltaTime(a.tick() - b.tick());
+};
+
+constexpr bool operator<(OsTime const &lhs, OsTime const &rhs) {
+  return lhs - rhs < OsDeltaTime(0);
+};
+constexpr bool operator>(OsTime const &lhs, OsTime const &rhs) {
+  return rhs < lhs;
+};
+constexpr bool operator<=(OsTime const &lhs, OsTime const &rhs) {
+  return !(lhs > rhs);
+};
+constexpr bool operator>=(OsTime const &lhs, OsTime const &rhs) {
+  return !(lhs < rhs);
 };
 
 #endif // _osticks_h_

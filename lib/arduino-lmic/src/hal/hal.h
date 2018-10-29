@@ -93,7 +93,7 @@ void hal_forbid_sleep();
 /*
  * busy-wait until specified timestamp is reached.
  */
-void hal_waitUntil(OsTime const &time);
+void hal_waitUntil(OsTime time);
 
 /*
  * wait this interval.
@@ -105,7 +105,7 @@ void hal_wait(OsDeltaTime time);
  *   - return 1 if target time is close
  *   - otherwise rewind timer for target time or full period and return 0
  */
-bool hal_checkTimer(OsTime const &targettime);
+bool hal_checkTimer(OsTime targettime);
 
 /*
  * perform fatal failure action.

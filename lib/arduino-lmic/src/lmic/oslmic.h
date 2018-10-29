@@ -146,7 +146,11 @@ class OsScheduler {
 private:
   OsJobBase *scheduledjobs = nullptr;
   OsJobBase *runnablejobs = nullptr;
-
+  static void unlinkjob(OsJobBase **pnext, OsJobBase *job);
+  void unlinkScheduledJobs(OsJobBase *job);
+  void unlinkRunableJobs(OsJobBase *job);
+  void linkScheduledJob(OsJobBase *job);
+  void linkRunableJob(OsJobBase *job);
 public:
   OsDeltaTime runloopOnce();
 };
@@ -157,12 +161,9 @@ class OsJobBase {
   friend class OsScheduler;
 
 private:
-  OsScheduler *scheduler;
+  OsScheduler &scheduler;
   OsJobBase *next = nullptr;
   OsTime deadline;
-
-  static bool unlinkjob(OsJobBase **pnext, OsJobBase *job);
-
 protected:
   virtual void call() const = 0;
 
@@ -173,7 +174,7 @@ public:
   void setRunnable();
   void clearCallback();
 
-  void setTimed(OsTime const &time);
+  void setTimed(OsTime time);
 };
 
 class OsJob final : public OsJobBase {
@@ -184,7 +185,7 @@ protected:
 public:
   void setCallbackFuture(osjobcb_t cb) { func = cb; };
   void setCallbackRunnable(osjobcb_t cb);
-  void setTimedCallback(OsTime const &time, osjobcb_t cb);
+  void setTimedCallback(OsTime time, osjobcb_t cb);
 };
 
 template <class T> class OsJobType final : public OsJobBase {
@@ -214,7 +215,7 @@ public:
     setCallbackFuture(cb);
     setRunnable();
   };
-  void setTimedCallback(OsTime const &time, osjobcbTyped_t cb) {
+  void setTimedCallback(OsTime time, osjobcbTyped_t cb) {
     setCallbackFuture(cb);
     setTimed(time);
   };

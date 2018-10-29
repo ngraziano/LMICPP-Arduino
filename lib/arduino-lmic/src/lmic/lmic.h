@@ -316,7 +316,7 @@ private:
   bool decodeFrame();
   bool processDnData();
 
-  void txDelay(OsTime const &reftime, uint8_t secSpan);
+  void txDelay(OsTime reftime, uint8_t secSpan);
 
 public:
   void setDrJoin(dr_t dr);
@@ -352,7 +352,7 @@ public:
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
   // for radio to wakeup processing.
-  void irq_handler(uint8_t dio, OsTime const &trigger);
+  void irq_handler(uint8_t dio, OsTime trigger);
 
 protected:
   virtual uint8_t getRawRps(dr_t dr) const = 0;
@@ -370,8 +370,8 @@ protected:
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
   virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) = 0;
-  virtual OsTime nextTx(OsTime const &now) = 0;
+  virtual void updateTx(OsTime txbeg, OsDeltaTime const &airtime) = 0;
+  virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
 #if !defined(DISABLE_JOIN)
   virtual void initJoinLoop() = 0;

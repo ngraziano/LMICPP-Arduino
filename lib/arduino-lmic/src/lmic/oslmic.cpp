@@ -14,7 +14,7 @@
 
 OsScheduler OSS;
 
-OsJobBase::OsJobBase(OsScheduler &scheduler) { this->scheduler = &scheduler; }
+OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}
 
 void OsJob::setCallbackRunnable(osjobcb_t cb) {
   setCallbackFuture(cb);
@@ -25,67 +25,78 @@ void OsJob::setCallbackRunnable(osjobcb_t cb) {
 void OsJobBase::setRunnable() {
   hal_disableIRQs();
   // remove if job was already queued
-  unlinkjob(&this->scheduler->scheduledjobs, this) ||
-      unlinkjob(&this->scheduler->runnablejobs, this);
+  scheduler.unlinkScheduledJobs(this);
+  scheduler.unlinkRunableJobs(this);
   // fill-in job
   next = nullptr;
-  // add to end of run queue
-  OsJobBase **pnext;
-  for (pnext = &this->scheduler->runnablejobs; *pnext;
-       pnext = &((*pnext)->next))
-    ;
-  *pnext = this;
+  scheduler.linkRunableJob(this);
   hal_enableIRQs();
 
   PRINT_DEBUG_2("Scheduled job %p ASAP\n", this);
 }
 
-bool OsJobBase::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
+void OsScheduler::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
   for (; *pnext; pnext = &((*pnext)->next)) {
     if (*pnext == job) { // unlink
       *pnext = job->next;
-      return true;
     }
   }
-  return false;
+}
+
+void OsScheduler::linkScheduledJob(OsJobBase *job) {
+  const OsTime time = job->deadline;
+  OsJobBase **pnext;
+  // insert into schedule
+  for (pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
+    if ((*pnext)->deadline > time ) {
+      // enqueue before next element and stop
+      job->next = *pnext;
+      break;
+    }
+  }
+  *pnext = job;
+}
+
+void OsScheduler::linkRunableJob(OsJobBase *job) {
+  // add to end of run queue
+  OsJobBase **pnext;
+  for (pnext = &runnablejobs; *pnext; pnext = &((*pnext)->next))
+    ;
+  *pnext = job;
+}
+
+void OsScheduler::unlinkScheduledJobs(OsJobBase *job) {
+  unlinkjob(&scheduledjobs, job);
+}
+
+void OsScheduler::unlinkRunableJobs(OsJobBase *job) {
+  unlinkjob(&runnablejobs, job);
 }
 
 // clear scheduled job
 void OsJobBase::clearCallback() {
   hal_disableIRQs();
-  const bool res = unlinkjob(&this->scheduler->scheduledjobs, this) ||
-             unlinkjob(&this->scheduler->runnablejobs, this);
+  scheduler.unlinkScheduledJobs(this);
+  scheduler.unlinkRunableJobs(this);
   hal_enableIRQs();
-  if (res) {
-    PRINT_DEBUG_2("Cleared job %p\n", this);
-  }
 }
 
-void OsJob::setTimedCallback(OsTime const &time, osjobcb_t cb) {
+void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
   setCallbackFuture(cb);
   setTimed(time);
 }
 
 // schedule timed job
-void OsJobBase::setTimed(OsTime const &time) {
-  OsJobBase **pnext;
+void OsJobBase::setTimed(OsTime time) {
+
   hal_disableIRQs();
   // remove if job was already queued
-  unlinkjob(&this->scheduler->scheduledjobs, this);
-  unlinkjob(&this->scheduler->runnablejobs, this);
+  scheduler.unlinkScheduledJobs(this);
+  scheduler.unlinkRunableJobs(this);
   // fill-in job
   deadline = time;
   next = nullptr;
-  // insert into schedule
-  for (pnext = &this->scheduler->scheduledjobs; *pnext;
-       pnext = &((*pnext)->next)) {
-    if ((*pnext)->deadline - time > 0) {
-      // enqueue before next element and stop
-      next = *pnext;
-      break;
-    }
-  }
-  *pnext = this;
+  scheduler.linkScheduledJob(this);
   hal_enableIRQs();
   PRINT_DEBUG_2("Scheduled job %p, atRun %lu\n", this, time);
 }
@@ -120,15 +131,13 @@ OsDeltaTime OsScheduler::runloopOnce() {
   }
   if (runnablejobs) {
     return 0;
-  } else if(scheduledjobs) {
+  } else if (scheduledjobs) {
     // return the number of milisecond to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
   return 0;
 }
 
-void os_init() {
-  hal_init();
-}
+void os_init() { hal_init(); }
 
 OsTime os_getTime() { return hal_ticks(); }

@@ -34,17 +34,3 @@ OsDeltaTime OsDeltaTime::rnd_delay(LmicRand& rand, uint8_t secSpan) {
     delay += (r % secSpan) * OSTICKS_PER_SEC;
   return OsDeltaTime(delay);
 }
-
-
-bool operator<(OsTime const &lhs, OsTime const &rhs) {
-  return lhs - rhs < OsDeltaTime(0);
-}
-bool operator>(OsTime const &lhs, OsTime const &rhs) {
-  return rhs < lhs;
-}
-bool operator<=(OsTime const &lhs, OsTime const &rhs) {
-  return !(lhs > rhs);
-}
-bool operator>=(OsTime const &lhs, OsTime const &rhs) {
-  return !(lhs < rhs);
-}

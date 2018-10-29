@@ -206,7 +206,7 @@ uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicUs915::updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) {
+void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime const &airtime) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
@@ -228,7 +228,7 @@ void LmicUs915::updateTx(OsTime const &txbeg, OsDeltaTime const &airtime) {
 }
 
 // US does not have duty cycling - return now as earliest TX time
-OsTime LmicUs915::nextTx(OsTime const &now) {
+OsTime LmicUs915::nextTx(OsTime now) {
   if (chRnd == 0)
     chRnd = rand.uint8() & 0x3F;
   if (datarate >= DR_SF8C) { // 500kHz

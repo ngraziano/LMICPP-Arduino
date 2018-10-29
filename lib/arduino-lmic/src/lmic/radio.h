@@ -11,10 +11,10 @@ public:
   void init(void);
   void rst();
   void tx(uint32_t freq, rps_t rps, int8_t txpow);
-  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime const &rxtime);
-  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime const &rxtime);
+  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
+  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
 
-  void irq_handler(OsJobBase &nextJob, uint8_t dio, OsTime const &trigger);
+  void irq_handler(OsJobBase &nextJob, uint8_t dio, OsTime trigger);
   void init_random(uint8_t randbuf[16]);
 
   uint8_t rssi();
