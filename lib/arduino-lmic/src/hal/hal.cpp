@@ -15,96 +15,6 @@
 #include <SPI.h>
 #include <stdio.h>
 
-// -----------------------------------------------------------------------------
-// I/O
-
-OsTime last_int_trigger;
-
-
-void hal_store_trigger() { last_int_trigger = os_getTime(); }
-
-static void hal_io_init() {
-  // NSS and DIO0 are required, DIO1 is required for LoRa
-  ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
-  ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
-  ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN);
-
-  pinMode(lmic_pins.nss, OUTPUT);
-  if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.rxtx, OUTPUT);
-  if (lmic_pins.rst != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.rst, OUTPUT);
-
-  pinMode(lmic_pins.dio[0], INPUT);
-  if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.dio[1], INPUT);
-
-
-}
-
-// val == 1  => tx 1
-void hal_pin_rxtx(uint8_t val) {
-  if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
-    digitalWrite(lmic_pins.rxtx, val);
-}
-
-// set radio RST pin to given value (or keep floating!)
-void hal_pin_rst(uint8_t val) {
-  if (lmic_pins.rst == LMIC_UNUSED_PIN)
-    return;
-
-  if (val == 0 || val == 1) { // drive pin
-    pinMode(lmic_pins.rst, OUTPUT);
-    digitalWrite(lmic_pins.rst, val);
-  } else { // keep pin floating
-    pinMode(lmic_pins.rst, INPUT);
-  }
-}
-
-static bool dio_states[NUM_DIO] = {0};
-
-void hal_io_check(Lmic &lmic) {
-  uint8_t i;
-  for (i = 0; i < NUM_DIO; ++i) {
-    if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
-      continue;
-
-    if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
-      dio_states[i] = !dio_states[i];
-      if (dio_states[i])
-        lmic.irq_handler( i, last_int_trigger);
-    }
-  }
-}
-
-// -----------------------------------------------------------------------------
-// SPI
-
-static const SPISettings settings(10E6, MSBFIRST, SPI_MODE0);
-
-static void hal_spi_init() { SPI.begin(); }
-
-void hal_pin_nss(uint8_t val) {
-  if (!val)
-    SPI.beginTransaction(settings);
-  else
-    SPI.endTransaction();
-
-  // Serial.println(val?">>":"<<");
-  digitalWrite(lmic_pins.nss, val);
-}
-
-// perform SPI transaction with radio
-uint8_t hal_spi(uint8_t out) {
-  uint8_t res = SPI.transfer(out);
-  /*
-      Serial.print(">");
-      Serial.print(out, HEX);
-      Serial.print("<");
-      Serial.println(res, HEX);
-      */
-  return res;
-}
 
 // -----------------------------------------------------------------------------
 // TIME
@@ -230,10 +140,6 @@ void hal_printf_init() {
 #endif // defined(LMIC_PRINTF_TO)
 
 void hal_init() {
-  // configure radio I/O and interrupt handler
-  hal_io_init();
-  // configure radio SPI
-  hal_spi_init();
   // configure timer
 #if defined(LMIC_PRINTF_TO)
   // printf support

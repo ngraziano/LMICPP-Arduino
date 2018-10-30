@@ -3,9 +3,8 @@
 
 #include <lmic.h>
 
+#include <hal/hal_io.h>
 
-#include <hal/hal.h>
-#include <SPI.h>
 #include <LowPower.h>
 #include <SparkFun_APDS9960.h>
 
@@ -48,7 +47,6 @@ const OsDeltaTime TX_ONLENGTH = OsDeltaTime::from_sec(20);
 const unsigned int BAUDRATE = 19200;
 
 
-LmicEu868 LMIC;
 // Pin mapping
 const lmic_pinmap lmic_pins = {
     .nss = 10,
@@ -56,6 +54,8 @@ const lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {9, 8},
 };
+LmicEu868 LMIC(lmic_pins);
+
 
 const uint8_t NUMBERTIME_TO_SEND = 3;
 uint8_t apds_tosend = 0;
@@ -225,7 +225,8 @@ ISR(PCINT0_vect)
 {
     // one of pins D8 to D13 has changed
     // store time, will be check in OSS.runloopOnce()
-    hal_store_trigger();
+    LMIC.store_trigger();
+ 
 }
 
 void pciSetup(byte pin)
@@ -341,7 +342,7 @@ void loop()
         //
         // As an additional bonus, this prevents the can of worms that
         // we would otherwise get for running SPI transfers inside ISRs
-        hal_io_check(LMIC);
+        LMIC.io_check();
     }
     // was wakeup by interrupt, send new state.
     if (apds_new)

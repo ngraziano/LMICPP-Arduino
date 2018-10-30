@@ -36,8 +36,8 @@ union rps_t {
     uint8_t ih : 8;
   };
 
-  BandWidth getBw() { return static_cast<BandWidth>(bwRaw); };
-  CodingRate getCr() { return static_cast<CodingRate>(crRaw); };
+  constexpr BandWidth getBw() { return static_cast<BandWidth>(bwRaw); };
+  constexpr CodingRate getCr() { return static_cast<CodingRate>(crRaw); };
 
   constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc, uint8_t ih)
       : sf(sf), bwRaw(static_cast<uint8_t>(bw)), crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc),

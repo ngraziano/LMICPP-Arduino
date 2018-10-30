@@ -8,6 +8,9 @@ enum {
 }; // extra channels in RAM, channels 0-71 are immutable
 
 class LmicUs915 final : public Lmic {
+public:
+  LmicUs915(lmic_pinmap const& pins);
+
 protected:
   uint8_t getRawRps(dr_t dr) const override;
 

@@ -18,47 +18,15 @@
 class Lmic;
 class Radio;
 
-static const uint8_t NUM_DIO = 2;
 
-struct lmic_pinmap {
-  uint8_t nss;
-  uint8_t rxtx;
-  uint8_t rst;
-  uint8_t dio[NUM_DIO];
-};
 
-// Use this for any unused pins.
-const uint8_t LMIC_UNUSED_PIN = 0xff;
 
-// Declared here, to be defined an initialized by the application
-extern const lmic_pinmap lmic_pins;
 
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
  */
 void hal_init(void);
 
-/*
- * drive radio NSS pin (0=low, 1=high).
- */
-void hal_pin_nss(uint8_t val);
-
-/*
- * drive radio RX/TX pins (0=rx, 1=tx).
- */
-void hal_pin_rxtx(uint8_t val);
-
-/*
- * control radio RST pin (0=low, 1=high, 2=floating)
- */
-void hal_pin_rst(uint8_t val);
-
-/*
- * perform 8-bit SPI transaction with radio.
- *   - write given byte 'outval'
- *   - read byte and return value
- */
-uint8_t hal_spi(uint8_t outval);
 
 /*
  * disable all CPU interrupts.
@@ -72,10 +40,6 @@ void hal_disableIRQs(void);
  */
 void hal_enableIRQs(void);
 
-/*
- * check "interrupt" pin
- */
-void hal_io_check(Lmic &lmic);
 
 /*
  * return system time.

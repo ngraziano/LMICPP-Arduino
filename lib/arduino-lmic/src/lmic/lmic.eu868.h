@@ -28,6 +28,8 @@ struct band_t {
 enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 
 class LmicEu868 final : public Lmic {
+  public:
+  LmicEu868(lmic_pinmap const &pins);
 protected:
   uint8_t getRawRps(dr_t dr) const override;
   int8_t pow2dBm(uint8_t mcmd_ladr_p1) const override;

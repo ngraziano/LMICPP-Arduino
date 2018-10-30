@@ -160,44 +160,45 @@
 
 #define LNA_RX_GAIN (0x20 | 0x03)
 
-static void writeReg(uint8_t addr, uint8_t data) {
-  hal_pin_nss(0);
-  hal_spi(addr | 0x80);
-  hal_spi(data);
-  hal_pin_nss(1);
+
+void Radio::writeReg(uint8_t addr, uint8_t data) const {
+  hal.pin_nss(0);
+  hal.spi(addr | 0x80);
+  hal.spi(data);
+  hal.pin_nss(1);
 }
 
-static uint8_t readReg(uint8_t addr) {
-  hal_pin_nss(0);
-  hal_spi(addr & 0x7F);
-  uint8_t val = hal_spi(0x00);
-  hal_pin_nss(1);
+uint8_t Radio::readReg(uint8_t addr) const {
+  hal.pin_nss(0);
+  hal.spi(addr & 0x7F);
+  uint8_t val = hal.spi(0x00);
+  hal.pin_nss(1);
   return val;
 }
 
-static void writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) {
-  hal_pin_nss(0);
-  hal_spi(addr | 0x80);
+void Radio::writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
+  hal.pin_nss(0);
+  hal.spi(addr | 0x80);
   for (uint8_t i = 0; i < len; i++) {
-    hal_spi(buf[i]);
+    hal.spi(buf[i]);
   }
-  hal_pin_nss(1);
+  hal.pin_nss(1);
 }
 
-static void readBuf(uint8_t addr, uint8_t *buf, uint8_t len) {
-  hal_pin_nss(0);
-  hal_spi(addr & 0x7F);
+void Radio::readBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
+  hal.pin_nss(0);
+  hal.spi(addr & 0x7F);
   for (uint8_t i = 0; i < len; i++) {
-    buf[i] = hal_spi(0x00);
+    buf[i] = hal.spi(0x00);
   }
-  hal_pin_nss(1);
+  hal.pin_nss(1);
 }
 
-static void opmode(uint8_t mode) {
+void Radio::opmode(uint8_t mode) const {
   writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
-static void opmodeLora() {
+void Radio::opmodeLora()  const {
   uint8_t u = OPMODE_LORA;
 #ifdef CFG_sx1276_radio
   u |= 0x8; // TBD: sx1276 high freq
@@ -206,7 +207,7 @@ static void opmodeLora() {
 }
 
 // configure LoRa modem (cfg1, cfg2)
-static void configLoraModem(rps_t rps) {
+void Radio::configLoraModem(rps_t rps) const {
   sf_t sf = rps.sf;
 
 #ifdef CFG_sx1276_radio
@@ -300,7 +301,7 @@ static void configLoraModem(rps_t rps) {
 #endif /* CFG_sx1272_radio */
 }
 
-static void configChannel(uint32_t freq) {
+void Radio::configChannel(uint32_t freq) const {
   // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
   uint64_t frf = ((uint64_t)freq << 19) / 32000000;
   writeReg(RegFrfMsb, (uint8_t)(frf >> 16));
@@ -308,7 +309,7 @@ static void configChannel(uint32_t freq) {
   writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
 }
 
-static void configPower(int8_t pw) {
+void Radio::configPower(int8_t pw) const {
 #ifdef CFG_sx1276_radio
   // no boost +20dB used for now
   if (pw > 17) {
@@ -363,8 +364,8 @@ uint16_t bwForLog(rps_t rps) {
   }
 }
 
-static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
-                   uint8_t dataLen) {
+void Radio::txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
+                   uint8_t dataLen) const {
   // select LoRa modem (from sleep mode)
   // writeReg(RegOpMode, OPMODE_LORA);
   opmodeLora();
@@ -400,7 +401,7 @@ static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
   writeBuf(RegFifo, frame, dataLen);
 
   // enable antenna switch for TX
-  hal_pin_rxtx(1);
+  hal.pin_rxtx(1);
 
   // now we actually start the transmission
   opmode(OPMODE_TX);
@@ -415,8 +416,8 @@ static void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 }
 
 // start transmitter
-static void starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
-                    uint8_t dataLen) {
+void Radio::starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
+                    uint8_t dataLen) const {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   txlora(freq, rps, txpow, frame, dataLen);
   // the radio will go back to STANDBY mode as soon as the TX is finished
@@ -432,8 +433,8 @@ static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
 };
 
 // start LoRa receiver
-static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                   OsTime rxtime) {
+void Radio::rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
+                   OsTime rxtime) const {
   // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
@@ -471,7 +472,7 @@ static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
   writeReg(LORARegIrqFlagsMask, ~TABLE_GET_U1(rxlorairqmask, rxmode));
 
   // enable antenna switch for RX
-  hal_pin_rxtx(0);
+  hal.pin_rxtx(0);
 
   // now instruct the radio to receive
   if (rxmode == RXMODE_SINGLE) { // single rx
@@ -497,8 +498,8 @@ static void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
 #endif
 }
 
-static void startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                    OsTime rxtime) {
+void Radio::startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
+                    OsTime rxtime) const {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   rxlora(rxmode, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
@@ -507,16 +508,16 @@ static void startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
 
 void Radio::init() {
   hal_disableIRQs();
-
+  hal.init();
   // manually reset radio
 #ifdef CFG_sx1276_radio
-  hal_pin_rst(0); // drive RST pin low
+  hal.pin_rst(0); // drive RST pin low
 #else
-  hal_pin_rst(1); // drive RST pin high
+  hal.pin_rst(1); // drive RST pin high
 #endif
   // wait >100us
   hal_wait(OsDeltaTime::from_ms(1));
-  hal_pin_rst(2); // configure RST pin floating!
+  hal.pin_rst(2); // configure RST pin floating!
   // wait 5ms
   hal_wait(OsDeltaTime::from_ms(5));
 
@@ -594,7 +595,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
   hal_enableIRQs();
 }
 
-uint8_t Radio::rssi() {
+uint8_t Radio::rssi() const {
   hal_disableIRQs();
   uint8_t r = readReg(LORARegRssiValue);
   hal_enableIRQs();
@@ -611,11 +612,10 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(OsJobBase &nextJob, uint8_t dio,
-                        OsTime trigger) {
+void Radio::irq_handler(uint8_t dio) const {
   OsTime now = os_getTime();
-  if (now - trigger < OsDeltaTime::from_sec(1)) {
-    now = trigger;
+  if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
+    now = last_int_trigger;
   } else {
     PRINT_DEBUG_1("Not using interupt trigger %lu", trigger);
   }
@@ -676,11 +676,9 @@ void Radio::irq_handler(OsJobBase &nextJob, uint8_t dio,
   }
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
-  // run os job (use preset func ptr)
-  nextJob.setRunnable();
 }
 
-void Radio::rst() {
+void Radio::rst() const {
   hal_disableIRQs();
   // put radio to sleep
   opmode(OPMODE_SLEEP);
@@ -688,7 +686,7 @@ void Radio::rst() {
   hal_enableIRQs();
 }
 
-void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow) {
+void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow) const {
   hal_disableIRQs();
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
@@ -703,8 +701,7 @@ void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) {
   hal_enableIRQs();
 }
 
-void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
-                 OsTime rxtime) {
+void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) {
   hal_disableIRQs();
   currentRps = rps;
   // start scanning for beacon now
@@ -712,7 +709,18 @@ void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
   hal_enableIRQs();
 }
 
+bool Radio::io_check() { 
+  auto pinInInt = hal.io_check();
+  if(pinInInt < NUM_DIO) {
+    irq_handler(pinInInt);
+    return true;
+  }
+  return false;
+}
+
+void Radio::store_trigger() { last_int_trigger = os_getTime(); }
+
 Radio::Radio(uint8_t *frame, uint8_t &framLength, OsTime &reftxEnd,
-             OsTime &refrxTime)
+             OsTime &refrxTime, lmic_pinmap const &pins)
     : framePtr(frame), frameLength(framLength), txEnd(reftxEnd),
-      rxTime(refrxTime) {}
+      rxTime(refrxTime), hal(pins) {}

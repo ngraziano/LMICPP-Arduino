@@ -1140,8 +1140,15 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
   return dr;
 }
 
-void Lmic::irq_handler(uint8_t dio, OsTime trigger) {
-  radio.irq_handler(osjob, dio, trigger);
+void Lmic::io_check() {
+  if(radio.io_check()) {
+    // if radio task ended, activate next job.
+    osjob.setRunnable();
+  }
 }
 
-Lmic::Lmic() : radio(frame, dataLen, txend, rxtime), rand(aes) {}
+void Lmic::store_trigger() {
+  radio.store_trigger();
+}
+
+Lmic::Lmic(lmic_pinmap const &pins) : radio(frame, dataLen, txend, rxtime, pins), rand(aes) {}

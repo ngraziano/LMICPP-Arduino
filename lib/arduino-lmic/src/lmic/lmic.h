@@ -351,8 +351,6 @@ public:
   void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
-  // for radio to wakeup processing.
-  void irq_handler(uint8_t dio, OsTime trigger);
 
 protected:
   virtual uint8_t getRawRps(dr_t dr) const = 0;
@@ -394,7 +392,9 @@ protected:
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
 public:
-  Lmic();
+  Lmic(lmic_pinmap const &pins);
+  void io_check();
+  void store_trigger();
 };
 
 //! Construct a bit map of allowed datarates from drlo to drhi (both included).
