@@ -63,11 +63,15 @@ int16_t getSensitivity(rps_t rps) {
   return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bwRaw);
 }
 
-OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
-  const uint8_t bw = rps.bwRaw; // 0,1,2 = 125,250,500kHz
-  const uint8_t sf = rps.sf;    // 0=FSK, 1..6 = SF7..12
-  const uint8_t sfx = 4 * (sf + (7 - SF7));
-  const uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
+OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
+  // 0,1,2 = 125,250,500kHz
+  const uint8_t bw = rps.bwRaw;
+  //  7..12 = SF7..12
+  const uint8_t sf = 7 + rps.sf - SF7;  
+  const uint8_t sfx = 4 * sf;
+  const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
+  const uint8_t q = sfx - optimiseLowSf;
+  
   int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
@@ -86,7 +90,7 @@ OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   //
   // 3 => counter reduced divisor 125000/8 => 15625
   // 2 => counter 2 shift on tmp
-  uint8_t sfx2 = sf + (7 - SF7) - (3 + 2) - bw;
+  uint8_t sfx2 = sf - (3 + 2) - bw;
   uint16_t div = 15625;
   if (sfx2 > 4) {
     // prevent 32bit signed int overflow in last step

@@ -154,6 +154,8 @@ enum {
 
 class Lmic {
 public:
+  static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
+
   Radio radio;
 
 private:
