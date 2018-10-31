@@ -47,10 +47,11 @@ enum class OpState : uint8_t {
   // prevent MAC from doing anything   
   SHUTDOWN = 0x10,
   // TX/RX transaction pending
-  TXRXPEND = 0x20, 
-  // prevent TX lining up after a beacon
-  NEXTCHNL = 0x40, // find a new channel
-  LINKDEAD = 0x80, // link was reported as dead
+  TXRXPEND = 0x20,
+  // find a new channel
+  NEXTCHNL = 0x40,
+  // link was reported as dead
+  LINKDEAD = 0x80, 
 };
 
 template<typename T, typename U>

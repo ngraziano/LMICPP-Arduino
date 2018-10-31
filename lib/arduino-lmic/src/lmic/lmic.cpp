@@ -71,7 +71,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   const uint8_t sfx = 4 * sf;
   const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
   const uint8_t q = sfx - optimiseLowSf;
-  
+
   int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
@@ -573,6 +573,8 @@ bool Lmic::processJoinAccept() {
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
+    PRINT_DEBUG_1 ("Join Accept BAD Length %i or bad header %i ", dlen, hdr );
+
     // unexpected frame
     if (txrxFlags & TxRxStatus::DNW1)
       return false;
@@ -580,6 +582,8 @@ bool Lmic::processJoinAccept() {
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
+  PRINT_DEBUG_1 ("Join Accept BAD MIC", dlen );
+
     // bad mic
     if (txrxFlags & TxRxStatus::DNW1)
       return false;
