@@ -970,7 +970,7 @@ void Lmic::engineUpdate() {
       opmode = (opmode & ~(OpState::POLL)) | OpState::TXRXPEND | OpState::NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       updateTx(txbeg, airtime);
-      radio.tx(freq, rps, txpow);
+      radio.tx(freq, rps, txpow, frame, dataLen);
       return;
     }
     PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
@@ -1141,7 +1141,7 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
 }
 
 void Lmic::io_check() {
-  if(radio.io_check()) {
+  if(radio.io_check(frame, dataLen, txend, rxtime, rps)) {
     // if radio task ended, activate next job.
     osjob.setRunnable();
   }
@@ -1151,4 +1151,4 @@ void Lmic::store_trigger() {
   radio.store_trigger();
 }
 
-Lmic::Lmic(lmic_pinmap const &pins) : radio(frame, dataLen, txend, rxtime, pins), rand(aes) {}
+Lmic::Lmic(lmic_pinmap const &pins) : radio(pins), rand(aes) {}

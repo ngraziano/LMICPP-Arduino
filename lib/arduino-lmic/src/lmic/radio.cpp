@@ -160,7 +160,6 @@
 
 #define LNA_RX_GAIN (0x20 | 0x03)
 
-
 void Radio::writeReg(uint8_t addr, uint8_t data) const {
   hal.pin_nss(0);
   hal.spi(addr | 0x80);
@@ -198,7 +197,7 @@ void Radio::opmode(uint8_t mode) const {
   writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
-void Radio::opmodeLora()  const {
+void Radio::opmodeLora() const {
   uint8_t u = OPMODE_LORA;
 #ifdef CFG_sx1276_radio
   u |= 0x8; // TBD: sx1276 high freq
@@ -612,7 +611,8 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t dio) const {
+void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
+             OsTime &rxTime, rps_t currentRps) const {
   OsTime now = os_getTime();
   if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
     now = last_int_trigger;
@@ -686,33 +686,33 @@ void Radio::rst() const {
   hal_enableIRQs();
 }
 
-void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow) const {
+void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr, uint8_t frameLength) const {
   hal_disableIRQs();
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
   hal_enableIRQs();
 }
 
-void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) {
+void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const {
   hal_disableIRQs();
-  currentRps = rps;
   // receive frame now (exactly at rxtime)
   startrx(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
   hal_enableIRQs();
 }
 
-void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) {
+void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const {
   hal_disableIRQs();
-  currentRps = rps;
   // start scanning for beacon now
   startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
   hal_enableIRQs();
 }
 
-bool Radio::io_check() { 
+bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
+             OsTime &rxTime, rps_t currentRps) {
   auto pinInInt = hal.io_check();
-  if(pinInInt < NUM_DIO) {
-    irq_handler(pinInInt);
+  if (pinInInt < NUM_DIO) {
+    irq_handler(pinInInt, framePtr, frameLength, txEnd,
+             rxTime , currentRps);
     return true;
   }
   return false;
@@ -720,7 +720,5 @@ bool Radio::io_check() {
 
 void Radio::store_trigger() { last_int_trigger = os_getTime(); }
 
-Radio::Radio(uint8_t *frame, uint8_t &framLength, OsTime &reftxEnd,
-             OsTime &refrxTime, lmic_pinmap const &pins)
-    : framePtr(frame), frameLength(framLength), txEnd(reftxEnd),
-      rxTime(refrxTime), hal(pins) {}
+Radio::Radio(lmic_pinmap const &pins)
+    : hal(pins) {}

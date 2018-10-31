@@ -5,9 +5,6 @@
 #include "../lmic/osticks.h"
 #include <stdint.h>
 
-class OsJobBase;
-class Radio;
-
 static const uint8_t NUM_DIO = 2;
 
 struct lmic_pinmap {

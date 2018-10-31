@@ -11,28 +11,24 @@ class Radio {
 public:
   void init(void);
   void rst() const;
-  void tx(uint32_t freq, rps_t rps, int8_t txpow) const;
-  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
-  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
+  void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr,
+          uint8_t frameLength) const;
+  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
+  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
 
-  void irq_handler(uint8_t dio) const;
+  void irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
+                   OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const;
   void init_random(uint8_t randbuf[16]);
-  bool io_check();
+  bool io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
+                OsTime &rxTime, rps_t currentRps);
   void store_trigger();
   uint8_t rssi() const;
 
-  Radio(uint8_t *frame, uint8_t &frameLength, OsTime &txend, OsTime &rxTime,
-        lmic_pinmap const &pins);
+  Radio(lmic_pinmap const &pins);
 
 private:
-  uint8_t *framePtr = nullptr;
-  uint8_t &frameLength;
-
-  OsTime &txEnd;
-  OsTime &rxTime;
   OsTime last_int_trigger;
 
-  rps_t currentRps;
   HalIo hal;
 
   void writeReg(uint8_t addr, uint8_t data) const;
