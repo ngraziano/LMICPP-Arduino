@@ -472,7 +472,7 @@ void Lmic::setupRx2() {
   radio.rx(freq, rps, rxsyms, rxtime);
 }
 
-void Lmic::schedRx12(OsDeltaTime const &delay, uint8_t dr) {
+void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
   PRINT_DEBUG_2("SchedRx RX1/2.");
 
   // Half symbol time for the data rate.
@@ -517,7 +517,7 @@ void Lmic::setupRx1() {
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime
-void Lmic::txDone(OsDeltaTime const &delay) {
+void Lmic::txDone(OsDeltaTime delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
   setRx1Params();
   rps = dndr2rps(dndr);

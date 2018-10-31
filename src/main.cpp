@@ -151,7 +151,7 @@ void pciSetup(byte pin)
     PCICR |= bit(digitalPinToPCICRbit(pin));                   // enable interrupt for the group
 }
 
-void powersave(OsDeltaTime const &maxTime);
+void powersave(OsDeltaTime maxTime);
 
 void testDuration(int32_t ms)
 {
@@ -217,7 +217,7 @@ void setup()
 
 const int64_t sleepAdj = 1070;
 
-void powersave(OsDeltaTime const &maxTime)
+void powersave(OsDeltaTime maxTime)
 {
     OsDeltaTime duration_selected;
     period_t period_selected;

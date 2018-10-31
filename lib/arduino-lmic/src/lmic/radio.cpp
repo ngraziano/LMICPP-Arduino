@@ -154,9 +154,10 @@
 // DIO function mappings                D0D1D2D3
 #define MAP_DIO0_LORA_RXDONE 0x00 // 00------
 #define MAP_DIO0_LORA_TXDONE 0x40 // 01------
+#define MAP_DIO0_LORA_NOP 0xC0    // 11------
 #define MAP_DIO1_LORA_RXTOUT 0x00 // --00----
 #define MAP_DIO1_LORA_NOP 0x30    // --11----
-#define MAP_DIO2_LORA_NOP 0xC0    // ----11--
+#define MAP_DIO2_LORA_NOP 0x0C    // ----11--
 
 #define LNA_RX_GAIN (0x20 | 0x03)
 

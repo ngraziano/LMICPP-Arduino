@@ -46,7 +46,7 @@ void hal_enableIRQs(void);
  */
 OsTime hal_ticks();
 
-void hal_add_time_in_sleep(OsDeltaTime const &nb_tick);
+void hal_add_time_in_sleep(OsDeltaTime nb_tick);
 
 bool hal_is_sleep_allow();
 

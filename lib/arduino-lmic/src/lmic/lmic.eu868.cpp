@@ -232,7 +232,7 @@ uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime const &airtime) {
+void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 
   // Update global/band specific duty cycle stats
 

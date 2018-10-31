@@ -29,7 +29,7 @@ void hal_forbid_sleep() { is_sleep_allow = false; }
 
 OsDeltaTime time_in_sleep = 0;
 
-void hal_add_time_in_sleep(OsDeltaTime const &nb_tick) {
+void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
   time_in_sleep += nb_tick;
   os_getTime();
 }

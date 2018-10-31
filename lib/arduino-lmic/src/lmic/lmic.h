@@ -280,9 +280,9 @@ private:
   void processRx1DnData();
   void setupRx1();
   void setupRx2();
-  void schedRx12(OsDeltaTime const &delay, uint8_t dr);
+  void schedRx12(OsDeltaTime delay, uint8_t dr);
 
-  void txDone(OsDeltaTime const &delay);
+  void txDone(OsDeltaTime delay);
 
   void runReset();
   void runEngineUpdate();
@@ -371,7 +371,7 @@ protected:
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
   virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void updateTx(OsTime txbeg, OsDeltaTime const &airtime) = 0;
+  virtual void updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
 #if !defined(DISABLE_JOIN)

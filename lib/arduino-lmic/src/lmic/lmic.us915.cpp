@@ -206,7 +206,7 @@ uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return 1;
 }
 
-void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime const &airtime) {
+void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime airtime) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
