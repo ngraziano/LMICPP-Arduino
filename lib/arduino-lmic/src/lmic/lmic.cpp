@@ -13,9 +13,9 @@
 #include "lmic.h"
 #include "../aes/aes.h"
 #include "bufferpack.h"
+#include "lorawanpacket.h"
 #include "radio.h"
 #include <algorithm>
-#include "lorawanpacket.h"
 
 using namespace lorawan;
 
@@ -65,7 +65,7 @@ int16_t getSensitivity(rps_t rps) {
 
 OsDeltaTime calcAirTime(rps_t rps, uint8_t plen) {
   const uint8_t bw = rps.bwRaw; // 0,1,2 = 125,250,500kHz
-  const uint8_t sf = rps.sf; // 0=FSK, 1..6 = SF7..12
+  const uint8_t sf = rps.sf;    // 0=FSK, 1..6 = SF7..12
   const uint8_t sfx = 4 * (sf + (7 - SF7));
   const uint8_t q = sfx - (sf >= SF11 ? 8 : 0);
   int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
@@ -566,7 +566,8 @@ bool Lmic::processJoinAccept() {
   const uint8_t hdr = frame[0];
   const uint8_t dlen = dataLen;
 
-  if ((dlen != join_accept::lengths::total && dlen != join_accept::lengths::totalWithOptional) ||
+  if ((dlen != join_accept::lengths::total &&
+       dlen != join_accept::lengths::totalWithOptional) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
     // unexpected frame
     if (txrxFlags & TxRxStatus::DNW1)
@@ -582,7 +583,7 @@ bool Lmic::processJoinAccept() {
   }
 
   devaddr = rlsbf4(frame + join_accept::offset::devAddr);
-  netid = rlsbf4(frame+ join_accept::offset::netId) & 0xFFFFFF;
+  netid = rlsbf4(frame + join_accept::offset::netId) & 0xFFFFFF;
 
   initDefaultChannels(false);
 
@@ -600,7 +601,7 @@ bool Lmic::processJoinAccept() {
     // so adjust the current datarate to success join
     datarate = lowerDR(datarate, rejoinCnt);
   }
-  opmode &= ~(OpState::JOINING  | OpState::REJOIN | OpState::TXRXPEND) |
+  opmode &= ~(OpState::JOINING | OpState::REJOIN | OpState::TXRXPEND) |
             OpState::NEXTCHNL;
   txCnt = 0;
   stateJustJoined();
@@ -906,10 +907,12 @@ void Lmic::engineUpdate() {
   const OsTime now = os_getTime();
   OsTime txbeg = now;
 
-  if (opmode & (OpState::JOINING | OpState::REJOIN | OpState::TXDATA | OpState::POLL)) {
+  if (opmode &
+      (OpState::JOINING | OpState::REJOIN | OpState::TXDATA | OpState::POLL)) {
     // Need to TX some data...
     // Assuming txChnl points to channel which first becomes available again.
-    const bool jacc = static_cast<bool>(opmode & (OpState::JOINING | OpState::REJOIN));
+    const bool jacc =
+        static_cast<bool>(opmode & (OpState::JOINING | OpState::REJOIN));
 #if LMIC_DEBUG_LEVEL > 1
     if (jacc)
       lmic_printf("%lu: Uplink join pending\n", os_getTime());
@@ -940,7 +943,7 @@ void Lmic::engineUpdate() {
       if (jacc) {
         if (opmode & OpState::REJOIN) {
           txdr = lowerDR(txdr, rejoinCnt);
-        } 
+        }
         buildJoinRequest();
         osjob.setCallbackFuture(&Lmic::jreqDone);
       } else
@@ -967,7 +970,8 @@ void Lmic::engineUpdate() {
       dndr = txdr; // carry TX datarate (can be != datarate) over to
                    // txDone/setupRx1
 
-      opmode = (opmode & ~(OpState::POLL)) | OpState::TXRXPEND | OpState::NEXTCHNL;
+      opmode =
+          (opmode & ~(OpState::POLL)) | OpState::TXRXPEND | OpState::NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       updateTx(txbeg, airtime);
       radio.tx(freq, rps, txpow, frame, dataLen);
@@ -977,7 +981,7 @@ void Lmic::engineUpdate() {
     // Cannot yet TX
     //  wait for the time to TX
     // Consider RX tasks
-    goto txdelay;   
+    goto txdelay;
   } else {
     // No TX pending - no scheduled RX
     return;
@@ -1141,14 +1145,12 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
 }
 
 void Lmic::io_check() {
-  if(radio.io_check(frame, dataLen, txend, rxtime, rps)) {
+  if (radio.io_check(frame, dataLen, txend, rxtime, rps)) {
     // if radio task ended, activate next job.
     osjob.setRunnable();
   }
 }
 
-void Lmic::store_trigger() {
-  radio.store_trigger();
-}
+void Lmic::store_trigger() { radio.store_trigger(); }
 
 Lmic::Lmic(lmic_pinmap const &pins) : radio(pins), rand(aes) {}
