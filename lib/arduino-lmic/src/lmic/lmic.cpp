@@ -891,7 +891,7 @@ bool Lmic::processDnData() {
 
 // Decide what to do next for the MAC layer of a device
 void Lmic::engineUpdate() {
-  PRINT_DEBUG_1("engineUpdate, opmode=0x%x.", opmode);
+  PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", opmode);
   // Check for ongoing state: scan or TX/RX transaction
   if (opmode & (OpState::TXRXPEND | OpState::SHUTDOWN))
     return;

@@ -151,6 +151,7 @@ private:
   void unlinkRunableJobs(OsJobBase *job);
   void linkScheduledJob(OsJobBase *job);
   void linkRunableJob(OsJobBase *job);
+
 public:
   OsDeltaTime runloopOnce();
 };
@@ -164,6 +165,7 @@ private:
   OsScheduler &scheduler;
   OsJobBase *next = nullptr;
   OsTime deadline;
+
 protected:
   virtual void call() const = 0;
 
@@ -197,20 +199,13 @@ private:
   osjobcbTyped_t funcTyped;
 
 protected:
-  void call() const override {
-    PRINT_DEBUG_2("Run func %p on class %p", funcTyped, refClass);
-    (refClass.*funcTyped)();
-  };
+  void call() const override { (refClass.*funcTyped)(); };
 
 public:
   OsJobType(T &ref) : OsJobBase(), refClass(ref){};
   OsJobType(T &ref, OsScheduler &scheduler)
       : OsJobBase(scheduler), refClass(ref){};
-  void setCallbackFuture(osjobcbTyped_t cb) {
-    funcTyped = cb;
-    PRINT_DEBUG_2("Job %p SetCallBack %p on class %p", this, funcTyped,
-                  refClass);
-  };
+  void setCallbackFuture(osjobcbTyped_t cb) { funcTyped = cb; };
   void setCallbackRunnable(osjobcbTyped_t cb) {
     setCallbackFuture(cb);
     setRunnable();

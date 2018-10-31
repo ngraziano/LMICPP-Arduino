@@ -611,8 +611,8 @@ static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-             OsTime &rxTime, rps_t currentRps) const {
+void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
+                        OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const {
   OsTime now = os_getTime();
   if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
     now = last_int_trigger;
@@ -686,7 +686,8 @@ void Radio::rst() const {
   hal_enableIRQs();
 }
 
-void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr, uint8_t frameLength) const {
+void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr,
+               uint8_t frameLength) const {
   hal_disableIRQs();
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
@@ -700,7 +701,8 @@ void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const {
   hal_enableIRQs();
 }
 
-void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const {
+void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
+                 OsTime rxtime) const {
   hal_disableIRQs();
   // start scanning for beacon now
   startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
@@ -708,11 +710,10 @@ void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const 
 }
 
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-             OsTime &rxTime, rps_t currentRps) {
+                     OsTime &rxTime, rps_t currentRps) {
   auto pinInInt = hal.io_check();
   if (pinInInt < NUM_DIO) {
-    irq_handler(pinInInt, framePtr, frameLength, txEnd,
-             rxTime , currentRps);
+    irq_handler(pinInInt, framePtr, frameLength, txEnd, rxTime, currentRps);
     return true;
   }
   return false;
@@ -720,5 +721,4 @@ bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
 
 void Radio::store_trigger() { last_int_trigger = os_getTime(); }
 
-Radio::Radio(lmic_pinmap const &pins)
-    : hal(pins) {}
+Radio::Radio(lmic_pinmap const &pins) : hal(pins) {}
