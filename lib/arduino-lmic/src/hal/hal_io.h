@@ -50,7 +50,7 @@ public:
 
 private:
   const lmic_pinmap &lmic_pins;
-  bool dio_states[NUM_DIO] = {0};
+  uint8_t dio_states[NUM_DIO] = {0};
 };
 
 #endif

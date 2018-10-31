@@ -55,11 +55,12 @@ uint8_t HalIo::io_check() {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
     if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
       continue;
-
-    if (dio_states[i] != digitalRead(lmic_pins.dio[i])) {
-      dio_states[i] = !dio_states[i];
-      if (dio_states[i])
+    uint8_t newVal = digitalRead(lmic_pins.dio[i]);
+    if (dio_states[i] != newVal) {
+      dio_states[i] = newVal;
+      if (dio_states[i])  {
         return i;
+      }
     }
   }
   return NUM_DIO;
