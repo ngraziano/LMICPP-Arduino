@@ -319,9 +319,9 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
 // Decoding frames
 bool Lmic::decodeFrame() {
 #if LMIC_DEBUG_LEVEL > 0
-  const char *window = (txrxFlags & TXRX_DNW1)
+  const char *window = (txrxFlags & TxRxStatus::DNW1)
                            ? "RX1"
-                           : ((txrxFlags & TXRX_DNW2) ? "RX2" : "Other");
+                           : ((txrxFlags & TxRxStatus::DNW2) ? "RX2" : "Other");
 #endif
 
   if (dataLen == 0) {

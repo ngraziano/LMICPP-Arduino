@@ -617,7 +617,7 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength, Os
   if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
     now = last_int_trigger;
   } else {
-    PRINT_DEBUG_1("Not using interupt trigger %lu", trigger);
+    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger);
   }
 
   if ((readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
