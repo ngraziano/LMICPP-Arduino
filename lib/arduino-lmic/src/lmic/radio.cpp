@@ -309,8 +309,12 @@ void Radio::configChannel(uint32_t freq) const {
   writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
 }
 
+#define PA_BOOST_PIN 1
+
 void Radio::configPower(int8_t pw) const {
 #ifdef CFG_sx1276_radio
+
+#if PA_BOOST_PIN
   // no boost +20dB used for now
   if (pw > 17) {
     pw = 17;
@@ -323,7 +327,31 @@ void Radio::configPower(int8_t pw) const {
   writeReg(RegPaConfig, (uint8_t)(0x80 | pw));
   // no boost +20dB
   writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
+#else
+  // output on rfo pin
+ // Bit 6-4 Select max output power: Pmax=10.8+0.6*MaxPower [dBm]
+ // Bit 0-3 Pout=Pmax-(15-OutputPower) if PaSelect = 0 (RFO pin)
+ 
+  if (pw > 15) {
+    pw = 15;
+  } else if (pw < -4) {
+    pw = -4;
+  }
 
+  uint8_t pa = 0;
+  if (pw >= 0) {
+    pa = 7 << 4;
+    pa += pw;
+  } else {
+    pa = 0 << 4;
+    // take 11 instead of 10.8
+    pa += 15 - 11 + pw;
+  }
+
+  writeReg(RegPaConfig, pa);
+  // no boost +20dB
+  writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
+#endif
 #elif CFG_sx1272_radio
   // set PA config (2-17 dBm using PA_BOOST)
   if (pw > 17) {

@@ -67,7 +67,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   // 0,1,2 = 125,250,500kHz
   const uint8_t bw = rps.bwRaw;
   //  7..12 = SF7..12
-  const uint8_t sf = 7 + rps.sf - SF7;  
+  const uint8_t sf = 7 + rps.sf - SF7;
   const uint8_t sfx = 4 * sf;
   const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
   const uint8_t q = sfx - optimiseLowSf;
@@ -573,7 +573,7 @@ bool Lmic::processJoinAccept() {
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
       (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
-    PRINT_DEBUG_1 ("Join Accept BAD Length %i or bad header %i ", dlen, hdr );
+    PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
 
     // unexpected frame
     if (txrxFlags & TxRxStatus::DNW1)
@@ -582,7 +582,7 @@ bool Lmic::processJoinAccept() {
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
-  PRINT_DEBUG_1 ("Join Accept BAD MIC", dlen );
+    PRINT_DEBUG_1("Join Accept BAD MIC", dlen);
 
     // bad mic
     if (txrxFlags & TxRxStatus::DNW1)
@@ -943,7 +943,7 @@ void Lmic::engineUpdate() {
     }
     // Earliest possible time vs overhead to setup radio
     if (txbeg - (now + TX_RAMPUP) < 0) {
-      PRINT_DEBUG_2("Ready for uplink");
+      PRINT_DEBUG_1("Ready for uplink");
       // We could send right now!
       txbeg = now;
       dr_t txdr = datarate;
@@ -982,24 +982,24 @@ void Lmic::engineUpdate() {
           (opmode & ~(OpState::POLL)) | OpState::TXRXPEND | OpState::NEXTCHNL;
       OsDeltaTime airtime = calcAirTime(rps, dataLen);
       updateTx(txbeg, airtime);
-      radio.tx(freq, rps, txpow, frame, dataLen);
+      radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
       return;
     }
-    PRINT_DEBUG_2("Uplink delayed until %lu", txbeg);
+    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg);
     // Cannot yet TX
     //  wait for the time to TX
-    // Consider RX tasks
-    goto txdelay;
+    osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
   } else {
     // No TX pending - no scheduled RX
     return;
   }
-
-txdelay:
-  osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
 }
 
 void Lmic::setAdrMode(bool enabled) { adrEnabled = enabled ? FCT_ADREN : 0; }
+
+void Lmic::setAntennaPowerAdjustment(int8_t power) {
+  antennaPowerAdjustment = power;
+}
 
 void Lmic::shutdown() {
   osjob.clearCallback();

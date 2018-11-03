@@ -186,6 +186,7 @@ protected:
   // ADR adjusted TX power, limit power to this value.
   int8_t adrTxPow;
   int8_t txpow = 0; // dBm
+  int8_t antennaPowerAdjustment = 0;
 
   dr_t datarate = 0; // current data rate
 private:
@@ -331,7 +332,10 @@ public:
 
   // set ADR mode (if mobile turn off)
   void setAdrMode(bool enabled);
-
+  /**
+   * Adjust output power by this amount (for antenna gain)
+   */
+  void setAntennaPowerAdjustment(int8_t power);
 #if !defined(DISABLE_JOIN)
   bool startJoining();
   void tryRejoin();

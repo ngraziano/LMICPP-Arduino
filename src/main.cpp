@@ -6,7 +6,7 @@
 
 #include <LowPower.h>
 
-#define DEVICE_BALISE
+#define DEVICE_BALISE1
 #include "lorakeys.h"
 
 void do_send();
@@ -36,7 +36,7 @@ OsJob sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(2 * 60);
+const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 
 
 const unsigned int BAUDRATE = 19200;
@@ -60,6 +60,8 @@ void onEvent(EventType ev)
         break;
     case EventType::JOINED:
         PRINT_DEBUG_2("EV_JOINED");
+        // disable ADR because it will be mobile.
+        LMIC.setAdrMode(false);
         break;
     case EventType::JOIN_FAILED:
         PRINT_DEBUG_2("EV_JOIN_FAILED");
@@ -117,14 +119,10 @@ void do_send()
     {
 
         // battery
-        data[0] = 1;
-        data[1] = 2;
-        uint16_t val = analogRead(A1) * (6.6 / 1024 * 100);
-        data[2] = val >> 8;
-        data[3] = val;
+        uint8_t val = ((uint32_t)analogRead(A1)) * 255 / 683;
 
         // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(1, data, 4, false);
+        LMIC.setTxData2(2, &val, 1, false);
         PRINT_DEBUG_1("Packet queued");
     }
     // Next TX is scheduled after TX_COMPLETE event.
@@ -187,9 +185,9 @@ void setup()
     LMIC.setEventCallBack(onEvent);
     LMIC.setDevEuiCallback(getDevEui);
     LMIC.setArtEuiCallback(getArtEui);
-
     // set clock error to allow good connection.
     LMIC.setClockError(MAX_CLOCK_ERROR * 15 / 100);
+//    LMIC.setAntennaPowerAdjustment(-10);
 
     /*
     while(true) {
@@ -215,7 +213,7 @@ void setup()
     do_send();
 }
 
-const int64_t sleepAdj = 1070;
+const int64_t sleepAdj = 1080;
 
 void powersave(OsDeltaTime maxTime)
 {
