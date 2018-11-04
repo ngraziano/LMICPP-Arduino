@@ -760,8 +760,8 @@ void Lmic::buildDataFrame() {
   }
   frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
   frame[OFF_DAT_FCT] =
-      (dnConf | adrEnabled | (adrAckReq >= 0 ? FCT_ADRARQ : 0) |
-       (end - OFF_DAT_OPTS));
+      (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
+       (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - OFF_DAT_OPTS));
   wlsbf4(frame + OFF_DAT_ADDR, devaddr);
 
   if (txCnt == 0) {
@@ -995,7 +995,6 @@ void Lmic::engineUpdate() {
   }
 }
 
-void Lmic::setAdrMode(bool enabled) { adrEnabled = enabled ? FCT_ADREN : 0; }
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
   antennaPowerAdjustment = power;
@@ -1014,7 +1013,6 @@ void Lmic::reset() {
   devaddr = 0;
   devNonce = rand.uint16();
   opmode = OpState::NONE;
-  adrEnabled = FCT_ADREN;
   // we need this for 2nd DN window of join accept
   dn2Dr = defaultRX2Dr();
   dn2Freq = defaultRX2Freq();

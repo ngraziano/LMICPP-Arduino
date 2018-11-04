@@ -61,7 +61,7 @@ void onEvent(EventType ev)
     case EventType::JOINED:
         PRINT_DEBUG_2("EV_JOINED");
         // disable ADR because it will be mobile.
-        LMIC.setAdrMode(false);
+        LMIC.setLinkCheckMode(false);
         break;
     case EventType::JOIN_FAILED:
         PRINT_DEBUG_2("EV_JOIN_FAILED");

@@ -240,8 +240,6 @@ private:
   bool devsAns;
   // RX timing setup answer pending, init after join
   bool rxTimingSetupAns;
-  // adr Mode, init at reset
-  uint8_t adrEnabled;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   // have to ACK duty cycle settings, init after join
   bool dutyCapAns;
@@ -326,12 +324,12 @@ public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
   void setDrTxpow(uint8_t dr, int8_t pow);
+  // set ADR mode (if mobile turn off)
+  // It activate ADR bit and LINK Check.
   void setLinkCheckMode(bool enabled);
   void setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkSKey,
                   uint8_t *artKey);
 
-  // set ADR mode (if mobile turn off)
-  void setAdrMode(bool enabled);
   /**
    * Adjust output power by this amount (for antenna gain)
    */
