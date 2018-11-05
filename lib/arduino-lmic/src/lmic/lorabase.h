@@ -225,8 +225,6 @@ inline bool sameSfBw(rps_t r1, rps_t r2) {
 // BEG: Keep in sync with lorabase.hpp
 // ================================================================================
 
-// Calculate airtime
-OsDeltaTime calcAirTime(uint8_t plen);
 // Sensitivity at given SF/BW
 int16_t getSensitivity(rps_t rps);
 
