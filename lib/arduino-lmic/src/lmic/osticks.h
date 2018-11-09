@@ -10,9 +10,6 @@
 #error Illegal OSTICKS_PER_SEC - must be in range [10000:64516]. One tick must be 15.5us .. 100us long.
 #endif
 
-// FOR constant table
-#define us2osticks(us) ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC) / 1000000))
-
 class LmicRand;
 
 class OsDeltaTime {
@@ -30,7 +27,7 @@ public:
     return OsDeltaTime(sec * OSTICKS_PER_SEC);
   };
   constexpr static OsDeltaTime from_us_round(int64_t us) {
-    return OsDeltaTime((int32_t)(((us)*OSTICKS_PER_SEC + 500000) / 1000000));
+    return OsDeltaTime((us*OSTICKS_PER_SEC + 500000) / 1000000);
   };
   static OsDeltaTime rnd_delay(LmicRand &rand, uint8_t sec_span);
 
