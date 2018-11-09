@@ -287,7 +287,7 @@ OsTime LmicEu868::nextTx(OsTime now) {
     OsTime mintime = now + /*8h*/ OsDeltaTime::from_sec(28800);
     uint8_t band = 0xFF;
     for (uint8_t bi = 0; bi < 4; bi++) {
-      if ((bmap & (1 << bi)) && mintime - bands[bi].avail > OsDeltaTime(0)) {
+      if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
 #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: Considering band %d, which is available at %lu\n",
                     os_getTime(), bi, bands[bi].avail);

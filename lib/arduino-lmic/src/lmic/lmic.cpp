@@ -117,7 +117,7 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
 
 void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
   const auto delayRef = reftime + OsDeltaTime::rnd_delay(rand, secSpan);
-  if (globalDutyRate == 0 || (delayRef - globalDutyAvail) > OsDeltaTime(0)) {
+  if (globalDutyRate == 0 || (delayRef > globalDutyAvail)) {
     globalDutyAvail = delayRef;
   }
 }
@@ -935,12 +935,12 @@ void Lmic::engineUpdate() {
       PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg);
     }
     // Delayed TX or waiting for duty cycle?
-    if ((txbeg - globalDutyAvail) < OsDeltaTime(0)) {
+    if (txbeg < globalDutyAvail) {
       txbeg = globalDutyAvail;
       PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg);
     }
     // Earliest possible time vs overhead to setup radio
-    if (txbeg - (now + TX_RAMPUP) < OsDeltaTime(0)) {
+    if (txbeg < (now + TX_RAMPUP)) {
       PRINT_DEBUG_1("Ready for uplink");
       // We could send right now!
       txbeg = now;

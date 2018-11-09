@@ -102,13 +102,14 @@ void hal_wait(OsDeltaTime delta) {
 // check and rewind for target time
 bool hal_checkTimer(OsTime time) {
 
-  auto delta = time - hal_ticks();
-  if (delta <= OsDeltaTime(0))
+  if (time <= hal_ticks())
     return true;
   return false;
 }
 
-static uint8_t irqlevel = 0;
+namespace {
+  uint8_t irqlevel = 0;
+}
 
 void hal_disableIRQs() {
   noInterrupts();
