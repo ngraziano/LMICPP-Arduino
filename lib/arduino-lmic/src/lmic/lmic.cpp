@@ -103,8 +103,6 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   return val;
 }
 
-extern inline bool sameSfBw(rps_t r1, rps_t r2);
-
 // END LORA
 // ================================================================================
 
@@ -1009,7 +1007,7 @@ void Lmic::shutdown() {
 void Lmic::reset() {
   radio.rst();
   osjob.clearCallback();
-  rps.rawValue = 0;
+  rps = rps_t(0);
   devaddr = 0;
   devNonce = rand.uint16();
   opmode = OpState::NONE;

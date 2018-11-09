@@ -15,18 +15,10 @@
 
 #include "../lmic/osticks.h"
 
-class Lmic;
-class Radio;
-
-
-
-
-
 /*
  * initialize hardware (IO, SPI, TIMER, IRQ).
  */
 void hal_init(void);
-
 
 /*
  * disable all CPU interrupts.

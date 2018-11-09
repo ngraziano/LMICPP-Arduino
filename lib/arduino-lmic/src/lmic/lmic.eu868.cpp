@@ -58,16 +58,27 @@ const OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
   ((dr) <= Eu868Dr::SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
 CONST_TABLE(uint8_t, maxFrameLens)[] = {64, 64, 64, 123};
 
+namespace {
+  constexpr uint8_t rps_DR0 = rps_t {SF12, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR1 = rps_t {SF11, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR2 = rps_t {SF10, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR3 = rps_t {SF9, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR4 = rps_t {SF8, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR5 = rps_t {SF7, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR6 = rps_t {SF7, BandWidth::BW250, CodingRate::CR_4_5, false,0 }.rawValue();
+  constexpr uint8_t rps_DR7 = rps_t {FSK, BandWidth::BW125, CodingRate::CR_4_5, false,0 }.rawValue();
+}
+
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS,
-      (uint8_t)MAKERPS(SF12, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR0
-      (uint8_t)MAKERPS(SF11, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR1
-      (uint8_t)MAKERPS(SF10, BandWidth::BW125, CodingRate::CR_4_5, 0, 0), // DR2
-      (uint8_t)MAKERPS(SF9, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR3
-      (uint8_t)MAKERPS(SF8, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR4
-      (uint8_t)MAKERPS(SF7, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR5
-      (uint8_t)MAKERPS(SF7, BandWidth::BW250, CodingRate::CR_4_5, 0, 0),  // DR6
-      (uint8_t)MAKERPS(FSK, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),  // DR7
+      rps_DR0,
+      rps_DR1,
+      rps_DR2,
+      rps_DR3,
+      rps_DR4,
+      rps_DR5,
+      rps_DR6,
+      rps_DR7,
       ILLEGAL_RPS};
 
 static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,

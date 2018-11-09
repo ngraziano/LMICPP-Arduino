@@ -64,22 +64,38 @@ enum { DR_BCN = DR_SF10CR };
 CONST_TABLE(uint8_t, maxFrameLens)
 [] = {24, 66, 142, 255, 255, 255, 255, 255, 66, 142};
 
+namespace {
+  constexpr uint8_t rps_DR0 = rps_t {SF10, BandWidth::BW125, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR1 = rps_t {SF9, BandWidth::BW125, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR2 = rps_t {SF8, BandWidth::BW125, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR3 = rps_t {SF7, BandWidth::BW125, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR4 = rps_t {SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+
+  constexpr uint8_t rps_DR8 = rps_t {SF12, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR9 = rps_t {SF11, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR10 = rps_t {SF10, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR11 = rps_t {SF9, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR12 = rps_t {SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+  constexpr uint8_t rps_DR13 = rps_t {SF7, BandWidth::BW500, CodingRate::CR_4_5, false, 0 }.rawValue();
+
+}
+
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS,
-      MAKERPS(SF10, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF9, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF8, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF7, BandWidth::BW125, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF8, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      rps_DR0,
+      rps_DR1,
+      rps_DR2,
+      rps_DR3,
+      rps_DR4,
       ILLEGAL_RPS,
       ILLEGAL_RPS,
       ILLEGAL_RPS,
-      MAKERPS(SF12, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF11, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF10, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF9, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF8, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
-      MAKERPS(SF7, BandWidth::BW500, CodingRate::CR_4_5, 0, 0),
+      rps_DR8,
+      rps_DR9,
+      rps_DR10,
+      rps_DR11,
+      rps_DR12,
+      rps_DR13,
       ILLEGAL_RPS};
 
 uint8_t LmicUs915::getRawRps(dr_t dr) const {

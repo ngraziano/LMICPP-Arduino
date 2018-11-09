@@ -26,25 +26,33 @@ typedef uint8_t sf_t;
 typedef uint8_t dr_t;
 
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-union rps_t {
-  uint16_t rawValue;
-  struct {
-    sf_t sf : 3;
-    uint8_t bwRaw : 2;
-    uint8_t crRaw : 2;
-    bool nocrc : 1;
-    uint8_t ih : 8;
-  };
+
+struct rps_t {
+  sf_t sf : 3;
+  uint8_t bwRaw : 2;
+  uint8_t crRaw : 2;
+  bool nocrc : 1;
+  uint8_t ih : 8;
 
   constexpr BandWidth getBw() { return static_cast<BandWidth>(bwRaw); };
   constexpr CodingRate getCr() { return static_cast<CodingRate>(crRaw); };
+  constexpr uint16_t rawValue() {
+    return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0) |
+            (ih << 8));
+  }
 
   constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc, uint8_t ih)
-      : sf(sf), bwRaw(static_cast<uint8_t>(bw)), crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc),
-        ih(ih){};
-  constexpr rps_t(uint16_t rawValue) : rawValue(rawValue){};
+      : sf(sf), bwRaw(static_cast<uint8_t>(bw)),
+        crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc), ih(ih){};
+  constexpr rps_t(uint16_t rawValue)
+      : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
+        crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)),
+        ih((rawValue >> 8) & 0xFF)
+        //: rawValue(rawValue)
+        {};
   rps_t(){};
 };
+
 
 const uint8_t ILLEGAL_RPS = 0xFF;
 
@@ -59,8 +67,6 @@ enum { DELAY_DNW1 = 1 };    // in secs down window #1
 enum { DELAY_EXTDNW2 = 1 }; // in secs
 enum { DELAY_JACC2 = DELAY_JACC1 + (int)DELAY_EXTDNW2 }; // in secs
 enum { DELAY_DNW2 = DELAY_DNW1 + (int)DELAY_EXTDNW2 }; // in secs down window #1
-
-
 
 enum {
   // Data frame format
@@ -89,10 +95,10 @@ enum {
   // Values of frame type bit field
   HDR_FTYPE_JREQ = 0x00,
   HDR_FTYPE_JACC = 0x20,
-  HDR_FTYPE_DAUP = 0x40,   // data (unconfirmed) up
-  HDR_FTYPE_DADN = 0x60,   // data (unconfirmed) dn
-  HDR_FTYPE_DCUP = 0x80,   // data confirmed up
-  HDR_FTYPE_DCDN = 0xA0,   // data confirmed dn
+  HDR_FTYPE_DAUP = 0x40, // data (unconfirmed) up
+  HDR_FTYPE_DADN = 0x60, // data (unconfirmed) dn
+  HDR_FTYPE_DCUP = 0x80, // data confirmed up
+  HDR_FTYPE_DCDN = 0xA0, // data confirmed dn
   HDR_FTYPE_PROP = 0xE0
 };
 enum {
@@ -104,7 +110,7 @@ enum {
   FCT_ADRARQ = 0x40,
   FCT_ACK = 0x20,
   // Fpending
-  FCT_MORE = 0x10, 
+  FCT_MORE = 0x10,
   FCT_OPTLEN = 0x0F,
 };
 enum {
@@ -212,20 +218,5 @@ typedef uint32_t devaddr_t;
 
 // RX quality (device)
 enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
-
-#define MAKERPS(sf, bw, cr, ih, nocrc)                                         \
-  (((sf) | (static_cast<uint8_t>(bw) << 3) | (static_cast<uint8_t>(cr) << 5) |                     \
-    ((nocrc) ? (1 << 7) : 0) | ((ih & 0xFF) << 8)))
-// Two frames with params r1/r2 would interfere on air: same SFx + BWx
-inline bool sameSfBw(rps_t r1, rps_t r2) {
-  return (r1.sf == r2.sf) && (r1.bwRaw == r2.bwRaw);
-}
-
-//
-// BEG: Keep in sync with lorabase.hpp
-// ================================================================================
-
-// Sensitivity at given SF/BW
-int16_t getSensitivity(rps_t rps);
 
 #endif // _lorabase_h_
