@@ -438,7 +438,7 @@ void Radio::txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 #if LMIC_DEBUG_LEVEL > 0
   uint8_t sf = rps.sf + 6; // 1 == SF7
   lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-              os_getTime(), freq, dataLen, sf, bwForLog(rps), crForLog(rps),
+              os_getTime().tick(), freq, dataLen, sf, bwForLog(rps), crForLog(rps),
               rps.ih);
 #endif
 }
@@ -517,7 +517,7 @@ void Radio::rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
   } else {
     uint8_t sf = rps.sf + 6; // 1 == SF7
     lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-                os_getTime(),
+                os_getTime().tick(),
                 rxmode == RXMODE_SINGLE
                     ? "RXMODE_SINGLE"
                     : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),

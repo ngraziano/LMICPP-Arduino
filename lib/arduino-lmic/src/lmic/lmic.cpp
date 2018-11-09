@@ -921,9 +921,9 @@ void Lmic::engineUpdate() {
         static_cast<bool>(opmode & (OpState::JOINING | OpState::REJOIN));
 #if LMIC_DEBUG_LEVEL > 1
     if (jacc)
-      lmic_printf("%lu: Uplink join pending\n", os_getTime());
+      lmic_printf("%lu: Uplink join pending\n", os_getTime().tick());
     else
-      lmic_printf("%lu: Uplink data pending\n", os_getTime());
+      lmic_printf("%lu: Uplink data pending\n", os_getTime().tick());
 #endif
     // Find next suitable channel and return availability time
     if (opmode & OpState::NEXTCHNL) {

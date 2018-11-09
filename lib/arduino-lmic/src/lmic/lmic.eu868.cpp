@@ -222,7 +222,7 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
     if (newfreq) {
       setupChannel(chidx, newfreq, 0, -1);
 #if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime(), chidx,
+      lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime().tick(), chidx,
                   newfreq);
 #endif
     }
@@ -260,9 +260,9 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 #if LMIC_DEBUG_LEVEL > 1
   lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting "
               "available time for band %d to %lu\n",
-              os_getTime(), txbeg, airtime, freq, band->avail);
+              os_getTime().tick(), txbeg, airtime, freq, band->avail);
   if (globalDutyRate != 0)
-    lmic_printf("%lu: Updating global duty avail to %lu\n", os_getTime(),
+    lmic_printf("%lu: Updating global duty avail to %lu\n", os_getTime().tick(),
                 globalDutyAvail);
 #endif
 }
@@ -290,7 +290,7 @@ OsTime LmicEu868::nextTx(OsTime now) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
 #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: Considering band %d, which is available at %lu\n",
-                    os_getTime(), bi, bands[bi].avail);
+                    os_getTime().tick(), bi, bands[bi].avail);
 #endif
         band = bi;
         mintime = bands[band].avail;
@@ -388,9 +388,9 @@ bool LmicEu868::nextJoinState() {
                 txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)
-    lmic_printf("%lu: Join failed\n", os_getTime());
+    lmic_printf("%lu: Join failed\n", os_getTime().tick());
   else
-    lmic_printf("%lu: Scheduling next join at %lu\n", os_getTime(), txend);
+    lmic_printf("%lu: Scheduling next join at %lu\n", os_getTime().tick(), txend);
 #endif
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;

@@ -67,14 +67,14 @@ uint8_t os_getBattLevel(void);
 
 #if LMIC_DEBUG_LEVEL > 0
 #define PRINT_DEBUG_1(str, ...)                                                \
-  lmic_printf("%lu: " str "\n", os_getTime(), ##__VA_ARGS__)
+  lmic_printf("%lu: " str "\n", os_getTime().tick(), ##__VA_ARGS__)
 #else
 #define PRINT_DEBUG_1(str, ...)
 #endif
 
 #if LMIC_DEBUG_LEVEL > 1
 #define PRINT_DEBUG_2(str, ...)                                                \
-  lmic_printf("%lu: " str "\n", os_getTime(), ##__VA_ARGS__)
+  lmic_printf("%lu: " str "\n", os_getTime().tick(), ##__VA_ARGS__)
 #else
 #define PRINT_DEBUG_2(str, ...)
 #endif
