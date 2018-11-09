@@ -120,12 +120,12 @@ OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
 static CONST_TABLE(int32_t, DR2HSYM)[] = {
-    us2osticksRound(128 << 5), // DR_SF10   DR_SF12CR
-    us2osticksRound(128 << 4), // DR_SF9    DR_SF11CR
-    us2osticksRound(128 << 3), // DR_SF8    DR_SF10CR
-    us2osticksRound(128 << 2), // DR_SF7    DR_SF9CR
-    us2osticksRound(128 << 1), // DR_SF8C   DR_SF8CR
-    us2osticksRound(128 << 0)  // ------    DR_SF7CR
+    OsDeltaTime::from_us_round(128 << 5).tick(), // DR_SF10   DR_SF12CR
+    OsDeltaTime::from_us_round(128 << 4).tick(), // DR_SF9    DR_SF11CR
+    OsDeltaTime::from_us_round(128 << 3).tick(), // DR_SF8    DR_SF10CR
+    OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7    DR_SF9CR
+    OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF8C   DR_SF8CR
+    OsDeltaTime::from_us_round(128 << 0).tick()  // ------    DR_SF7CR
 };
 
 // map DR_SFnCR -> 0-6

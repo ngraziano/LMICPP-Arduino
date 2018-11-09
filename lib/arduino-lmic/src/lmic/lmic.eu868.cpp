@@ -107,14 +107,14 @@ OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
 CONST_TABLE(int32_t, DR2HSYM)[] = {
-    us2osticksRound(128 << 7), // DR_SF12
-    us2osticksRound(128 << 6), // DR_SF11
-    us2osticksRound(128 << 5), // DR_SF10
-    us2osticksRound(128 << 4), // DR_SF9
-    us2osticksRound(128 << 3), // DR_SF8
-    us2osticksRound(128 << 2), // DR_SF7
-    us2osticksRound(128 << 1), // DR_SF7B
-    us2osticksRound(80)        // FSK -- not used (time for 1/2 byte)
+    OsDeltaTime::from_us_round(128 << 7).tick(), // DR_SF12
+    OsDeltaTime::from_us_round(128 << 6).tick(), // DR_SF11
+    OsDeltaTime::from_us_round(128 << 5).tick(), // DR_SF10
+    OsDeltaTime::from_us_round(128 << 4).tick(), // DR_SF9
+    OsDeltaTime::from_us_round(128 << 3).tick(), // DR_SF8
+    OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7
+    OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF7B
+    OsDeltaTime::from_us_round(80).tick()        // FSK -- not used (time for 1/2 byte)
 };
 
 OsDeltaTime LmicEu868::dr2hsym(dr_t dr) const {
