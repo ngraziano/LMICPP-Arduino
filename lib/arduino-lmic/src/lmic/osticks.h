@@ -12,14 +12,18 @@
 
 // FOR constant table
 #define us2osticks(us) ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC) / 1000000))
-#define us2osticksRound(us)                                                    \
-  ((int32_t)(((int64_t)(us)*OSTICKS_PER_SEC + 500000) / 1000000))
+
+constexpr int32_t us2osticksRound(int64_t us) {
+  return ((int32_t)(((us)*OSTICKS_PER_SEC + 500000) / 1000000));
+}
+  
+
 
 class LmicRand;
 
 class OsDeltaTime {
 public:
-  constexpr OsDeltaTime(int32_t init) : value(init){};
+  constexpr explicit OsDeltaTime(int32_t init) : value(init){};
   constexpr OsDeltaTime() : value(0){};
 
   constexpr static OsDeltaTime from_us(int64_t us) {
@@ -54,7 +58,7 @@ private:
 class OsTime {
 public:
   constexpr OsTime() : OsTime(0){};
-  constexpr OsTime(uint32_t init) : value(init){};
+  constexpr explicit OsTime(uint32_t init) : value(init){};
   constexpr uint32_t tick() const { return value; };
 
   OsTime &operator+=(const OsDeltaTime &a);

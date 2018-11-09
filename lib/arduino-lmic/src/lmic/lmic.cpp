@@ -98,7 +98,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
     sfx2 = 4;
   }
   // Need 32bit arithmetic for this last step
-  OsDeltaTime val = (((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div;
+  OsDeltaTime val = OsDeltaTime((((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div);
   PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
   return val;
 }
@@ -935,12 +935,12 @@ void Lmic::engineUpdate() {
       PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg);
     }
     // Delayed TX or waiting for duty cycle?
-    if ((txbeg - globalDutyAvail) < 0) {
+    if ((txbeg - globalDutyAvail) < OsDeltaTime(0)) {
       txbeg = globalDutyAvail;
       PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg);
     }
     // Earliest possible time vs overhead to setup radio
-    if (txbeg - (now + TX_RAMPUP) < 0) {
+    if (txbeg - (now + TX_RAMPUP) < OsDeltaTime(0)) {
       PRINT_DEBUG_1("Ready for uplink");
       // We could send right now!
       txbeg = now;

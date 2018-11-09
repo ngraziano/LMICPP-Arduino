@@ -6,3 +6,5 @@
 
 
 src/lorakeys.h
+
+lora-cppcheck-build-dir/

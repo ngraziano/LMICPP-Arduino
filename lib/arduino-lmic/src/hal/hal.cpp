@@ -17,7 +17,7 @@
 // TIME
 
 namespace {
-  OsDeltaTime time_in_sleep = 0;
+  OsDeltaTime time_in_sleep {0};
   bool is_sleep_allow = false;
 }
 
@@ -94,7 +94,7 @@ void hal_wait(OsDeltaTime delta) {
     delay(16);
     delta -= OsDeltaTime::from_us(16000);
   }
-  if (delta > 0)
+  if (delta > OsDeltaTime(0))
     delayMicroseconds(delta.to_us());
 }
 

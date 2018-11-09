@@ -130,12 +130,12 @@ OsDeltaTime OsScheduler::runloopOnce() {
     j->call();
   }
   if (runnablejobs) {
-    return 0;
+    return OsDeltaTime(0);
   } else if (scheduledjobs) {
     // return the number of milisecond to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
-  return 0;
+  return OsDeltaTime(0);
 }
 
 void os_init() { hal_init(); }

@@ -57,6 +57,7 @@ void onEvent(EventType ev)
     {
     case EventType::JOINING:
         PRINT_DEBUG_2("EV_JOINING");
+//        LMIC.setDrJoin(0);
         break;
     case EventType::JOINED:
         PRINT_DEBUG_2("EV_JOINED");
@@ -272,7 +273,7 @@ void powersave(OsDeltaTime maxTime)
 void loop()
 {
     OsDeltaTime to_wait = OSS.runloopOnce();
-    if (to_wait > 0 && hal_is_sleep_allow())
+    if (to_wait > OsDeltaTime(0) && hal_is_sleep_allow())
     {
         powersave(to_wait);
     }

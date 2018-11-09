@@ -106,7 +106,7 @@ OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 //
 // Times for half symbol per DR
 // Per DR table to minimize rounding errors
-static CONST_TABLE(int32_t, DR2HSYM)[] = {
+CONST_TABLE(int32_t, DR2HSYM)[] = {
     us2osticksRound(128 << 7), // DR_SF12
     us2osticksRound(128 << 6), // DR_SF11
     us2osticksRound(128 << 5), // DR_SF10
@@ -287,7 +287,7 @@ OsTime LmicEu868::nextTx(OsTime now) {
     OsTime mintime = now + /*8h*/ OsDeltaTime::from_sec(28800);
     uint8_t band = 0xFF;
     for (uint8_t bi = 0; bi < 4; bi++) {
-      if ((bmap & (1 << bi)) && mintime - bands[bi].avail > 0) {
+      if ((bmap & (1 << bi)) && mintime - bands[bi].avail > OsDeltaTime(0)) {
 #if LMIC_DEBUG_LEVEL > 1
         lmic_printf("%lu: Considering band %d, which is available at %lu\n",
                     os_getTime(), bi, bands[bi].avail);
@@ -374,7 +374,7 @@ bool LmicEu868::nextJoinState() {
   // Move txend to randomize synchronized concurrent joins.
   // Duty cycle is based on txend.
   OsTime time = os_getTime();
-  if (time - bands[BAND_MILLI].avail < 0)
+  if (time - bands[BAND_MILLI].avail < OsDeltaTime (0))
     time = bands[BAND_MILLI].avail;
   txend = time + (isTESTMODE()
                       // Avoid collision with JOIN ACCEPT @ SF12 being sent by

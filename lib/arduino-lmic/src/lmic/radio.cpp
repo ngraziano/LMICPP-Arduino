@@ -630,7 +630,7 @@ uint8_t Radio::rssi() const {
   return r;
 }
 
-static CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
+CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)[] = {
     [FSK] = us2osticks(0), // (   0 ticks)
     [SF7] = us2osticks(0), // (   0 ticks)
     [SF8] = us2osticks(1648),   [SF9] = us2osticks(3265),
