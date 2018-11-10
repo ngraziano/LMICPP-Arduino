@@ -52,7 +52,10 @@ enum { CHNL_DNW2 = 5 };
 enum { FREQ_DNW2 = EU868_F6 };
 const Eu868Dr DR_DNW2 = Eu868Dr::SF12;
 
-const OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
+namespace {
+  constexpr OsDeltaTime  DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
+}
+
 
 #define maxFrameLen(dr)                                                        \
   ((dr) <= Eu868Dr::SF9 ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
@@ -150,7 +153,7 @@ void LmicEu868::initDefaultChannels(bool join) {
   uint8_t su = join ? 0 : 3;
   for (uint8_t fu = 0; fu < 3; fu++, su++) {
     channels[fu].freq = TABLE_GET_U4(iniChannelFreq, su);
-    channels[fu].drMap = DR_RANGE_MAP(Eu868Dr::SF12, Eu868Dr::SF7);
+    channels[fu].drMap = dr_range_map(Eu868Dr::SF12, Eu868Dr::SF7);
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
@@ -197,7 +200,7 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
   }
   channels[chidx].freq = (newfreq & ~3) | band;
   channels[chidx].drMap =
-      drmap == 0 ? DR_RANGE_MAP(Eu868Dr::SF12, Eu868Dr::SF7) : drmap;
+      drmap == 0 ? dr_range_map(Eu868Dr::SF12, Eu868Dr::SF7) : drmap;
   channelMap |= 1 << chidx; // enabled right away
   return true;
 }

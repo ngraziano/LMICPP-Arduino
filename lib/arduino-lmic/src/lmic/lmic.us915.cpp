@@ -57,7 +57,10 @@ enum {
 }; // used only for default init of state (rotating beacon scheme)
 enum { DR_BCN = DR_SF10CR };
 
-#define DNW2_SAFETY_ZONE OsDeltaTime::from_ms(750)
+namespace {
+  const OsDeltaTime  DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(750);
+}
+
 
 #define maxFrameLen(dr)                                                        \
   ((dr) <= DR_SF11CR ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
@@ -169,7 +172,7 @@ bool LmicUs915::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
     return false; // channels 0..71 are hardwired
   chidx -= 72;
   xchFreq[chidx] = freq;
-  xchDrMap[chidx] = drmap == 0 ? DR_RANGE_MAP(DR_SF10, DR_SF8C) : drmap;
+  xchDrMap[chidx] = drmap == 0 ? dr_range_map(DR_SF10, DR_SF8C) : drmap;
   channelMap[chidx >> 4] |= (1 << (chidx & 0xF));
   return true;
 }

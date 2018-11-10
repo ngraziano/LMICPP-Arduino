@@ -19,16 +19,8 @@
 
 using namespace lorawan;
 
-#if !defined(MINRX_SYMS)
-#define MINRX_SYMS 5
-#endif // !defined(MINRX_SYMS)
-#define PAMBL_SYMS 8
-#define PAMBL_FSK 5
-#define PRERX_FSK 1
-#define RXLEN_FSK (1 + 5 + 2)
-
-#define DELAY_JACC1_osticks OsDeltaTime::from_sec(DELAY_JACC1)
-#define DELAY_JACC2_osticks OsDeltaTime::from_sec(DELAY_JACC2)
+const uint8_t MINRX_SYMS = 5;
+const uint8_t PAMBL_SYMS = 8;
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
@@ -279,7 +271,7 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
       const uint8_t drs = opts[oidx + 5];                 // datarate span
       snchAns = 0x80;
       if (newfreq != 0 &&
-          setupChannel(chidx, newfreq, DR_RANGE_MAP(drs & 0xF, drs >> 4), -1))
+          setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4), -1))
         snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
       oidx += 6;
@@ -642,7 +634,7 @@ void Lmic::processRx1Jacc() {
   PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
   if (dataLen == 0 || !processJoinAccept()) {
     osjob.setCallbackFuture(&Lmic::setupRx2Jacc);
-    schedRx12(DELAY_JACC2_osticks, dn2Dr);
+    schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
   }
 }
 
@@ -654,7 +646,7 @@ void Lmic::setupRx1Jacc() {
 
 void Lmic::jreqDone() {
   osjob.setCallbackFuture(&Lmic::setupRx1Jacc);
-  txDone(DELAY_JACC1_osticks);
+  txDone(OsDeltaTime::from_sec(DELAY_JACC1));
 }
 
 #endif // !DISABLE_JOIN

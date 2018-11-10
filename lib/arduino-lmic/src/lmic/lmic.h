@@ -402,9 +402,12 @@ public:
   void store_trigger();
 };
 
-//! Construct a bit map of allowed datarates from drlo to drhi (both included).
-#define DR_RANGE_MAP(drlo, drhi)                                               \
-  (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &                          \
-   ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))))
+// Construct a bit map of allowed datarates from drlo to drhi (both included).
+template<typename T>
+constexpr uint16_t dr_range_map(T drlo,T drhi) {
+  return (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &                          \
+   ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))));
+};
+
 
 #endif // _lmic_h_
