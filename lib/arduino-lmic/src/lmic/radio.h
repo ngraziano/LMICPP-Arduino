@@ -30,7 +30,8 @@ private:
   OsTime last_int_trigger;
 
   HalIo hal;
-
+  
+  OsTime int_trigger_time() const;
   void writeReg(uint8_t addr, uint8_t data) const;
   uint8_t readReg(uint8_t addr) const;
   void writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) const;

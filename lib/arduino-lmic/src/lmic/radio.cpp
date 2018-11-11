@@ -641,16 +641,21 @@ CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)
     [SF12] = OsDeltaTime::from_us(31189).tick(),
 };
 
+OsTime Radio::int_trigger_time() const {
+  OsTime now = os_getTime();
+  if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
+    return last_int_trigger;
+  } else {
+    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger);
+    return now;
+  }
+}
+
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
                         OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const {
-  OsTime now = os_getTime();
-  if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
-    now = last_int_trigger;
-  } else {
-    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger);
-  }
+    OsTime now = int_trigger_time();
 
   if ((readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
     uint8_t flags = readReg(LORARegIrqFlags);
@@ -659,8 +664,8 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
 
     if (flags & IRQ_LORA_TXDONE_MASK) {
       // save exact tx time
+      txEnd = now; 
       PRINT_DEBUG_1("End TX  %li", txEnd);
-      txEnd = now; // - OsDeltaTime::from_us(43); // TXDONE FIXUP
       // forbid sleep to keep precise time counting.
       // hal_forbid_sleep();
       hal_allow_sleep();
@@ -741,6 +746,9 @@ void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
   hal_enableIRQs();
 }
 
+/**
+ *  Return true if the radio has finish it's operation 
+ */
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
                      OsTime &rxTime, rps_t currentRps) {
   auto pinInInt = hal.io_check();

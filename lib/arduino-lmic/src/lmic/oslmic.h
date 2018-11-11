@@ -40,12 +40,8 @@ void os_init(void);
 
 //================================================================================
 
-#ifndef RX_RAMPUP
-#define RX_RAMPUP (OsDeltaTime::from_us(2000))
-#endif
-#ifndef TX_RAMPUP
-#define TX_RAMPUP (OsDeltaTime::from_us(2000))
-#endif
+constexpr OsDeltaTime RX_RAMPUP = OsDeltaTime::from_us(2000);
+constexpr OsDeltaTime TX_RAMPUP = OsDeltaTime::from_us(2000);
 
 #ifndef HAS_os_calls
 
