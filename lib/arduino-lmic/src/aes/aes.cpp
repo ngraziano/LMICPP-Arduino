@@ -15,7 +15,10 @@
 #include "aes.h"
 #include "../lmic/bufferpack.h"
 #include "../lmic/lorabase.h"
+#include "../lmic/lorawanpacket.h"
 #include <algorithm>
+
+using namespace lorawan;
 
 void Aes::setDevKey(uint8_t key[16]) { std::copy(key, key + 16, AESDevKey); }
 void Aes::setNetworkSessionKey(uint8_t key[16]) {
@@ -49,10 +52,10 @@ bool Aes::verifyMic(const uint32_t devaddr, const uint32_t seqno,
                     const PktDir dndir, const uint8_t *const pdu,
                     const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
-  const uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - lengths::MIC;
   micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
-  return std::equal(buf, buf + MIC_LEN, pdu + lenWithoutMic);
+  return std::equal(buf, buf + lengths::MIC, pdu + lenWithoutMic);
 }
 
 /**
@@ -63,11 +66,11 @@ void Aes::appendMic(const uint32_t devaddr, const uint32_t seqno,
                     const PktDir dndir, uint8_t *const pdu,
                     const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE];
-  const uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - lengths::MIC;
   micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
   // Copy MIC at the end
-  std::copy(buf, buf + MIC_LEN, pdu + lenWithoutMic);
+  std::copy(buf, buf + lengths::MIC, pdu + lenWithoutMic);
 }
 
 /**
@@ -76,10 +79,10 @@ void Aes::appendMic(const uint32_t devaddr, const uint32_t seqno,
  */
 void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE] = {0};
-  const uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - lengths::MIC;
   aes_cmac(pdu, lenWithoutMic, false, AESDevKey, buf);
   // Copy MIC0 at the end
-  std::copy(buf, buf + MIC_LEN, pdu + lenWithoutMic);
+  std::copy(buf, buf + lengths::MIC, pdu + lenWithoutMic);
 }
 
 /**
@@ -88,9 +91,9 @@ void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
  */
 bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
   uint8_t buf[AES_BLCK_SIZE] = {0};
-  const uint8_t lenWithoutMic = len - MIC_LEN;
+  const uint8_t lenWithoutMic = len - lengths::MIC;
   aes_cmac(pdu, lenWithoutMic, 0, AESDevKey, buf);
-  return std::equal(buf, buf + MIC_LEN, pdu + lenWithoutMic);
+  return std::equal(buf, buf + lengths::MIC, pdu + lenWithoutMic);
 }
 
 void Aes::encrypt(uint8_t * const pdu, const uint8_t len) const {
@@ -138,8 +141,8 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, con
 void Aes::sessKeys(const uint16_t devnonce, const uint8_t * const artnonce) {
   std::fill(nwkSKey, nwkSKey + 16, 0);
   nwkSKey[0] = 0x01;
-  std::copy(artnonce, artnonce + LEN_ARTNONCE + LEN_NETID, nwkSKey + 1);
-  wlsbf2(nwkSKey + 1 + LEN_ARTNONCE + LEN_NETID, devnonce);
+  std::copy(artnonce, artnonce + join_accept::lengths::appNonce + join_accept::lengths::netId, nwkSKey + 1);
+  wlsbf2(nwkSKey + 1 + join_accept::lengths::appNonce + join_accept::lengths::netId, devnonce);
   std::copy(nwkSKey, nwkSKey + 16, appSKey);
   appSKey[0] = 0x02;
 

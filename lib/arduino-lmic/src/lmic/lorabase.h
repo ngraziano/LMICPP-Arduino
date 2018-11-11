@@ -59,31 +59,17 @@ const uint8_t ILLEGAL_RPS = 0xFF;
 // Global maximum frame length
 enum { STD_PREAMBLE_LEN = 8 };
 enum { MAX_LEN_FRAME = 64 };
-enum { LEN_DEVNONCE = 2 };
-enum { LEN_ARTNONCE = 3 };
-enum { LEN_NETID = 3 };
 enum { DELAY_JACC1 = 5 };   // in secs
 enum { DELAY_DNW1 = 1 };    // in secs down window #1
 enum { DELAY_EXTDNW2 = 1 }; // in secs
 enum { DELAY_JACC2 = DELAY_JACC1 + (int)DELAY_EXTDNW2 }; // in secs
 enum { DELAY_DNW2 = DELAY_DNW1 + (int)DELAY_EXTDNW2 }; // in secs down window #1
 
-enum {
-  // Data frame format
-  OFF_DAT_HDR = 0,
-  OFF_DAT_ADDR = 1,
-  OFF_DAT_FCT = 5,
-  OFF_DAT_SEQNO = 6,
-  OFF_DAT_OPTS = 8,
-};
-
-const uint8_t MIC_LEN = 4;
-
 enum class PktDir : uint8_t {
   UP = 0,
   DOWN = 1,
 };
-enum { MAX_LEN_PAYLOAD = MAX_LEN_FRAME - (int)OFF_DAT_OPTS - 4 };
+enum { MAX_LEN_PAYLOAD = MAX_LEN_FRAME - 8 - 4 };
 enum {
   // Bitfields in frame format octet
   HDR_FTYPE = 0xE0,

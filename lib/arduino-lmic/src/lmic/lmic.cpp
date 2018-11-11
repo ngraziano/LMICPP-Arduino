@@ -328,7 +328,7 @@ bool Lmic::decodeFrame() {
   const uint8_t ftype = hdr & HDR_FTYPE;
   const uint8_t dlen = dataLen;
 
-  if (dlen < OFF_DAT_OPTS + 4 || (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
+  if (dlen < mac_payload::offsets::fopts + lengths::MIC || (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
       (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
     // Basic sanity checks failed
     PRINT_DEBUG_1("Invalid downlink, window=%s", window);
@@ -337,13 +337,13 @@ bool Lmic::decodeFrame() {
   }
   // Validate exact frame length
   // Note: device address was already read+evaluated in order to arrive here.
-  const uint8_t fct = d[OFF_DAT_FCT];
-  const uint32_t addr = rlsbf4(&d[OFF_DAT_ADDR]);
+  const uint8_t fct = d[mac_payload::offsets::fctrl];
+  const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
 
   const uint8_t olen = fct & FCT_OPTLEN;
   const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
-  const uint8_t poff = OFF_DAT_OPTS + olen;
-  const uint8_t pend = dlen - MIC_LEN; // MIC
+  const uint8_t poff = mac_payload::offsets::fopts + olen;
+  const uint8_t pend = dlen - lengths::MIC; // MIC
 
   if (addr != devaddr) {
     PRINT_DEBUG_1("Invalid address, window=%s", window);
@@ -358,7 +358,7 @@ bool Lmic::decodeFrame() {
 
   bool replayConf = false;
 
-  uint32_t seqno = rlsbf2(&d[OFF_DAT_SEQNO]);
+  uint32_t seqno = rlsbf2(&d[mac_payload::offsets::fcnt]);
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
@@ -400,7 +400,7 @@ bool Lmic::decodeFrame() {
   const int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
   margin = m < 0 ? 0 : m > 254 ? 254 : m;
 
-  parseMacCommands(d + OFF_DAT_OPTS, olen);
+  parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
   uint8_t port = -1;
   if (!replayConf) {
@@ -695,7 +695,7 @@ void Lmic::buildDataFrame() {
 
   // Piggyback MAC options
   // Prioritize by importance
-  uint8_t end = OFF_DAT_OPTS;
+  uint8_t end = mac_payload::offsets::fopts;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   if (dutyCapAns) {
     frame[end] = MCMD_DCAP_ANS;
@@ -740,7 +740,7 @@ void Lmic::buildDataFrame() {
     snchAns = 0;
   }
 #endif // !DISABLE_MCMD_SNCH_REQ
-  ASSERT(end <= OFF_DAT_OPTS + 16);
+  ASSERT(end <= mac_payload::offsets::fopts + 16);
 
   uint8_t flen = end + (txdata ? 5 + pendTxLen : 4);
   if (flen > MAX_LEN_FRAME) {
@@ -748,17 +748,17 @@ void Lmic::buildDataFrame() {
     txdata = 0;
     flen = end + 4;
   }
-  frame[OFF_DAT_HDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
-  frame[OFF_DAT_FCT] =
+  frame[offsets::MHDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
+  frame[mac_payload::offsets::fctrl] =
       (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
-       (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - OFF_DAT_OPTS));
-  wlsbf4(frame + OFF_DAT_ADDR, devaddr);
+       (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
+  wlsbf4(frame + mac_payload::offsets::devAddr, devaddr);
 
   if (txCnt == 0) {
     seqnoUp += 1;
   } else {
   }
-  wlsbf2(frame + OFF_DAT_SEQNO, seqnoUp - 1);
+  wlsbf2(frame + mac_payload::offsets::fcnt, seqnoUp - 1);
 
   // Clear pending DN confirmation
   dnConf = 0;
@@ -766,7 +766,7 @@ void Lmic::buildDataFrame() {
   if (txdata) {
     if (pendTxConf) {
       // Confirmed only makes sense if we have a payload (or at least a port)
-      frame[OFF_DAT_HDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
+      frame[offsets::MHDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
       if (txCnt == 0)
         txCnt = 1;
     }
