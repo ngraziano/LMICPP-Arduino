@@ -1,6 +1,5 @@
 
 #include "osticks.h"
-#include "../hal/hal.h"
 #include "lmicrand.h"
 
 
