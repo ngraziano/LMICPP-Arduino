@@ -438,8 +438,8 @@ void Radio::txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 #if LMIC_DEBUG_LEVEL > 0
   uint8_t sf = rps.sf + 6; // 1 == SF7
   lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-              os_getTime().tick(), freq, dataLen, sf, bwForLog(rps), crForLog(rps),
-              rps.ih);
+              os_getTime().tick(), freq, dataLen, sf, bwForLog(rps),
+              crForLog(rps), rps.ih);
 #endif
 }
 
@@ -655,62 +655,59 @@ OsTime Radio::int_trigger_time() const {
 // (radio goes to stanby mode after tx/rx operations)
 void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
                         OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const {
-    OsTime now = int_trigger_time();
+  OsTime now = int_trigger_time();
 
-  if ((readReg(RegOpMode) & OPMODE_LORA) != 0) { // LORA modem
-    uint8_t flags = readReg(LORARegIrqFlags);
+  uint8_t flags = readReg(LORARegIrqFlags);
 
-    PRINT_DEBUG_2("irq: dio: 0x%x flags: 0x%x\n", dio, flags);
+  PRINT_DEBUG_2("irq: dio: 0x%x flags: 0x%x\n", dio, flags);
 
-    if (flags & IRQ_LORA_TXDONE_MASK) {
-      // save exact tx time
-      txEnd = now; 
-      PRINT_DEBUG_1("End TX  %li", txEnd);
-      // forbid sleep to keep precise time counting.
-      // hal_forbid_sleep();
-      hal_allow_sleep();
+  if (flags & IRQ_LORA_TXDONE_MASK) {
+    // save exact tx time
+    txEnd = now;
+    PRINT_DEBUG_1("End TX  %li", txEnd);
+    // active chek finish
+    hal_allow_sleep();
 
-    } else if (flags & IRQ_LORA_RXDONE_MASK) {
-      // save exact rx time
-      if (currentRps.getBw() == BandWidth::BW125) {
-        now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
-      }
-      PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
-      rxTime = now;
-
-      // read the PDU and inform the MAC that we received something
-      uint8_t length =
-          (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
-              ? readReg(LORARegPayloadLength)
-              : readReg(LORARegRxNbBytes);
-
-      // for security clamp length of data
-      length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
-
-      // set FIFO read address pointer
-      writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
-      // now read the FIFO
-      readBuf(RegFifo, framePtr, length);
-      frameLength = length;
-
-      // read rx quality parameters
-      // TODO restore
-      // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
-      // LMIC.rssi =
-      //    readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
-      hal_allow_sleep();
-    } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-      PRINT_DEBUG_1("RX timeout  %li", now);
-
-      // indicate timeout
-      frameLength = 0;
-      hal_allow_sleep();
+  } else if (flags & IRQ_LORA_RXDONE_MASK) {
+    // save exact rx time
+    if (currentRps.getBw() == BandWidth::BW125) {
+      now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
     }
-    // mask all radio IRQs
-    writeReg(LORARegIrqFlagsMask, 0xFF);
-    // clear radio IRQ flags
-    writeReg(LORARegIrqFlags, 0xFF);
+    PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
+    rxTime = now;
+
+    // read the PDU and inform the MAC that we received something
+    uint8_t length =
+        (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
+            ? readReg(LORARegPayloadLength)
+            : readReg(LORARegRxNbBytes);
+
+    // for security clamp length of data
+    length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
+
+    // set FIFO read address pointer
+    writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
+    // now read the FIFO
+    readBuf(RegFifo, framePtr, length);
+    frameLength = length;
+
+    // read rx quality parameters
+    // TODO restore
+    // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
+    // LMIC.rssi =
+    //    readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
+    hal_allow_sleep();
+  } else if (flags & IRQ_LORA_RXTOUT_MASK) {
+    PRINT_DEBUG_1("RX timeout  %li", now);
+
+    // indicate timeout
+    frameLength = 0;
+    hal_allow_sleep();
   }
+  // mask all radio IRQs
+  writeReg(LORARegIrqFlagsMask, 0xFF);
+  // clear radio IRQ flags
+  writeReg(LORARegIrqFlags, 0xFF);
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 }
@@ -747,7 +744,7 @@ void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
 }
 
 /**
- *  Return true if the radio has finish it's operation 
+ *  Return true if the radio has finish it's operation
  */
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
                      OsTime &rxTime, rps_t currentRps) {
