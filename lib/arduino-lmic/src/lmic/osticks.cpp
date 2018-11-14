@@ -33,3 +33,22 @@ OsDeltaTime OsDeltaTime::rnd_delay(LmicRand& rand, uint8_t secSpan) {
     delay += (r % secSpan) * OSTICKS_PER_SEC;
   return OsDeltaTime(delay);
 }
+
+
+// Some test
+
+// diff
+static_assert( OsTime(2) - OsTime(1) == OsDeltaTime(1), "Simple diff");
+static_assert( OsTime(0x0000001) - OsTime(0xFFFFFFFF) == OsDeltaTime(2) , "diff with roll over");
+static_assert( OsTime(0xFFFFFFFF) - OsTime(0x0000001) == OsDeltaTime(-2) , "diff with roll over");
+
+
+// Comparaison
+static_assert( OsTime(1) < OsTime(10) , "Comparaison small number");
+static_assert( OsTime(0x7FFFFFFF) < OsTime(0x8FFFFFFF) , "Comparaison mid number");
+static_assert( OsTime(0xFFFFFFFF) < OsTime(0x0000010) , "Comparaison roll over");
+
+
+static_assert( OsTime(11) > OsTime(10) , "Comparaison small number");
+static_assert( OsTime(0x8FFFFFFF) > OsTime(0x7FFFFFFF) , "Comparaison mid number");
+static_assert( OsTime(0x0000010) > OsTime(0xFFFFFFFF) , "Comparaison roll over");

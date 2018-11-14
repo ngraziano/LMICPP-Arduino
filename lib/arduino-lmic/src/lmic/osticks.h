@@ -59,6 +59,10 @@ private:
   uint32_t value;
 };
 
+
+constexpr bool operator==(OsDeltaTime const &a, OsDeltaTime const &b) {
+  return a.tick() == b.tick();
+};
 constexpr OsDeltaTime operator+(OsDeltaTime const &a, OsDeltaTime const &b) {
   return OsDeltaTime(a.tick() + b.tick());
 };
@@ -95,26 +99,13 @@ constexpr OsDeltaTime operator-(OsTime const &a, OsTime const &b) {
   return OsDeltaTime(a.tick() - b.tick());
 };
 
+
 constexpr bool operator<(OsTime const &lhs, OsTime const &rhs) {
   return lhs - rhs < OsDeltaTime(0);
 };
-
-// Some test
-static_assert( OsTime(1) < OsTime(10) , "Comparaison small number");
-static_assert( OsTime(0x7FFFFFFF) < OsTime(0x8FFFFFFF) , "Comparaison mid number");
-static_assert( OsTime(0xFFFFFFFF) < OsTime(0x0000010) , "Comparaison roll over");
-
-
 constexpr bool operator>(OsTime const &lhs, OsTime const &rhs) {
   return rhs < lhs;
 };
-
-// Some test
-static_assert( OsTime(11) > OsTime(10) , "Comparaison small number");
-static_assert( OsTime(0x8FFFFFFF) > OsTime(0x7FFFFFFF) , "Comparaison mid number");
-static_assert( OsTime(0x0000010) > OsTime(0xFFFFFFFF) , "Comparaison roll over");
-
-
 constexpr bool operator<=(OsTime const &lhs, OsTime const &rhs) {
   return !(lhs > rhs);
 };
