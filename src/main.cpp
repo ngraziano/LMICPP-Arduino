@@ -4,13 +4,14 @@
 #include <lmic.h>
 #include <hal/hal_io.h>
 
-#include <LowPower.h>
+#include <sleepandwatchdog.h>
 
 #define DEVICE_BALISE1
 #include "lorakeys.h"
 
 void do_send();
 void reset_and_do_send();
+void powersave(OsDeltaTime maxTime);
 
 // This EUI must be in little-endian format, so least-significant-byte
 // first. When copying an EUI from ttnctl output, this means to reverse
@@ -41,7 +42,6 @@ const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 
 const unsigned int BAUDRATE = 19200;
 
-
 // Pin mapping
 const lmic_pinmap lmic_pins = {
     .nss = 10,
@@ -53,11 +53,12 @@ LmicEu868 LMIC(lmic_pins);
 
 void onEvent(EventType ev)
 {
+    rst_wdt();
     switch (ev)
     {
     case EventType::JOINING:
         PRINT_DEBUG_2("EV_JOINING");
-//        LMIC.setDrJoin(0);
+        //        LMIC.setDrJoin(0);
         break;
     case EventType::JOINED:
         PRINT_DEBUG_2("EV_JOINED");
@@ -142,7 +143,6 @@ ISR(PCINT0_vect)
     // one of pins D8 to D13 has changed
     // store time, will be check in OSS.runloopOnce()
     LMIC.store_trigger();
- 
 }
 
 void pciSetup(byte pin)
@@ -152,20 +152,17 @@ void pciSetup(byte pin)
     PCICR |= bit(digitalPinToPCICRbit(pin));                   // enable interrupt for the group
 }
 
-void powersave(OsDeltaTime maxTime);
-
 void testDuration(int32_t ms)
 {
     const auto delta = OsDeltaTime::from_ms(ms);
-    PRINT_DEBUG_1("Test sleep time for %i ms.",ms);
+    PRINT_DEBUG_1("Test sleep time for %i ms.", ms);
     const OsTime start = os_getTime();
     PRINT_DEBUG_1("Start Test sleep time.");
     powersave(delta);
     const OsTime end = os_getTime();
     PRINT_DEBUG_1("End Test sleep time.");
-    PRINT_DEBUG_1("Test Time should be : %d ms", (end-start).to_ms());
+    PRINT_DEBUG_1("Test Time should be : %d ms", (end - start).to_ms());
 }
-
 
 void setup()
 {
@@ -192,6 +189,7 @@ void setup()
     LMIC.setClockError(MAX_CLOCK_ERROR * 15 / 100);
     LMIC.setAntennaPowerAdjustment(-4);
 
+    configure_wdt();
     /*
     while(true) {
 
@@ -221,37 +219,37 @@ const int64_t sleepAdj = 1080;
 void powersave(OsDeltaTime maxTime)
 {
     OsDeltaTime duration_selected;
-    period_t period_selected;
+    Sleep period_selected;
     // these value are base on test
     if (maxTime > OsDeltaTime::from_ms(8700))
     {
         duration_selected = OsDeltaTime::from_ms(8000 * sleepAdj /1000);
-        period_selected = SLEEP_8S;
+        period_selected = Sleep::P8S;
     }
     else if (maxTime > OsDeltaTime::from_ms(4600))
     {
         duration_selected = OsDeltaTime::from_ms(4000 * sleepAdj /1000);
-        period_selected = SLEEP_4S;
+        period_selected = Sleep::P4S;
     }
     else if (maxTime > OsDeltaTime::from_ms(2600))
     {
         duration_selected = OsDeltaTime::from_ms(2000 * sleepAdj /1000);
-        period_selected = SLEEP_2S;
+        period_selected = Sleep::P2S;
     }
     else if (maxTime > OsDeltaTime::from_ms(1500))
     {
         duration_selected = OsDeltaTime::from_ms(1000 * sleepAdj /1000);
-        period_selected = SLEEP_1S;
+        period_selected = Sleep::P1S;
     }
     else if (maxTime > OsDeltaTime::from_ms(800))
     {
         duration_selected = OsDeltaTime::from_ms(500  * sleepAdj /1000);
-        period_selected = SLEEP_500MS;
+        period_selected = Sleep::P500MS;
     }
     else if (maxTime > OsDeltaTime::from_ms(500))
     {
         duration_selected = OsDeltaTime::from_ms(250  * sleepAdj /1000);
-        period_selected = SLEEP_250MS;
+        period_selected = Sleep::P250MS;
     }
     else
     {
@@ -265,7 +263,7 @@ void powersave(OsDeltaTime maxTime)
 
     for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--)
     {
-        LowPower.powerDown(period_selected, ADC_OFF, BOD_OFF);
+        powerDown(period_selected);
         hal_add_time_in_sleep(duration_selected);
     }
 
@@ -274,6 +272,7 @@ void powersave(OsDeltaTime maxTime)
 
 void loop()
 {
+    rst_wdt();
     OsDeltaTime to_wait = OSS.runloopOnce();
     if (to_wait > OsDeltaTime(0) && hal_is_sleep_allow())
     {
