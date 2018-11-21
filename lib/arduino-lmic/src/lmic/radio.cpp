@@ -313,7 +313,7 @@ void Radio::configChannel(uint32_t freq) const {
 
 void Radio::configPower(int8_t pw) const {
 #ifdef CFG_sx1276_radio
-  
+
 #if PA_BOOST_PIN
   // no boost +20dB used for now
   if (pw > 17) {
@@ -656,7 +656,7 @@ OsTime Radio::int_trigger_time() const {
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
-                        OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const {
+                        OsTime &txEnd, OsTime &rxTime, rps_t currentRps) {
   OsTime now = int_trigger_time();
 
   uint8_t flags = readReg(LORARegIrqFlags);
@@ -694,10 +694,10 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
     frameLength = length;
 
     // read rx quality parameters
-    // TODO restore
-    // LMIC.snr = readReg(LORARegPktSnrValue); // SNR [dB] * 4
-    // LMIC.rssi =
-    //    readReg(LORARegPktRssiValue) - 125 + 64; // RSSI [dBm] (-196...+63)
+     // SNR [dB] * 4
+    last_packet_snr_reg = static_cast<int8_t>(readReg(LORARegPktSnrValue));
+    // RSSI [dBm]  - 139
+    last_packet_rssi_reg = readReg(LORARegPktRssiValue);
     hal_allow_sleep();
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
     PRINT_DEBUG_1("RX timeout  %li", now);
@@ -713,6 +713,17 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 }
+
+int16_t Radio::get_last_packet_rssi() const {
+  // see documentation for -139 
+  // do not handle snr > 0
+  return -139 + last_packet_rssi_reg;
+};
+
+int8_t Radio::get_last_packet_snr_x4() const {
+  return last_packet_snr_reg;
+};
+
 
 void Radio::rst() const {
   hal_disableIRQs();

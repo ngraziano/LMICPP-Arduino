@@ -114,9 +114,11 @@ enum {
   MCMD_DCAP_ANS = 0x04, // -  duty cycle answer  : -
   MCMD_DN2P_ANS =
       0x05, // -  2nd DN slot status : u1:7-2:RFU  1/0:datarate/channel ack
-  MCMD_DEVS_ANS = 0x06, // -  device status ans  : u1:battery 0,1-254,255=?,
-                        // u1:7-6:RFU,5-0:margin(-32..31)
-  MCMD_SNCH_ANS = 0x07, // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK
+  // -  device status ans  : u1:battery 0,1-254,255=?,
+  // u1:7-6:RFU,5-0:margin(-32..31)
+  MCMD_DEVS_ANS = 0x06, 
+  // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK  
+  MCMD_SNCH_ANS = 0x07, 
   // Ack to new RX 1 timing.
   MCMD_RXTimingSetup_ANS = 0x08,
   // Class B
@@ -203,6 +205,6 @@ enum {
 typedef uint32_t devaddr_t;
 
 // RX quality (device)
-enum { RSSI_OFF = 64, SNR_SCALEUP = 4 };
+enum { SNR_SCALEUP = 4 };
 
 #endif // _lorabase_h_

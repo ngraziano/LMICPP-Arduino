@@ -157,16 +157,12 @@ class Lmic {
 public:
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
 
-  Radio radio;
-
 private:
+  Radio radio;
   OsJobType<Lmic> osjob{*this, OSS};
   // Radio settings TX/RX (also accessed by HAL)
-
   OsTime rxtime;
 
-  int8_t rssi = 0;
-  int8_t snr = 0;
   // radio parameters set
   rps_t rps;
   uint8_t rxsyms = 0;
@@ -232,7 +228,6 @@ private:
   // // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
 
-  uint8_t margin = 0;
   // link adr adapt answer pending, init after join
   // use bit 15 as flag, other as value for acq
   uint8_t ladrAns;

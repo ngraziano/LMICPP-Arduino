@@ -40,6 +40,7 @@ uint8_t os_getBattLevel(void) { return MCMD_DEVS_BATT_NOINFO; }
 // BEG LORA
 
 static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
+    // TODO check where this value come from.
     // ------------bw----------
     // 125kHz    250kHz    500kHz
     {141 - 109, 141 - 109, 141 - 109}, // FSK
@@ -396,10 +397,6 @@ bool Lmic::decodeFrame() {
   if (adrAckReq != LINK_CHECK_OFF)
     adrAckReq = LINK_CHECK_INIT;
 
-  // Process OPTS
-  const int16_t m = rssi - RSSI_OFF - getSensitivity(rps);
-  margin = m < 0 ? 0 : m > 254 ? 254 : m;
-
   parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
   uint8_t port = -1;
@@ -716,8 +713,11 @@ void Lmic::buildDataFrame() {
   if (devsAns) { // answer to device status
     frame[end + 0] = MCMD_DEVS_ANS;
     frame[end + 1] = os_getBattLevel();
-    // TODO check margin calculation (normaly 6bit signed integer)
-    frame[end + 2] = margin;
+    // lorawan 1.0.2 §5.5. the margin is the SNR.
+    // Convert to real SNR; rounding towards zero.
+    const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
+    frame[end + 2] =  static_cast<uint8_t>((0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
+    
     end += 3;
     devsAns = false;
   }

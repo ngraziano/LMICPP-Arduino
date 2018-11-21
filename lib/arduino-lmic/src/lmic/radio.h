@@ -17,18 +17,21 @@ public:
   void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
 
   void irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
-                   OsTime &txEnd, OsTime &rxTime, rps_t currentRps) const;
+                   OsTime &txEnd, OsTime &rxTime, rps_t currentRps);
   void init_random(uint8_t randbuf[16]);
   bool io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
                 OsTime &rxTime, rps_t currentRps);
   void store_trigger();
   uint8_t rssi() const;
+  int16_t get_last_packet_rssi() const;
+  int8_t get_last_packet_snr_x4() const;
 
   Radio(lmic_pinmap const &pins);
 
 private:
   OsTime last_int_trigger;
-
+  int8_t last_packet_snr_reg = 0;
+  uint8_t last_packet_rssi_reg = 0;
   HalIo hal;
   
   OsTime int_trigger_time() const;
