@@ -313,7 +313,7 @@ void Radio::configChannel(uint32_t freq) const {
 
 void Radio::configPower(int8_t pw) const {
 #ifdef CFG_sx1276_radio
-
+  
 #if PA_BOOST_PIN
   // no boost +20dB used for now
   if (pw > 17) {
@@ -321,6 +321,8 @@ void Radio::configPower(int8_t pw) const {
   } else if (pw < 2) {
     pw = 2;
   }
+  PRINT_DEBUG_1("Config power to %i on PA_BOOST", pw);
+
   pw -= 2;
   // check board type for output pin
   // output on PA_BOOST for RFM95W
