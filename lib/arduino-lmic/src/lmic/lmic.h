@@ -392,7 +392,7 @@ protected:
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
 public:
-  Lmic(lmic_pinmap const &pins);
+  explicit Lmic(lmic_pinmap const &pins);
   void io_check();
   void store_trigger();
 };

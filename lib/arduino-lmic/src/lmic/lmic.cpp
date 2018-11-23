@@ -569,7 +569,7 @@ bool Lmic::processJoinAccept() {
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
-    PRINT_DEBUG_1("Join Accept BAD MIC", dlen);
+    PRINT_DEBUG_1("Join Accept BAD MIC");
 
     // bad mic
     if (txrxFlags & TxRxStatus::DNW1)
@@ -890,7 +890,7 @@ bool Lmic::processDnData() {
 
 // Decide what to do next for the MAC layer of a device
 void Lmic::engineUpdate() {
-  PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", opmode);
+  PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", static_cast <uint8_t>(opmode));
   // Check for ongoing state: scan or TX/RX transaction
   if (opmode & (OpState::TXRXPEND | OpState::SHUTDOWN))
     return;
@@ -975,7 +975,7 @@ void Lmic::engineUpdate() {
       radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
       return;
     }
-    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg);
+    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
     // Cannot yet TX
     //  wait for the time to TX
     osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
@@ -1011,13 +1011,13 @@ void Lmic::reset() {
   initDefaultChannels(true);
 }
 
-void Lmic::init(void) {
+void Lmic::init() {
   radio.init();
   rand.init(radio);
   opmode = OpState::SHUTDOWN;
 }
 
-void Lmic::clrTxData(void) {
+void Lmic::clrTxData() {
   opmode &= ~(OpState::TXDATA | OpState::TXRXPEND | OpState::POLL);
   pendTxLen = 0;
   if (opmode & OpState::JOINING) // do not interfere with JOINING

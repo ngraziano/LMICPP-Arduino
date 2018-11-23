@@ -44,7 +44,7 @@ struct rps_t {
   constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc, uint8_t ih)
       : sf(sf), bwRaw(static_cast<uint8_t>(bw)),
         crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc), ih(ih){};
-  constexpr rps_t(uint16_t rawValue)
+  explicit constexpr rps_t(uint16_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
         crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)),
         ih((rawValue >> 8) & 0xFF)

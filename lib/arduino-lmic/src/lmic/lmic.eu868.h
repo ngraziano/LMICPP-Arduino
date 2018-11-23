@@ -29,7 +29,7 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 
 class LmicEu868 final : public Lmic {
   public:
-  LmicEu868(lmic_pinmap const &pins);
+  explicit LmicEu868(lmic_pinmap const &pins);
 protected:
   uint8_t getRawRps(dr_t dr) const override;
   int8_t pow2dBm(uint8_t mcmd_ladr_p1) const override;
@@ -47,7 +47,7 @@ protected:
   void handleCFList(const uint8_t *ptr) override;
 
   uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTx(OsTime txbeg, OsDeltaTime airtime);
+  void updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;
 #if !defined(DISABLE_JOIN)

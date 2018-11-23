@@ -19,7 +19,7 @@ const uint8_t LMIC_UNUSED_PIN = 0xff;
 
 class HalIo final {
 public:
-  HalIo(lmic_pinmap const &pins);
+  explicit HalIo(lmic_pinmap const &pins);
   /**
    * drive radio NSS pin (0=low, 1=high).
    */

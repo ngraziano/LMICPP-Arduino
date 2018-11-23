@@ -9,6 +9,7 @@
 class Radio {
 
 public:
+  explicit Radio(lmic_pinmap const &pins);
   void init(void);
   void rst() const;
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
@@ -26,7 +27,7 @@ public:
   int16_t get_last_packet_rssi() const;
   int8_t get_last_packet_snr_x4() const;
 
-  Radio(lmic_pinmap const &pins);
+  
 
 private:
   OsTime last_int_trigger;

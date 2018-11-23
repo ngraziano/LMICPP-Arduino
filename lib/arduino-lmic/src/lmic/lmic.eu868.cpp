@@ -355,8 +355,8 @@ void LmicEu868::initJoinLoop() {
   initDefaultChannels(true);
   ASSERT(!(opmode & OpState::NEXTCHNL));
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
-  PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail,
-                txend);
+  PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu", bands[BAND_MILLI].avail.tick(),
+                txend.tick());
 }
 
 bool LmicEu868::nextJoinState() {
@@ -387,7 +387,7 @@ bool LmicEu868::nextJoinState() {
                       // SF12:255, SF11:127, .., SF7:8secs
                       : DNW2_SAFETY_ZONE +
                             OsDeltaTime::rnd_delay(rand, 255 >> datarate));
-  PRINT_DEBUG_1(" Next available : %li , Choosen %li", time.tick(),
+  PRINT_DEBUG_1(" Next available : %lu , Choosen %lu", time.tick(),
                 txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)

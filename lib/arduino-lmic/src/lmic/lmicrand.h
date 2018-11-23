@@ -8,7 +8,7 @@ class Radio;
 
 class LmicRand {
 public:
-  LmicRand(Aes &aes);
+  explicit LmicRand(Aes &aes);
   void init(Radio &radio);
   uint8_t uint8();
   uint16_t uint16();

@@ -650,7 +650,7 @@ OsTime Radio::int_trigger_time() const {
   if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
     return last_int_trigger;
   } else {
-    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger);
+    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger.tick());
     return now;
   }
 }
@@ -669,7 +669,7 @@ void Radio::irq_handler(uint8_t const dio, uint8_t *const framePtr,
   if (flags & IRQ_LORA_TXDONE_MASK) {
     // save exact tx time
     txEnd = now;
-    PRINT_DEBUG_1("End TX  %li", txEnd);
+    PRINT_DEBUG_1("End TX  %lu", txEnd.tick());
     // active chek finish
     hal_allow_sleep();
 
@@ -703,7 +703,7 @@ void Radio::irq_handler(uint8_t const dio, uint8_t *const framePtr,
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
     hal_allow_sleep();
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-    PRINT_DEBUG_1("RX timeout  %li", now);
+    PRINT_DEBUG_1("RX timeout  %lu", now.tick());
 
     // indicate timeout
     frameLength = 0;
