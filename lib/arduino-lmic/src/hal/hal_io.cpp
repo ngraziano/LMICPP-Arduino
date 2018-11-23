@@ -19,7 +19,7 @@ void HalIo::pin_nss(uint8_t val) const {
 }
 
 // perform SPI transaction with radio
-uint8_t HalIo::spi(uint8_t out) const {
+uint8_t HalIo::spi(uint8_t const out) const {
   uint8_t res = SPI.transfer(out);
   /*
       Serial.print(">");

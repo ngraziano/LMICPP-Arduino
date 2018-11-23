@@ -161,22 +161,23 @@
 
 #define LNA_RX_GAIN (0x20 | 0x03)
 
-void Radio::writeReg(uint8_t addr, uint8_t data) const {
+void Radio::writeReg(uint8_t const addr, uint8_t const data) const {
   hal.pin_nss(0);
   hal.spi(addr | 0x80);
   hal.spi(data);
   hal.pin_nss(1);
 }
 
-uint8_t Radio::readReg(uint8_t addr) const {
+uint8_t Radio::readReg(uint8_t const addr) const {
   hal.pin_nss(0);
   hal.spi(addr & 0x7F);
-  uint8_t val = hal.spi(0x00);
+  uint8_t const val = hal.spi(0x00);
   hal.pin_nss(1);
   return val;
 }
 
-void Radio::writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
+void Radio::writeBuf(uint8_t const addr, uint8_t const *const buf,
+                     uint8_t const len) const {
   hal.pin_nss(0);
   hal.spi(addr | 0x80);
   for (uint8_t i = 0; i < len; i++) {
@@ -185,7 +186,8 @@ void Radio::writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
   hal.pin_nss(1);
 }
 
-void Radio::readBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
+void Radio::readBuf(uint8_t const addr, uint8_t *const buf,
+                    uint8_t const len) const {
   hal.pin_nss(0);
   hal.spi(addr & 0x7F);
   for (uint8_t i = 0; i < len; i++) {
@@ -194,7 +196,7 @@ void Radio::readBuf(uint8_t addr, uint8_t *buf, uint8_t len) const {
   hal.pin_nss(1);
 }
 
-void Radio::opmode(uint8_t mode) const {
+void Radio::opmode(uint8_t const mode) const {
   writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
@@ -208,10 +210,10 @@ void Radio::opmodeLora() const {
 
 // configure LoRa modem (cfg1, cfg2)
 void Radio::configLoraModem(rps_t rps) const {
-  sf_t sf = rps.sf;
+  sf_t const sf = rps.sf;
 
 #ifdef CFG_sx1276_radio
-  uint8_t mc1 = 0, mc2 = 0, mc3 = 0;
+  uint8_t mc1 = 0;
 
   switch (rps.getBw()) {
   case BandWidth::BW125:
@@ -250,13 +252,13 @@ void Radio::configLoraModem(rps_t rps) const {
   // set ModemConfig1
   writeReg(LORARegModemConfig1, mc1);
 
-  mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
+  uint8_t mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
   if (!rps.nocrc) {
     mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
   }
   writeReg(LORARegModemConfig2, mc2);
 
-  mc3 = SX1276_MC3_AGCAUTO;
+  uint8_t mc3 = SX1276_MC3_AGCAUTO;
   if ((sf == SF11 || sf == SF12) && rps.getBw() == BandWidth::BW125) {
     mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
   }
@@ -301,9 +303,9 @@ void Radio::configLoraModem(rps_t rps) const {
 #endif /* CFG_sx1272_radio */
 }
 
-void Radio::configChannel(uint32_t freq) const {
+void Radio::configChannel(uint32_t const freq) const {
   // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
-  uint64_t frf = ((uint64_t)freq << 19) / 32000000;
+  uint64_t const frf = ((uint64_t)freq << 19) / 32000000;
   writeReg(RegFrfMsb, (uint8_t)(frf >> 16));
   writeReg(RegFrfMid, (uint8_t)(frf >> 8));
   writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
@@ -367,7 +369,7 @@ void Radio::configPower(int8_t pw) const {
 #endif /* CFG_sx1272_radio */
 }
 
-uint8_t crForLog(rps_t rps) {
+uint8_t crForLog(rps_t const rps) {
   switch (rps.getCr()) {
   case CodingRate::CR_4_5:
     return 5;
@@ -381,7 +383,7 @@ uint8_t crForLog(rps_t rps) {
   return 0;
 }
 
-uint16_t bwForLog(rps_t rps) {
+uint16_t bwForLog(rps_t const rps) {
   switch (rps.getBw()) {
   case BandWidth::BW125:
     return 125;
@@ -394,8 +396,8 @@ uint16_t bwForLog(rps_t rps) {
   }
 }
 
-void Radio::txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
-                   uint8_t dataLen) const {
+void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
+                   uint8_t const *const frame, uint8_t dataLen) const {
   // select LoRa modem (from sleep mode)
   // writeReg(RegOpMode, OPMODE_LORA);
   opmodeLora();
@@ -446,8 +448,8 @@ void Radio::txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
 }
 
 // start transmitter
-void Radio::starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
-                    uint8_t dataLen) const {
+void Radio::starttx(uint32_t const freq, rps_t const rps, int8_t const txpow,
+                    uint8_t const *const frame, uint8_t dataLen) const {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   txlora(freq, rps, txpow, frame, dataLen);
   // the radio will go back to STANDBY mode as soon as the TX is finished
@@ -463,8 +465,8 @@ static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
 };
 
 // start LoRa receiver
-void Radio::rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                   OsTime rxtime) const {
+void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
+                   uint8_t const rxsyms, OsTime const rxtime) const {
   // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
@@ -517,7 +519,7 @@ void Radio::rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
   if (rxmode == RXMODE_RSSI) {
     lmic_printf("RXMODE_RSSI\n");
   } else {
-    uint8_t sf = rps.sf + 6; // 1 == SF7
+    uint8_t const sf = rps.sf + 6; // 1 == SF7
     lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
                 os_getTime().tick(),
                 rxmode == RXMODE_SINGLE
@@ -528,8 +530,8 @@ void Radio::rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
 #endif
 }
 
-void Radio::startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-                    OsTime rxtime) const {
+void Radio::startrx(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
+                    uint8_t const rxsyms, OsTime const rxtime) const {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   rxlora(rxmode, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
@@ -555,7 +557,7 @@ void Radio::init() {
 
 #if !defined(CFG_noassert) || LMIC_DEBUG_LEVEL > 0
   // some sanity checks, e.g., read version number
-  uint8_t v = readReg(RegVersion);
+  uint8_t const v = readReg(RegVersion);
   PRINT_DEBUG_1("Chip version : %i", v);
 #endif
 #ifdef CFG_sx1276_radio
@@ -607,7 +609,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
 
   // seed 15-byte randomness via noise rssi
   // freq and rps not used
-  rps_t dumyrps;
+  rps_t const dumyrps;
   rxlora(RXMODE_RSSI, 0, dumyrps, 1, hal_ticks());
   while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
@@ -627,7 +629,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
 
 uint8_t Radio::rssi() const {
   hal_disableIRQs();
-  uint8_t r = readReg(LORARegRssiValue);
+  uint8_t const r = readReg(LORARegRssiValue);
   hal_enableIRQs();
   return r;
 }
@@ -644,7 +646,7 @@ CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)
 };
 
 OsTime Radio::int_trigger_time() const {
-  OsTime now = os_getTime();
+  OsTime const now = os_getTime();
   if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
     return last_int_trigger;
   } else {
@@ -655,11 +657,12 @@ OsTime Radio::int_trigger_time() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
-                        OsTime &txEnd, OsTime &rxTime, rps_t currentRps) {
+void Radio::irq_handler(uint8_t const dio, uint8_t *const framePtr,
+                        uint8_t &frameLength, OsTime &txEnd, OsTime &rxTime,
+                        rps_t const currentRps) {
   OsTime now = int_trigger_time();
 
-  uint8_t flags = readReg(LORARegIrqFlags);
+  uint8_t const flags = readReg(LORARegIrqFlags);
 
   PRINT_DEBUG_2("irq: dio: 0x%x flags: 0x%x\n", dio, flags);
 
@@ -694,7 +697,7 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
     frameLength = length;
 
     // read rx quality parameters
-     // SNR [dB] * 4
+    // SNR [dB] * 4
     last_packet_snr_reg = static_cast<int8_t>(readReg(LORARegPktSnrValue));
     // RSSI [dBm]  - 139
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
@@ -715,15 +718,12 @@ void Radio::irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
 }
 
 int16_t Radio::get_last_packet_rssi() const {
-  // see documentation for -139 
+  // see documentation for -139
   // do not handle snr > 0
   return -139 + last_packet_rssi_reg;
 };
 
-int8_t Radio::get_last_packet_snr_x4() const {
-  return last_packet_snr_reg;
-};
-
+int8_t Radio::get_last_packet_snr_x4() const { return last_packet_snr_reg; };
 
 void Radio::rst() const {
   hal_disableIRQs();
@@ -733,23 +733,24 @@ void Radio::rst() const {
   hal_enableIRQs();
 }
 
-void Radio::tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr,
-               uint8_t frameLength) const {
+void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
+               uint8_t const *const framePtr, uint8_t const frameLength) const {
   hal_disableIRQs();
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
   hal_enableIRQs();
 }
 
-void Radio::rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const {
+void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
+               OsTime const rxtime) const {
   hal_disableIRQs();
   // receive frame now (exactly at rxtime)
   startrx(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
   hal_enableIRQs();
 }
 
-void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
-                 OsTime rxtime) const {
+void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
+                 OsTime const rxtime) const {
   hal_disableIRQs();
   // start scanning for beacon now
   startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
@@ -760,8 +761,8 @@ void Radio::rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
  *  Return true if the radio has finish it's operation
  */
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-                     OsTime &rxTime, rps_t currentRps) {
-  auto pinInInt = hal.io_check();
+                     OsTime &rxTime, rps_t const currentRps) {
+  auto const pinInInt = hal.io_check();
   if (pinInInt < NUM_DIO) {
     irq_handler(pinInInt, framePtr, frameLength, txEnd, rxTime, currentRps);
     return true;

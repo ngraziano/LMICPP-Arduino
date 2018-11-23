@@ -11,7 +11,7 @@ class Radio {
 public:
   void init(void);
   void rst() const;
-  void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *framePtr,
+  void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
           uint8_t frameLength) const;
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
   void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
@@ -37,16 +37,16 @@ private:
   OsTime int_trigger_time() const;
   void writeReg(uint8_t addr, uint8_t data) const;
   uint8_t readReg(uint8_t addr) const;
-  void writeBuf(uint8_t addr, uint8_t *buf, uint8_t len) const;
+  void writeBuf(uint8_t addr, uint8_t const *buf, uint8_t len) const;
   void readBuf(uint8_t addr, uint8_t *buf, uint8_t len) const;
   void opmode(uint8_t mode) const;
   void opmodeLora() const;
   void configLoraModem(rps_t rps) const;
   void configChannel(uint32_t freq) const;
   void configPower(int8_t pw) const;
-  void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
+  void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *frame,
               uint8_t dataLen) const;
-  void starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t *frame,
+  void starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *frame,
                uint8_t dataLen) const;
   void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
               OsTime rxtime) const;
