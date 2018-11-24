@@ -110,7 +110,7 @@ void onEvent(EventType ev)
 void do_send()
 {
     // Check if there is not a current TX/RX job running
-    if (LMIC.getOpMode() & OpState::TXRXPEND)
+    if (LMIC.getOpMode().test(OpState::TXRXPEND))
     {
         PRINT_DEBUG_1("OpState::TXRXPEND, not sending");
         // should not happen so reschedule anymway

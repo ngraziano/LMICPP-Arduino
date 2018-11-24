@@ -20,6 +20,7 @@
 #include "lorabase.h"
 #include "oslmic.h"
 #include "radio.h"
+#include "enumflagsvalue.h"
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -35,55 +36,33 @@ const int8_t KEEP_TXPOW = -128;
 
 // MAC operation modes (lmic_t.opmode).
 enum class OpState : uint8_t {
-  NONE = 0x00,
   // device joining in progress (blocks other activities)
-  JOINING = 0x01,
+  JOINING = 0x00,
   // TX user data (buffered in pendTxData)
-  TXDATA = 0x02,
+  TXDATA,
   // send empty UP frame to ACK confirmed DN/fetch more DN data
-  POLL = 0x04,
+  POLL,
   // occasionally send JOIN REQUEST
-  REJOIN = 0x08,
-  // prevent MAC from doing anything   
-  SHUTDOWN = 0x10,
+  REJOIN,
+  // prevent MAC from doing anything
+  SHUTDOWN,
   // TX/RX transaction pending
-  TXRXPEND = 0x20,
+  TXRXPEND,
   // find a new channel
-  NEXTCHNL = 0x40,
+  NEXTCHNL,
   // link was reported as dead
-  LINKDEAD = 0x80, 
+  LINKDEAD,
 };
+using OpStateValue = EnumFlagsValue<OpState>;
 
-template<typename T, typename U>
-class auto_bool
-{
-    T val_;
+template <typename T, typename U> class auto_bool {
+  T val_;
+
 public:
-    constexpr auto_bool(T val) : val_(val) {}
-    constexpr operator T() const { return val_; }
-    constexpr explicit operator bool() const
-    {
-        return static_cast<U>(val_) != 0;
-    }
+  constexpr auto_bool(T val) : val_(val) {}
+  constexpr operator T() const { return val_; }
+  constexpr explicit operator bool() const { return static_cast<U>(val_) != 0; }
 };
-
-constexpr OpState operator|(OpState lhs, OpState rhs) {
-  return static_cast<OpState>(static_cast<uint8_t>(lhs) |
-                                 static_cast<uint8_t>(rhs));
-}
-
-inline OpState &operator|=(OpState &a, OpState b) { return a = a | b; }
-
-constexpr auto_bool<OpState,uint8_t> operator&(OpState lhs, OpState rhs) {
-  return static_cast<OpState>(static_cast<uint8_t>(lhs) &
-                           static_cast<uint8_t>(rhs));
-}
-
-inline OpState &operator&=(OpState &a, OpState b) { return a = a & b; }
-
-constexpr OpState operator~(OpState value) {
-  return static_cast<OpState>(~static_cast<uint8_t>(value));
-}
 
 // TX-RX transaction flags - report back to user
 enum class TxRxStatus : uint8_t {
@@ -103,6 +82,8 @@ enum class TxRxStatus : uint8_t {
   DNW2 = 0x02,
 }; // received in a scheduled RX slot
 
+
+
 constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs) {
   return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) |
                                  static_cast<uint8_t>(rhs));
@@ -110,9 +91,10 @@ constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs) {
 
 inline TxRxStatus &operator|=(TxRxStatus &a, TxRxStatus b) { return a = a | b; }
 
-constexpr auto_bool<TxRxStatus,uint8_t> operator&(TxRxStatus lhs, TxRxStatus rhs) {
+constexpr auto_bool<TxRxStatus, uint8_t> operator&(TxRxStatus lhs,
+                                                   TxRxStatus rhs) {
   return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) &
-                           static_cast<uint8_t>(rhs));
+                                 static_cast<uint8_t>(rhs));
 }
 
 // Event types for event callback
@@ -188,7 +170,7 @@ protected:
 private:
   uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
-  OpState opmode;
+  OpStateValue opmode;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
@@ -345,12 +327,11 @@ public:
   void sendAlive();
   void setClockError(uint8_t error);
 
-  OpState getOpMode() { return opmode; };
+  OpStateValue getOpMode() { return opmode; };
 
   void setEventCallBack(eventCallback_t callback) { eventCallBack = callback; };
   void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
-
 
 protected:
   virtual uint8_t getRawRps(dr_t dr) const = 0;
@@ -398,11 +379,9 @@ public:
 };
 
 // Construct a bit map of allowed datarates from drlo to drhi (both included).
-template<typename T>
-constexpr uint16_t dr_range_map(T drlo,T drhi) {
-  return (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &                          \
-   ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))));
+template <typename T> constexpr uint16_t dr_range_map(T drlo, T drhi) {
+  return (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &
+          ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))));
 };
-
 
 #endif // _lmic_h_
