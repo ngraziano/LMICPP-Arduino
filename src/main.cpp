@@ -183,7 +183,7 @@ void setup()
 
     uint8_t buf[16];
     memcpy_P(buf, APPKEY, 16);
-    LMIC.aes.setDevKey(buf);
+    LMIC.setDevKey(buf);
     LMIC.setEventCallBack(onEvent);
     LMIC.setDevEuiCallback(getDevEui);
     LMIC.setArtEuiCallback(getArtEui);

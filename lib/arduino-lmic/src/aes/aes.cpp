@@ -20,12 +20,12 @@
 
 using namespace lorawan;
 
-void Aes::setDevKey(uint8_t key[16]) { std::copy(key, key + 16, AESDevKey); }
-void Aes::setNetworkSessionKey(uint8_t key[16]) {
-  std::copy(key, key + 16, nwkSKey);
+void Aes::setDevKey(uint8_t const key[AES_BLCK_SIZE]) { std::copy(key, key + AES_BLCK_SIZE, AESDevKey); }
+void Aes::setNetworkSessionKey(uint8_t const key[AES_BLCK_SIZE]) {
+  std::copy(key, key + AES_BLCK_SIZE, nwkSKey);
 }
-void Aes::setApplicationSessionKey(uint8_t key[16]) {
-  std::copy(key, key + 16, appSKey);
+void Aes::setApplicationSessionKey(uint8_t const key[AES_BLCK_SIZE]) {
+  std::copy(key, key + AES_BLCK_SIZE, appSKey);
 }
 
 // Get B0 value in buf
@@ -97,8 +97,8 @@ bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
 }
 
 void Aes::encrypt(uint8_t * const pdu, const uint8_t len) const {
-  // TODO: Check / handle when len is not a multiple of 16
-  for (uint8_t i = 0; i < len; i += 16)
+  // TODO: Check / handle when len is not a multiple of AES_BLCK_SIZE
+  for (uint8_t i = 0; i < len; i += AES_BLCK_SIZE)
     lmic_aes_encrypt(pdu + i, AESDevKey);
 }
 
@@ -139,11 +139,11 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, con
 
 // Extract session keys
 void Aes::sessKeys(const uint16_t devnonce, const uint8_t * const artnonce) {
-  std::fill(nwkSKey, nwkSKey + 16, 0);
+  std::fill(nwkSKey, nwkSKey + AES_BLCK_SIZE, 0);
   nwkSKey[0] = 0x01;
   std::copy(artnonce, artnonce + join_accept::lengths::appNonce + join_accept::lengths::netId, nwkSKey + 1);
   wlsbf2(nwkSKey + 1 + join_accept::lengths::appNonce + join_accept::lengths::netId, devnonce);
-  std::copy(nwkSKey, nwkSKey + 16, appSKey);
+  std::copy(nwkSKey, nwkSKey + AES_BLCK_SIZE, appSKey);
   appSKey[0] = 0x02;
 
   lmic_aes_encrypt(nwkSKey, AESDevKey);
@@ -167,7 +167,7 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 // it can be set to "B0" for MIC. The CMAC result is returned in result
 // as well.
 void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
-                   const uint8_t key[16], uint8_t result[AES_BLCK_SIZE]) {
+                   const uint8_t key[AES_BLCK_SIZE], uint8_t result[AES_BLCK_SIZE]) {
   if (prepend_aux)
     lmic_aes_encrypt(result, key);
 
@@ -189,8 +189,8 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
       // Final block, xor with K1 or K2. K1 and K2 are calculated
       // by encrypting the all-zeroes block and then applying some
       // shifts and xor on that.
-      uint8_t final_key[16];
-      std::fill(final_key, final_key + 16, 0);
+      uint8_t final_key[AES_BLCK_SIZE];
+      std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
       lmic_aes_encrypt(final_key, key);
 
       // Calculate K1

@@ -225,7 +225,6 @@ private:
   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataBeg = 0;
 
-public:
   Aes aes;
 
 protected:
@@ -301,6 +300,7 @@ public:
   void init();
   void shutdown();
   void reset();
+  void setDevKey(uint8_t const key[16]) { aes.setDevKey(key); };
 
   void clrTxData();
   void setTxData();
