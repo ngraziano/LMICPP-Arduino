@@ -72,7 +72,7 @@ void onEvent(EventType ev)
         break;
     case EventType::TXCOMPLETE:
         PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
-        if (LMIC.txrxFlags & TxRxStatus::ACK)
+        if (LMIC.txrxFlags.test(TxRxStatus::ACK))
             PRINT_DEBUG_2("Received ack");
         if (LMIC.dataLen)
         {

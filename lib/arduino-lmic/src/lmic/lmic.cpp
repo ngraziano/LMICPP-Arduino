@@ -314,9 +314,9 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
 // Decoding frames
 bool Lmic::decodeFrame() {
 #if LMIC_DEBUG_LEVEL > 0
-  const char *window = (txrxFlags & TxRxStatus::DNW1)
+  const char *window = (txrxFlags.test(TxRxStatus::DNW1))
                            ? "RX1"
-                           : ((txrxFlags & TxRxStatus::DNW2) ? "RX2" : "Other");
+                           : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
 #endif
 
   if (dataLen == 0) {
@@ -409,13 +409,13 @@ bool Lmic::decodeFrame() {
       // Decrypt payload - if any
       aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
                                  d + dataBeg, dataLen);
-      txrxFlags |= TxRxStatus::PORT;
+      txrxFlags.set(TxRxStatus::PORT);
 
       if (port == 0) {
         parseMacCommands(d + dataBeg, dataLen);
       }
     } else {
-      txrxFlags |= TxRxStatus::NOPORT;
+      txrxFlags.set(TxRxStatus::NOPORT);
       dataBeg = poff;
       dataLen = 0;
     }
@@ -434,7 +434,7 @@ bool Lmic::decodeFrame() {
   }
 
   if (txCnt != 0) // we requested an ACK
-    txrxFlags |= ackup ? TxRxStatus::ACK : TxRxStatus::NACK;
+    txrxFlags.set(ackup ? TxRxStatus::ACK : TxRxStatus::NACK);
 
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // stop sending RXParamSetupAns when receive dowlink message
@@ -452,7 +452,7 @@ bool Lmic::decodeFrame() {
 // TX/RX transaction support
 
 void Lmic::setupRx2() {
-  txrxFlags = TxRxStatus::DNW2;
+  txrxFlags.reset().set(TxRxStatus::DNW2);
   rps = dndr2rps(dn2Dr);
   freq = dn2Freq;
   dataLen = 0;
@@ -497,7 +497,7 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
 }
 
 void Lmic::setupRx1() {
-  txrxFlags = TxRxStatus::DNW1;
+  txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
   radio.rx(freq, rps, rxsyms, rxtime);
 }
@@ -563,7 +563,7 @@ bool Lmic::processJoinAccept() {
     PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
 
     // unexpected frame
-    if (txrxFlags & TxRxStatus::DNW1)
+    if (txrxFlags.test(TxRxStatus::DNW1))
       return false;
     return processJoinAcceptNoJoinFrame();
   }
@@ -572,7 +572,7 @@ bool Lmic::processJoinAccept() {
     PRINT_DEBUG_1("Join Accept BAD MIC");
 
     // bad mic
-    if (txrxFlags & TxRxStatus::DNW1)
+    if (txrxFlags.test(TxRxStatus::DNW1))
       return false;
     return processJoinAcceptNoJoinFrame();
   }
@@ -618,7 +618,7 @@ bool Lmic::processJoinAccept() {
 
 void Lmic::processRx2Jacc() {
   if (dataLen == 0)
-    txrxFlags = TxRxStatus::NONE; // nothing in 1st/2nd DN slot
+    txrxFlags.reset(); // nothing in 1st/2nd DN slot
   processJoinAccept();
 }
 
@@ -834,7 +834,7 @@ bool Lmic::processDnData() {
 
   if (!decodeFrame()) {
     // first RX windows, do nothing wait for second windows.
-    if (txrxFlags & TxRxStatus::DNW1)
+    if (txrxFlags.test(TxRxStatus::DNW1))
       return false;
 
     // retry send if need
@@ -849,10 +849,10 @@ bool Lmic::processDnData() {
         engineUpdate();
         return true;
       }
-      txrxFlags = TxRxStatus::NACK | TxRxStatus::NOPORT;
+      txrxFlags.reset().set(TxRxStatus::NACK).set(TxRxStatus::NOPORT);
     } else {
       // Nothing received - implies no port
-      txrxFlags = TxRxStatus::NOPORT;
+      txrxFlags.reset().set(TxRxStatus::NOPORT);
     }
     if (adrAckReq != LINK_CHECK_OFF)
       adrAckReq += 1;
@@ -860,7 +860,7 @@ bool Lmic::processDnData() {
   }
 
   opmode.reset(OpState::TXDATA).reset(OpState::TXRXPEND);
-  if ((txrxFlags & (TxRxStatus::DNW1 | TxRxStatus::DNW2)) &&
+  if ((txrxFlags.test(TxRxStatus::DNW1) || txrxFlags.test(TxRxStatus::DNW2)) &&
       opmode.test(OpState::LINKDEAD)) {
     opmode.reset(OpState::LINKDEAD);
     reportEvent(EventType::LINK_ALIVE);

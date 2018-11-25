@@ -16,11 +16,11 @@
 #define _lmic_h_
 
 #include "../aes/aes.h"
+#include "enumflagsvalue.h"
 #include "lmicrand.h"
 #include "lorabase.h"
 #include "oslmic.h"
 #include "radio.h"
-#include "enumflagsvalue.h"
 
 // LMIC version
 #define LMIC_VERSION_MAJOR 1
@@ -55,47 +55,24 @@ enum class OpState : uint8_t {
 };
 using OpStateValue = EnumFlagsValue<OpState>;
 
-template <typename T, typename U> class auto_bool {
-  T val_;
-
-public:
-  constexpr auto_bool(T val) : val_(val) {}
-  constexpr operator T() const { return val_; }
-  constexpr explicit operator bool() const { return static_cast<U>(val_) != 0; }
-};
-
 // TX-RX transaction flags - report back to user
 enum class TxRxStatus : uint8_t {
-  NONE = 0x00,
-  // confirmed UP frame was acked
-  ACK = 0x80,
-  // confirmed UP frame was not acked
-  NACK = 0x40,
-  // set if a frame with a port was RXed, clr if no frame/no port
-  NOPORT = 0x20,
+  // received in 1st DN slot
+  DNW1,
+  // received in 2dn DN slot
+  DNW2,
   // set if a frame with a port was RXed,
   // LMIC.frame[LMIC.dataBeg-1] => port
-  PORT = 0x10,
-  // received in 1st DN slot
-  DNW1 = 0x01,
-  // received in 2dn DN slot
-  DNW2 = 0x02,
+  PORT,
+  // set if a frame with a port was RXed, clr if no frame/no port
+  NOPORT,
+  // confirmed UP frame was acked
+  ACK,
+  // confirmed UP frame was not acked
+  NACK,
 }; // received in a scheduled RX slot
 
-
-
-constexpr TxRxStatus operator|(TxRxStatus lhs, TxRxStatus rhs) {
-  return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) |
-                                 static_cast<uint8_t>(rhs));
-}
-
-inline TxRxStatus &operator|=(TxRxStatus &a, TxRxStatus b) { return a = a | b; }
-
-constexpr auto_bool<TxRxStatus, uint8_t> operator&(TxRxStatus lhs,
-                                                   TxRxStatus rhs) {
-  return static_cast<TxRxStatus>(static_cast<uint8_t>(lhs) &
-                                 static_cast<uint8_t>(rhs));
-}
+using TxRxStatusValue = EnumFlagsValue<TxRxStatus>;
 
 // Event types for event callback
 enum class EventType : uint8_t {
@@ -241,7 +218,7 @@ private:
 public:
   // Public part of MAC state
   uint8_t txCnt = 0;
-  TxRxStatus txrxFlags; // transaction flags (TX-RX combo)
+  TxRxStatusValue txrxFlags; // transaction flags (TX-RX combo)
   uint8_t dataBeg = 0;  // 0 or start of data (dataBeg-1 is port)
   uint8_t dataLen = 0;  // 0 no data or zero length data, >0 byte count of data
   uint8_t frame[MAX_LEN_FRAME];
