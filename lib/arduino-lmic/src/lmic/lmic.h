@@ -94,23 +94,24 @@ const uint8_t MAX_CLOCK_ERROR = 255;
 
 #if defined(CFG_eu868) // EU868 spectrum
 
-enum { ADR_ACK_DELAY = 32, ADR_ACK_LIMIT = 64 };
+const int8_t ADR_ACK_DELAY = 32;
+const int8_t ADR_ACK_LIMIT = 64;
 
 #elif defined(CFG_us915) // US915 spectrum
 
-enum { ADR_ACK_DELAY = 32, ADR_ACK_LIMIT = 64 };
+const int8_t ADR_ACK_DELAY = 32;
+const int8_t ADR_ACK_LIMIT = 64;
 
 #endif
 
-enum {
-  // continue with this after reported dead link
-  LINK_CHECK_CONT = 0,
-  // after this UP frames and no response from NWK assume link is dead
-  LINK_CHECK_DEAD = ADR_ACK_DELAY,
-  // UP frame count until we ask for ADRACKReq
-  LINK_CHECK_INIT = -ADR_ACK_LIMIT,
-  LINK_CHECK_OFF = -128
-}; // link check disabled
+// continue with this after reported dead link
+const int8_t LINK_CHECK_CONT = 0;
+// after this UP frames and no response from NWK assume link is dead
+const int8_t LINK_CHECK_DEAD = ADR_ACK_DELAY;
+// UP frame count until we ask for ADRACKReq
+const int8_t LINK_CHECK_INIT = -ADR_ACK_LIMIT;
+// link check disabled
+const int8_t LINK_CHECK_OFF = -128;
 
 class Lmic {
 public:
@@ -215,17 +216,20 @@ private:
   uint8_t dn2Ans;
 #endif
 
-public:
   // Public part of MAC state
-  uint8_t txCnt = 0;
-  TxRxStatusValue txrxFlags; // transaction flags (TX-RX combo)
-  uint8_t dataBeg = 0;  // 0 or start of data (dataBeg-1 is port)
-  uint8_t dataLen = 0;  // 0 no data or zero length data, >0 byte count of data
   uint8_t frame[MAX_LEN_FRAME];
+  // transaction flags (TX-RX combo)
+  TxRxStatusValue txrxFlags;
+  // 0 no data or zero length data, >0 byte count of data
+  uint8_t dataLen = 0;
+  // 0 or start of data (dataBeg-1 is port)
+  uint8_t dataBeg = 0;
 
+public:
   Aes aes;
 
 protected:
+  uint8_t txCnt = 0;
   LmicRand rand;
 
 private:
@@ -304,7 +308,15 @@ public:
   void sendAlive();
   void setClockError(uint8_t error);
 
-  OpStateValue getOpMode() { return opmode; };
+  OpStateValue getOpMode() const { return opmode; };
+  TxRxStatusValue getTxRxFlags() const { return txrxFlags; };
+  uint8_t getDataLen() const { return dataLen; };
+  uint8_t const *getData() const {
+    return dataBeg ? frame + dataBeg : nullptr;
+  };
+  uint8_t getPort() const {
+    return txrxFlags.test(TxRxStatus::PORT) ? frame[dataBeg - 1] : 0;
+  };
 
   void setEventCallBack(eventCallback_t callback) { eventCallBack = callback; };
   void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };

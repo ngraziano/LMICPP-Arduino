@@ -72,14 +72,15 @@ void onEvent(EventType ev)
         break;
     case EventType::TXCOMPLETE:
         PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
-        if (LMIC.txrxFlags.test(TxRxStatus::ACK))
+        if (LMIC.getTxRxFlags().test(TxRxStatus::ACK))
             PRINT_DEBUG_2("Received ack");
-        if (LMIC.dataLen)
+        if (LMIC.getDataLen())
         {
             PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
-            if (LMIC.dataBeg > 0)
+            auto data = LMIC.getData();
+            if (data)
             {
-                uint8_t port = LMIC.frame[LMIC.dataBeg - 1];
+                uint8_t port = LMIC.getPort();
                 if (port == 9)
                 {
                 }
