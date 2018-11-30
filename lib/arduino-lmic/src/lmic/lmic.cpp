@@ -547,7 +547,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
 bool Lmic::processJoinAccept() {
   PRINT_DEBUG_2("Process join accept.");
   ASSERT(opmode.test(OpState::TXRXPEND));
-  
+
   const uint8_t hdr = frame[0];
   const uint8_t dlen = dataLen;
 
@@ -808,7 +808,7 @@ void Lmic::startJoiningCallBack() { reportEvent(EventType::JOINING); }
 bool Lmic::startJoining() {
   if (devaddr == 0) {
     // There should be no TX/RX going on
-    ASSERT((opmode & (OpState::POLL | OpState::TXRXPEND)) == 0);
+    ASSERT(opmode.test(OpState::POLL) || opmode.test(OpState::TXRXPEND));
     // Lift any previous duty limitation
     globalDutyRate = 0;
     // Cancel scanning
@@ -833,7 +833,7 @@ bool Lmic::startJoining() {
 #endif // !DISABLE_JOIN
 
 bool Lmic::processDnData() {
-  ASSERT((opmode & OpState::TXRXPEND) != 0);
+  ASSERT(opmode.test(OpState::TXRXPEND));
 
   if (!decodeFrame()) {
     // first RX windows, do nothing wait for second windows.

@@ -285,7 +285,7 @@ void LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
-  ASSERT(!(opmode & OpState::NEXTCHNL));
+  ASSERT(!(opmode.test(OpState::NEXTCHNL)));
   txend = os_getTime();
   setDrJoin(DR_SF7);
 }

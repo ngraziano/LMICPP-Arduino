@@ -145,10 +145,10 @@ protected:
   int8_t antennaPowerAdjustment = 0;
 
   dr_t datarate = 0; // current data rate
-private:
-  uint32_t netid; // current network id (~0 - none)
   // curent opmode set at init
   OpStateValue opmode;
+private:
+  uint32_t netid; // current network id (~0 - none)
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
