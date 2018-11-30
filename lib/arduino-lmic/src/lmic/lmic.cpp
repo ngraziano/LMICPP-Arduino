@@ -520,7 +520,7 @@ void Lmic::onJoinFailed() {
   reportEvent(EventType::JOIN_FAILED);
 }
 
-bool Lmic::processJoinAcceptNoJoinFrame() {
+void Lmic::processJoinAcceptNoJoinFrame() {
   if (opmode.test(OpState::REJOIN)) {
     // REJOIN attempt for roaming
     // rejoin fail, continue normal operation
@@ -529,33 +529,33 @@ bool Lmic::processJoinAcceptNoJoinFrame() {
     if (rejoinCnt < 10)
       rejoinCnt++;
     reportEvent(EventType::REJOIN_FAILED);
-    return true;
-  }
-  opmode.reset(OpState::TXRXPEND);
-  // Clear NEXTCHNL because join state engine controls channel hopping
-  opmode.reset(OpState::NEXTCHNL);
-  const bool succes = nextJoinState();
-  // Build next JOIN REQUEST with next engineUpdate call
-  // Optionally, report join failed.
-  // Both after a random/chosen amount of ticks.
+  } else {
+    opmode.reset(OpState::TXRXPEND);
+    // Clear NEXTCHNL because join state engine controls channel hopping
+    opmode.reset(OpState::NEXTCHNL);
+    const bool succes = nextJoinState();
+    // Build next JOIN REQUEST with next engineUpdate call
+    // Optionally, report join failed.
+    // Both after a random/chosen amount of ticks.
 
-  osjob.setCallbackRunnable(
-      succes ? &Lmic::runEngineUpdate // next step to be delayed
-             : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
-  return true;
+    osjob.setCallbackRunnable(
+        succes ? &Lmic::runEngineUpdate // next step to be delayed
+              : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
+  }
 }
+
 bool Lmic::processJoinAccept() {
   PRINT_DEBUG_2("Process join accept.");
-
-  ASSERT(txrxFlags != TXRX_DNW1 || dataLen != 0);
-  ASSERT(opmode & OpState::TXRXPEND);
-
-  if (dataLen == 0) {
-    return processJoinAcceptNoJoinFrame();
-  }
-
+  ASSERT(opmode.test(OpState::TXRXPEND));
+  
   const uint8_t hdr = frame[0];
   const uint8_t dlen = dataLen;
+
+  if (dataLen == 0) {
+    return false;
+  }
+
+
 
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
@@ -563,18 +563,14 @@ bool Lmic::processJoinAccept() {
     PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
 
     // unexpected frame
-    if (txrxFlags.test(TxRxStatus::DNW1))
-      return false;
-    return processJoinAcceptNoJoinFrame();
+    return false;
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
     PRINT_DEBUG_1("Join Accept BAD MIC");
 
     // bad mic
-    if (txrxFlags.test(TxRxStatus::DNW1))
-      return false;
-    return processJoinAcceptNoJoinFrame();
+    return false;
   }
 
   devaddr = rlsbf4(frame + join_accept::offset::devAddr);
@@ -621,7 +617,9 @@ bool Lmic::processJoinAccept() {
 void Lmic::processRx2Jacc() {
   if (dataLen == 0)
     txrxFlags.reset(); // nothing in 1st/2nd DN slot
-  processJoinAccept();
+  if(!processJoinAccept()) {
+    processJoinAcceptNoJoinFrame();
+  };
 }
 
 void Lmic::setupRx2Jacc() {
@@ -632,7 +630,7 @@ void Lmic::setupRx2Jacc() {
 
 void Lmic::processRx1Jacc() {
   PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
-  if (dataLen == 0 || !processJoinAccept()) {
+  if (!processJoinAccept()) {
     osjob.setCallbackFuture(&Lmic::setupRx2Jacc);
     schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
   }

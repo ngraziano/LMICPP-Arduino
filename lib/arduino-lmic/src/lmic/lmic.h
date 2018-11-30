@@ -245,7 +245,7 @@ private:
 
 #if !defined(DISABLE_JOIN)
   void onJoinFailed();
-  bool processJoinAcceptNoJoinFrame();
+  void processJoinAcceptNoJoinFrame();
   bool processJoinAccept();
   void processRx1Jacc();
   void processRx2Jacc();
