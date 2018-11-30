@@ -3,18 +3,13 @@
 
 #include "lmic.h"
 
-#undef min
-#undef max
-
-#include <valarray>
 struct ChannelDetail {
   // three low bit of freq is used to store band.
   uint32_t freq;
   uint16_t drMap;
 };
 
-enum { MAX_CHANNELS = 16 }; //!< Max supported channels
-enum { MAX_BANDS = 4 };
+
 
 enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
 //! \internal
@@ -28,8 +23,24 @@ struct band_t {
 enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 
 class LmicEu868 final : public Lmic {
-  public:
+public:
+  // Max supported channels
+  static const uint8_t MAX_CHANNELS = 16; 
+  static const uint8_t MAX_BANDS = 4;
+  enum class Dr : dr_t {
+    SF12 = 0,
+    SF11,
+    SF10,
+    SF9,
+    SF8,
+    SF7,
+    SF7B,
+    FSK,
+    NONE
+  };
+
   explicit LmicEu868(lmic_pinmap const &pins);
+
 protected:
   uint8_t getRawRps(dr_t dr) const override;
   int8_t pow2dBm(uint8_t mcmd_ladr_p1) const override;

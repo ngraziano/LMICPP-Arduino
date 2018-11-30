@@ -757,8 +757,8 @@ void Lmic::buildDataFrame() {
 
   if (txCnt == 0) {
     seqnoUp += 1;
-  } else {
-  }
+  } 
+  
   wlsbf2(frame + mac_payload::offsets::fcnt, seqnoUp - 1);
 
   // Clear pending DN confirmation
