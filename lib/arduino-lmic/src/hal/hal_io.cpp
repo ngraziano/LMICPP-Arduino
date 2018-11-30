@@ -7,18 +7,7 @@
 static const SPISettings settings(10E6, MSBFIRST, SPI_MODE0);
 
 HalIo::HalIo(lmic_pinmap const &pins) : lmic_pins(pins) {}
-/*
-void HalIo::pin_nss(uint8_t val) const {
-  if (!val)
-    SPI.beginTransaction(settings);
-  else
-    SPI.endTransaction();
 
-  // Serial.println(val?">>":"<<");
-  digitalWrite(lmic_pins.nss, val);
-}
-
-*/
 void HalIo::beginspi() const {
   SPI.beginTransaction(settings);
   digitalWrite(lmic_pins.nss, 0);
