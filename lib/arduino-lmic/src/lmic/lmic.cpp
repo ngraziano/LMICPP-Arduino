@@ -463,33 +463,30 @@ void Lmic::setupRx2() {
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
-  PRINT_DEBUG_2("SchedRx RX1/2.");
+  PRINT_DEBUG_2("SchedRx RX1/2");
 
   // Half symbol time for the data rate.
   const OsDeltaTime hsym = dr2hsym(dr);
 
-  rxsyms = MINRX_SYMS;
-
   // If a clock error is specified, compensate for it by extending the
   // receive window
-  if (clockError != 0) {
-    // Calculate how much the clock will drift maximally after delay has
-    // passed. This indicates the amount of time we can be early
-    // _or_ late.
-    const OsDeltaTime drift =
-        OsDeltaTime(delay.tick() * clockError / MAX_CLOCK_ERROR);
+  // Calculate how much the clock will drift maximally after delay has
+  // passed. This indicates the amount of time we can be early
+  // _or_ late.
+  const OsDeltaTime drift =
+      OsDeltaTime(delay.tick() * clockError / MAX_CLOCK_ERROR);
 
-    // Increase the receive window by twice the maximum drift (to
-    // compensate for a slow or a fast clock).
-    // decrease the rxtime to compensate for. Note that hsym is a
-    // *half* symbol time, so the factor 2 is hidden. First check if
-    // this would overflow (which can happen if the drift is very
-    // high, or the symbol time is low at high datarates).
-    if ((255 - rxsyms) * hsym < drift)
-      rxsyms = 255;
-    else
-      rxsyms += drift / hsym;
-  }
+  // Increase the receive window by twice the maximum drift (to
+  // compensate for a slow or a fast clock).
+  // decrease the rxtime to compensate for. Note that hsym is a
+  // *half* symbol time, so the factor 2 is hidden. First check if
+  // this would overflow (which can happen if the drift is very
+  // high, or the symbol time is low at high datarates).
+  if ((255 - MINRX_SYMS) * hsym < drift)
+    rxsyms = 255;
+  else
+    rxsyms = MINRX_SYMS + (drift / hsym);
+
 
   // Center the receive window on the center of the expected preamble
   // (again note that hsym is half a sumbol time, so no /2 needed)

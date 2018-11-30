@@ -76,7 +76,7 @@ void onEvent(EventType ev)
             PRINT_DEBUG_2("Received ack");
         if (LMIC.getDataLen())
         {
-            PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.dataLen);
+            PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.getDataLen());
             auto data = LMIC.getData();
             if (data)
             {

@@ -126,7 +126,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
 
   if (j) { // run job callback
     PRINT_DEBUG_2("Running job %p, deadline %lu\n", j,
-                  has_deadline ? j->deadline : 0);
+                  has_deadline ? j->deadline.tick() : 0);
     j->call();
   }
   if (runnablejobs) {
