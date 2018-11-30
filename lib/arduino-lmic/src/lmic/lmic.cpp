@@ -252,12 +252,6 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
     case MCMD_DCAP_REQ: {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
       const uint8_t cap = opts[oidx + 1];
-
-      // cap=0xFF is not in specification...
-      // A value cap=0xFF means device is OFF unless enabled again manually.
-      if (cap == 0xFF)
-        opmode.set(OpState::SHUTDOWN); // stop any sending
-
       globalDutyRate = cap & 0xF;
       globalDutyAvail = os_getTime();
       dutyCapAns = true;
