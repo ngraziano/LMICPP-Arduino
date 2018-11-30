@@ -456,13 +456,38 @@ void Radio::starttx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // the corresponding IRQ will inform us about completion.
 }
 
-enum { RXMODE_SINGLE, RXMODE_SCAN, RXMODE_RSSI };
+enum { RXMODE_SINGLE, RXMODE_SCAN};
 
 static CONST_TABLE(uint8_t, rxlorairqmask)[] = {
     [RXMODE_SINGLE] = IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK,
     [RXMODE_SCAN] = IRQ_LORA_RXDONE_MASK,
-    [RXMODE_RSSI] = 0x00,
 };
+
+
+// start LoRa receiver
+void Radio::rxrssi() const {
+  // select LoRa modem (from sleep mode)
+  opmodeLora();
+  // enter standby mode (warm up))
+  opmode(OPMODE_STANDBY);
+  // don't use MAC settings at startup
+  // use fixed settings for rssi scan
+  writeReg(LORARegModemConfig1, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1);
+  writeReg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
+  // set LNA gain
+  writeReg(RegLna, LNA_RX_GAIN);
+  // clear all radio IRQ flags
+  writeReg(LORARegIrqFlags, 0xFF);
+  // mask all irq
+  writeReg(LORARegIrqFlagsMask, ~0x00);
+  // enable antenna switch for RX
+  hal.pin_rxtx(0);
+  // now instruct the radio to receive
+  // continous rx 
+  opmode(OPMODE_RX);
+  PRINT_DEBUG_1("RXMODE_RSSI\n");
+}
+
 
 // start LoRa receiver
 void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
@@ -473,15 +498,11 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   // enter standby mode (warm up))
   opmode(OPMODE_STANDBY);
   // don't use MAC settings at startup
-  if (rxmode == RXMODE_RSSI) { // use fixed settings for rssi scan
-    writeReg(LORARegModemConfig1, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1);
-    writeReg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
-  } else { // single or continuous rx mode
-    // configure LoRa modem (cfg1, cfg2)
-    configLoraModem(rps);
-    // configure frequency
-    configChannel(freq);
-  }
+  // configure LoRa modem (cfg1, cfg2)
+  configLoraModem(rps);
+  // configure frequency
+  configChannel(freq);
+
   // set LNA gain
   writeReg(RegLna, LNA_RX_GAIN);
   // set max payload size
@@ -510,23 +531,20 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   if (rxmode == RXMODE_SINGLE) { // single rx
     hal_waitUntil(rxtime);       // busy wait until exact rx time
     opmode(OPMODE_RX_SINGLE);
-  } else { // continous rx (scan or rssi)
+  } else { // continous rx (scan)
     opmode(OPMODE_RX);
   }
   hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
-  if (rxmode == RXMODE_RSSI) {
-    lmic_printf("RXMODE_RSSI\n");
-  } else {
-    uint8_t const sf = rps.sf + 6; // 1 == SF7
-    lmic_printf("%lu: %s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-                os_getTime().tick(),
-                rxmode == RXMODE_SINGLE
-                    ? "RXMODE_SINGLE"
-                    : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
-                freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
-  }
+
+  uint8_t const sf = rps.sf + 6; // 1 == SF7
+  PRINT_DEBUG_1("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+              rxmode == RXMODE_SINGLE
+                  ? "RXMODE_SINGLE"
+                  : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
+              freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
+
 #endif
 }
 
@@ -547,10 +565,10 @@ void Radio::init() {
 #else
   hal.pin_rst(1); // drive RST pin high
 #endif
-  // wait >100us
+  // wait >100us for SX127x to detect reset
   hal_wait(OsDeltaTime::from_ms(1));
   hal.pin_rst(2); // configure RST pin floating!
-  // wait 5ms
+  // wait 5ms after reset
   hal_wait(OsDeltaTime::from_ms(5));
 
   opmode(OPMODE_SLEEP);
@@ -610,7 +628,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
   // seed 15-byte randomness via noise rssi
   // freq and rps not used
   rps_t const dumyrps;
-  rxlora(RXMODE_RSSI, 0, dumyrps, 1, hal_ticks());
+  rxrssi();
   while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
   for (uint8_t i = 1; i < 16; i++) {
@@ -623,6 +641,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
     }
   }
   randbuf[0] = 16; // set initial index
+  //stop RX
   opmode(OPMODE_SLEEP);
   hal_enableIRQs();
 }

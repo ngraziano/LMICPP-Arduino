@@ -91,7 +91,8 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
     sfx2 = 4;
   }
   // Need 32bit arithmetic for this last step
-  OsDeltaTime val = OsDeltaTime((((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div);
+  OsDeltaTime val =
+      OsDeltaTime((((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div);
   PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
   return val;
 }
@@ -314,9 +315,10 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
 // Decoding frames
 bool Lmic::decodeFrame() {
 #if LMIC_DEBUG_LEVEL > 0
-  const char *window = (txrxFlags.test(TxRxStatus::DNW1))
-                           ? "RX1"
-                           : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
+  const char *window =
+      (txrxFlags.test(TxRxStatus::DNW1))
+          ? "RX1"
+          : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
 #endif
 
   if (dataLen == 0) {
@@ -329,7 +331,8 @@ bool Lmic::decodeFrame() {
   const uint8_t ftype = hdr & HDR_FTYPE;
   const uint8_t dlen = dataLen;
 
-  if (dlen < mac_payload::offsets::fopts + lengths::MIC || (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
+  if (dlen < mac_payload::offsets::fopts + lengths::MIC ||
+      (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
       (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
     // Basic sanity checks failed
     PRINT_DEBUG_1("Invalid downlink, window=%s", window);
@@ -590,13 +593,15 @@ bool Lmic::processJoinAccept() {
   // already incremented when JOIN REQ got sent off
   aes.sessKeys(devNonce - 1, frame + join_accept::offset::appNonce);
 
-  ASSERT(opmode.test(OpState::JOINING) ||  opmode.test(OpState::REJOIN));
+  ASSERT(opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN));
   if (opmode.test(OpState::REJOIN)) {
     // Lower DR every try below current UP DR
     // so adjust the current datarate to success join
     datarate = lowerDR(datarate, rejoinCnt);
   }
-  opmode.reset(OpState::JOINING).reset(OpState::REJOIN).reset(OpState::TXRXPEND);
+  opmode.reset(OpState::JOINING)
+      .reset(OpState::REJOIN)
+      .reset(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
 
   txCnt = 0;
@@ -717,8 +722,9 @@ void Lmic::buildDataFrame() {
     // lorawan 1.0.2 §5.5. the margin is the SNR.
     // Convert to real SNR; rounding towards zero.
     const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
-    frame[end + 2] =  static_cast<uint8_t>((0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
-    
+    frame[end + 2] = static_cast<uint8_t>(
+        (0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
+
     end += 3;
     devsAns = false;
   }
@@ -757,8 +763,8 @@ void Lmic::buildDataFrame() {
 
   if (txCnt == 0) {
     seqnoUp += 1;
-  } 
-  
+  }
+
   wlsbf2(frame + mac_payload::offsets::fcnt, seqnoUp - 1);
 
   // Clear pending DN confirmation
@@ -811,7 +817,10 @@ bool Lmic::startJoining() {
     // Lift any previous duty limitation
     globalDutyRate = 0;
     // Cancel scanning
-    opmode.reset(OpState::REJOIN).reset(OpState::LINKDEAD).reset(OpState::LINKDEAD).set(OpState::JOINING);
+    opmode.reset(OpState::REJOIN)
+        .reset(OpState::LINKDEAD)
+        .reset(OpState::LINKDEAD)
+        .set(OpState::JOINING);
     // Setup state
     rejoinCnt = txCnt = 0;
     // remove rx 1 offset
@@ -819,7 +828,6 @@ bool Lmic::startJoining() {
 
     initJoinLoop();
 
-    
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS
     osjob.setCallbackRunnable(&Lmic::startJoiningCallBack);
@@ -891,8 +899,8 @@ bool Lmic::processDnData() {
 
 // Decide what to do next for the MAC layer of a device
 void Lmic::engineUpdate() {
- // PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", static_cast <uint8_t>(opmode));
-  // Check for ongoing state: scan or TX/RX transaction
+  // PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", static_cast
+  // <uint8_t>(opmode)); Check for ongoing state: scan or TX/RX transaction
   if (opmode.test(OpState::TXRXPEND) || opmode.test(OpState::SHUTDOWN))
     return;
 
@@ -906,10 +914,12 @@ void Lmic::engineUpdate() {
   const OsTime now = os_getTime();
   OsTime txbeg = now;
 
-  if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN) || opmode.test(OpState::TXDATA) || opmode.test(OpState::POLL)) {
+  if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN) ||
+      opmode.test(OpState::TXDATA) || opmode.test(OpState::POLL)) {
     // Need to TX some data...
     // Assuming txChnl points to channel which first becomes available again.
-    const bool jacc = opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
+    const bool jacc =
+        opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
 #if LMIC_DEBUG_LEVEL > 1
     if (jacc)
       lmic_printf("%lu: Uplink join pending\n", os_getTime().tick());
@@ -984,7 +994,6 @@ void Lmic::engineUpdate() {
     return;
   }
 }
-
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
   antennaPowerAdjustment = power;

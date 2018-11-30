@@ -51,6 +51,7 @@ private:
                uint8_t dataLen) const;
   void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
               OsTime rxtime) const;
+  void rxrssi() const;
   void startrx(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
                OsTime rxtime) const;
 };
