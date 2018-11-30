@@ -92,17 +92,8 @@ using keyCallback_t = void (*)(uint8_t *);
 // This value represents 100% error in LMIC.clockError
 const uint8_t MAX_CLOCK_ERROR = 255;
 
-#if defined(CFG_eu868) // EU868 spectrum
-
 const int8_t ADR_ACK_DELAY = 32;
 const int8_t ADR_ACK_LIMIT = 64;
-
-#elif defined(CFG_us915) // US915 spectrum
-
-const int8_t ADR_ACK_DELAY = 32;
-const int8_t ADR_ACK_LIMIT = 64;
-
-#endif
 
 // continue with this after reported dead link
 const int8_t LINK_CHECK_CONT = 0;

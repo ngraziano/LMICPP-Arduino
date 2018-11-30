@@ -308,14 +308,11 @@ bool LmicUs915::nextJoinState() {
     }
     datarate = dr;
   }
-
-  txend = os_getTime() + (isTESTMODE()
-                              // Avoid collision with JOIN ACCEPT being sent by
-                              // GW (but we missed it - GW is still busy)
-                              ? DNW2_SAFETY_ZONE
-                              // Otherwise: randomize join (street lamp case):
-                              // SF10:16, SF9=8,..SF8C:1secs
-                              : OsDeltaTime::rnd_delay(rand, 16 >> datarate));
+  // Avoid collision with JOIN ACCEPT being sent by
+  // GW (but we missed it - GW is still busy)
+  // randomize join (street lamp case):
+  // SF10:16, SF9=8,..SF8C:1secs
+  txend = os_getTime() + OsDeltaTime::rnd_delay(rand, 16 >> datarate);
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }
