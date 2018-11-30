@@ -162,38 +162,38 @@
 #define LNA_RX_GAIN (0x20 | 0x03)
 
 void Radio::writeReg(uint8_t const addr, uint8_t const data) const {
-  hal.pin_nss(0);
+  hal.beginspi();
   hal.spi(addr | 0x80);
   hal.spi(data);
-  hal.pin_nss(1);
+  hal.endspi();
 }
 
 uint8_t Radio::readReg(uint8_t const addr) const {
-  hal.pin_nss(0);
+  hal.beginspi();
   hal.spi(addr & 0x7F);
   uint8_t const val = hal.spi(0x00);
-  hal.pin_nss(1);
+  hal.endspi();
   return val;
 }
 
 void Radio::writeBuf(uint8_t const addr, uint8_t const *const buf,
                      uint8_t const len) const {
-  hal.pin_nss(0);
+  hal.beginspi();
   hal.spi(addr | 0x80);
   for (uint8_t i = 0; i < len; i++) {
     hal.spi(buf[i]);
   }
-  hal.pin_nss(1);
+  hal.endspi();
 }
 
 void Radio::readBuf(uint8_t const addr, uint8_t *const buf,
                     uint8_t const len) const {
-  hal.pin_nss(0);
+  hal.beginspi();
   hal.spi(addr & 0x7F);
   for (uint8_t i = 0; i < len; i++) {
     buf[i] = hal.spi(0x00);
   }
-  hal.pin_nss(1);
+  hal.endspi();
 }
 
 void Radio::opmode(uint8_t const mode) const {

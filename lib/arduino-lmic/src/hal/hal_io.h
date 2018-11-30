@@ -20,10 +20,15 @@ const uint8_t LMIC_UNUSED_PIN = 0xff;
 class HalIo final {
 public:
   explicit HalIo(lmic_pinmap const &pins);
+
   /**
-   * drive radio NSS pin (0=low, 1=high).
+   * drive radio NSS pin for start transfer.
    */
-  void pin_nss(uint8_t val) const;
+  void beginspi() const;
+  /**
+   * drive radio NSS pin to end transfer.
+   */
+  void endspi() const;
   /**
    * perform 8-bit SPI transaction with radio.
    *   - write given byte 'outval'
