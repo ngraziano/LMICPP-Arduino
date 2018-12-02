@@ -14,8 +14,8 @@ void HalIo::beginspi() const {
 }
 
 void HalIo::endspi() const {
-  SPI.endTransaction();
   digitalWrite(lmic_pins.nss, 1);
+  SPI.endTransaction();
 }
 
 
