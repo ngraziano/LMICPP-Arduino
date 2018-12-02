@@ -288,14 +288,6 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
       oidx += 2;
       continue;
     }
-    case MCMD_PING_SET: {
-      oidx += 4;
-      continue;
-    }
-    case MCMD_BCNI_ANS: {
-      oidx += 4;
-      continue;
-    }
     }
     break;
   }

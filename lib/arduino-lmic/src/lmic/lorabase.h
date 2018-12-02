@@ -147,15 +147,8 @@ enum {
   MCMD_RXTimingSetup_REQ = 0x08,
   //  set the maximum allowed dwell time
   MCMD_TxParamSetup_REQ = 0x09,
-  // Class B
-  MCMD_PING_SET = 0x11, // set ping freq      : u3: freq
-  MCMD_BCNI_ANS =
-      0x12, // next beacon start  : u2: delay(in TUNIT millis), u1:channel
 };
 
-enum {
-  MCMD_BCNI_TUNIT = 30 // time unit of delay value in millis
-};
 enum {
   MCMD_LADR_ANS_RFU = 0xF8,    // RFU bits
   MCMD_LADR_ANS_POWACK = 0x04, // 0=not supported power level
@@ -173,7 +166,6 @@ enum {
   MCMD_SNCH_ANS_DRACK = 0x02, // 0=unknown data rate
   MCMD_SNCH_ANS_FQACK = 0x01, // 0=rejected channel frequency
 };
-enum { MCMD_PING_ANS_RFU = 0xFE, MCMD_PING_ANS_FQACK = 0x01 };
 
 enum {
   MCMD_DEVS_EXT_POWER = 0x00,   // external power supply
