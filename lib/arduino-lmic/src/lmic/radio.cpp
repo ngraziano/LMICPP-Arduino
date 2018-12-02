@@ -15,151 +15,141 @@
 
 // ----------------------------------------
 // Registers Mapping
-#define RegFifo 0x00     // common
-#define RegOpMode 0x01   // common
-#define RegFrfMsb 0x06   // common
-#define RegFrfMid 0x07   // common
-#define RegFrfLsb 0x08   // common
-#define RegPaConfig 0x09 // common
-#define RegPaRamp 0x0A   // common
-#define RegOcp 0x0B      // common
-#define RegLna 0x0C      // common
-#define LORARegFifoAddrPtr 0x0D
-#define LORARegFifoTxBaseAddr 0x0E
-#define LORARegFifoRxBaseAddr 0x0F
-#define LORARegFifoRxCurrentAddr 0x10
-#define LORARegIrqFlagsMask 0x11
-#define LORARegIrqFlags 0x12
-#define LORARegRxNbBytes 0x13
-#define LORARegRxHeaderCntValueMsb 0x14
-#define LORARegRxHeaderCntValueLsb 0x15
-#define LORARegRxPacketCntValueMsb 0x16
-#define LORARegRxpacketCntValueLsb 0x17
-#define LORARegModemStat 0x18
-#define LORARegPktSnrValue 0x19
-#define LORARegPktRssiValue 0x1A
-#define LORARegRssiValue 0x1B
-#define LORARegHopChannel 0x1C
-#define LORARegModemConfig1 0x1D
-#define LORARegModemConfig2 0x1E
-#define LORARegSymbTimeoutLsb 0x1F
-#define LORARegPreambleMsb 0x20
-#define LORARegPreambleLsb 0x21
-#define LORARegPayloadLength 0x22
-#define LORARegPayloadMaxLength 0x23
-#define LORARegHopPeriod 0x24
-#define LORARegFifoRxByteAddr 0x25
-#define LORARegModemConfig3 0x26
-#define LORARegFeiMsb 0x28
-#define LORAFeiMib 0x29
-#define LORARegFeiLsb 0x2A
-#define LORARegRssiWideband 0x2C
-#define LORARegDetectOptimize 0x31
-#define LORARegInvertIQ 0x33
-#define LORARegDetectionThreshold 0x37
-#define LORARegSyncWord 0x39
-#define RegDioMapping1 0x40 // common
-#define RegDioMapping2 0x41 // common
-#define RegVersion 0x42     // common
-// #define RegAgcRef                                  0x43 // common
-// #define RegAgcThresh1                              0x44 // common
-// #define RegAgcThresh2                              0x45 // common
-// #define RegAgcThresh3                              0x46 // common
-// #define RegPllHop                                  0x4B // common
-// #define RegTcxo                                    0x58 // common
-#define RegPaDac 0x4D // common
-// #define RegPll                                     0x5C // common
-// #define RegPllLowPn                                0x5E // common
-// #define RegFormerTemp                              0x6C // common
-// #define RegBitRateFrac                             0x70 // common
+const uint8_t RegFifo = 0x00;     // common
+const uint8_t RegOpMode = 0x01;   // common
+const uint8_t RegFrfMsb = 0x06;   // common
+const uint8_t RegFrfMid = 0x07;   // common
+const uint8_t RegFrfLsb = 0x08;   // common
+const uint8_t RegPaConfig = 0x09; // common
+const uint8_t RegPaRamp = 0x0A;   // common
+const uint8_t RegOcp = 0x0B;      // common
+const uint8_t RegLna = 0x0C;      // common
+const uint8_t LORARegFifoAddrPtr = 0x0D;
+const uint8_t LORARegFifoTxBaseAddr = 0x0E;
+const uint8_t LORARegFifoRxBaseAddr = 0x0F;
+const uint8_t LORARegFifoRxCurrentAddr = 0x10;
+const uint8_t LORARegIrqFlagsMask = 0x11;
+const uint8_t LORARegIrqFlags = 0x12;
+const uint8_t LORARegRxNbBytes = 0x13;
+const uint8_t LORARegRxHeaderCntValueMsb = 0x14;
+const uint8_t LORARegRxHeaderCntValueLsb = 0x15;
+const uint8_t LORARegRxPacketCntValueMsb = 0x16;
+const uint8_t LORARegRxpacketCntValueLsb = 0x17;
+const uint8_t LORARegModemStat = 0x18;
+const uint8_t LORARegPktSnrValue = 0x19;
+const uint8_t LORARegPktRssiValue = 0x1A;
+const uint8_t LORARegRssiValue = 0x1B;
+const uint8_t LORARegHopChannel = 0x1C;
+const uint8_t LORARegModemConfig1 = 0x1D;
+const uint8_t LORARegModemConfig2 = 0x1E;
+const uint8_t LORARegSymbTimeoutLsb = 0x1F;
+const uint8_t LORARegPreambleMsb = 0x20;
+const uint8_t LORARegPreambleLsb = 0x21;
+const uint8_t LORARegPayloadLength = 0x22;
+const uint8_t LORARegPayloadMaxLength = 0x23;
+const uint8_t LORARegHopPeriod = 0x24;
+const uint8_t LORARegFifoRxByteAddr = 0x25;
+const uint8_t LORARegModemConfig3 = 0x26;
+const uint8_t LORARegFeiMsb = 0x28;
+const uint8_t LORAFeiMib = 0x29;
+const uint8_t LORARegFeiLsb = 0x2A;
+const uint8_t LORARegRssiWideband = 0x2C;
+const uint8_t LORARegDetectOptimize = 0x31;
+const uint8_t LORARegInvertIQ = 0x33;
+const uint8_t LORARegDetectionThreshold = 0x37;
+const uint8_t LORARegSyncWord = 0x39;
+const uint8_t RegDioMapping1 = 0x40; // common
+const uint8_t RegDioMapping2 = 0x41; // common
+const uint8_t RegVersion = 0x42;     // common
+const uint8_t RegPaDac = 0x4D; // common
 
 // ----------------------------------------
 // spread factors and mode for RegModemConfig2
-#define SX1272_MC2_FSK 0x00
-#define SX1272_MC2_SF7 0x70
-#define SX1272_MC2_SF8 0x80
-#define SX1272_MC2_SF9 0x90
-#define SX1272_MC2_SF10 0xA0
-#define SX1272_MC2_SF11 0xB0
-#define SX1272_MC2_SF12 0xC0
+const uint8_t SX1272_MC2_FSK = 0x00;
+const uint8_t SX1272_MC2_SF7 = 0x70;
+const uint8_t SX1272_MC2_SF8 = 0x80;
+const uint8_t SX1272_MC2_SF9 = 0x90;
+const uint8_t SX1272_MC2_SF10 = 0xA0;
+const uint8_t SX1272_MC2_SF11 = 0xB0;
+const uint8_t SX1272_MC2_SF12 = 0xC0;
 // bandwidth for RegModemConfig1
-#define SX1272_MC1_BW_125 0x00
-#define SX1272_MC1_BW_250 0x40
-#define SX1272_MC1_BW_500 0x80
+const uint8_t SX1272_MC1_BW_125 = 0x00;
+const uint8_t SX1272_MC1_BW_250 = 0x40;
+const uint8_t SX1272_MC1_BW_500 = 0x80;
 // coding rate for RegModemConfig1
-#define SX1272_MC1_CR_4_5 0x08
-#define SX1272_MC1_CR_4_6 0x10
-#define SX1272_MC1_CR_4_7 0x18
-#define SX1272_MC1_CR_4_8 0x20
-#define SX1272_MC1_IMPLICIT_HEADER_MODE_ON 0x04 // required for receive
-#define SX1272_MC1_RX_PAYLOAD_CRCON 0x02
-#define SX1272_MC1_LOW_DATA_RATE_OPTIMIZE 0x01 // mandated for SF11 and SF12
+const uint8_t SX1272_MC1_CR_4_5 = 0x08;
+const uint8_t SX1272_MC1_CR_4_6 = 0x10;
+const uint8_t SX1272_MC1_CR_4_7 = 0x18;
+const uint8_t SX1272_MC1_CR_4_8 = 0x20;
+const uint8_t SX1272_MC1_IMPLICIT_HEADER_MODE_ON = 0x04; // required for receive
+const uint8_t SX1272_MC1_RX_PAYLOAD_CRCON = 0x02;
+const uint8_t SX1272_MC1_LOW_DATA_RATE_OPTIMIZE = 0x01; // mandated for SF11 and SF12
 // transmit power configuration for RegPaConfig
-#define SX1272_PAC_PA_SELECT_PA_BOOST 0x80
-#define SX1272_PAC_PA_SELECT_RFIO_PIN 0x00
+const uint8_t SX1272_PAC_PA_SELECT_PA_BOOST = 0x80;
+const uint8_t SX1272_PAC_PA_SELECT_RFIO_PIN = 0x00;
 
 // sx1276 RegModemConfig1
-#define SX1276_MC1_BW_125 0x70
-#define SX1276_MC1_BW_250 0x80
-#define SX1276_MC1_BW_500 0x90
-#define SX1276_MC1_CR_4_5 0x02
-#define SX1276_MC1_CR_4_6 0x04
-#define SX1276_MC1_CR_4_7 0x06
-#define SX1276_MC1_CR_4_8 0x08
+const uint8_t SX1276_MC1_BW_125 = 0x70;
+const uint8_t SX1276_MC1_BW_250 = 0x80;
+const uint8_t SX1276_MC1_BW_500 = 0x90;
+const uint8_t SX1276_MC1_CR_4_5 = 0x02;
+const uint8_t SX1276_MC1_CR_4_6 = 0x04;
+const uint8_t SX1276_MC1_CR_4_7 = 0x06;
+const uint8_t SX1276_MC1_CR_4_8 = 0x08;
 
-#define SX1276_MC1_IMPLICIT_HEADER_MODE_ON 0x01
+const uint8_t SX1276_MC1_IMPLICIT_HEADER_MODE_ON = 0x01;
 
 // sx1276 RegModemConfig2
-#define SX1276_MC2_RX_PAYLOAD_CRCON 0x04
+const uint8_t SX1276_MC2_RX_PAYLOAD_CRCON = 0x04;
 
 // sx1276 RegModemConfig3
-#define SX1276_MC3_LOW_DATA_RATE_OPTIMIZE 0x08
-#define SX1276_MC3_AGCAUTO 0x04
+const uint8_t SX1276_MC3_LOW_DATA_RATE_OPTIMIZE = 0x08;
+const uint8_t SX1276_MC3_AGCAUTO = 0x04;
 
 // preamble for lora networks (nibbles swapped)
-#define LORA_MAC_PREAMBLE 0x34
+const uint8_t LORA_MAC_PREAMBLE = 0x34;
 
-#define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1 0x0A
+const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1 = 0x0A;
 #ifdef CFG_sx1276_radio
-#define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x70
+const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 = 0x70;
 #elif CFG_sx1272_radio
-#define RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 0x74
+const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 = 0x74;
 #endif
 
 // ----------------------------------------
 // Constants for radio registers
-#define OPMODE_LORA 0x80
-#define OPMODE_MASK 0x07
-#define OPMODE_SLEEP 0x00
-#define OPMODE_STANDBY 0x01
-#define OPMODE_FSTX 0x02
-#define OPMODE_TX 0x03
-#define OPMODE_FSRX 0x04
-#define OPMODE_RX 0x05
-#define OPMODE_RX_SINGLE 0x06
-#define OPMODE_CAD 0x07
+const uint8_t OPMODE_LORA = 0x80;
+const uint8_t OPMODE_MASK = 0x07;
+const uint8_t OPMODE_SLEEP = 0x00;
+const uint8_t OPMODE_STANDBY = 0x01;
+const uint8_t OPMODE_FSTX = 0x02;
+const uint8_t OPMODE_TX = 0x03;
+const uint8_t OPMODE_FSRX = 0x04;
+const uint8_t OPMODE_RX = 0x05;
+const uint8_t OPMODE_RX_SINGLE = 0x06;
+const uint8_t OPMODE_CAD = 0x07;
 
 // ----------------------------------------
 // Bits masking the corresponding IRQs from the radio
-#define IRQ_LORA_RXTOUT_MASK 0x80
-#define IRQ_LORA_RXDONE_MASK 0x40
-#define IRQ_LORA_CRCERR_MASK 0x20
-#define IRQ_LORA_HEADER_MASK 0x10
-#define IRQ_LORA_TXDONE_MASK 0x08
-#define IRQ_LORA_CDDONE_MASK 0x04
-#define IRQ_LORA_FHSSCH_MASK 0x02
-#define IRQ_LORA_CDDETD_MASK 0x01
+const uint8_t IRQ_LORA_RXTOUT_MASK = 0x80;
+const uint8_t IRQ_LORA_RXDONE_MASK = 0x40;
+const uint8_t IRQ_LORA_CRCERR_MASK = 0x20;
+const uint8_t IRQ_LORA_HEADER_MASK = 0x10;
+const uint8_t IRQ_LORA_TXDONE_MASK = 0x08;
+const uint8_t IRQ_LORA_CDDONE_MASK = 0x04;
+const uint8_t IRQ_LORA_FHSSCH_MASK = 0x02;
+const uint8_t IRQ_LORA_CDDETD_MASK = 0x01;
 
 // ----------------------------------------
 // DIO function mappings                D0D1D2D3
-#define MAP_DIO0_LORA_RXDONE 0x00 // 00------
-#define MAP_DIO0_LORA_TXDONE 0x40 // 01------
-#define MAP_DIO0_LORA_NOP 0xC0    // 11------
-#define MAP_DIO1_LORA_RXTOUT 0x00 // --00----
-#define MAP_DIO1_LORA_NOP 0x30    // --11----
-#define MAP_DIO2_LORA_NOP 0x0C    // ----11--
+const uint8_t MAP_DIO0_LORA_RXDONE = 0x00; // 00------
+const uint8_t MAP_DIO0_LORA_TXDONE = 0x40; // 01------
+const uint8_t MAP_DIO0_LORA_NOP = 0xC0;    // 11------
+const uint8_t MAP_DIO1_LORA_RXTOUT = 0x00; // --00----
+const uint8_t MAP_DIO1_LORA_NOP = 0x30;    // --11----
+const uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
 
-#define LNA_RX_GAIN (0x20 | 0x03)
+const uint8_t LNA_RX_GAIN = (0x20 | 0x03);
 
 void Radio::writeReg(uint8_t const addr, uint8_t const data) const {
   hal.beginspi();
