@@ -162,12 +162,12 @@ uint32_t LmicUs915::convFreq(const uint8_t *ptr) const {
   return freq;
 }
 
-void LmicUs915::handleCFList(const uint8_t *ptr) {
+void LmicUs915::handleCFList(const uint8_t *) {
   // just ignore cflist
 }
 
 bool LmicUs915::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap,
-                             int8_t band) {
+                             int8_t) {
   if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)
     return false; // channels 0..71 are hardwired
   chidx -= 72;
@@ -321,4 +321,4 @@ bool LmicUs915::nextJoinState() {
 dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicUs915::LmicUs915(lmic_pinmap const& pins) : Lmic(pins) {};
+LmicUs915::LmicUs915(lmic_pinmap const& pins) : Lmic(pins) {}

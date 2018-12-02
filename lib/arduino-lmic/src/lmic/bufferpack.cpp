@@ -8,12 +8,12 @@ uint16_t rlsbf2(const uint8_t *const buf) {
 
 uint32_t rlsbf3(const uint8_t *const buf) {
   return (uint32_t)buf[0] | ((uint32_t)buf[1] << 8) | ((uint32_t)buf[2] << 16);
-};
+}
 
 uint32_t rlsbf4(const uint8_t *const buf) {
   return (uint32_t)((uint32_t)buf[0] | ((uint32_t)buf[1] << 8) |
                     ((uint32_t)buf[2] << 16) | ((uint32_t)buf[3] << 24));
-};
+}
 
 uint32_t rmsbf4(const uint8_t *const buf) {
   return (uint32_t)((uint32_t)buf[3] | ((uint32_t)buf[2] << 8) |

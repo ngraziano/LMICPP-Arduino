@@ -54,16 +54,16 @@ struct rps_t {
 };
 
 
-const uint8_t ILLEGAL_RPS = 0xFF;
+constexpr uint8_t ILLEGAL_RPS = 0xFF;
 
 // Global maximum frame length
-enum { STD_PREAMBLE_LEN = 8 };
-enum { MAX_LEN_FRAME = 64 };
-enum { DELAY_JACC1 = 5 };   // in secs
-enum { DELAY_DNW1 = 1 };    // in secs down window #1
-enum { DELAY_EXTDNW2 = 1 }; // in secs
-enum { DELAY_JACC2 = DELAY_JACC1 + (int)DELAY_EXTDNW2 }; // in secs
-enum { DELAY_DNW2 = DELAY_DNW1 + (int)DELAY_EXTDNW2 }; // in secs down window #1
+constexpr uint8_t STD_PREAMBLE_LEN = 8;
+constexpr uint8_t MAX_LEN_FRAME = 64;
+constexpr uint8_t DELAY_JACC1 = 5;   // in secs
+constexpr uint8_t DELAY_DNW1 = 1;    // in secs down window #1
+constexpr uint8_t DELAY_EXTDNW2 = 1; // in secs
+constexpr uint8_t DELAY_JACC2 = DELAY_JACC1 + DELAY_EXTDNW2; // in secs
+constexpr uint8_t DELAY_DNW2 = DELAY_DNW1 + DELAY_EXTDNW2; // in secs down window #1
 
 enum class PktDir : uint8_t {
   UP = 0,

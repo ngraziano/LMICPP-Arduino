@@ -17,7 +17,7 @@ public:
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
   void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) const;
 
-  void irq_handler(uint8_t dio, uint8_t *framePtr, uint8_t &frameLength,
+  void irq_handler(uint8_t *framePtr, uint8_t &frameLength,
                    OsTime &txEnd, OsTime &rxTime, rps_t currentRps);
   void init_random(uint8_t randbuf[16]);
   bool io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,

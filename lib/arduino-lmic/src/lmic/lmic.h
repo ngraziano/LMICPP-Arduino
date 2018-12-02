@@ -362,6 +362,6 @@ public:
 template <typename T> constexpr uint16_t dr_range_map(T drlo, T drhi) {
   return (((uint16_t)0xFFFF << static_cast<uint8_t>(drlo)) &
           ((uint16_t)0xFFFF >> (15 - static_cast<uint8_t>(drhi))));
-};
+}
 
 #endif // _lmic_h_

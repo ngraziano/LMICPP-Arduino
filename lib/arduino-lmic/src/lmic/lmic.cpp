@@ -704,7 +704,7 @@ void Lmic::buildDataFrame() {
     // Convert to real SNR; rounding towards zero.
     const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
     frame[end + 2] = static_cast<uint8_t>(
-        (0b00111111 & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
+        (0x3F & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
 
     end += 3;
     devsAns = false;

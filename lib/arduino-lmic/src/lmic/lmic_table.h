@@ -39,10 +39,10 @@
     return pgm_read_##pgm_type(&table[index]);                                 \
   }
 
-TABLE_GETTER(_u1, uint8_t, byte);
-TABLE_GETTER(_s1, int8_t, byte);
-TABLE_GETTER(_u4, uint32_t, dword);
-TABLE_GETTER(_s4, int32_t, dword);
+TABLE_GETTER(_u1, uint8_t, byte)
+TABLE_GETTER(_s1, int8_t, byte)
+TABLE_GETTER(_u4, uint32_t, dword)
+TABLE_GETTER(_s4, int32_t, dword)
 
 
 // For AVR, store constants in PROGMEM, saving on RAM usage

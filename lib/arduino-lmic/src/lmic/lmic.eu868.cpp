@@ -365,8 +365,8 @@ bool LmicEu868::nextJoinState() {
   // Avoid collision with JOIN ACCEPT @ SF12 being sent by
   // GW (but we missed it) randomize join (street lamp case):
   // SF12:255, SF11:127, .., SF7:8secs
-  txend = time +  DNW2_SAFETY_ZONE +
-                            OsDeltaTime::rnd_delay(rand, 255 >> datarate);
+  txend =
+      time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
   PRINT_DEBUG_1(" Next available : %lu , Choosen %lu", time.tick(),
                 txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
@@ -384,4 +384,4 @@ bool LmicEu868::nextJoinState() {
 dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicEu868::LmicEu868(lmic_pinmap const &pins) : Lmic(pins){};
+LmicEu868::LmicEu868(lmic_pinmap const &pins) : Lmic(pins) {}

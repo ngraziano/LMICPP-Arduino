@@ -666,7 +666,7 @@ OsTime Radio::int_trigger_time() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t const dio, uint8_t *const framePtr,
+void Radio::irq_handler(uint8_t *const framePtr,
                         uint8_t &frameLength, OsTime &txEnd, OsTime &rxTime,
                         rps_t const currentRps) {
   OsTime now = int_trigger_time();
@@ -730,9 +730,9 @@ int16_t Radio::get_last_packet_rssi() const {
   // see documentation for -139
   // do not handle snr > 0
   return -139 + last_packet_rssi_reg;
-};
+}
 
-int8_t Radio::get_last_packet_snr_x4() const { return last_packet_snr_reg; };
+int8_t Radio::get_last_packet_snr_x4() const { return last_packet_snr_reg; }
 
 void Radio::rst() const {
   hal_disableIRQs();
@@ -773,7 +773,7 @@ bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
                      OsTime &rxTime, rps_t const currentRps) {
   auto const pinInInt = hal.io_check();
   if (pinInInt < NUM_DIO) {
-    irq_handler(pinInInt, framePtr, frameLength, txEnd, rxTime, currentRps);
+    irq_handler(framePtr, frameLength, txEnd, rxTime, currentRps);
     return true;
   }
   return false;
