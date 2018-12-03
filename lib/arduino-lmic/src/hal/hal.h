@@ -32,6 +32,11 @@ void hal_disableIRQs(void);
  */
 void hal_enableIRQs(void);
 
+class DisableIRQsGard {
+public:
+  DisableIRQsGard() { hal_disableIRQs(); }
+  ~DisableIRQsGard() { hal_enableIRQs(); }
+};
 
 /*
  * return system time.
@@ -53,7 +58,7 @@ void hal_waitUntil(OsTime time);
 
 /*
  * wait this interval.
- */ 
+ */
 void hal_wait(OsDeltaTime time);
 
 /*
@@ -69,7 +74,6 @@ bool hal_checkTimer(OsTime targettime);
  *   - action could be HALT or reboot
  */
 void hal_failed(const char *file, uint16_t line);
-
 
 void hal_store_trigger();
 

@@ -547,7 +547,7 @@ void Radio::startrx(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
 }
 
 void Radio::init() {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   hal.init();
   // manually reset radio
 #ifdef CFG_sx1276_radio
@@ -608,12 +608,11 @@ void Radio::init() {
   opmode(OPMODE_SLEEP);
   hal_allow_sleep();
 
-  hal_enableIRQs();
 }
 
 // get random seed from wideband noise rssi
 void Radio::init_random(uint8_t randbuf[16]) {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
 
   // seed 15-byte randomness via noise rssi
   // freq and rps not used
@@ -633,13 +632,11 @@ void Radio::init_random(uint8_t randbuf[16]) {
   randbuf[0] = 16; // set initial index
   //stop RX
   opmode(OPMODE_SLEEP);
-  hal_enableIRQs();
 }
 
 uint8_t Radio::rssi() const {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   uint8_t const r = readReg(LORARegRssiValue);
-  hal_enableIRQs();
   return r;
 }
 
@@ -735,35 +732,31 @@ int16_t Radio::get_last_packet_rssi() const {
 int8_t Radio::get_last_packet_snr_x4() const { return last_packet_snr_reg; }
 
 void Radio::rst() const {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   // put radio to sleep
   opmode(OPMODE_SLEEP);
   hal_allow_sleep();
-  hal_enableIRQs();
 }
 
 void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                uint8_t const *const framePtr, uint8_t const frameLength) const {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
-  hal_enableIRQs();
 }
 
 void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                OsTime const rxtime) const {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
   startrx(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
-  hal_enableIRQs();
 }
 
 void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                  OsTime const rxtime) const {
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
   // start scanning for beacon now
   startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
-  hal_enableIRQs();
 }
 
 /**
