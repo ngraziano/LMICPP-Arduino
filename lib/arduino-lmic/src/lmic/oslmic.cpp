@@ -23,14 +23,12 @@ void OsJob::setCallbackRunnable(osjobcb_t cb) {
 
 // schedule immediately runnable job
 void OsJobBase::setRunnable() {
-  hal_disableIRQs();
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
   // fill-in job
   next = nullptr;
   scheduler.linkRunableJob(this);
-  hal_enableIRQs();
 
   PRINT_DEBUG_2("Scheduled job %p ASAP\n", this);
 }
@@ -75,10 +73,8 @@ void OsScheduler::unlinkRunableJobs(OsJobBase *job) {
 
 // clear scheduled job
 void OsJobBase::clearCallback() {
-  hal_disableIRQs();
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
-  hal_enableIRQs();
 }
 
 void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
@@ -89,7 +85,6 @@ void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
 // schedule timed job
 void OsJobBase::setTimed(OsTime time) {
 
-  hal_disableIRQs();
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
@@ -97,7 +92,6 @@ void OsJobBase::setTimed(OsTime time) {
   deadline = time;
   next = nullptr;
   scheduler.linkScheduledJob(this);
-  hal_enableIRQs();
   PRINT_DEBUG_2("Scheduled job %p, atRun %lu\n", this, time);
 }
 
@@ -108,7 +102,6 @@ OsDeltaTime OsScheduler::runloopOnce() {
   bool has_deadline = false;
 #endif
   OsJobBase *j = nullptr;
-  hal_disableIRQs();
   // check for runnable jobs
   if (runnablejobs) {
     j = runnablejobs;
@@ -122,7 +115,6 @@ OsDeltaTime OsScheduler::runloopOnce() {
     has_deadline = true;
 #endif
   }
-  hal_enableIRQs();
 
   if (j) { // run job callback
     PRINT_DEBUG_2("Running job %p, deadline %lu\n", j,
