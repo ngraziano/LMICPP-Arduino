@@ -130,14 +130,13 @@ bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
 
 void LmicEu868::initDefaultChannels(bool join) {
   PRINT_DEBUG_2("Init Default Channel join?=%d", join);
-  ChannelDetail empty = {};
-  std::fill(channels + 3, channels + MAX_CHANNELS, empty);
+  std::fill(channels + 3, channels + MAX_CHANNELS, ChannelDetail{});
 
   channelMap = 0x07;
   uint8_t su = join ? 0 : 3;
   for (uint8_t fu = 0; fu < 3; fu++, su++) {
-    channels[fu].freq = TABLE_GET_U4(iniChannelFreq, su);
-    channels[fu].drMap = dr_range_map(Dr::SF12, Dr::SF7);
+    channels[fu] = ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
+                                 dr_range_map(Dr::SF12, Dr::SF7)};
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
@@ -182,15 +181,13 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
     if (band > BAND_AUX)
       return 0;
   }
-  channels[chidx].freq = (newfreq & ~3) | band;
-  channels[chidx].drMap = drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap;
+  channels[chidx] = ChannelDetail{
+      newfreq, band, drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap};
   channelMap |= 1 << chidx; // enabled right away
   return true;
 }
 
 void LmicEu868::disableChannel(uint8_t channel) {
-  channels[channel].freq = 0;
-  channels[channel].drMap = 0;
   channelMap &= ~(1 << channel);
 }
 
@@ -222,7 +219,7 @@ uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   if (chMaskCntl != 0 || chMask == 0 || (chMask & ~channelMap) != 0)
     return 0; // illegal input
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
-    if ((chMask & (1 << chnl)) != 0 && channels[chnl].freq == 0)
+    if ((chMask & (1 << chnl)) != 0 && channels[chnl].getFrequency() == 0)
       chMask &= ~(1 << chnl); // ignore - channel is not defined
   }
   channelMap = chMask;
@@ -254,11 +251,11 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 }
 
 uint32_t LmicEu868::getFreq(uint8_t channel) const {
-  return channels[channel].freq & ~(uint32_t)3;
+  return channels[channel].getFrequency();
 }
 
 uint8_t LmicEu868::getBand(uint8_t channel) const {
-  return channels[channel].freq & 0x3;
+  return channels[channel].getBand();
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
@@ -306,8 +303,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       if ((channelMap & (1 << chnl)) != 0) {
         PRINT_DEBUG_2(
             "Considering channel %d for band %d, set band = %d, drMap = %x",
-            chnl, band, getBand(chnl), channels[chnl].drMap);
-        if ((channels[chnl].drMap & (1 << (datarate & 0xF))) != 0 &&
+            chnl, band, getBand(chnl), channels[chnl].getDrMap());
+        if ((channels[chnl].getDrMap() & (1 << (datarate & 0xF))) != 0 &&
             band == getBand(chnl)) { // in selected band
           txChnl = bands[band].lastchnl = chnl;
           return mintime;

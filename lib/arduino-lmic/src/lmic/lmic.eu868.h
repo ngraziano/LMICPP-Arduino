@@ -4,12 +4,21 @@
 #include "lmic.h"
 
 struct ChannelDetail {
+private:
   // three low bit of freq is used to store band.
-  uint32_t freq;
-  uint16_t drMap;
+  uint32_t raw {};
+  uint16_t drMap {};
+public:
+
+  constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
+  constexpr uint32_t getBand() const { return raw & 0x3; };
+  constexpr uint16_t getDrMap() const { return drMap; };
+  ChannelDetail() = default;
+  constexpr ChannelDetail(uint32_t raw, uint16_t drMap)
+      : raw(raw), drMap(drMap){};
+  constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t drMap)
+      : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
 };
-
-
 
 enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
 //! \internal
@@ -25,19 +34,9 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
 class LmicEu868 final : public Lmic {
 public:
   // Max supported channels
-  static const uint8_t MAX_CHANNELS = 16; 
+  static const uint8_t MAX_CHANNELS = 16;
   static const uint8_t MAX_BANDS = 4;
-  enum class Dr : dr_t {
-    SF12 = 0,
-    SF11,
-    SF10,
-    SF9,
-    SF8,
-    SF7,
-    SF7B,
-    FSK,
-    NONE
-  };
+  enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
   explicit LmicEu868(lmic_pinmap const &pins);
 
