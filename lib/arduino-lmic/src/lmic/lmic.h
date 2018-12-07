@@ -328,7 +328,7 @@ protected:
   virtual void disableChannel(uint8_t channel) = 0;
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
-  virtual uint8_t mapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual bool mapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual void updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;

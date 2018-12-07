@@ -2,14 +2,15 @@
 #define _lmic_eu868_h_
 
 #include "lmic.h"
+#include <bitset>
 
 struct ChannelDetail {
 private:
   // three low bit of freq is used to store band.
-  uint32_t raw {};
-  uint16_t drMap {};
-public:
+  uint32_t raw{};
+  uint16_t drMap{};
 
+public:
   constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
   constexpr uint32_t getBand() const { return raw & 0x3; };
   constexpr uint16_t getDrMap() const { return drMap; };
@@ -21,6 +22,39 @@ public:
 };
 
 enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
+
+template <uint8_t size> class ChannelList {
+private:
+  ChannelDetail channels[size] = {};
+  std::bitset<size> channelMap;
+  static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
+
+public:
+  void disableAll() { channelMap.reset(); }
+  void disable(uint8_t channel) { channelMap.reset(channel); }
+  void enable(uint8_t channel) {
+    // ignore - channel is not defined
+    if (channels[channel].getFrequency() != 0) {
+      channelMap.reset(channel);
+    }
+  }
+  void enableAll() {
+    // ignore - channel is not defined
+    for (uint8_t channel = 0; channel < size; channel++) {
+      enable(channel);
+    }
+  }
+  bool is_enable(uint8_t channel) const { return channelMap.test(channel); }
+  void configure(uint8_t channel, ChannelDetail detail) {
+    channels[channel] = detail;
+    channelMap.set(channel);
+  }
+
+  ChannelDetail const &operator[](int channel) const {
+    return channels[channel];
+  }
+};
+
 //! \internal
 struct band_t {
   uint16_t txcap;   // duty cycle limitation: 1/txcap
@@ -56,7 +90,7 @@ protected:
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 
-  uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
+  bool mapChannels(uint8_t chpage, uint16_t chmap) override;
   void updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;
@@ -69,8 +103,7 @@ protected:
 
 private:
   band_t bands[MAX_BANDS]{};
-  ChannelDetail channels[MAX_CHANNELS] = {};
-  uint16_t channelMap = 0;
+  ChannelList<MAX_CHANNELS> channels;
 
   uint32_t getFreq(uint8_t channel) const;
   uint8_t getBand(uint8_t channel) const;

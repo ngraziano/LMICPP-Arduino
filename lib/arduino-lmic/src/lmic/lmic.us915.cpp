@@ -211,7 +211,7 @@ void LmicUs915::selectSubBand(uint8_t band) {
   }
 }
 
-uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+bool LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
     uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
@@ -219,10 +219,10 @@ uint8_t LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
     channelMap[64 / 16] = chMask;
   } else {
     if (chMaskCntl >= (72 + MAX_XCHANNELS + 15) / 16)
-      return 0;
+      return false;
     channelMap[chMaskCntl] = chMask;
   }
-  return 1;
+  return true;
 }
 
 void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime airtime) {

@@ -26,7 +26,7 @@ protected:
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 
-  uint8_t mapChannels(uint8_t chpage, uint16_t chmap) override;
+  bool mapChannels(uint8_t chpage, uint16_t chmap) override;
   void updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;

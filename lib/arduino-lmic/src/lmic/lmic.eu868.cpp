@@ -130,13 +130,12 @@ bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
 
 void LmicEu868::initDefaultChannels(bool join) {
   PRINT_DEBUG_2("Init Default Channel join?=%d", join);
-  std::fill(channels + 3, channels + MAX_CHANNELS, ChannelDetail{});
 
-  channelMap = 0x07;
+  channels.disableAll();
   uint8_t su = join ? 0 : 3;
   for (uint8_t fu = 0; fu < 3; fu++, su++) {
-    channels[fu] = ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
-                                 dr_range_map(Dr::SF12, Dr::SF7)};
+    channels.configure(fu,ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
+                                 dr_range_map(Dr::SF12, Dr::SF7)});
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
@@ -181,14 +180,13 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
     if (band > BAND_AUX)
       return 0;
   }
-  channels[chidx] = ChannelDetail{
-      newfreq, band, drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap};
-  channelMap |= 1 << chidx; // enabled right away
+  channels.configure(chidx, ChannelDetail{
+      newfreq, band, drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap});
   return true;
 }
 
 void LmicEu868::disableChannel(uint8_t channel) {
-  channelMap &= ~(1 << channel);
+  channels.disable(channel);
 }
 
 uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
@@ -212,18 +210,24 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   }
 }
 
-uint8_t LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
-  // FIXME ChMaskCntl=6 => All channels ON
-  // Bad page, disable all channel, enable non-existent
-  if (chMaskCntl != 0 || chMask == 0 || (chMask & ~channelMap) != 0)
-    return 0; // illegal input
-  for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
-    if ((chMask & (1 << chnl)) != 0 && channels[chnl].getFrequency() == 0)
-      chMask &= ~(1 << chnl); // ignore - channel is not defined
+  // ChMaskCntl=6 => All channels ON
+  if (chMaskCntl==6) {
+    channels.enableAll();
+    return true;
   }
-  channelMap = chMask;
-  return 1;
+
+  // Bad page, disable all channel
+  if (chMaskCntl != 0 || chMask == 0)
+    return false; // illegal input
+
+  for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
+    if ((chMask & (1 << chnl)) != 0)
+      channels.enable(chnl); 
+  }
+  
+  return true;
 }
 
 void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
@@ -300,7 +304,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       if (chnl >= MAX_CHANNELS)
         chnl -= MAX_CHANNELS;
       // channel enabled
-      if ((channelMap & (1 << chnl)) != 0) {
+      if (channels.is_enable(chnl)) {
         PRINT_DEBUG_2(
             "Considering channel %d for band %d, set band = %d, drMap = %x",
             chnl, band, getBand(chnl), channels[chnl].getDrMap());
