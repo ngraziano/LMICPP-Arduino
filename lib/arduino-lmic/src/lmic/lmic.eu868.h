@@ -2,7 +2,6 @@
 #define _lmic_eu868_h_
 
 #include "lmic.h"
-#include <bitset>
 
 struct ChannelDetail {
 private:
@@ -39,7 +38,6 @@ public:
     }
   }
   void enableAll() {
-    // ignore - channel is not defined
     for (uint8_t channel = 0; channel < size; channel++) {
       enable(channel);
     }

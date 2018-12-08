@@ -69,7 +69,7 @@ enum class PktDir : uint8_t {
   UP = 0,
   DOWN = 1,
 };
-enum { MAX_LEN_PAYLOAD = MAX_LEN_FRAME - 8 - 4 };
+constexpr uint8_t MAX_LEN_PAYLOAD = MAX_LEN_FRAME - 8 - 4;
 enum {
   // Bitfields in frame format octet
   HDR_FTYPE = 0xE0,

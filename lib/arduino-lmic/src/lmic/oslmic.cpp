@@ -101,7 +101,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
 #if LMIC_DEBUG_LEVEL > 1
   bool has_deadline = false;
 #endif
-  OsJobBase *j = nullptr;
+  OsJobBase const *j = nullptr;
   // check for runnable jobs
   if (runnablejobs) {
     j = runnablejobs;
