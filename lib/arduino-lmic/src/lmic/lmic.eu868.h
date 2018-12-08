@@ -26,16 +26,16 @@ enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
 template <uint8_t size> class ChannelList {
 private:
   ChannelDetail channels[size] = {};
-  std::bitset<size> channelMap;
+  uint16_t channelMap;
   static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
 
 public:
-  void disableAll() { channelMap.reset(); }
-  void disable(uint8_t channel) { channelMap.reset(channel); }
+  void disableAll() { channelMap = 0; }
+  void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
   void enable(uint8_t channel) {
     // ignore - channel is not defined
     if (channels[channel].getFrequency() != 0) {
-      channelMap.reset(channel);
+      channelMap |= (1 << channel);
     }
   }
   void enableAll() {
@@ -44,10 +44,10 @@ public:
       enable(channel);
     }
   }
-  bool is_enable(uint8_t channel) const { return channelMap.test(channel); }
+  bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
   void configure(uint8_t channel, ChannelDetail detail) {
     channels[channel] = detail;
-    channelMap.set(channel);
+    channelMap |= 1 << channel;
   }
 
   ChannelDetail const &operator[](int channel) const {
