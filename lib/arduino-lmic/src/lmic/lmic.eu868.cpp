@@ -263,7 +263,7 @@ uint8_t LmicEu868::getBand(uint8_t channel) const {
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
-  uint8_t bmap = 0xF;
+  uint8_t bmap = 0x0F;
 #if LMIC_DEBUG_LEVEL > 1
   for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
     PRINT_DEBUG_2("Band %d, available at %lu and last channel %d", bi,
@@ -275,10 +275,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
     uint8_t band = 0xFF;
     for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
-#if LMIC_DEBUG_LEVEL > 1
-        lmic_printf("%lu: Considering band %d, which is available at %lu\n",
-                    os_getTime().tick(), bi, bands[bi].avail);
-#endif
+        PRINT_DEBUG_2("Considering band %d, which is available at %lu",
+                     bi, bands[bi].avail);
         band = bi;
         mintime = bands[band].avail;
       }
