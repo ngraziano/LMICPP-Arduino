@@ -318,7 +318,6 @@ bool Lmic::decodeFrame() {
       (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
     // Basic sanity checks failed
     PRINT_DEBUG_1("Invalid downlink, window=%s", window);
-    dataLen = 0;
     return false;
   }
   // Validate exact frame length
@@ -333,12 +332,10 @@ bool Lmic::decodeFrame() {
 
   if (addr != devaddr) {
     PRINT_DEBUG_1("Invalid address, window=%s", window);
-    dataLen = 0;
     return false;
   }
   if (poff > pend) {
     PRINT_DEBUG_1("Invalid offset, window=%s", window);
-    dataLen = 0;
     return false;
   }
 
@@ -349,16 +346,13 @@ bool Lmic::decodeFrame() {
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
-    dataLen = 0;
     return false;
   }
   if (seqno < seqnoDn) {
     if ((int32_t)seqno > (int32_t)seqnoDn) {
-      dataLen = 0;
       return false;
     }
     if (seqno != seqnoDn - 1 || !dnConf || ftype != HDR_FTYPE_DCDN) {
-      dataLen = 0;
       return false;
     }
     // Replay of previous sequence number allowed only if
@@ -639,6 +633,9 @@ void Lmic::processRx2DnData() {
     txDelay(os_getTime() + getDwn2SafetyZone(), 2);
   }
   if (!decodeFrame()) {
+    dataBeg = 0;
+    dataLen = 0;
+
     // retry send if need
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
@@ -657,7 +654,7 @@ void Lmic::processRx2DnData() {
       txrxFlags.reset().set(TxRxStatus::NOPORT);
     }
     incrementAdrCount();
-    dataBeg = dataLen = 0;
+
   } else {
     resetAdrCount();
   }
@@ -671,6 +668,8 @@ void Lmic::setupRx2DnData() {
 
 void Lmic::processRx1DnData() {
   if (!decodeFrame()) {
+    dataBeg = 0;
+    dataLen = 0;
     // if nothing receive, wait for RX2 before take actions
     osjob.setCallbackFuture(&Lmic::setupRx2DnData);
     schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2), dn2Dr);
