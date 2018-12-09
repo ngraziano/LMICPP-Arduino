@@ -25,13 +25,9 @@ const uint8_t PAMBL_SYMS = 8;
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
 
-#if !defined(HAS_os_calls)
-
 #if !defined(os_getBattLevel)
-uint8_t os_getBattLevel(void) { return MCMD_DEVS_BATT_NOINFO; }
+uint8_t os_getBattLevel() { return MCMD_DEVS_BATT_NOINFO; }
 #endif
-
-#endif // !HAS_os_calls
 
 // END OS - default implementations for certain OS suport functions
 // ================================================================================
@@ -383,8 +379,6 @@ bool Lmic::decodeFrame() {
 
   // We heard from network
   rejoinCnt = 0;
-  if (adrAckReq != LINK_CHECK_OFF)
-    adrAckReq = LINK_CHECK_INIT;
 
   parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
@@ -473,7 +467,6 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
   else
     rxsyms = MINRX_SYMS + (drift / hsym);
 
-
   // Center the receive window on the center of the expected preamble
   // (again note that hsym is half a sumbol time, so no /2 needed)
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
@@ -526,7 +519,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
 
     osjob.setCallbackRunnable(
         succes ? &Lmic::runEngineUpdate // next step to be delayed
-              : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
+               : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
   }
 }
 
@@ -540,8 +533,6 @@ bool Lmic::processJoinAccept() {
   if (dataLen == 0) {
     return false;
   }
-
-
 
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
@@ -603,7 +594,7 @@ bool Lmic::processJoinAccept() {
 void Lmic::processRx2Jacc() {
   if (dataLen == 0)
     txrxFlags.reset(); // nothing in 1st/2nd DN slot
-  if(!processJoinAccept()) {
+  if (!processJoinAccept()) {
     processJoinAcceptNoJoinFrame();
   };
 }
@@ -647,6 +638,29 @@ void Lmic::processRx2DnData() {
     // extra randomization.
     txDelay(os_getTime() + getDwn2SafetyZone(), 2);
   }
+  if (!decodeFrame()) {
+    // retry send if need
+    if (txCnt != 0) {
+      if (txCnt < TXCONF_ATTEMPTS) {
+        txCnt++;
+        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
+                   KEEP_TXPOW);
+        // Schedule another retransmission
+        txDelay(rxtime, RETRY_PERIOD_secs);
+        opmode.reset(OpState::TXRXPEND);
+        engineUpdate();
+        return;
+      }
+      txrxFlags.reset().set(TxRxStatus::NACK).set(TxRxStatus::NOPORT);
+    } else {
+      // Nothing received - implies no port
+      txrxFlags.reset().set(TxRxStatus::NOPORT);
+    }
+    incrementAdrCount();
+    dataBeg = dataLen = 0;
+  } else {
+    resetAdrCount();
+  }
   processDnData();
 }
 
@@ -656,15 +670,53 @@ void Lmic::setupRx2DnData() {
 }
 
 void Lmic::processRx1DnData() {
-  if (!processDnData()) {
+  if (!decodeFrame()) {
+    // if nothing receive, wait for RX2 before take actions
     osjob.setCallbackFuture(&Lmic::setupRx2DnData);
     schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2), dn2Dr);
+  } else {
+    resetAdrCount();
+    processDnData();
   }
 }
 
 void Lmic::setupRx1DnData() {
   osjob.setCallbackFuture(&Lmic::processRx1DnData);
   setupRx1();
+}
+
+void Lmic::incrementAdrCount() {
+  if (adrAckReq != LINK_CHECK_OFF)
+    adrAckReq += 1;
+  // If we haven't heard from NWK in a while although we asked for a sign
+  // assume link is dead - notify application and keep going
+  if (adrAckReq > LINK_CHECK_DEAD) {
+    // We haven't heard from NWK for some time although we
+    // asked for a response for some time - assume we're disconnected.
+    // Restore max power if it not the case
+    if (adrTxPow != pow2dBm(0)) {
+      setDrTxpow(datarate, pow2dBm(0));
+      opmode.set(OpState::LINKDEAD);
+    } else if (decDR(datarate) != datarate) {
+      // Lower DR one notch.
+      setDrTxpow(decDR(datarate), KEEP_TXPOW);
+      opmode.set(OpState::LINKDEAD);
+    } else {
+      // we are at max pow and max DR
+      opmode.set(OpState::LINKDEAD).set(OpState::REJOIN);
+    }
+    adrAckReq = LINK_CHECK_CONT;
+    reportEvent(EventType::LINK_DEAD);
+  }
+}
+
+void Lmic::resetAdrCount() {
+  if (adrAckReq != LINK_CHECK_OFF)
+    adrAckReq = LINK_CHECK_INIT;
+  if (opmode.test(OpState::LINKDEAD)) {
+    opmode.reset(OpState::LINKDEAD);
+    reportEvent(EventType::LINK_ALIVE);
+  }
 }
 
 void Lmic::updataDone() {
@@ -743,7 +795,7 @@ void Lmic::buildDataFrame() {
   wlsbf4(frame + mac_payload::offsets::devAddr, devaddr);
 
   if (txCnt == 0) {
-    seqnoUp += 1;
+    seqnoUp++;
   }
 
   wlsbf2(frame + mac_payload::offsets::fcnt, seqnoUp - 1);
@@ -818,64 +870,16 @@ bool Lmic::startJoining() {
 }
 #endif // !DISABLE_JOIN
 
-bool Lmic::processDnData() {
-  ASSERT(opmode.test(OpState::TXRXPEND));
-
-  if (!decodeFrame()) {
-    // first RX windows, do nothing wait for second windows.
-    if (txrxFlags.test(TxRxStatus::DNW1))
-      return false;
-
-    // retry send if need
-    if (txCnt != 0) {
-      if (txCnt < TXCONF_ATTEMPTS) {
-        txCnt += 1;
-        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
-                   KEEP_TXPOW);
-        // Schedule another retransmission
-        txDelay(rxtime, RETRY_PERIOD_secs);
-        opmode.reset(OpState::TXRXPEND);
-        engineUpdate();
-        return true;
-      }
-      txrxFlags.reset().set(TxRxStatus::NACK).set(TxRxStatus::NOPORT);
-    } else {
-      // Nothing received - implies no port
-      txrxFlags.reset().set(TxRxStatus::NOPORT);
-    }
-    if (adrAckReq != LINK_CHECK_OFF)
-      adrAckReq += 1;
-    dataBeg = dataLen = 0;
-  }
-
+void Lmic::processDnData() {
   opmode.reset(OpState::TXDATA).reset(OpState::TXRXPEND);
+
   if ((txrxFlags.test(TxRxStatus::DNW1) || txrxFlags.test(TxRxStatus::DNW2)) &&
       opmode.test(OpState::LINKDEAD)) {
     opmode.reset(OpState::LINKDEAD);
     reportEvent(EventType::LINK_ALIVE);
   }
+
   reportEvent(EventType::TXCOMPLETE);
-  // If we haven't heard from NWK in a while although we asked for a sign
-  // assume link is dead - notify application and keep going
-  if (adrAckReq > LINK_CHECK_DEAD) {
-    // We haven't heard from NWK for some time although we
-    // asked for a response for some time - assume we're disconnected.
-    // Restore max power if it not the case
-    if (adrTxPow != pow2dBm(0)) {
-      setDrTxpow(datarate, pow2dBm(0));
-      opmode.set(OpState::LINKDEAD);
-    } else if (decDR(datarate) != datarate) {
-      // Lower DR one notch.
-      setDrTxpow(decDR(datarate), KEEP_TXPOW);
-      opmode.set(OpState::LINKDEAD);
-    } else {
-      // we are at max pow and max DR
-      opmode.set(OpState::LINKDEAD).set(OpState::REJOIN);
-    }
-    adrAckReq = LINK_CHECK_CONT;
-    reportEvent(EventType::LINK_DEAD);
-  }
-  return true;
 }
 
 // Decide what to do next for the MAC layer of a device
@@ -1017,7 +1021,7 @@ void Lmic::clrTxData() {
   engineUpdate();
 }
 
-void Lmic::setTxData(void) {
+void Lmic::setTxData() {
   opmode.set(OpState::TXDATA);
   if (!opmode.test(OpState::JOINING))
     txCnt = 0; // cancel any ongoing TX/RX retries

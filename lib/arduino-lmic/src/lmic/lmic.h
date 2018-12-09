@@ -264,10 +264,10 @@ private:
   void engineUpdate();
   void parseMacCommands(const uint8_t *opts, uint8_t olen);
   bool decodeFrame();
-  bool processDnData();
-
+  void processDnData();
   void txDelay(OsTime reftime, uint8_t secSpan);
-
+  void resetAdrCount();
+  void incrementAdrCount();
 public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
