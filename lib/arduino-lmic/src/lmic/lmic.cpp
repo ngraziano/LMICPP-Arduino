@@ -353,7 +353,8 @@ bool Lmic::decodeFrame() {
     if ((int32_t)seqno > (int32_t)seqnoDn) {
       return false;
     }
-    if (seqno != seqnoDn - 1 || !dnConf || ftype != mhdr::ftype_data_conf_down) {
+    if (seqno != seqnoDn - 1 || !dnConf ||
+        ftype != mhdr::ftype_data_conf_down) {
       return false;
     }
     // Replay of previous sequence number allowed only if
@@ -362,7 +363,7 @@ bool Lmic::decodeFrame() {
   } else {
     if (seqno > seqnoDn) {
       // skip in sequence number
-      PRINT_DEBUG_1("Current packet receive %lu expected %ld",seqno, seqnoDn);
+      PRINT_DEBUG_1("Current packet receive %lu expected %ld", seqno, seqnoDn);
     }
     seqnoDn = seqno + 1; // next number to be expected
     // DN frame requested confirmation - provide ACK once with next UP frame
@@ -531,7 +532,8 @@ bool Lmic::processJoinAccept() {
 
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
-      (hdr & (mhdr::ftype_mask | mhdr::major_mask)) != (mhdr::ftype_join_acc | mhdr::major_v1)) {
+      (hdr & (mhdr::ftype_mask | mhdr::major_mask)) !=
+          (mhdr::ftype_join_acc | mhdr::major_v1)) {
     PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
 
     // unexpected frame
@@ -797,8 +799,8 @@ void Lmic::buildDataFrame() {
   if (txCnt == 0) {
     seqnoUp++;
   }
-
-  wlsbf2(frame + mac_payload::offsets::fcnt, seqnoUp - 1);
+  const uint32_t current_seq_no = seqnoUp - 1;
+  wlsbf2(frame + mac_payload::offsets::fcnt, current_seq_no);
 
   // Clear pending DN confirmation
   dnConf = 0;
@@ -812,10 +814,10 @@ void Lmic::buildDataFrame() {
     }
     frame[end] = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
-    aes.framePayloadEncryption(pendTxPort, devaddr, seqnoUp - 1, PktDir::UP,
+    aes.framePayloadEncryption(pendTxPort, devaddr, current_seq_no, PktDir::UP,
                                frame + end + 1, pendTxLen);
   }
-  aes.appendMic(devaddr, seqnoUp - 1, PktDir::UP, frame, flen);
+  aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame, flen);
 
   dataLen = flen;
 }
@@ -915,69 +917,68 @@ void Lmic::engineUpdate() {
     if (opmode.test(OpState::NEXTCHNL)) {
       txbeg = txend = nextTx(now);
       opmode.reset(OpState::NEXTCHNL);
-      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg.tick());
     } else {
       txbeg = txend;
-      PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg.tick());
     }
     // Delayed TX or waiting for duty cycle?
     if (txbeg < globalDutyAvail) {
       txbeg = globalDutyAvail;
-      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg);
+      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg.tick());
     }
     // Earliest possible time vs overhead to setup radio
-    if (txbeg < (now + TX_RAMPUP)) {
-      PRINT_DEBUG_1("Ready for uplink");
-      // We could send right now!
-      txbeg = now;
-      dr_t txdr = datarate;
-#if !defined(DISABLE_JOIN)
-      if (jacc) {
-        if (opmode.test(OpState::REJOIN)) {
-          txdr = lowerDR(txdr, rejoinCnt);
-        }
-        buildJoinRequest();
-        osjob.setCallbackFuture(&Lmic::jreqDone);
-      } else
-#endif // !DISABLE_JOIN
-      {
-        if (seqnoDn >= 0xFFFFFF80) {
-          // Imminent roll over - proactively reset MAC
-          // Device has to react! NWK will not roll over and just stop sending.
-          // Thus, we have N frames to detect a possible lock up.
-          osjob.setCallbackRunnable(&Lmic::runReset);
-          return;
-        }
-        if ((txCnt == 0 && seqnoUp == 0xFFFFFFFF)) {
-          // Roll over of up seq counter
-          // Do not run RESET event callback from here!
-          // App code might do some stuff after send unaware of RESET.
-          osjob.setCallbackRunnable(&Lmic::runReset);
-          return;
-        }
-        buildDataFrame();
-        osjob.setCallbackFuture(&Lmic::updataDone);
-      }
-      rps = updr2rps(txdr);
-      dndr = txdr; // carry TX datarate (can be != datarate) over to
-                   // txDone/setupRx1
-
-      opmode.reset(OpState::POLL);
-      opmode.set(OpState::TXRXPEND);
-      opmode.set(OpState::NEXTCHNL);
-      OsDeltaTime airtime = calcAirTime(rps, dataLen);
-      updateTx(txbeg, airtime);
-      radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
+    if (txbeg >= (now + TX_RAMPUP)) {
+      PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
+      // Cannot yet TX
+      //  wait for the time to TX
+      osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
       return;
     }
-    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
-    // Cannot yet TX
-    //  wait for the time to TX
-    osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
-  } else {
-    // No TX pending - no scheduled RX
-    return;
+
+    PRINT_DEBUG_1("Ready for uplink");
+    // We could send right now!
+    txbeg = now;
+    dr_t txdr = datarate;
+#if !defined(DISABLE_JOIN)
+    if (jacc) {
+      if (opmode.test(OpState::REJOIN)) {
+        txdr = lowerDR(txdr, rejoinCnt);
+      }
+      buildJoinRequest();
+      osjob.setCallbackFuture(&Lmic::jreqDone);
+    } else
+#endif // !DISABLE_JOIN
+    {
+      if (seqnoDn >= 0xFFFFFF80) {
+        // Imminent roll over - proactively reset MAC
+        // Device has to react! NWK will not roll over and just stop sending.
+        // Thus, we have N frames to detect a possible lock up.
+        osjob.setCallbackRunnable(&Lmic::runReset);
+        return;
+      }
+      if ((txCnt == 0 && seqnoUp == 0xFFFFFFFF)) {
+        // Roll over of up seq counter
+        // Do not run RESET event callback from here!
+        // App code might do some stuff after send unaware of RESET.
+        osjob.setCallbackRunnable(&Lmic::runReset);
+        return;
+      }
+      buildDataFrame();
+      osjob.setCallbackFuture(&Lmic::updataDone);
+    }
+    rps = updr2rps(txdr);
+    dndr = txdr; // carry TX datarate (can be != datarate) over to
+                 // txDone/setupRx1
+
+    opmode.reset(OpState::POLL);
+    opmode.set(OpState::TXRXPEND);
+    opmode.set(OpState::NEXTCHNL);
+    OsDeltaTime airtime = calcAirTime(rps, dataLen);
+    updateTx(txbeg, airtime);
+    radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
   }
+  // No TX pending - no scheduled RX
 }
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
