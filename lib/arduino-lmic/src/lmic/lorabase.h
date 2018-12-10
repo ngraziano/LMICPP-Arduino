@@ -70,26 +70,7 @@ enum class PktDir : uint8_t {
   DOWN = 1,
 };
 constexpr uint8_t MAX_LEN_PAYLOAD = MAX_LEN_FRAME - 8 - 4;
-enum {
-  // Bitfields in frame format octet
-  HDR_FTYPE = 0xE0,
-  HDR_RFU = 0x1C,
-  HDR_MAJOR = 0x03
-};
-enum { HDR_FTYPE_DNFLAG = 0x20 }; // flags DN frame except for HDR_FTYPE_PROP
-enum {
-  // Values of frame type bit field
-  HDR_FTYPE_JREQ = 0x00,
-  HDR_FTYPE_JACC = 0x20,
-  HDR_FTYPE_DAUP = 0x40, // data (unconfirmed) up
-  HDR_FTYPE_DADN = 0x60, // data (unconfirmed) dn
-  HDR_FTYPE_DCUP = 0x80, // data confirmed up
-  HDR_FTYPE_DCDN = 0xA0, // data confirmed dn
-  HDR_FTYPE_PROP = 0xE0
-};
-enum {
-  HDR_MAJOR_V1 = 0x00,
-};
+
 enum {
   // Bitfields in frame control octet
   FCT_ADREN = 0x80,

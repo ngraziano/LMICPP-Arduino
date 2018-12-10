@@ -310,12 +310,12 @@ bool Lmic::decodeFrame() {
 
   uint8_t *const d = frame;
   const uint8_t hdr = d[0];
-  const uint8_t ftype = hdr & HDR_FTYPE;
+  const uint8_t ftype = hdr & mhdr::ftype_mask;
   const uint8_t dlen = dataLen;
 
   if (dlen < mac_payload::offsets::fopts + lengths::MIC ||
-      (hdr & HDR_MAJOR) != HDR_MAJOR_V1 ||
-      (ftype != HDR_FTYPE_DADN && ftype != HDR_FTYPE_DCDN)) {
+      (hdr & mhdr::major_mask) != mhdr::major_v1 ||
+      (ftype != mhdr::ftype_data_down && ftype != mhdr::ftype_data_conf_down)) {
     // Basic sanity checks failed
     PRINT_DEBUG_1("Invalid downlink, window=%s", window);
     return false;
@@ -342,6 +342,7 @@ bool Lmic::decodeFrame() {
   bool replayConf = false;
 
   uint32_t seqno = rlsbf2(&d[mac_payload::offsets::fcnt]);
+  // reconstruct 32 bit value.
   seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
@@ -352,7 +353,7 @@ bool Lmic::decodeFrame() {
     if ((int32_t)seqno > (int32_t)seqnoDn) {
       return false;
     }
-    if (seqno != seqnoDn - 1 || !dnConf || ftype != HDR_FTYPE_DCDN) {
+    if (seqno != seqnoDn - 1 || !dnConf || ftype != mhdr::ftype_data_conf_down) {
       return false;
     }
     // Replay of previous sequence number allowed only if
@@ -361,11 +362,11 @@ bool Lmic::decodeFrame() {
   } else {
     if (seqno > seqnoDn) {
       // skip in sequence number
-      // log ?
+      PRINT_DEBUG_1("Current packet receive %lu expected %ld",seqno, seqnoDn);
     }
     seqnoDn = seqno + 1; // next number to be expected
     // DN frame requested confirmation - provide ACK once with next UP frame
-    dnConf = (ftype == HDR_FTYPE_DCDN ? FCT_ACK : 0);
+    dnConf = (ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0);
   }
 
   if (dnConf || (fct & FCT_MORE))
@@ -530,7 +531,7 @@ bool Lmic::processJoinAccept() {
 
   if ((dlen != join_accept::lengths::total &&
        dlen != join_accept::lengths::totalWithOptional) ||
-      (hdr & (HDR_FTYPE | HDR_MAJOR)) != (HDR_FTYPE_JACC | HDR_MAJOR_V1)) {
+      (hdr & (mhdr::ftype_mask | mhdr::major_mask)) != (mhdr::ftype_join_acc | mhdr::major_v1)) {
     PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
 
     // unexpected frame
@@ -787,7 +788,7 @@ void Lmic::buildDataFrame() {
     txdata = 0;
     flen = end + 4;
   }
-  frame[offsets::MHDR] = HDR_FTYPE_DAUP | HDR_MAJOR_V1;
+  frame[offsets::MHDR] = mhdr::ftype_data_up | mhdr::major_v1;
   frame[mac_payload::offsets::fctrl] =
       (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
        (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
@@ -805,7 +806,7 @@ void Lmic::buildDataFrame() {
   if (txdata) {
     if (pendTxConf) {
       // Confirmed only makes sense if we have a payload (or at least a port)
-      frame[offsets::MHDR] = HDR_FTYPE_DCUP | HDR_MAJOR_V1;
+      frame[offsets::MHDR] = mhdr::ftype_data_conf_up | mhdr::major_v1;
       if (txCnt == 0)
         txCnt = 1;
     }
@@ -829,7 +830,7 @@ void Lmic::buildDataFrame() {
 void Lmic::buildJoinRequest() {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
-  frame[join_request::offset::MHDR] = HDR_FTYPE_JREQ;
+  frame[join_request::offset::MHDR] = mhdr::ftype_join_req | mhdr::major_v1;
   artEuiCallBack(frame + join_request::offset::appEUI);
   devEuiCallBack(frame + join_request::offset::devEUI);
   wlsbf2(frame + join_request::offset::devNonce, devNonce);
