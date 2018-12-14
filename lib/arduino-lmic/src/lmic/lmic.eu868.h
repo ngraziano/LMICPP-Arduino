@@ -56,7 +56,6 @@ public:
 //! \internal
 struct band_t {
   uint16_t txcap;   // duty cycle limitation: 1/txcap
-  int8_t txpow;     // maximum TX power
   uint8_t lastchnl; // last used channel
   OsTime avail;     // channel is blocked until this time
 };
@@ -105,7 +104,7 @@ private:
 
   uint32_t getFreq(uint8_t channel) const;
   uint8_t getBand(uint8_t channel) const;
-  bool setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap);
+  bool setupBand(uint8_t bandidx, uint16_t txcap);
 };
 
 #endif

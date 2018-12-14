@@ -144,9 +144,6 @@ void LmicEu868::initDefaultChannels(bool join) {
   bands[BAND_MILLI].txcap = 1000; // 0.1%
   bands[BAND_CENTI].txcap = 100;  // 1%
   bands[BAND_DECI].txcap = 10;    // 10%
-  bands[BAND_MILLI].txpow = 16;
-  bands[BAND_CENTI].txpow = 16;
-  bands[BAND_DECI].txpow = 16;
   bands[BAND_MILLI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_CENTI].lastchnl = rand.uint8() % MAX_CHANNELS;
   bands[BAND_DECI].lastchnl = rand.uint8() % MAX_CHANNELS;
@@ -156,11 +153,10 @@ void LmicEu868::initDefaultChannels(bool join) {
   bands[BAND_DECI].avail = now;
 }
 
-bool LmicEu868::setupBand(uint8_t bandidx, int8_t txpow, uint16_t txcap) {
+bool LmicEu868::setupBand(uint8_t bandidx, uint16_t txcap) {
   if (bandidx > BAND_AUX)
     return false;
   band_t &b = bands[bandidx];
-  b.txpow = txpow;
   b.txcap = txcap;
   b.avail = os_getTime();
   b.lastchnl = rand.uint8() % MAX_CHANNELS;
@@ -240,9 +236,8 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
   // Update channel/global duty cycle stats
   band_t *band = &bands[getBand(txChnl)];
   freq = getFreq(txChnl);
-  txpow = band->txpow;
-  // limit power to value ask in adr
-  txpow = txpow > adrTxPow ? adrTxPow : txpow;
+  // limit power to value ask in adr (at init MaxEIRP)
+  txpow = adrTxPow;
   // TODO check time calculation
   band->avail = txbeg + band->txcap * airtime;
   if (globalDutyRate != 0)
