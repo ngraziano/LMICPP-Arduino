@@ -63,8 +63,8 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS, rps_DR0, rps_DR1, rps_DR2, rps_DR3,
       rps_DR4,     rps_DR5, rps_DR6, rps_DR7, ILLEGAL_RPS};
 
-static CONST_TABLE(int8_t, TXPOWLEVELS)[] = {16, 14, 12, 10, 8, 6, 4, 2,
-                                             0,  0,  0,  0,  0, 0, 0, 0};
+
+constexpr int8_t MaxEIRP = 16;
 
 // Table below defines the size of one symbol as
 //   symtime = 256us * 2^T(sf,bw)
@@ -113,9 +113,12 @@ uint8_t LmicEu868::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicEu868::pow2dBm(uint8_t mcmd_ladr_p1) const {
-  return TABLE_GET_S1(TXPOWLEVELS, (mcmd_ladr_p1 & MCMD_LADR_POW_MASK) >>
-                                       MCMD_LADR_POW_SHIFT);
+int8_t LmicEu868::pow2dBm(uint8_t powerIndex) const {
+  if(powerIndex < 8) {
+    return MaxEIRP - 2 * powerIndex;
+  }
+  // TODO handle bad value
+  return 0;
 }
 
 OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }

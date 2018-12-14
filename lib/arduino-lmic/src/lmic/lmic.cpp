@@ -201,12 +201,15 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
         PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
         ladrAns &= ~MCMD_LADR_ANS_DRACK;
       }
+      //TODO add a test on power validPower
       if ((ladrAns & 0x7F) ==
           (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
         // Nothing went wrong - use settings
         upRepeat = nbTrans;
-        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr,
-                      p1 & MCMD_LADR_POW_MASK);
+        const uint8_t txPowerIndex =
+            (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
+
         setDrTxpow(dr, pow2dBm(p1));
       }
       if (adrAckReq != LINK_CHECK_OFF) {
@@ -917,15 +920,18 @@ void Lmic::engineUpdate() {
     if (opmode.test(OpState::NEXTCHNL)) {
       txbeg = txend = nextTx(now);
       opmode.reset(OpState::NEXTCHNL);
-      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)", txbeg.tick());
+      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
+                    txbeg.tick());
     } else {
       txbeg = txend;
-      PRINT_DEBUG_2("Airtime available at %lu (previously determined)", txbeg.tick());
+      PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
+                    txbeg.tick());
     }
     // Delayed TX or waiting for duty cycle?
     if (txbeg < globalDutyAvail) {
       txbeg = globalDutyAvail;
-      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg.tick());
+      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)",
+                    txbeg.tick());
     }
     // Earliest possible time vs overhead to setup radio
     if (txbeg >= (now + TX_RAMPUP)) {

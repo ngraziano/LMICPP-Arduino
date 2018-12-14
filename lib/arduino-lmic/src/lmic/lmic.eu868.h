@@ -74,7 +74,7 @@ public:
 
 protected:
   uint8_t getRawRps(dr_t dr) const override;
-  int8_t pow2dBm(uint8_t mcmd_ladr_p1) const override;
+  int8_t pow2dBm(uint8_t powerIndex) const override;
   OsDeltaTime getDwn2SafetyZone() const override;
   OsDeltaTime dr2hsym(dr_t dr) const override;
   uint32_t convFreq(const uint8_t *ptr) const override;

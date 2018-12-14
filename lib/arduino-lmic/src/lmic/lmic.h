@@ -316,7 +316,7 @@ public:
 protected:
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
-  virtual int8_t pow2dBm(uint8_t mcmd_ladr_p1) const = 0;
+  virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
   virtual OsDeltaTime dr2hsym(dr_t dr) const = 0;
   virtual uint32_t convFreq(const uint8_t *ptr) const = 0;

@@ -105,8 +105,8 @@ uint8_t LmicUs915::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicUs915::pow2dBm(uint8_t mcmd_ladr_p1) const {
-  return ((int8_t)(30 - (((mcmd_ladr_p1)&MCMD_LADR_POW_MASK) << 1)));
+int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
+  return 30 - (powerIndex *2);
 }
 
 OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
