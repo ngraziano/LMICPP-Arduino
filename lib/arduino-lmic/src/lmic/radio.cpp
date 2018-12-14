@@ -475,7 +475,7 @@ void Radio::rxrssi() const {
   // now instruct the radio to receive
   // continous rx 
   opmode(OPMODE_RX);
-  PRINT_DEBUG_1("RXMODE_RSSI\n");
+  PRINT_DEBUG_1("RXMODE_RSSI");
 }
 
 
@@ -529,7 +529,7 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
 #if LMIC_DEBUG_LEVEL > 0
 
   uint8_t const sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG_1("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
+  PRINT_DEBUG_1("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d",
               rxmode == RXMODE_SINGLE
                   ? "RXMODE_SINGLE"
                   : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
