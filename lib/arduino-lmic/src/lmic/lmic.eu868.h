@@ -20,7 +20,8 @@ public:
       : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
 };
 
-enum { LIMIT_CHANNELS = (1 << 4) }; // EU868 will never have more channels
+// Channel map is store in one 16bit
+enum { LIMIT_CHANNELS = 16 }; 
 
 template <uint8_t size> class ChannelList {
 private:

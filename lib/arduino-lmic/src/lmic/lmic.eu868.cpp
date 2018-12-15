@@ -63,7 +63,6 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS, rps_DR0, rps_DR1, rps_DR2, rps_DR3,
       rps_DR4,     rps_DR5, rps_DR6, rps_DR7, ILLEGAL_RPS};
 
-
 constexpr int8_t MaxEIRP = 16;
 
 // Table below defines the size of one symbol as
@@ -114,7 +113,7 @@ uint8_t LmicEu868::getRawRps(dr_t dr) const {
 }
 
 int8_t LmicEu868::pow2dBm(uint8_t powerIndex) const {
-  if(powerIndex < 8) {
+  if (powerIndex < 8) {
     return MaxEIRP - 2 * powerIndex;
   }
   // TODO handle bad value
@@ -137,8 +136,8 @@ void LmicEu868::initDefaultChannels(bool join) {
   channels.disableAll();
   uint8_t su = join ? 0 : 3;
   for (uint8_t fu = 0; fu < 3; fu++, su++) {
-    channels.configure(fu,ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
-                                 dr_range_map(Dr::SF12, Dr::SF7)});
+    channels.configure(fu, ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
+                                         dr_range_map(Dr::SF12, Dr::SF7)});
   }
 
   bands[BAND_MILLI].txcap = 1000; // 0.1%
@@ -179,14 +178,14 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
     if (band > BAND_AUX)
       return 0;
   }
-  channels.configure(chidx, ChannelDetail{
-      newfreq, band, drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap});
+  channels.configure(
+      chidx,
+      ChannelDetail{newfreq, band,
+                    drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap});
   return true;
 }
 
-void LmicEu868::disableChannel(uint8_t channel) {
-  channels.disable(channel);
-}
+void LmicEu868::disableChannel(uint8_t channel) { channels.disable(channel); }
 
 uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
   uint32_t newfreq = rlsbf3(ptr) * 100;
@@ -212,7 +211,7 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
 bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
   // ChMaskCntl=6 => All channels ON
-  if (chMaskCntl==6) {
+  if (chMaskCntl == 6) {
     channels.enableAll();
     return true;
   }
@@ -223,9 +222,9 @@ bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
 
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
     if ((chMask & (1 << chnl)) != 0)
-      channels.enable(chnl); 
+      channels.enable(chnl);
   }
-  
+
   return true;
 }
 
@@ -273,8 +272,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
     uint8_t band = 0xFF;
     for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
-        PRINT_DEBUG_2("Considering band %d, which is available at %lu",
-                     bi, bands[bi].avail);
+        PRINT_DEBUG_2("Considering band %d, which is available at %lu", bi,
+                      bands[bi].avail);
         band = bi;
         mintime = bands[band].avail;
       }
