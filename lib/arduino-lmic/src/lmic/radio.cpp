@@ -584,8 +584,6 @@ void Radio::init_random(uint8_t randbuf[16]) {
   DisableIRQsGard irqguard;
 
   // seed 15-byte randomness via noise rssi
-  // freq and rps not used
-  rps_t const dumyrps;
   rxrssi();
   while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
