@@ -187,9 +187,13 @@ void setup()
     LMIC.setArtEuiCallback(getArtEui);
     // set clock error to allow good connection.
     LMIC.setClockError(MAX_CLOCK_ERROR * 15 / 100);
-    LMIC.setAntennaPowerAdjustment(-4);
+    LMIC.setAntennaPowerAdjustment(0);
 
-    configure_wdt();
+    // Only work with special boot loader.
+    // configure_wdt();
+
+
+
     /*
     while(true) {
 
