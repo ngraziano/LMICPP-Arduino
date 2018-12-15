@@ -561,8 +561,6 @@ void Radio::init() {
   // wait 5ms after reset
   hal_wait(OsDeltaTime::from_ms(5));
 
-  opmode(OPMODE_SLEEP);
-
 #if !defined(CFG_noassert) || LMIC_DEBUG_LEVEL > 0
   // some sanity checks, e.g., read version number
   uint8_t const v = readReg(RegVersion);
@@ -575,35 +573,6 @@ void Radio::init() {
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
-
-#ifdef CFG_sx1276mb1_board
-  // chain calibration
-  writeReg(RegPaConfig, 0);
-
-  // Launch Rx chain calibration for LF band
-  writeReg(FSKRegImageCal,
-           (readReg(FSKRegImageCal) & RF_IMAGECAL_IMAGECAL_MASK) |
-               RF_IMAGECAL_IMAGECAL_START);
-  while ((readReg(FSKRegImageCal) & RF_IMAGECAL_IMAGECAL_RUNNING) ==
-         RF_IMAGECAL_IMAGECAL_RUNNING) {
-    ;
-  }
-
-  // Sets a Frequency in HF band
-  uint32_t frf = 868000000;
-  writeReg(RegFrfMsb, (uint8_t)(frf >> 16));
-  writeReg(RegFrfMid, (uint8_t)(frf >> 8));
-  writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
-
-  // Launch Rx chain calibration for HF band
-  writeReg(FSKRegImageCal,
-           (readReg(FSKRegImageCal) & RF_IMAGECAL_IMAGECAL_MASK) |
-               RF_IMAGECAL_IMAGECAL_START);
-  while ((readReg(FSKRegImageCal) & RF_IMAGECAL_IMAGECAL_RUNNING) ==
-         RF_IMAGECAL_IMAGECAL_RUNNING) {
-    ;
-  }
-#endif /* CFG_sx1276mb1_board */
 
   opmode(OPMODE_SLEEP);
   hal_allow_sleep();
