@@ -637,7 +637,7 @@ void Radio::irq_handler(uint8_t *const framePtr,
 
   uint8_t const flags = readReg(LORARegIrqFlags);
 
-  PRINT_DEBUG_2("irq: dio: 0x%x flags: 0x%x\n", dio, flags);
+  PRINT_DEBUG_2("irq: flags: 0x%x\n", flags);
 
   if (flags & IRQ_LORA_TXDONE_MASK) {
     // save exact tx time
