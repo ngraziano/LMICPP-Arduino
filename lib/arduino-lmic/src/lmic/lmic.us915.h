@@ -9,7 +9,7 @@ enum {
 
 class LmicUs915 final : public Lmic {
 public:
-  explicit LmicUs915(lmic_pinmap const& pins);
+  explicit LmicUs915(lmic_pinmap const &pins);
 
 protected:
   uint8_t getRawRps(dr_t dr) const override;
@@ -21,8 +21,7 @@ protected:
   bool validRx1DrOffset(uint8_t drOffset) const override;
 
   void initDefaultChannels(bool join) override;
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                    int8_t band) override;
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override;
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 

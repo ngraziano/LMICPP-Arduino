@@ -162,22 +162,18 @@ bool LmicEu868::setupBand(uint8_t bandidx, uint16_t txcap) {
   return true;
 }
 
-bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap,
-                             int8_t band) {
+bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
   if (chidx >= MAX_CHANNELS)
     return false;
-  if (band == -1) {
-    if (newfreq >= MIN_BAND_DECI && newfreq <= MAX_BAND_DECI)
-      band = BAND_DECI; // 10%
-    else if ((newfreq >= MIN_BAND1_CENTI && newfreq <= MAX_BAND1_CENTI) ||
-             (newfreq >= MIN_BAND2_CENTI && newfreq <= MAX_BAND2_CENTI))
-      band = BAND_CENTI; // 1%
-    else
-      band = BAND_MILLI; // 0.1%
-  } else {
-    if (band > BAND_AUX)
-      return 0;
-  }
+  int8_t band;
+  if (newfreq >= MIN_BAND_DECI && newfreq <= MAX_BAND_DECI)
+    band = BAND_DECI; // 10%
+  else if ((newfreq >= MIN_BAND1_CENTI && newfreq <= MAX_BAND1_CENTI) ||
+           (newfreq >= MIN_BAND2_CENTI && newfreq <= MAX_BAND2_CENTI))
+    band = BAND_CENTI; // 1%
+  else
+    band = BAND_MILLI; // 0.1%
+
   channels.configure(
       chidx,
       ChannelDetail{newfreq, band,
@@ -199,7 +195,7 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
     uint32_t newfreq = convFreq(ptr);
     if (newfreq) {
-      setupChannel(chidx, newfreq, 0, -1);
+      setupChannel(chidx, newfreq, 0);
 #if LMIC_DEBUG_LEVEL > 1
       lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime().tick(),
                   chidx, newfreq);
@@ -329,10 +325,9 @@ void LmicEu868::setRx1Params() {
 #if !defined(DISABLE_JOIN)
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
-  adrTxPow = 14;
+  adrTxPow = MaxEIRP;
   setDrJoin(static_cast<dr_t>(Dr::SF7));
   initDefaultChannels(true);
-  ASSERT(!(opmode.test(OpState::NEXTCHNL)));
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
   PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu",
                 bands[BAND_MILLI].avail.tick(), txend.tick());
@@ -363,7 +358,7 @@ bool LmicEu868::nextJoinState() {
   // SF12:255, SF11:127, .., SF7:8secs
   txend =
       time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
-  PRINT_DEBUG_1(" Next available : %lu , Choosen %lu", time.tick(),
+  PRINT_DEBUG_1("Next available : %lu , Choosen %lu", time.tick(),
                 txend.tick());
 #if LMIC_DEBUG_LEVEL > 1
   if (failed)

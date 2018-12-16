@@ -114,9 +114,7 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
 
 void Lmic::setDrJoin(dr_t dr) { datarate = dr; }
 
-void Lmic::setDrTxpow(uint8_t dr, int8_t pow) {
-  if (pow != KEEP_TXPOW)
-    adrTxPow = pow;
+void Lmic::setDrTxpow(uint8_t dr) {
   if (datarate != dr) {
     datarate = dr;
     opmode.set(OpState::NEXTCHNL);
@@ -209,8 +207,8 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
         const uint8_t txPowerIndex =
             (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
         PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
-
-        setDrTxpow(dr, pow2dBm(p1));
+        adrTxPow = pow2dBm(txPowerIndex);
+        setDrTxpow(dr);
       }
       if (adrAckReq != LINK_CHECK_OFF) {
         // force ack to NWK.
@@ -266,7 +264,7 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
       const uint8_t drs = opts[oidx + 5];                 // datarate span
       snchAns = 0x80;
       if (newfreq != 0 &&
-          setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4), -1))
+          setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
         snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 #endif // !DISABLE_MCMD_SNCH_REQ
       oidx += 6;
@@ -646,8 +644,7 @@ void Lmic::processRx2DnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt++;
-        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)),
-                   KEEP_TXPOW);
+        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)));
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
         opmode.reset(OpState::TXRXPEND);
@@ -700,11 +697,11 @@ void Lmic::incrementAdrCount() {
     // asked for a response for some time - assume we're disconnected.
     // Restore max power if it not the case
     if (adrTxPow != pow2dBm(0)) {
-      setDrTxpow(datarate, pow2dBm(0));
+      adrTxPow = pow2dBm(0);
       opmode.set(OpState::LINKDEAD);
     } else if (decDR(datarate) != datarate) {
       // Lower DR one notch.
-      setDrTxpow(decDR(datarate), KEEP_TXPOW);
+      setDrTxpow(decDR(datarate));
       opmode.set(OpState::LINKDEAD);
     } else {
       // we are at max pow and max DR

@@ -21,7 +21,7 @@ public:
 };
 
 // Channel map is store in one 16bit
-enum { LIMIT_CHANNELS = 16 }; 
+enum { LIMIT_CHANNELS = 16 };
 
 template <uint8_t size> class ChannelList {
 private:
@@ -82,8 +82,7 @@ protected:
 
   void initDefaultChannels(bool join) override;
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                    int8_t band) override;
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override;
 
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;

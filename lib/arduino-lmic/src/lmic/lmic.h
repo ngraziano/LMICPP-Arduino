@@ -138,6 +138,7 @@ protected:
   dr_t datarate = 0; // current data rate
   // curent opmode set at init
   OpStateValue opmode;
+
 private:
   uint32_t netid; // current network id (~0 - none)
   // configured up repeat for unconfirmed message, reset after join.
@@ -268,10 +269,11 @@ private:
   void txDelay(OsTime reftime, uint8_t secSpan);
   void resetAdrCount();
   void incrementAdrCount();
+
 public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
-  void setDrTxpow(uint8_t dr, int8_t pow);
+  void setDrTxpow(uint8_t dr);
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.
   void setLinkCheckMode(bool enabled);
@@ -323,8 +325,8 @@ protected:
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 
   virtual void initDefaultChannels(bool join) = 0;
-  virtual bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap,
-                            int8_t band) = 0;
+  virtual bool setupChannel(uint8_t channel, uint32_t newfreq,
+                            uint16_t drmap) = 0;
   virtual void disableChannel(uint8_t channel) = 0;
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
