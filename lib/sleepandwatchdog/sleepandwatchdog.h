@@ -1,3 +1,5 @@
+#ifndef _sleepandwatchdog_h_
+#define _sleepandwatchdog_h_
 
 enum class Sleep : unsigned char
 {
@@ -18,3 +20,4 @@ void powerDown(Sleep period);
 void configure_wdt();
 void rst_wdt();
 
+#endif
