@@ -321,6 +321,7 @@ void Radio::configPower(int8_t pw) const {
   writeReg(RegPaConfig, (uint8_t)(0x80 | pw));
   // no boost +20dB
   writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
+
 #else
   // output on rfo pin
   // Bit 6-4 Select max output power: Pmax=10.8+0.6*MaxPower [dBm]
@@ -331,6 +332,8 @@ void Radio::configPower(int8_t pw) const {
   } else if (pw < -4) {
     pw = -4;
   }
+
+  PRINT_DEBUG_1("Config power to %i on RFO", pw);
 
   uint8_t pa = 0;
   if (pw >= 0) {
@@ -574,6 +577,13 @@ void Radio::init() {
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
 
+
+  /* TODO add a parameter
+  // Configure max curent
+  // limit current to 45mA
+  constexpr uint8_t limit = 0; 
+  writeReg(RegOcp, 0x20 | limit);
+  */
   opmode(OPMODE_SLEEP);
   hal_allow_sleep();
 
