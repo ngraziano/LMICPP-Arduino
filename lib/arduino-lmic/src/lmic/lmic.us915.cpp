@@ -221,7 +221,7 @@ bool LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return true;
 }
 
-void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime airtime) {
+void LmicUs915::updateTx(OsTime, OsDeltaTime) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
@@ -234,11 +234,6 @@ void LmicUs915::updateTx(OsTime txbeg, OsDeltaTime airtime) {
   } else {
     ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
     freq = xchFreq[chnl - 72];
-  }
-
-  // Update global duty cycle stats
-  if (globalDutyRate != 0) {
-    globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
   }
 }
 

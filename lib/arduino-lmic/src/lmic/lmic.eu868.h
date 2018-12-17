@@ -44,7 +44,7 @@ public:
     }
   }
   bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
-  void configure(uint8_t channel, ChannelDetail detail) {
+  void configure(uint8_t channel,ChannelDetail detail) {
     channels[channel] = detail;
     channelMap |= 1 << channel;
   }

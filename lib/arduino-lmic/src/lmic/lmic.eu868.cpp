@@ -165,6 +165,7 @@ bool LmicEu868::setupBand(uint8_t bandidx, uint16_t txcap) {
 bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
   if (chidx >= MAX_CHANNELS)
     return false;
+
   int8_t band;
   if (newfreq >= MIN_BAND_DECI && newfreq <= MAX_BAND_DECI)
     band = BAND_DECI; // 10%
@@ -226,24 +227,19 @@ bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
 
 void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 
-  // Update global/band specific duty cycle stats
-
-  // Update channel/global duty cycle stats
+  // Update band specific duty cycle stats
   band_t *band = &bands[getBand(txChnl)];
   freq = getFreq(txChnl);
+
   // limit power to value ask in adr (at init MaxEIRP)
   txpow = adrTxPow;
-  // TODO check time calculation
+
   band->avail = txbeg + band->txcap * airtime;
-  if (globalDutyRate != 0)
-    globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
+
 #if LMIC_DEBUG_LEVEL > 1
   lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting "
               "available time for band %d to %lu\n",
               os_getTime().tick(), txbeg, airtime, freq, band->avail);
-  if (globalDutyRate != 0)
-    lmic_printf("%lu: Updating global duty avail to %lu\n", os_getTime().tick(),
-                globalDutyAvail);
 #endif
 }
 

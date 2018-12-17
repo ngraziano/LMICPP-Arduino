@@ -199,7 +199,7 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
         PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
         ladrAns &= ~MCMD_LADR_ANS_DRACK;
       }
-      //TODO add a test on power validPower
+      // TODO add a test on power validPower
       if ((ladrAns & 0x7F) ==
           (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
         // Nothing went wrong - use settings
@@ -978,7 +978,13 @@ void Lmic::engineUpdate() {
     opmode.set(OpState::TXRXPEND);
     opmode.set(OpState::NEXTCHNL);
     OsDeltaTime airtime = calcAirTime(rps, dataLen);
+
     updateTx(txbeg, airtime);
+    if (globalDutyRate != 0) {
+      globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
+      PRINT_DEBUG_2("Updating global duty avail to %lu", globalDutyAvail);
+    }
+
     radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
   }
   // No TX pending - no scheduled RX
