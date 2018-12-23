@@ -199,7 +199,8 @@ void Radio::opmodeLora() const {
 }
 
 // configure LoRa modem (cfg1, cfg2)
-void Radio::configLoraModem(rps_t rps) const {
+void Radio::configLoraModem(rps_t rps) {
+  current_rps = rps;
   sf_t const sf = rps.sf;
 
 #ifdef CFG_sx1276_radio
@@ -390,7 +391,7 @@ uint16_t bwForLog(rps_t const rps) {
 }
 
 void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
-                   uint8_t const *const frame, uint8_t dataLen) const {
+                   uint8_t const *const frame, uint8_t dataLen) {
   // select LoRa modem (from sleep mode)
   // writeReg(RegOpMode, OPMODE_LORA);
   opmodeLora();
@@ -442,7 +443,7 @@ void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
 
 // start transmitter
 void Radio::starttx(uint32_t const freq, rps_t const rps, int8_t const txpow,
-                    uint8_t const *const frame, uint8_t dataLen) const {
+                    uint8_t const *const frame, uint8_t dataLen) {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   txlora(freq, rps, txpow, frame, dataLen);
   // the radio will go back to STANDBY mode as soon as the TX is finished
@@ -484,7 +485,7 @@ void Radio::rxrssi() const {
 
 // start LoRa receiver
 void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
-                   uint8_t const rxsyms, OsTime const rxtime) const {
+                   uint8_t const rxsyms, OsTime const rxtime) {
   // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
@@ -542,7 +543,7 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
 }
 
 void Radio::startrx(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
-                    uint8_t const rxsyms, OsTime const rxtime) const {
+                    uint8_t const rxsyms, OsTime const rxtime)  {
   ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
   rxlora(rxmode, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
@@ -641,8 +642,7 @@ OsTime Radio::int_trigger_time() const {
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 void Radio::irq_handler(uint8_t *const framePtr,
-                        uint8_t &frameLength, OsTime &txEnd, OsTime &rxTime,
-                        rps_t const currentRps) {
+                        uint8_t &frameLength, OsTime &txEnd, OsTime &rxTime) {
   OsTime now = int_trigger_time();
 
   uint8_t const flags = readReg(LORARegIrqFlags);
@@ -658,8 +658,8 @@ void Radio::irq_handler(uint8_t *const framePtr,
 
   } else if (flags & IRQ_LORA_RXDONE_MASK) {
     // save exact rx time
-    if (currentRps.getBw() == BandWidth::BW125) {
-      now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, currentRps.sf));
+    if (current_rps.getBw() == BandWidth::BW125) {
+      now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, current_rps.sf));
     }
     PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
     rxTime = now;
@@ -716,21 +716,21 @@ void Radio::rst() const {
 }
 
 void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
-               uint8_t const *const framePtr, uint8_t const frameLength) const {
+               uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
   // transmit frame now
   starttx(freq, rps, txpow, framePtr, frameLength);
 }
 
 void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-               OsTime const rxtime) const {
+               OsTime const rxtime)  {
   DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
   startrx(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
 }
 
 void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-                 OsTime const rxtime) const {
+                 OsTime const rxtime)  {
   DisableIRQsGard irqguard;
   // start scanning for beacon now
   startrx(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
@@ -740,10 +740,10 @@ void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
  *  Return true if the radio has finish it's operation
  */
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-                     OsTime &rxTime, rps_t const currentRps) {
+                     OsTime &rxTime) {
   auto const pinInInt = hal.io_check();
   if (pinInInt < NUM_DIO) {
-    irq_handler(framePtr, frameLength, txEnd, rxTime, currentRps);
+    irq_handler(framePtr, frameLength, txEnd, rxTime);
     return true;
   }
   return false;

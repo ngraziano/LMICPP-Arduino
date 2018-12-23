@@ -121,7 +121,6 @@ void do_send()
     }
     else
     {
-
         // battery
         uint8_t val = ((uint32_t)analogRead(A1)) * 255 / 683;
 
@@ -187,28 +186,13 @@ void setup()
     LMIC.setArtEuiCallback(getArtEui);
     // set clock error to allow good connection.
     LMIC.setClockError(MAX_CLOCK_ERROR * 15 / 100);
-    LMIC.setAntennaPowerAdjustment(0);
+    LMIC.setAntennaPowerAdjustment(-14);
 
     // Only work with special boot loader.
     // configure_wdt();
 
 
-
-    /*
-    while(true) {
-
-        rps_t rps(
-            SF7,BandWidth::BW125, CodingRate::CR_4_5, false, 0);
-        
-        auto result = LMIC.calcAirTime(rps, 17);
-
-        PRINT_DEBUG_2 ("AirTime : %ld" , result.to_ms());
-        delay (5000);
-    }
-    */
-
    // test duration and in case of reboot loop  prevent flood
-    
    testDuration(1000);
    testDuration(8000);
    testDuration(30000);
@@ -280,6 +264,7 @@ void loop()
     OsDeltaTime to_wait = OSS.runloopOnce();
     if (to_wait > OsDeltaTime(0) && hal_is_sleep_allow())
     {
+        // Go to sleep if we have nothing to do.
         powersave(to_wait);
     }
     else

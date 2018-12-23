@@ -114,8 +114,6 @@ private:
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
 
-  // radio parameters set
-  rps_t rps;
   uint8_t rxsyms = 0;
 
   eventCallback_t eventCallBack = nullptr;
@@ -195,9 +193,7 @@ private:
   // answer set new channel, init afet join.
   uint8_t snchAns;
 #endif
-protected:
-  // 1 RX window DR offset
-  uint8_t rx1DrOffset;
+
 
 private:
   // 2nd RX window (after up stream), init at reset
@@ -220,6 +216,9 @@ private:
   Aes aes;
 
 protected:
+  // 1 RX window DR offset
+  uint8_t rx1DrOffset;
+
   uint8_t txCnt = 0;
   LmicRand rand;
 

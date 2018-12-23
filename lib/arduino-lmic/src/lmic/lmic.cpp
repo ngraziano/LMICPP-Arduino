@@ -433,10 +433,9 @@ bool Lmic::decodeFrame() {
 
 void Lmic::setupRx2() {
   txrxFlags.reset().set(TxRxStatus::DNW2);
-  rps = dndr2rps(dn2Dr);
-  freq = dn2Freq;
   dataLen = 0;
-  radio.rx(freq, rps, rxsyms, rxtime);
+  rps_t rps = dndr2rps(dn2Dr);
+  radio.rx(dn2Freq, rps, rxsyms, rxtime);
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
@@ -475,6 +474,7 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
 void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
+  rps_t rps = dndr2rps(dndr);
   radio.rx(freq, rps, rxsyms, rxtime);
 }
 
@@ -483,7 +483,6 @@ void Lmic::setupRx1() {
 void Lmic::txDone(OsDeltaTime delay) {
   // Change RX frequency / rps (US only) before we increment txChnl
   setRx1Params();
-  rps = dndr2rps(dndr);
   schedRx12(delay, dndr);
 }
 
@@ -970,7 +969,7 @@ void Lmic::engineUpdate() {
       buildDataFrame();
       osjob.setCallbackFuture(&Lmic::updataDone);
     }
-    rps = updr2rps(txdr);
+    rps_t rps = updr2rps(txdr);
     dndr = txdr; // carry TX datarate (can be != datarate) over to
                  // txDone/setupRx1
 
@@ -1003,7 +1002,6 @@ void Lmic::shutdown() {
 void Lmic::reset() {
   radio.rst();
   osjob.clearCallback();
-  rps = rps_t(0);
   devaddr = 0;
   devNonce = rand.uint16();
   opmode.reset();
@@ -1147,7 +1145,7 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
 }
 
 void Lmic::io_check() {
-  if (radio.io_check(frame, dataLen, txend, rxtime, rps)) {
+  if (radio.io_check(frame, dataLen, txend, rxtime)) {
     // if radio task ended, activate next job.
     osjob.setRunnable();
   }
