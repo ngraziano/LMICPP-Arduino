@@ -194,7 +194,6 @@ private:
   uint8_t snchAns;
 #endif
 
-
 private:
   // 2nd RX window (after up stream), init at reset
   dr_t dn2Dr;
@@ -262,6 +261,7 @@ private:
 
   void buildDataFrame();
   void engineUpdate();
+  void parse_ladr(const uint8_t *const opts);
   void parseMacCommands(const uint8_t *opts, uint8_t olen);
   bool decodeFrame();
   void processDnData();

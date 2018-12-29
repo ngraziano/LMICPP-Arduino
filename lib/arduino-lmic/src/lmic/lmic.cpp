@@ -162,6 +162,43 @@ void Lmic::stateJustJoined() {
   dn2Freq = defaultRX2Freq();
 }
 
+void Lmic::parse_ladr(const uint8_t *const opts) {
+  // FIXME multiple LinkAdrReq not handled properly in continous block
+  // must be handle atomic.
+  const uint8_t p1 = opts[1];               // txpow + DR
+  const uint16_t chMask = rlsbf2(&opts[2]); // list of enabled channels
+  const uint8_t chMaskCntl = opts[4] & MCMD_LADR_CHPAGE_MASK; // channel page
+  const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;    // up repeat count
+
+  ladrAns = 0x80 | // Include an answer into next frame up
+            MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+  if (!mapChannels(chMaskCntl, chMask)) {
+    PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i",
+                  chMaskCntl, chMask);
+    ladrAns &= ~MCMD_LADR_ANS_CHACK;
+  }
+  const dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
+  if (!validDR(dr)) {
+    PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
+    ladrAns &= ~MCMD_LADR_ANS_DRACK;
+  }
+  // TODO add a test on power validPower
+  if ((ladrAns & 0x7F) ==
+      (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
+    // Nothing went wrong - use settings
+    upRepeat = nbTrans;
+    const uint8_t txPowerIndex =
+        (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+    PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
+    adrTxPow = pow2dBm(txPowerIndex);
+    setDrTxpow(dr);
+  }
+  if (adrAckReq != LINK_CHECK_OFF) {
+    // force ack to NWK.
+    adrAckReq = 0;
+  }
+}
+
 void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
@@ -175,45 +212,8 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
     }
     // LinkADRReq LoRaWAN™ Specification §5.2
     case MCMD_LADR_REQ: {
-      // FIXME multiple LinkAdrReq not handled properly in continous block
-      // must be handle atomic.
-      const uint8_t p1 = opts[oidx + 1]; // txpow + DR
-      const uint16_t chMask =
-          rlsbf2(&opts[oidx + 2]); // list of enabled channels
-      const uint8_t chMaskCntl =
-          opts[oidx + 4] & MCMD_LADR_CHPAGE_MASK; // channel page
-      const uint8_t nbTrans =
-          opts[oidx + 4] & MCMD_LADR_REPEAT_MASK; // up repeat count
+      parse_ladr(opts + oidx);
       oidx += 5;
-
-      ladrAns = 0x80 | // Include an answer into next frame up
-                MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK |
-                MCMD_LADR_ANS_DRACK;
-      if (!mapChannels(chMaskCntl, chMask)) {
-        PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i",
-                      chMaskCntl, chMask);
-        ladrAns &= ~MCMD_LADR_ANS_CHACK;
-      }
-      dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
-      if (!validDR(dr)) {
-        PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
-        ladrAns &= ~MCMD_LADR_ANS_DRACK;
-      }
-      // TODO add a test on power validPower
-      if ((ladrAns & 0x7F) ==
-          (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
-        // Nothing went wrong - use settings
-        upRepeat = nbTrans;
-        const uint8_t txPowerIndex =
-            (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
-        PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
-        adrTxPow = pow2dBm(txPowerIndex);
-        setDrTxpow(dr);
-      }
-      if (adrAckReq != LINK_CHECK_OFF) {
-        // force ack to NWK.
-        adrAckReq = 0;
-      }
       continue;
     }
     // DevStatusReq LoRaWAN™ Specification §5.5
