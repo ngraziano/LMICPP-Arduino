@@ -192,11 +192,65 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
     adrTxPow = pow2dBm(txPowerIndex);
     setDrTxpow(dr);
+
+    // parameter have changed, force ADR ACK
+    // not explicit in specification
+    if (adrAckReq != LINK_CHECK_OFF) {
+      // force ack to NWK.
+      adrAckReq = 0;
+    }
   }
-  if (adrAckReq != LINK_CHECK_OFF) {
-    // force ack to NWK.
-    adrAckReq = 0;
+}
+
+void Lmic::parse_dn2p(const uint8_t *const opts) {
+#if !defined(DISABLE_MCMD_DN2P_SET)
+  const dr_t dr = (dr_t)(opts[1] & 0x0F);
+  const uint8_t newRx1DrOffset = ((opts[1] & 0x70) >> 4);
+  const uint32_t newfreq = convFreq(&opts[2]);
+  dn2Ans = 0x80; // answer pending
+  if (validRx1DrOffset(newRx1DrOffset))
+    dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
+  if (validDR(dr))
+    dn2Ans |= MCMD_DN2P_ANS_DRACK;
+  if (newfreq != 0)
+    dn2Ans |= MCMD_DN2P_ANS_CHACK;
+  // Only take parameter into account if all parameter are ok.
+  if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
+                 MCMD_DN2P_ANS_CHACK)) {
+    dn2Dr = dr;
+    dn2Freq = newfreq;
+    rx1DrOffset = newRx1DrOffset;
   }
+#endif // !DISABLE_MCMD_DN2P_SET
+}
+
+void Lmic::parse_dcap(const uint8_t *const opts) {
+#if !defined(DISABLE_MCMD_DCAP_REQ)
+  const uint8_t cap = opts[1];
+  globalDutyRate = cap & 0xF;
+  globalDutyAvail = os_getTime();
+  dutyCapAns = true;
+#endif // !DISABLE_MCMD_DCAP_REQ
+}
+
+void Lmic::parse_snch(const uint8_t *const opts) {
+#if !defined(DISABLE_MCMD_SNCH_REQ)
+  const uint8_t chidx = opts[1];               // channel
+  const uint32_t newfreq = convFreq(&opts[2]); // freq
+  const uint8_t drs = opts[5];                 // datarate span
+  snchAns = 0x80;
+  if (newfreq != 0 &&
+      setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
+    snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
+#endif // !DISABLE_MCMD_SNCH_REQ
+}
+
+void Lmic::parse_rx_timing_setup(const uint8_t *const opts) {
+  uint8_t newDelay = opts[1] & 0x0F;
+  if (newDelay == 0)
+    newDelay = 1;
+  rxDelay = OsDeltaTime::from_sec(newDelay);
+  rxTimingSetupAns = true;
 }
 
 void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
@@ -224,59 +278,25 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
     }
     // RXParamSetupReq LoRaWAN™ Specification §5.4
     case MCMD_DN2P_SET: {
-#if !defined(DISABLE_MCMD_DN2P_SET)
-      const dr_t dr = (dr_t)(opts[oidx + 1] & 0x0F);
-      const uint8_t newRx1DrOffset = ((opts[oidx + 1] & 0x70) >> 4);
-      const uint32_t newfreq = convFreq(&opts[oidx + 2]);
-      dn2Ans = 0x80; // answer pending
-      if (validRx1DrOffset(newRx1DrOffset))
-        dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
-      if (validDR(dr))
-        dn2Ans |= MCMD_DN2P_ANS_DRACK;
-      if (newfreq != 0)
-        dn2Ans |= MCMD_DN2P_ANS_CHACK;
-      if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
-                     MCMD_DN2P_ANS_CHACK)) {
-        dn2Dr = dr;
-        dn2Freq = newfreq;
-        rx1DrOffset = newRx1DrOffset;
-      }
-#endif // !DISABLE_MCMD_DN2P_SET
+      parse_dn2p(opts + oidx);
       oidx += 5;
       continue;
     }
     // DutyCycleReq LoRaWAN™ Specification §5.3
     case MCMD_DCAP_REQ: {
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-      const uint8_t cap = opts[oidx + 1];
-      globalDutyRate = cap & 0xF;
-      globalDutyAvail = os_getTime();
-      dutyCapAns = true;
-#endif // !DISABLE_MCMD_DCAP_REQ
+      parse_dcap(opts + oidx);
       oidx += 2;
       continue;
     }
     // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_SNCH_REQ: {
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-      const uint8_t chidx = opts[oidx + 1];               // channel
-      const uint32_t newfreq = convFreq(&opts[oidx + 2]); // freq
-      const uint8_t drs = opts[oidx + 5];                 // datarate span
-      snchAns = 0x80;
-      if (newfreq != 0 &&
-          setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
-        snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
-#endif // !DISABLE_MCMD_SNCH_REQ
+      parse_snch(opts + oidx);
       oidx += 6;
       continue;
     }
     // RXTimingSetupReq LoRaWAN™ Specification §5.7
     case MCMD_RXTimingSetup_REQ: {
-      uint8_t newDelay = opts[oidx + 1] & 0x0F;
-      if (newDelay == 0)
-        newDelay = 1;
-      rxDelay = OsDeltaTime::from_sec(newDelay);
-      rxTimingSetupAns = true;
+      parse_rx_timing_setup(opts + oidx);
       oidx += 2;
       continue;
     }

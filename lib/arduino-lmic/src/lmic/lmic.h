@@ -262,6 +262,10 @@ private:
   void buildDataFrame();
   void engineUpdate();
   void parse_ladr(const uint8_t *const opts);
+  void parse_dn2p(const uint8_t *const opts);
+  void parse_dcap(const uint8_t *const opts);
+  void parse_snch(const uint8_t *const opts);
+  void parse_rx_timing_setup(const uint8_t *const opts);
   void parseMacCommands(const uint8_t *opts, uint8_t olen);
   bool decodeFrame();
   void processDnData();
