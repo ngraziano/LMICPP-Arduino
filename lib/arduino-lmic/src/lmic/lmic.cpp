@@ -314,6 +314,36 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   }
 }
 
+uint32_t Lmic::read_seqno(uint8_t const *const buffer) const {
+  const uint32_t seqno = rlsbf2(buffer);
+  // reconstruct 32 bit value.
+  return seqnoDn + (uint16_t)(seqno - seqnoDn);
+}
+
+Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
+                                       const uint8_t ftype) const {
+  if (seqno < seqnoDn) {
+    
+    if ((int32_t)seqno > (int32_t)seqnoDn) {
+      return SeqNoValidity::invalid;
+    }
+
+    if (seqno != seqnoDn - 1 || !dnConf ||
+        ftype != mhdr::ftype_data_conf_down) {
+      return SeqNoValidity::invalid;
+    }
+    // Replay of previous sequence number allowed only if
+    // previous frame and repeated both requested confirmation
+    return SeqNoValidity::previous;
+  } else {
+    if (seqno > seqnoDn) {
+      // skip in sequence number, missed packet
+      PRINT_DEBUG_1("Current packet receive %lu expected %ld", seqno, seqnoDn);
+    }
+    return SeqNoValidity::ok;
+  }
+}
+
 // ================================================================================
 // Decoding frames
 bool Lmic::decodeFrame() {
@@ -341,56 +371,41 @@ bool Lmic::decodeFrame() {
     PRINT_DEBUG_1("Invalid downlink, window=%s", window);
     return false;
   }
-  // Validate exact frame length
-  // Note: device address was already read+evaluated in order to arrive here.
-  const uint8_t fct = d[mac_payload::offsets::fctrl];
-  const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
 
+  const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
+  if (addr != devaddr) {
+    PRINT_DEBUG_1("Invalid address, window=%s", window);
+    return false;
+  }
+
+  const uint8_t fct = d[mac_payload::offsets::fctrl];
   const uint8_t olen = fct & FCT_OPTLEN;
   const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
   const uint8_t poff = mac_payload::offsets::fopts + olen;
   const uint8_t pend = dlen - lengths::MIC; // MIC
 
-  if (addr != devaddr) {
-    PRINT_DEBUG_1("Invalid address, window=%s", window);
-    return false;
-  }
   if (poff > pend) {
-    PRINT_DEBUG_1("Invalid offset, window=%s", window);
+    PRINT_DEBUG_1("Invalid data offset, window=%s", window);
     return false;
   }
 
-  bool replayConf = false;
-
-  uint32_t seqno = rlsbf2(&d[mac_payload::offsets::fcnt]);
-  // reconstruct 32 bit value.
-  seqno = seqnoDn + (uint16_t)(seqno - seqnoDn);
+  uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
     return false;
   }
-  if (seqno < seqnoDn) {
-    if ((int32_t)seqno > (int32_t)seqnoDn) {
-      return false;
-    }
-    if (seqno != seqnoDn - 1 || !dnConf ||
-        ftype != mhdr::ftype_data_conf_down) {
-      return false;
-    }
-    // Replay of previous sequence number allowed only if
-    // previous frame and repeated both requested confirmation
-    replayConf = true;
-  } else {
-    if (seqno > seqnoDn) {
-      // skip in sequence number
-      PRINT_DEBUG_1("Current packet receive %lu expected %ld", seqno, seqnoDn);
-    }
-    seqnoDn = seqno + 1; // next number to be expected
-    // DN frame requested confirmation - provide ACK once with next UP frame
-    dnConf = (ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0);
-  }
 
+  const auto checkseqnoresult = check_seq_no(seqno, ftype);
+  if (checkseqnoresult == SeqNoValidity::invalid)
+    return false;
+  const bool replayConf = checkseqnoresult == SeqNoValidity::previous;
+
+  // next number to be expected
+  seqnoDn = seqno + 1;
+
+  // DN frame requested confirmation - provide ACK once with next UP frame
+  dnConf = (ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0);
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 

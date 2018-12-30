@@ -267,6 +267,14 @@ private:
   void parse_snch(const uint8_t *const opts);
   void parse_rx_timing_setup(const uint8_t *const opts);
   void parseMacCommands(const uint8_t *opts, uint8_t olen);
+  enum class SeqNoValidity : uint8_t {
+    invalid,
+    previous,
+    ok,
+  };
+  uint32_t read_seqno(const uint8_t *const buffer) const;
+  SeqNoValidity check_seq_no(const uint32_t seqNo, const uint8_t ftype) const;
+
   bool decodeFrame();
   void processDnData();
   void txDelay(OsTime reftime, uint8_t secSpan);
