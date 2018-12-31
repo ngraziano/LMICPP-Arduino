@@ -259,6 +259,13 @@ private:
 
   void reportEvent(EventType ev);
 
+  uint8_t* add_opt_dcap(uint8_t* buffer_pos);
+  uint8_t* add_opt_dn2p(uint8_t* buffer_pos);
+  uint8_t* add_opt_devs(uint8_t* buffer_pos);
+  uint8_t* add_opt_adr(uint8_t* buffer_pos);
+  uint8_t* add_opt_rxtiming(uint8_t* buffer_pos);
+  uint8_t* add_opt_snch(uint8_t* buffer_pos);
+
   void buildDataFrame();
   void engineUpdate();
   void parse_ladr(const uint8_t *const opts);

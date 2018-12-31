@@ -335,8 +335,8 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 
   // Replay of previous sequence number allowed only if
   // previous frame and repeated both requested confirmation
-  // TODO validity of this test ? check dnConf may be reset to zero by the sending
-  // of the ack
+  // TODO validity of this test ? check dnConf may be reset to zero by the
+  // sending of the ack
   if (diff == -1 && dnConf && ftype == mhdr::ftype_data_conf_down) {
     return SeqNoValidity::previous;
   }
@@ -414,7 +414,6 @@ bool Lmic::decodeFrame() {
 
   parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
-  
   if (!replayConf) {
     // Handle payload only if not a replay
     if (pend > poff) {
@@ -458,8 +457,8 @@ bool Lmic::decodeFrame() {
   // stop sending rxTimingSetupAns when receive dowlink message
   rxTimingSetupAns = false;
 
-  PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, getPort(),
-                ackup);
+  PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window,
+                getPort(), ackup);
   return true;
 }
 
@@ -760,76 +759,102 @@ void Lmic::updataDone() {
   txDone(rxDelay);
 }
 
-// ========================================
-
-void Lmic::buildDataFrame() {
-  bool txdata = opmode.test(OpState::TXDATA);
-
-  // Piggyback MAC options
-  // Prioritize by importance
-  uint8_t end = mac_payload::offsets::fopts;
+uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   if (dutyCapAns) {
-    frame[end] = MCMD_DCAP_ANS;
-    end += 1;
+    *(pos++) = MCMD_DCAP_ANS;
     dutyCapAns = false;
   }
 #endif // !DISABLE_MCMD_DCAP_REQ
+  return pos;
+}
+
+uint8_t *Lmic::add_opt_dn2p(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // RXParamSetupAns LoRaWAN™ Specification §5.4
   if (dn2Ans) {
-    frame[end + 0] = MCMD_DN2P_ANS;
-    frame[end + 1] = dn2Ans & ~MCMD_DN2P_ANS_RFU;
-    end += 2;
+    *(pos++) = MCMD_DN2P_ANS;
+    *(pos++) = dn2Ans & ~MCMD_DN2P_ANS_RFU;
     // dn2Ans reset when downlink packet receive
   }
 #endif // !DISABLE_MCMD_DN2P_SET
+  return pos;
+}
+
+uint8_t *Lmic::add_opt_devs(uint8_t *pos) {
   // DevStatusAns LoRaWAN™ Specification §5.5
   if (devsAns) { // answer to device status
-    frame[end + 0] = MCMD_DEVS_ANS;
-    frame[end + 1] = os_getBattLevel();
+    *(pos++) = MCMD_DEVS_ANS;
+    *(pos++) = os_getBattLevel();
     // lorawan 1.0.2 §5.5. the margin is the SNR.
     // Convert to real SNR; rounding towards zero.
     const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
-    frame[end + 2] = static_cast<uint8_t>(
+    *(pos++) = static_cast<uint8_t>(
         (0x3F & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
-
-    end += 3;
     devsAns = false;
   }
+  return pos;
+}
+
+uint8_t *Lmic::add_opt_adr(uint8_t *pos) {
   if (ladrAns) { // answer to ADR change
-    frame[end + 0] = MCMD_LADR_ANS;
-    frame[end + 1] = ladrAns & ~MCMD_LADR_ANS_RFU;
-    end += 2;
+    *(pos++) = MCMD_LADR_ANS;
+    *(pos++) = ladrAns & ~MCMD_LADR_ANS_RFU;
     ladrAns = 0;
   }
+  return pos;
+}
+
+uint8_t *Lmic::add_opt_rxtiming(uint8_t *pos) {
   if (rxTimingSetupAns) {
-    frame[end + 0] = MCMD_RXTimingSetup_ANS;
-    end += 1;
+    *(pos++) = MCMD_RXTimingSetup_ANS;
     // rxTimingSetupAns reset when downlink packet receive
   }
+  return pos;
+}
+
+uint8_t *Lmic::add_opt_snch(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   if (snchAns) {
-    frame[end + 0] = MCMD_SNCH_ANS;
-    frame[end + 1] = snchAns & ~MCMD_SNCH_ANS_RFU;
-    end += 2;
+    *(pos++) = MCMD_SNCH_ANS;
+    *(pos++) = snchAns & ~MCMD_SNCH_ANS_RFU;
     snchAns = 0;
   }
 #endif // !DISABLE_MCMD_SNCH_REQ
+  return pos;
+}
+
+void Lmic::buildDataFrame() {
+
+  // Piggyback MAC options
+  // Prioritize by importance
+  uint8_t *pos = frame + mac_payload::offsets::fopts;
+  pos = add_opt_dcap(pos);
+  pos = add_opt_dn2p(pos);
+  pos = add_opt_devs(pos);
+  pos = add_opt_adr(pos);
+  pos = add_opt_rxtiming(pos);
+  pos = add_opt_snch(pos);
+
+  const uint8_t end = pos - frame;
+
   ASSERT(end <= mac_payload::offsets::fopts + 16);
 
-  uint8_t flen = end + (txdata ? 5 + pendTxLen : 4);
+  bool txdata = opmode.test(OpState::TXDATA);
+  uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
   if (flen > MAX_LEN_FRAME) {
     // Options and payload too big - delay payload
-    txdata = 0;
-    flen = end + 4;
+    txdata = false;
+    flen = end + lengths::MIC;
   }
+
   frame[offsets::MHDR] = mhdr::ftype_data_up | mhdr::major_v1;
   frame[mac_payload::offsets::fctrl] =
       (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
        (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
   wlsbf4(frame + mac_payload::offsets::devAddr, devaddr);
 
+  // if not a resend
   if (txCnt == 0) {
     seqnoUp++;
   }
@@ -1074,7 +1099,7 @@ void Lmic::setTxData() {
 //
 int8_t Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
                         bool confirmed) {
-  if (dlen > sizeof(pendTxData))
+  if (dlen > MAX_LEN_PAYLOAD)
     return -2;
   if (data)
     std::copy(data, data + dlen, pendTxData);
