@@ -322,26 +322,26 @@ uint32_t Lmic::read_seqno(uint8_t const *const buffer) const {
 
 Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
                                        const uint8_t ftype) const {
-  if (seqno < seqnoDn) {
-    
-    if ((int32_t)seqno > (int32_t)seqnoDn) {
-      return SeqNoValidity::invalid;
-    }
+  const auto diff = static_cast<int32_t>(seqno - seqnoDn);
 
-    if (seqno != seqnoDn - 1 || !dnConf ||
-        ftype != mhdr::ftype_data_conf_down) {
-      return SeqNoValidity::invalid;
-    }
-    // Replay of previous sequence number allowed only if
-    // previous frame and repeated both requested confirmation
-    return SeqNoValidity::previous;
-  } else {
-    if (seqno > seqnoDn) {
-      // skip in sequence number, missed packet
-      PRINT_DEBUG_1("Current packet receive %lu expected %ld", seqno, seqnoDn);
-    }
+  if (diff == 0)
+    return SeqNoValidity::ok;
+
+  if (diff > 0) {
+    // skip in sequence number, missed packet
+    PRINT_DEBUG_1("Current packet receive %lu expected %lu", seqno, seqnoDn);
     return SeqNoValidity::ok;
   }
+
+  // Replay of previous sequence number allowed only if
+  // previous frame and repeated both requested confirmation
+  // TODO validity of this test ? check dnConf may be reset to zero by the sending
+  // of the ack
+  if (diff == -1 && dnConf && ftype == mhdr::ftype_data_conf_down) {
+    return SeqNoValidity::previous;
+  }
+
+  return SeqNoValidity::invalid;
 }
 
 // ================================================================================
@@ -389,7 +389,7 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
+  const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
     PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
@@ -405,7 +405,7 @@ bool Lmic::decodeFrame() {
   seqnoDn = seqno + 1;
 
   // DN frame requested confirmation - provide ACK once with next UP frame
-  dnConf = (ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0);
+  dnConf = ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0;
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 
@@ -414,11 +414,11 @@ bool Lmic::decodeFrame() {
 
   parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
-  uint8_t port = -1;
+  
   if (!replayConf) {
     // Handle payload only if not a replay
     if (pend > poff) {
-      port = d[poff];
+      const auto port = d[poff];
       dataBeg = poff + 1;
       dataLen = pend - dataBeg;
       // Decrypt payload - if any
@@ -458,7 +458,7 @@ bool Lmic::decodeFrame() {
   // stop sending rxTimingSetupAns when receive dowlink message
   rxTimingSetupAns = false;
 
-  PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, port,
+  PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window, getPort(),
                 ackup);
   return true;
 }
