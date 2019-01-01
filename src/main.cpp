@@ -43,7 +43,7 @@ const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 const unsigned int BAUDRATE = 19200;
 
 // Pin mapping
-const lmic_pinmap lmic_pins = {
+constexpr lmic_pinmap lmic_pins = {
     .nss = 10,
     .rxtx = LMIC_UNUSED_PIN,
     .rst = 14,
@@ -262,7 +262,7 @@ void loop()
 {
     rst_wdt();
     OsDeltaTime to_wait = OSS.runloopOnce();
-    if (to_wait > OsDeltaTime(0) && hal_is_sleep_allow())
+    if (to_wait > OsDeltaTime(0))
     {
         // Go to sleep if we have nothing to do.
         powersave(to_wait);

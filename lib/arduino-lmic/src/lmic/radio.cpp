@@ -12,6 +12,7 @@
 #include "radio.h"
 #include "../aes/aes.h"
 #include "lmic.h"
+#include "lmic_table.h"
 
 // ----------------------------------------
 // Registers Mapping
@@ -61,7 +62,7 @@ const uint8_t LORARegSyncWord = 0x39;
 const uint8_t RegDioMapping1 = 0x40; // common
 const uint8_t RegDioMapping2 = 0x41; // common
 const uint8_t RegVersion = 0x42;     // common
-const uint8_t RegPaDac = 0x4D; // common
+const uint8_t RegPaDac = 0x4D;       // common
 
 // ----------------------------------------
 // spread factors and mode for RegModemConfig2
@@ -83,7 +84,8 @@ const uint8_t SX1272_MC1_CR_4_7 = 0x18;
 const uint8_t SX1272_MC1_CR_4_8 = 0x20;
 const uint8_t SX1272_MC1_IMPLICIT_HEADER_MODE_ON = 0x04; // required for receive
 const uint8_t SX1272_MC1_RX_PAYLOAD_CRCON = 0x02;
-const uint8_t SX1272_MC1_LOW_DATA_RATE_OPTIMIZE = 0x01; // mandated for SF11 and SF12
+const uint8_t SX1272_MC1_LOW_DATA_RATE_OPTIMIZE =
+    0x01; // mandated for SF11 and SF12
 // transmit power configuration for RegPaConfig
 const uint8_t SX1272_PAC_PA_SELECT_PA_BOOST = 0x80;
 const uint8_t SX1272_PAC_PA_SELECT_RFIO_PIN = 0x00;
@@ -431,7 +433,6 @@ void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
 
   // now we actually start the transmission
   opmode(OPMODE_TX);
-  hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
   uint8_t sf = rps.sf + 6; // 1 == SF7
@@ -450,7 +451,7 @@ void Radio::starttx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // the corresponding IRQ will inform us about completion.
 }
 
-enum { RXMODE_SINGLE, RXMODE_SCAN};
+enum { RXMODE_SINGLE, RXMODE_SCAN };
 
 // start LoRa receiver
 void Radio::rxrssi() const {
@@ -471,11 +472,10 @@ void Radio::rxrssi() const {
   // enable antenna switch for RX
   hal.pin_rxtx(0);
   // now instruct the radio to receive
-  // continous rx 
+  // continous rx
   opmode(OPMODE_RX);
   PRINT_DEBUG_1("RXMODE_RSSI");
 }
-
 
 // start LoRa receiver
 void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
@@ -514,32 +514,31 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   hal.pin_rxtx(0);
 
   // now instruct the radio to receive
-  if (rxmode == RXMODE_SINGLE) { 
+  if (rxmode == RXMODE_SINGLE) {
     // single rx
     // enable required radio IRQs
-    writeReg(LORARegIrqFlagsMask, (uint8_t)~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-    hal_waitUntil(rxtime);       // busy wait until exact rx time
+    writeReg(LORARegIrqFlagsMask,
+             (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
+    hal_waitUntil(rxtime); // busy wait until exact rx time
     opmode(OPMODE_RX_SINGLE);
-  } else { 
+  } else {
     // continous rx (scan)
     // enable required radio IRQs
     writeReg(LORARegIrqFlagsMask, ~IRQ_LORA_RXDONE_MASK);
     opmode(OPMODE_RX);
   }
-  hal_forbid_sleep();
 
 #if LMIC_DEBUG_LEVEL > 0
 
   uint8_t const sf = rps.sf + 6; // 1 == SF7
   PRINT_DEBUG_1("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d",
-              rxmode == RXMODE_SINGLE
-                  ? "RXMODE_SINGLE"
-                  : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
-              freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
+                rxmode == RXMODE_SINGLE
+                    ? "RXMODE_SINGLE"
+                    : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
+                freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
 
 #endif
 }
-
 
 void Radio::init() {
   DisableIRQsGard irqguard;
@@ -569,16 +568,13 @@ void Radio::init() {
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif
 
-
   /* TODO add a parameter
   // Configure max curent
   // limit current to 45mA
-  constexpr uint8_t limit = 0; 
+  constexpr uint8_t limit = 0;
   writeReg(RegOcp, 0x20 | limit);
   */
   opmode(OPMODE_SLEEP);
-  hal_allow_sleep();
-
 }
 
 // get random seed from wideband noise rssi
@@ -599,7 +595,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
     }
   }
   randbuf[0] = 16; // set initial index
-  //stop RX
+  // stop RX
   opmode(OPMODE_SLEEP);
 }
 
@@ -632,8 +628,8 @@ OsTime Radio::int_trigger_time() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-void Radio::irq_handler(uint8_t *const framePtr,
-                        uint8_t &frameLength, OsTime &txEnd, OsTime &rxTime) {
+void Radio::irq_handler(uint8_t *const framePtr, uint8_t &frameLength,
+                        OsTime &txEnd, OsTime &rxTime) {
   OsTime now = int_trigger_time();
 
   uint8_t const flags = readReg(LORARegIrqFlags);
@@ -644,9 +640,6 @@ void Radio::irq_handler(uint8_t *const framePtr,
     // save exact tx time
     txEnd = now;
     PRINT_DEBUG_1("End TX  %lu", txEnd.tick());
-    // active chek finish
-    hal_allow_sleep();
-
   } else if (flags & IRQ_LORA_RXDONE_MASK) {
     // save exact rx time
     if (current_rps.getBw() == BandWidth::BW125) {
@@ -675,13 +668,11 @@ void Radio::irq_handler(uint8_t *const framePtr,
     last_packet_snr_reg = static_cast<int8_t>(readReg(LORARegPktSnrValue));
     // RSSI [dBm]  - 139
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
-    hal_allow_sleep();
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
     PRINT_DEBUG_1("RX timeout  %lu", now.tick());
 
     // indicate timeout
     frameLength = 0;
-    hal_allow_sleep();
   }
   // mask all radio IRQs
   writeReg(LORARegIrqFlagsMask, 0xFF);
@@ -703,7 +694,6 @@ void Radio::rst() const {
   DisableIRQsGard irqguard;
   // put radio to sleep
   opmode(OPMODE_SLEEP);
-  hal_allow_sleep();
 }
 
 void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
@@ -714,19 +704,19 @@ void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
 }
 
 void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-               OsTime const rxtime)  {
+               OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
-    rxlora(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
+  rxlora(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
 void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-                 OsTime const rxtime)  {
+                 OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // start scanning for beacon now
-    rxlora(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
+  rxlora(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
 }

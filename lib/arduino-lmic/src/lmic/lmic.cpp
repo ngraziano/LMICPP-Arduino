@@ -13,6 +13,7 @@
 #include "lmic.h"
 #include "../aes/aes.h"
 #include "bufferpack.h"
+#include "lmic_table.h"
 #include "lorawanpacket.h"
 #include "radio.h"
 #include <algorithm>
@@ -470,6 +471,7 @@ void Lmic::setupRx2() {
   dataLen = 0;
   rps_t rps = dndr2rps(dn2Dr);
   radio.rx(dn2Freq, rps, rxsyms, rxtime);
+  osjob.forbidSleep();
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
@@ -510,6 +512,7 @@ void Lmic::setupRx1() {
   dataLen = 0;
   rps_t rps = dndr2rps(dndr);
   radio.rx(freq, rps, rxsyms, rxtime);
+  osjob.forbidSleep();
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -647,6 +650,7 @@ void Lmic::processRx1Jacc() {
 void Lmic::setupRx1Jacc() {
   PRINT_DEBUG_2("Setup RX1 join accept.");
   this->osjob.setCallbackFuture(&Lmic::processRx1Jacc);
+
   setupRx1();
 }
 
@@ -871,7 +875,7 @@ void Lmic::buildDataFrame() {
       if (txCnt == 0)
         txCnt = 1;
     }
-    uint8_t* buffer_pos = frame + end;
+    uint8_t *buffer_pos = frame + end;
 
     *(buffer_pos++) = pendTxPort;
     std::copy(pendTxData, pendTxData + pendTxLen, buffer_pos);
@@ -1047,6 +1051,7 @@ void Lmic::engineUpdate() {
     }
 
     radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
+    osjob.forbidSleep();
   }
   // No TX pending - no scheduled RX
 }
@@ -1077,6 +1082,7 @@ void Lmic::reset() {
 
 void Lmic::init() {
   radio.init();
+  osjob.allowSleep();
   rand.init(radio);
   opmode.reset().set(OpState::SHUTDOWN);
 }
@@ -1210,6 +1216,8 @@ void Lmic::io_check() {
   if (radio.io_check(frame, dataLen, txend, rxtime)) {
     // if radio task ended, activate next job.
     osjob.setRunnable();
+    // active chek finish
+    osjob.allowSleep();
   }
 }
 

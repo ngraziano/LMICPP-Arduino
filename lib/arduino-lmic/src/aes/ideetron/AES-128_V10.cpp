@@ -41,7 +41,7 @@
 //  - S_Table is now stored in PROGMEM
 
 #include "../../lmic/oslmic.h"
-
+#include "../../lmic/lmic_table.h"
 
 /*
 ********************************************************************************************

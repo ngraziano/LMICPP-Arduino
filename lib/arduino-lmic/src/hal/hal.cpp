@@ -18,18 +18,7 @@
 
 namespace {
   OsDeltaTime time_in_sleep {0};
-  bool is_sleep_allow = false;
 }
-
-
-bool hal_is_sleep_allow() { return is_sleep_allow; }
-
-void hal_allow_sleep() { is_sleep_allow = true; }
-
-void hal_forbid_sleep() { is_sleep_allow = false; }
-
-
-
 
 void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
   time_in_sleep += nb_tick;

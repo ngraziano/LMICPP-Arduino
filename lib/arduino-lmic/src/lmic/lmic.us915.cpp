@@ -12,6 +12,7 @@
 //! \file
 #include "lmic.us915.h"
 #include "bufferpack.h"
+#include "lmic_table.h"
 #include <algorithm>
 
 enum _dr_us915_t {

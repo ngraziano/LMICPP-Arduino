@@ -45,12 +45,6 @@ OsTime hal_ticks();
 
 void hal_add_time_in_sleep(OsDeltaTime nb_tick);
 
-bool hal_is_sleep_allow();
-
-void hal_allow_sleep();
-
-void hal_forbid_sleep();
-
 /*
  * busy-wait until specified timestamp is reached.
  */

@@ -46,7 +46,7 @@ void OsScheduler::linkScheduledJob(OsJobBase *job) {
   OsJobBase **pnext;
   // insert into schedule
   for (pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
-    if ((*pnext)->deadline > time ) {
+    if ((*pnext)->deadline > time) {
       // enqueue before next element and stop
       job->next = *pnext;
       break;
@@ -71,11 +71,22 @@ void OsScheduler::unlinkRunableJobs(OsJobBase *job) {
   unlinkjob(&runnablejobs, job);
 }
 
+void OsScheduler::allowSleep() { is_sleep_allow = true; }
+
+void OsScheduler::forbidSleep() { is_sleep_allow = false; }
+
+bool OsScheduler::isSleepAllow() const { return is_sleep_allow; }
+
 // clear scheduled job
 void OsJobBase::clearCallback() {
+  scheduler.allowSleep();
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
 }
+
+void OsJobBase::forbidSleep() { scheduler.forbidSleep(); }
+
+void OsJobBase::allowSleep() { scheduler.allowSleep(); }
 
 void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
   setCallbackFuture(cb);
@@ -121,12 +132,12 @@ OsDeltaTime OsScheduler::runloopOnce() {
                   has_deadline ? j->deadline.tick() : 0);
     j->call();
   }
-  if (runnablejobs) {
-    return OsDeltaTime(0);
-  } else if (scheduledjobs) {
+
+  if (!runnablejobs && scheduledjobs && isSleepAllow()) {
     // return the number of milisecond to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
+  // need to run now or nothing to do
   return OsDeltaTime(0);
 }
 

@@ -13,18 +13,13 @@
 #ifndef _oslmic_h_
 #define _oslmic_h_
 
-// Dependencies required for the LoRa MAC in C to run.
-// These settings can be adapted to the underlying system.
-// You should not, however, change the lmic.[hc]
-
 #include "config.h"
 #include "osticks.h"
 #include <stdint.h>
 #include <stdio.h>
-
+#include "Arduino.h"
 #include "../hal/hal.h"
-#include <string.h>
-#include "lmic_table.h"
+
 //================================================================================
 //================================================================================
 
@@ -80,10 +75,11 @@ class OsJob;
 
 using osjobcb_t = void (*)();
 
-class OsScheduler {
+class OsScheduler final {
   friend class OsJobBase;
 
 private:
+  bool is_sleep_allow = false;
   OsJobBase *scheduledjobs = nullptr;
   OsJobBase *runnablejobs = nullptr;
   static void unlinkjob(OsJobBase **pnext, OsJobBase *job);
@@ -91,9 +87,12 @@ private:
   void unlinkRunableJobs(OsJobBase *job);
   void linkScheduledJob(OsJobBase *job);
   void linkRunableJob(OsJobBase *job);
+  void allowSleep();
+  void forbidSleep();
 
 public:
   OsDeltaTime runloopOnce();
+  bool isSleepAllow() const;
 };
 
 extern OsScheduler OSS;
@@ -115,6 +114,8 @@ public:
 
   void setRunnable();
   void clearCallback();
+  void allowSleep();
+  void forbidSleep();
 
   void setTimed(OsTime time);
 };

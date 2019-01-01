@@ -12,6 +12,7 @@
 //! \file
 #include "lmic.eu868.h"
 #include "bufferpack.h"
+#include "lmic_table.h"
 #include <algorithm>
 
 // Default frequency plan for EU 868MHz ISM band
