@@ -110,7 +110,7 @@ public:
 
 private:
   Radio radio;
-  OsJobType<Lmic> osjob{*this, OSS};
+  OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
 
@@ -373,7 +373,7 @@ protected:
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
 public:
-  explicit Lmic(lmic_pinmap const &pins);
+  explicit Lmic(lmic_pinmap const &pins, OsScheduler &scheduler);
   void io_check();
   void store_trigger();
 };

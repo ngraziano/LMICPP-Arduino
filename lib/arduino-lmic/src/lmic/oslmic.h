@@ -95,8 +95,6 @@ public:
   bool isSleepAllow() const;
 };
 
-extern OsScheduler OSS;
-
 class OsJobBase {
   friend class OsScheduler;
 
@@ -110,7 +108,6 @@ protected:
 
 public:
   OsJobBase(OsScheduler &scheduler);
-  OsJobBase() : OsJobBase(OSS){};
 
   void setRunnable();
   void clearCallback();
@@ -126,6 +123,7 @@ protected:
   void call() const override;
 
 public:
+  OsJob(OsScheduler &scheduler);
   void setCallbackFuture(osjobcb_t cb) { func = cb; };
   void setCallbackRunnable(osjobcb_t cb);
   void setTimedCallback(OsTime time, osjobcb_t cb);

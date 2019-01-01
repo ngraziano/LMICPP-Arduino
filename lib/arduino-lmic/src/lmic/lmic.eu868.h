@@ -44,7 +44,7 @@ public:
     }
   }
   bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
-  void configure(uint8_t channel,ChannelDetail detail) {
+  void configure(uint8_t channel, ChannelDetail detail) {
     channels[channel] = detail;
     channelMap |= 1 << channel;
   }
@@ -70,7 +70,7 @@ public:
   static const uint8_t MAX_BANDS = 4;
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-  explicit LmicEu868(lmic_pinmap const &pins);
+  explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
 
 protected:
   uint8_t getRawRps(dr_t dr) const override;

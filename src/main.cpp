@@ -1,6 +1,8 @@
 
 #include <Arduino.h>
 
+#include <ArduinoSTL.h>
+
 #include <lmic.h>
 #include <hal/hal_io.h>
 
@@ -33,12 +35,9 @@ void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
 
 uint8_t data[2] = {};
 
-OsJob sendjob;
-
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
-
 
 const unsigned int BAUDRATE = 19200;
 
@@ -49,7 +48,10 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {9, 8},
 };
-LmicEu868 LMIC(lmic_pins);
+OsScheduler OSS;
+LmicEu868 LMIC {lmic_pins, OSS};
+
+OsJob sendjob{OSS};
 
 void onEvent(EventType ev)
 {
@@ -73,7 +75,8 @@ void onEvent(EventType ev)
         break;
     case EventType::TXCOMPLETE:
         PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
-        if (LMIC.getTxRxFlags().test(TxRxStatus::ACK)) {
+        if (LMIC.getTxRxFlags().test(TxRxStatus::ACK))
+        {
             PRINT_DEBUG_2("Received ack");
         }
         if (LMIC.getDataLen())
@@ -89,8 +92,8 @@ void onEvent(EventType ev)
             }
         }
         // we have transmit
-            // Schedule next transmission
-            sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
+        // Schedule next transmission
+        sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
 
         break;
     case EventType::RESET:
@@ -107,8 +110,6 @@ void onEvent(EventType ev)
         break;
     }
 }
-
-
 
 void do_send()
 {
@@ -191,12 +192,10 @@ void setup()
     // Only work with special boot loader.
     // configure_wdt();
 
-
-   // test duration and in case of reboot loop  prevent flood
-   testDuration(1000);
-   testDuration(8000);
-   testDuration(30000);
-    
+    // test duration and in case of reboot loop  prevent flood
+    testDuration(1000);
+    testDuration(8000);
+    testDuration(30000);
 
     // Start job (sending automatically starts OTAA too)
     do_send();
@@ -211,32 +210,32 @@ void powersave(OsDeltaTime maxTime)
     // these value are base on test
     if (maxTime > OsDeltaTime::from_ms(8700))
     {
-        duration_selected = OsDeltaTime::from_ms(8000 * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(8000 * sleepAdj / 1000);
         period_selected = Sleep::P8S;
     }
     else if (maxTime > OsDeltaTime::from_ms(4600))
     {
-        duration_selected = OsDeltaTime::from_ms(4000 * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(4000 * sleepAdj / 1000);
         period_selected = Sleep::P4S;
     }
     else if (maxTime > OsDeltaTime::from_ms(2600))
     {
-        duration_selected = OsDeltaTime::from_ms(2000 * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(2000 * sleepAdj / 1000);
         period_selected = Sleep::P2S;
     }
     else if (maxTime > OsDeltaTime::from_ms(1500))
     {
-        duration_selected = OsDeltaTime::from_ms(1000 * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(1000 * sleepAdj / 1000);
         period_selected = Sleep::P1S;
     }
     else if (maxTime > OsDeltaTime::from_ms(800))
     {
-        duration_selected = OsDeltaTime::from_ms(500  * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(500 * sleepAdj / 1000);
         period_selected = Sleep::P500MS;
     }
     else if (maxTime > OsDeltaTime::from_ms(500))
     {
-        duration_selected = OsDeltaTime::from_ms(250  * sleepAdj /1000);
+        duration_selected = OsDeltaTime::from_ms(250 * sleepAdj / 1000);
         period_selected = Sleep::P250MS;
     }
     else

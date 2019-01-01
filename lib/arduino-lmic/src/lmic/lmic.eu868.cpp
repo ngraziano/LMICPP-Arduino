@@ -372,4 +372,5 @@ bool LmicEu868::nextJoinState() {
 dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicEu868::LmicEu868(lmic_pinmap const &pins) : Lmic(pins) {}
+LmicEu868::LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler)
+    : Lmic(pins, scheduler) {}

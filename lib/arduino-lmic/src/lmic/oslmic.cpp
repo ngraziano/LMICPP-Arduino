@@ -12,9 +12,9 @@
 #include "lmic.h"
 #include <stdbool.h>
 
-OsScheduler OSS;
-
 OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}
+
+OsJob::OsJob(OsScheduler &scheduler) : OsJobBase(scheduler){};
 
 void OsJob::setCallbackRunnable(osjobcb_t cb) {
   setCallbackFuture(cb);
