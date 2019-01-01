@@ -871,10 +871,12 @@ void Lmic::buildDataFrame() {
       if (txCnt == 0)
         txCnt = 1;
     }
-    frame[end] = pendTxPort;
-    std::copy(pendTxData, pendTxData + pendTxLen, frame + end + 1);
+    uint8_t* buffer_pos = frame + end;
+
+    *(buffer_pos++) = pendTxPort;
+    std::copy(pendTxData, pendTxData + pendTxLen, buffer_pos);
     aes.framePayloadEncryption(pendTxPort, devaddr, current_seq_no, PktDir::UP,
-                               frame + end + 1, pendTxLen);
+                               buffer_pos, pendTxLen);
   }
   aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame, flen);
 
