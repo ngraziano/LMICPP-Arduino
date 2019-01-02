@@ -295,8 +295,8 @@ public:
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.
   void setLinkCheckMode(bool enabled);
-  void setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkSKey,
-                  uint8_t *artKey);
+  void setSession(uint32_t netid, devaddr_t devaddr, uint8_t const *nwkSKey,
+                  uint8_t const *artKey);
 
   /**
    * Adjust output power by this amount (for antenna gain)

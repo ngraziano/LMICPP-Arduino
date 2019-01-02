@@ -31,13 +31,13 @@ void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
 // The key shown here is the semtech default key.
 // defined in lorakeys.h
 
-uint8_t data[2] = {};
+
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
+constexpr OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 
-const unsigned int BAUDRATE = 19200;
+constexpr unsigned int BAUDRATE = 19200;
 
 // Pin mapping
 constexpr lmic_pinmap lmic_pins = {
@@ -251,7 +251,6 @@ void powersave(OsDeltaTime maxTime)
         powerDown(period_selected);
         hal_add_time_in_sleep(duration_selected);
     }
-
     PRINT_DEBUG_1("Wakeup");
 }
 

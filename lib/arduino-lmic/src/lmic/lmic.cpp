@@ -1145,8 +1145,9 @@ void Lmic::tryRejoin(void) {
 //! \param nwkKey  the 16 byte network session key used for message integrity.
 //! \param artKey  the 16 byte application router session key used for message
 //! confidentiality.
-void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
-                      uint8_t *artKey) {
+void Lmic::setSession(uint32_t const netid, devaddr_t const devaddr,
+                      uint8_t const *const nwkKey,
+                      uint8_t const *const artKey) {
   this->netid = netid;
   this->devaddr = devaddr;
   if (nwkKey)
@@ -1171,38 +1172,39 @@ void Lmic::setSession(uint32_t netid, devaddr_t devaddr, uint8_t *nwkKey,
 // This mode can be disabled and no connectivity prove (ADRACKREQ) is requested
 // nor is the datarate changed.
 // This must be called only if a session is established (e.g. after EV_JOINED)
-void Lmic::setLinkCheckMode(bool enabled) {
+void Lmic::setLinkCheckMode(bool const enabled) {
   adrAckReq = enabled ? LINK_CHECK_INIT : LINK_CHECK_OFF;
 }
 
 // Sets the max clock error to compensate for (defaults to 0, which
 // allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
-void Lmic::setClockError(uint8_t error) { clockError = error; }
+void Lmic::setClockError(uint8_t const error) { clockError = error; }
 
-rps_t Lmic::updr2rps(dr_t dr) const {
-  rps_t result(getRawRps(dr));
-  return result;
-}
+rps_t Lmic::updr2rps(dr_t const dr) const { return rps_t(getRawRps(dr)); }
 
-rps_t Lmic::dndr2rps(dr_t dr) const {
+rps_t Lmic::dndr2rps(dr_t const dr) const {
   auto val = updr2rps(dr);
   val.nocrc = 1;
   return val;
 }
 
-bool Lmic::isFasterDR(dr_t dr1, dr_t dr2) const { return dr1 > dr2; }
+bool Lmic::isFasterDR(dr_t const dr1, dr_t const dr2) const {
+  return dr1 > dr2;
+}
 
-bool Lmic::isSlowerDR(dr_t dr1, dr_t dr2) const { return dr1 < dr2; }
+bool Lmic::isSlowerDR(dr_t const dr1, dr_t const dr2) const {
+  return dr1 < dr2;
+}
 
 // increase data rate
-dr_t Lmic::incDR(dr_t dr) const { return validDR(dr + 1) ? dr + 1 : dr; }
+dr_t Lmic::incDR(dr_t const dr) const { return validDR(dr + 1) ? dr + 1 : dr; }
 
 // decrease data rate
-dr_t Lmic::decDR(dr_t dr) const { return validDR(dr - 1) ? dr - 1 : dr; }
+dr_t Lmic::decDR(dr_t const dr) const { return validDR(dr - 1) ? dr - 1 : dr; }
 
 // in range
-bool Lmic::validDR(dr_t dr) const { return getRawRps(dr) != ILLEGAL_RPS; }
+bool Lmic::validDR(dr_t const dr) const { return getRawRps(dr) != ILLEGAL_RPS; }
 
 // decrease data rate by n steps
 dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
@@ -1224,4 +1226,4 @@ void Lmic::io_check() {
 void Lmic::store_trigger() { radio.store_trigger(); }
 
 Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
-    :  radio(pins), osjob(*this, scheduler), rand(aes) {}
+    : radio(pins), osjob(*this, scheduler), rand(aes) {}
