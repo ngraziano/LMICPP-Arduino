@@ -6,7 +6,7 @@
 
 #include <sleepandwatchdog.h>
 
-#define DEVICE_BALISE1
+#define DEVICE_BALISE2
 #include "lorakeys.h"
 
 void do_send();
