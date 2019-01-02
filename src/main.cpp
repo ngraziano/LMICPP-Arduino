@@ -1,8 +1,6 @@
 
 #include <Arduino.h>
 
-#include <ArduinoSTL.h>
-
 #include <lmic.h>
 #include <hal/hal_io.h>
 
@@ -168,7 +166,6 @@ void setup()
 {
 #if LMIC_DEBUG_LEVEL > 0
     Serial.begin(BAUDRATE);
-    Serial.println(F("Starting"));
 #endif
     pciSetup(lmic_pins.dio[0]);
     pciSetup(lmic_pins.dio[1]);
@@ -179,6 +176,7 @@ void setup()
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 
+    
     uint8_t buf[16];
     memcpy_P(buf, APPKEY, 16);
     LMIC.setDevKey(buf);
@@ -186,7 +184,7 @@ void setup()
     LMIC.setDevEuiCallback(getDevEui);
     LMIC.setArtEuiCallback(getArtEui);
     // set clock error to allow good connection.
-    LMIC.setClockError(MAX_CLOCK_ERROR * 15 / 100);
+    LMIC.setClockError(MAX_CLOCK_ERROR * 5 / 100);
     LMIC.setAntennaPowerAdjustment(-14);
 
     // Only work with special boot loader.

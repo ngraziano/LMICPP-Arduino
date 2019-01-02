@@ -1224,4 +1224,4 @@ void Lmic::io_check() {
 void Lmic::store_trigger() { radio.store_trigger(); }
 
 Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : osjob(*this, scheduler), radio(pins), rand(aes) {}
+    :  radio(pins), osjob(*this, scheduler), rand(aes) {}

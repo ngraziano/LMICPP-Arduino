@@ -33,7 +33,7 @@
 // Any runtime assertion failures are printed to this serial port (or
 // any other Print object). If this is unset, any failures just silently
 // halt execution.
-#define LMIC_FAILURE_TO Serial
+// #define LMIC_FAILURE_TO Serial
 
 // Uncomment these to disable the corresponding MAC commands.
 // Class A

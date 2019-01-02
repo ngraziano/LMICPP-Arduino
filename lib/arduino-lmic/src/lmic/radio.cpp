@@ -722,7 +722,8 @@ void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
 }
 
 /**
- *  Return true if the radio has finish it's operation
+ * Check the IO pin and handle the result of radio 
+ * Return true if the radio has finish it's operation
  */
 bool Radio::io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
                      OsTime &rxTime) {

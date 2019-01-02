@@ -13,12 +13,12 @@
 #ifndef _oslmic_h_
 #define _oslmic_h_
 
+#include "../hal/hal.h"
+#include "Arduino.h"
 #include "config.h"
 #include "osticks.h"
 #include <stdint.h>
 #include <stdio.h>
-#include "Arduino.h"
-#include "../hal/hal.h"
 
 //================================================================================
 //================================================================================
@@ -55,7 +55,6 @@ uint8_t os_getBattLevel(void);
 #define lmic_printf printf
 #endif
 
-
 #if LMIC_DEBUG_LEVEL > 0
 #define PRINT_DEBUG_1(str, ...)                                                \
   lmic_printf("%lu: " str "\n", os_getTime().tick(), ##__VA_ARGS__)
@@ -91,6 +90,11 @@ private:
   void forbidSleep();
 
 public:
+  // Disallow copying
+  OsScheduler &operator=(const OsScheduler &) = delete;
+  OsScheduler(const OsScheduler &) = delete;
+  OsScheduler() = default;
+
   OsDeltaTime runloopOnce();
   bool isSleepAllow() const;
 };

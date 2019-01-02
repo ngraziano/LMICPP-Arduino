@@ -26,11 +26,8 @@ void OsJobBase::setRunnable() {
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
-  // fill-in job
-  next = nullptr;
+ 
   scheduler.linkRunableJob(this);
-
-  PRINT_DEBUG_2("Scheduled job %p ASAP\n", this);
 }
 
 void OsScheduler::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
@@ -43,6 +40,7 @@ void OsScheduler::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
 
 void OsScheduler::linkScheduledJob(OsJobBase *job) {
   const OsTime time = job->deadline;
+  job->next = nullptr;
   OsJobBase **pnext;
   // insert into schedule
   for (pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
@@ -57,6 +55,7 @@ void OsScheduler::linkScheduledJob(OsJobBase *job) {
 
 void OsScheduler::linkRunableJob(OsJobBase *job) {
   // add to end of run queue
+  job->next = nullptr;
   OsJobBase **pnext;
   for (pnext = &runnablejobs; *pnext; pnext = &((*pnext)->next))
     ;
@@ -95,13 +94,11 @@ void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
 
 // schedule timed job
 void OsJobBase::setTimed(OsTime time) {
-
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
   // fill-in job
   deadline = time;
-  next = nullptr;
   scheduler.linkScheduledJob(this);
   PRINT_DEBUG_2("Scheduled job %p, atRun %lu\n", this, time);
 }
