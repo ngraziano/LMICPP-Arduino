@@ -259,12 +259,12 @@ private:
 
   void reportEvent(EventType ev);
 
-  uint8_t* add_opt_dcap(uint8_t* buffer_pos);
-  uint8_t* add_opt_dn2p(uint8_t* buffer_pos);
-  uint8_t* add_opt_devs(uint8_t* buffer_pos);
-  uint8_t* add_opt_adr(uint8_t* buffer_pos);
-  uint8_t* add_opt_rxtiming(uint8_t* buffer_pos);
-  uint8_t* add_opt_snch(uint8_t* buffer_pos);
+  uint8_t *add_opt_dcap(uint8_t *buffer_pos);
+  uint8_t *add_opt_dn2p(uint8_t *buffer_pos);
+  uint8_t *add_opt_devs(uint8_t *buffer_pos);
+  uint8_t *add_opt_adr(uint8_t *buffer_pos);
+  uint8_t *add_opt_rxtiming(uint8_t *buffer_pos);
+  uint8_t *add_opt_snch(uint8_t *buffer_pos);
 
   void buildDataFrame();
   void engineUpdate();
@@ -295,8 +295,8 @@ public:
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.
   void setLinkCheckMode(bool enabled);
-  void setSession(uint32_t netid, devaddr_t devaddr, uint8_t const *nwkSKey,
-                  uint8_t const *artKey);
+  void setSession(uint32_t netid, devaddr_t devaddr, AesKey const &nwkSKey,
+                  AesKey const &artKey);
 
   /**
    * Adjust output power by this amount (for antenna gain)
@@ -311,7 +311,7 @@ public:
   void init();
   void shutdown();
   void reset();
-  void setDevKey(uint8_t const key[16]) { aes.setDevKey(key); };
+  void setDevKey(const AesKey &key) { aes.setDevKey(key); };
 
   void clrTxData();
   void setTxData();

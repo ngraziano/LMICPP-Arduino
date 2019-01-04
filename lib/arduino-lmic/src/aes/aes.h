@@ -12,26 +12,31 @@ void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
 
 const uint8_t AES_BLCK_SIZE = 16;
 
+struct AesKey {
+  uint8_t data[AES_BLCK_SIZE];
+  AesKey() = default;
+};
+
 class Aes {
 private:
-  uint8_t AESDevKey[AES_BLCK_SIZE];
+  AesKey AESDevKey;
   // network session key
-  uint8_t nwkSKey[AES_BLCK_SIZE];
+  AesKey nwkSKey;
   // application session key
-  uint8_t appSKey[AES_BLCK_SIZE];
+  AesKey appSKey;
 
   static void micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
                     uint8_t buf[AES_BLCK_SIZE]);
   static void aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
-                       const uint8_t key[AES_BLCK_SIZE], uint8_t result[AES_BLCK_SIZE]);
+                       AesKey const &key, uint8_t result[AES_BLCK_SIZE]);
 
 public:
   /* Set device key
    * Key is copied.
    */
-  void setDevKey(uint8_t const key[AES_BLCK_SIZE]);
-  void setNetworkSessionKey(uint8_t const key[AES_BLCK_SIZE]);
-  void setApplicationSessionKey(uint8_t const key[AES_BLCK_SIZE]);
+  void setDevKey(AesKey const &key);
+  void setNetworkSessionKey(AesKey const &key);
+  void setApplicationSessionKey(AesKey const &key);
   bool verifyMic(uint32_t devaddr, uint32_t seqno, PktDir dndir,
                  const uint8_t *pdu, uint8_t len) const;
   bool verifyMic0(uint8_t const *pdu, uint8_t len) const;

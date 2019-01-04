@@ -1146,14 +1146,11 @@ void Lmic::tryRejoin(void) {
 //! \param artKey  the 16 byte application router session key used for message
 //! confidentiality.
 void Lmic::setSession(uint32_t const netid, devaddr_t const devaddr,
-                      uint8_t const *const nwkKey,
-                      uint8_t const *const artKey) {
+                      AesKey const & nwkKey, AesKey const & artKey) {
   this->netid = netid;
   this->devaddr = devaddr;
-  if (nwkKey)
-    aes.setNetworkSessionKey(nwkKey);
-  if (artKey)
-    aes.setApplicationSessionKey(artKey);
+  aes.setNetworkSessionKey(nwkKey);
+  aes.setApplicationSessionKey(artKey);
 
   initDefaultChannels(false);
 

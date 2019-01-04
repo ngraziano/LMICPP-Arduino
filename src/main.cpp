@@ -177,8 +177,8 @@ void setup()
     LMIC.reset();
 
     
-    uint8_t buf[16];
-    memcpy_P(buf, APPKEY, 16);
+    AesKey buf;
+    memcpy_P(buf.data, APPKEY, 16);
     LMIC.setDevKey(buf);
     LMIC.setEventCallBack(onEvent);
     LMIC.setDevEuiCallback(getDevEui);

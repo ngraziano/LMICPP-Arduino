@@ -20,13 +20,10 @@
 
 using namespace lorawan;
 
-void Aes::setDevKey(uint8_t const key[AES_BLCK_SIZE]) { std::copy(key, key + AES_BLCK_SIZE, AESDevKey); }
-void Aes::setNetworkSessionKey(uint8_t const key[AES_BLCK_SIZE]) {
-  std::copy(key, key + AES_BLCK_SIZE, nwkSKey);
-}
-void Aes::setApplicationSessionKey(uint8_t const key[AES_BLCK_SIZE]) {
-  std::copy(key, key + AES_BLCK_SIZE, appSKey);
-}
+
+void Aes::setDevKey(AesKey const &key) { AESDevKey = key; }
+void Aes::setNetworkSessionKey(AesKey const &key) { nwkSKey = key; }
+void Aes::setApplicationSessionKey(AesKey const &key) { appSKey = key; }
 
 // Get B0 value in buf
 void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
@@ -96,19 +93,19 @@ bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
   return std::equal(buf, buf + lengths::MIC, pdu + lenWithoutMic);
 }
 
-void Aes::encrypt(uint8_t * const pdu, const uint8_t len) const {
+void Aes::encrypt(uint8_t *const pdu, const uint8_t len) const {
   // TODO: Check / handle when len is not a multiple of AES_BLCK_SIZE
   for (uint8_t i = 0; i < len; i += AES_BLCK_SIZE)
-    lmic_aes_encrypt(pdu + i, AESDevKey);
+    lmic_aes_encrypt(pdu + i, AESDevKey.data);
 }
 
 /**
  *  Encrypt data frame payload.
  */
-void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, const uint32_t seqno,
-                                 const PktDir dndir, uint8_t * payload,
-                                 uint8_t len) const {
-  auto key = port == 0 ? nwkSKey : appSKey;
+void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr,
+                                 const uint32_t seqno, const PktDir dndir,
+                                 uint8_t *payload, uint8_t len) const {
+  const auto &key = port == 0 ? nwkSKey : appSKey;
   // Generate
   uint8_t blockAi[AES_BLCK_SIZE];
   blockAi[0] = 1; // mode=cipher
@@ -129,7 +126,7 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, con
     blockAi[15]++;
     // Encrypt the counter block with the selected key
     std::copy(blockAi, blockAi + AES_BLCK_SIZE, blockSi);
-    lmic_aes_encrypt(blockSi, key);
+    lmic_aes_encrypt(blockSi, key.data);
 
     // Xor the payload with the resulting ciphertext
     for (uint8_t i = 0; i < AES_BLCK_SIZE && len > 0; i++, len--, payload++)
@@ -138,16 +135,25 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr, con
 }
 
 // Extract session keys
-void Aes::sessKeys(const uint16_t devnonce, const uint8_t * const artnonce) {
-  std::fill(nwkSKey, nwkSKey + AES_BLCK_SIZE, 0);
-  nwkSKey[0] = 0x01;
-  std::copy(artnonce, artnonce + join_accept::lengths::appNonce + join_accept::lengths::netId, nwkSKey + 1);
-  wlsbf2(nwkSKey + 1 + join_accept::lengths::appNonce + join_accept::lengths::netId, devnonce);
-  std::copy(nwkSKey, nwkSKey + AES_BLCK_SIZE, appSKey);
-  appSKey[0] = 0x02;
+void Aes::sessKeys(const uint16_t devnonce, const uint8_t *const artnonce) {
+  nwkSKey.data[0] = 0x01;
+  std::copy(artnonce,
+            artnonce + join_accept::lengths::appNonce +
+                join_accept::lengths::netId,
+            nwkSKey.data + 1);
+  wlsbf2(nwkSKey.data + 1 + join_accept::lengths::appNonce +
+             join_accept::lengths::netId,
+         devnonce);
+  // add pading
+  std::fill(nwkSKey.data + 1 + join_accept::lengths::appNonce +
+             join_accept::lengths::netId + join_request::lengths::devNonce,
+             nwkSKey.data + AES_BLCK_SIZE, 0);
 
-  lmic_aes_encrypt(nwkSKey, AESDevKey);
-  lmic_aes_encrypt(appSKey, AESDevKey);
+  appSKey = nwkSKey;
+  appSKey.data[0] = 0x02;
+
+  lmic_aes_encrypt(nwkSKey.data, AESDevKey.data);
+  lmic_aes_encrypt(appSKey.data, AESDevKey.data);
 }
 
 // Shift the given buffer left one bit
@@ -167,9 +173,9 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 // it can be set to "B0" for MIC. The CMAC result is returned in result
 // as well.
 void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
-                   const uint8_t key[AES_BLCK_SIZE], uint8_t result[AES_BLCK_SIZE]) {
+                   AesKey const &key, uint8_t result[AES_BLCK_SIZE]) {
   if (prepend_aux)
-    lmic_aes_encrypt(result, key);
+    lmic_aes_encrypt(result, key.data);
 
   while (len > 0) {
     uint8_t need_padding = 0;
@@ -191,7 +197,7 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
       // shifts and xor on that.
       uint8_t final_key[AES_BLCK_SIZE];
       std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
-      lmic_aes_encrypt(final_key, key);
+      lmic_aes_encrypt(final_key, key.data);
 
       // Calculate K1
       uint8_t msb = final_key[0] & 0x80;
@@ -212,6 +218,6 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
         result[i] ^= final_key[i];
     }
 
-    lmic_aes_encrypt(result, key);
+    lmic_aes_encrypt(result, key.data);
   }
 }
