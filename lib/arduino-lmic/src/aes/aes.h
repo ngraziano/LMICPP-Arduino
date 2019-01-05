@@ -3,19 +3,15 @@
 #define __aes_h__
 #include "../lmic/config.h"
 #include "../lmic/lorabase.h"
+#include"aes_tiny.h"
 #include <stdint.h>
 
 // ======================================================================
 // AES support
 
-void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
+// void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
 
 const uint8_t AES_BLCK_SIZE = 16;
-
-struct AesKey {
-  uint8_t data[AES_BLCK_SIZE];
-  AesKey() = default;
-};
 
 class Aes {
 private:
