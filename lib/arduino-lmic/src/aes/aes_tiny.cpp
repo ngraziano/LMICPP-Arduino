@@ -159,7 +159,7 @@ static inline void subBytesAndShiftRows(uint8_t *buffer) {
    ((uint8_t)t) ^ (uint8_t)(0x1B * ((uint8_t)(t >> 8))))
 */
 static inline uint8_t gmul2(uint8_t const x) {
-  uint8_t const t = ((uint16_t)(x)) << 1;
+  uint16_t const t = ((uint16_t)(x)) << 1;
   return ((uint8_t)t) ^ (uint8_t)(0x1B * ((uint8_t)(t >> 8)));
 }
 static inline void mixColumn(uint8_t *output, uint8_t const *input) {
