@@ -46,4 +46,4 @@ In ``main.cpp`` replace the content of ``do_send()`` with the data you want to s
 ## License
 
 Most source files in this repository are made available under the Eclipse Public License v1.0.
-Some of the AES code is available under the LGPL. Refer to each individual source file for more details.
+Some of the AES code is available under MIT like license. Refer to each individual source file for more details.
