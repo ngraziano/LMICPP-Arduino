@@ -618,7 +618,8 @@ CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)
 
 OsTime Radio::int_trigger_time() const {
   OsTime const now = os_getTime();
-  if (now - last_int_trigger < OsDeltaTime::from_sec(1)) {
+  auto const diff = now - last_int_trigger;
+  if ( diff > OsDeltaTime(0) && diff < OsDeltaTime::from_sec(1)) {
     return last_int_trigger;
   } else {
     PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger.tick());
