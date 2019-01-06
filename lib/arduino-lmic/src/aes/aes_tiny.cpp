@@ -89,59 +89,38 @@ static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
 /** @cond aes_funcs */
 constexpr uint8_t idxFrom(uint8_t col, uint8_t row) { return col * 4 + row; }
 
-static inline void subBytesAndShiftRows(uint8_t *output, const uint8_t *input) {
-
-  output[idxFrom(0, 0)] = readsbox(input[idxFrom(0, 0)]);
-
-  output[idxFrom(0, 1)] = readsbox(input[idxFrom(1, 1)]);
-
-  output[idxFrom(0, 2)] = readsbox(input[idxFrom(2, 2)]);
-  output[idxFrom(0, 3)] = readsbox(input[idxFrom(3, 3)]);
-  output[idxFrom(1, 0)] = readsbox(input[idxFrom(1, 0)]);
-  output[idxFrom(1, 1)] = readsbox(input[idxFrom(2, 1)]);
-  output[idxFrom(1, 2)] = readsbox(input[idxFrom(3, 2)]);
-  output[idxFrom(1, 3)] = readsbox(input[idxFrom(0, 3)]);
-  output[idxFrom(2, 0)] = readsbox(input[idxFrom(2, 0)]);
-  output[idxFrom(2, 1)] = readsbox(input[idxFrom(3, 1)]);
-  output[idxFrom(2, 2)] = readsbox(input[idxFrom(0, 2)]);
-  output[idxFrom(2, 3)] = readsbox(input[idxFrom(1, 3)]);
-  output[idxFrom(3, 0)] = readsbox(input[idxFrom(3, 0)]);
-  output[idxFrom(3, 1)] = readsbox(input[idxFrom(0, 1)]);
-  output[idxFrom(3, 2)] = readsbox(input[idxFrom(1, 2)]);
-  output[idxFrom(3, 3)] = readsbox(input[idxFrom(2, 3)]);
-}
-
 static inline void subBytesAndShiftRows(uint8_t *buffer) {
 
-  // TODO readsbox and shuffle in next step
+  std::transform(buffer, buffer + 16, buffer,
+                 [](uint8_t c) -> uint8_t { return readsbox(c); });
 
-  buffer[idxFrom(0, 0)] = readsbox(buffer[idxFrom(0, 0)]);
-  buffer[idxFrom(1, 0)] = readsbox(buffer[idxFrom(1, 0)]);
-  buffer[idxFrom(2, 0)] = readsbox(buffer[idxFrom(2, 0)]);
-  buffer[idxFrom(3, 0)] = readsbox(buffer[idxFrom(3, 0)]);
-  
+  // shift row
+  /*
+  buffer[idxFrom(0, 0)] = buffer[idxFrom(0, 0)];
+  buffer[idxFrom(1, 0)] = buffer[idxFrom(1, 0)];
+  buffer[idxFrom(2, 0)] = buffer[idxFrom(2, 0)];
+  buffer[idxFrom(3, 0)] = buffer[idxFrom(3, 0)];
+  */
 
-  const uint8_t temp01 = readsbox(buffer[idxFrom(0, 1)]);
-  buffer[idxFrom(0, 1)] = readsbox(buffer[idxFrom(1, 1)]);
-  buffer[idxFrom(1, 1)] = readsbox(buffer[idxFrom(2, 1)]);
-  buffer[idxFrom(2, 1)] = readsbox(buffer[idxFrom(3, 1)]);
+  const uint8_t temp01 = buffer[idxFrom(0, 1)];
+  buffer[idxFrom(0, 1)] = buffer[idxFrom(1, 1)];
+  buffer[idxFrom(1, 1)] = buffer[idxFrom(2, 1)];
+  buffer[idxFrom(2, 1)] = buffer[idxFrom(3, 1)];
   buffer[idxFrom(3, 1)] = temp01;
 
-  const uint8_t temp02 = readsbox(buffer[idxFrom(0, 2)]);
-  buffer[idxFrom(0, 2)] = readsbox(buffer[idxFrom(2, 2)]);
+  const uint8_t temp02 = buffer[idxFrom(0, 2)];
+  buffer[idxFrom(0, 2)] = buffer[idxFrom(2, 2)];
   buffer[idxFrom(2, 2)] = temp02;
 
-  const uint8_t temp03 = readsbox(buffer[idxFrom(0, 3)]);
-  buffer[idxFrom(0, 3)] = readsbox(buffer[idxFrom(3, 3)]);
-  buffer[idxFrom(3, 3)] = readsbox(buffer[idxFrom(2, 3)]);
-  buffer[idxFrom(2, 3)] = readsbox(buffer[idxFrom(1, 3)]);
+  const uint8_t temp03 = buffer[idxFrom(0, 3)];
+  buffer[idxFrom(0, 3)] = buffer[idxFrom(3, 3)];
+  buffer[idxFrom(3, 3)] = buffer[idxFrom(2, 3)];
+  buffer[idxFrom(2, 3)] = buffer[idxFrom(1, 3)];
   buffer[idxFrom(1, 3)] = temp03;
-  
 
-  const uint8_t temp12 = readsbox(buffer[idxFrom(1, 2)]);
-  buffer[idxFrom(1, 2)] = readsbox(buffer[idxFrom(3, 2)]);
+  const uint8_t temp12 = buffer[idxFrom(1, 2)];
+  buffer[idxFrom(1, 2)] = buffer[idxFrom(3, 2)];
   buffer[idxFrom(3, 2)] = temp12;
-  
 }
 
 // Multiply x by 2 in the Galois field, to achieve the effect of the following:
@@ -154,30 +133,28 @@ static inline void subBytesAndShiftRows(uint8_t *buffer) {
 // However, we don't want to use runtime conditionals if we can help it
 // to avoid leaking timing information from the implementation.
 // In this case, multiplication is slightly faster than table lookup on AVR.
-/* #define gmul2(x) \
-  (t = ((uint16_t)(x)) << 1,                                                   \
-   ((uint8_t)t) ^ (uint8_t)(0x1B * ((uint8_t)(t >> 8))))
-*/
-static inline uint8_t gmul2(uint8_t const x) {
-  uint16_t const t = ((uint16_t)(x)) << 1;
-  return ((uint8_t)t) ^ (uint8_t)(0x1B * ((uint8_t)(t >> 8)));
+uint8_t gmul2(uint8_t const x) {
+  uint8_t const t = x << 1;
+  uint8_t const xorval = 0x1B * (x >> 7);
+  return static_cast<uint8_t>(t) ^ xorval;
 }
-static inline void mixColumn(uint8_t *output, uint8_t const *input) {
-  uint8_t const a = input[0];
-  uint8_t const b = input[1];
-  uint8_t const c = input[2];
-  uint8_t const d = input[3];
+
+void mixColumn(uint8_t *buffer) {
+  uint8_t const a = buffer[0];
+  uint8_t const b = buffer[1];
+  uint8_t const c = buffer[2];
+  uint8_t const d = buffer[3];
   uint8_t const a2 = gmul2(a);
   uint8_t const b2 = gmul2(b);
   uint8_t const c2 = gmul2(c);
   uint8_t const d2 = gmul2(d);
-  output[0] = a2 ^ b2 ^ b ^ c ^ d;
-  output[1] = a ^ b2 ^ c2 ^ c ^ d;
-  output[2] = a ^ b ^ c2 ^ d2 ^ d;
-  output[3] = a2 ^ a ^ b ^ c ^ d2;
+  buffer[0] = a2 ^ b2 ^ b ^ c ^ d;
+  buffer[1] = a ^ b2 ^ c2 ^ c ^ d;
+  buffer[2] = a ^ b ^ c2 ^ d2 ^ d;
+  buffer[3] = a2 ^ a ^ b ^ c ^ d2;
 }
 
-static inline void kcore(uint8_t n, uint8_t schedule[16]) {
+void kcore(uint8_t n, uint8_t schedule[16]) {
   uint8_t temp[4];
   keyScheduleCore(temp, schedule + 12, n);
   schedule[0] ^= temp[0];
@@ -186,53 +163,55 @@ static inline void kcore(uint8_t n, uint8_t schedule[16]) {
   schedule[3] ^= temp[3];
 }
 
-static inline void kxor(uint8_t a, uint8_t b, uint8_t schedule[16]) {
+void kxor(uint8_t a, uint8_t b, uint8_t schedule[16]) {
   schedule[a * 4] ^= schedule[b * 4];
   schedule[a * 4 + 1] ^= schedule[b * 4 + 1];
   schedule[a * 4 + 2] ^= schedule[b * 4 + 2];
   schedule[a * 4 + 3] ^= schedule[b * 4 + 3];
 }
+
+void expand_key(uint8_t schedule[16], uint8_t round) {
+  kcore(round, schedule);
+  kxor(1, 0, schedule);
+  kxor(2, 1, schedule);
+  kxor(3, 2, schedule);
+}
+
+void xorbuffer(uint8_t const *source1, uint8_t const *source2, uint8_t *dest) {
+  std::transform(source1, source1 + 16, source2, dest,
+                 [](uint8_t a, uint8_t b) { return a ^ b; });
+}
+
 } // namespace
 
 void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
   uint8_t schedule[16];
-  uint8_t posn;
   uint8_t state1[16];
-  uint8_t state2[16];
 
   // Start with the key in the schedule buffer.
   std::copy(key.data, key.data + key.key_size, schedule);
 
   // Copy the input into the state and XOR with the key schedule.
-  for (posn = 0; posn < 16; ++posn)
-    state1[posn] = buffer[posn] ^ schedule[posn];
+  xorbuffer(buffer, schedule, state1);
 
   // Perform the first 9 rounds of the cipher.
   for (uint8_t round = 1; round <= 9; ++round) {
     // Expand the next 16 bytes of the key schedule.
-    kcore(round, schedule);
-    kxor(1, 0, schedule);
-    kxor(2, 1, schedule);
-    kxor(3, 2, schedule);
+    expand_key(schedule, round);
 
     // Encrypt using the key schedule.
-    subBytesAndShiftRows(state2, state1);
-    mixColumn(state1, state2);
-    mixColumn(state1 + 4, state2 + 4);
-    mixColumn(state1 + 8, state2 + 8);
-    mixColumn(state1 + 12, state2 + 12);
-    for (posn = 0; posn < 16; ++posn)
-      state1[posn] ^= schedule[posn];
+    subBytesAndShiftRows(state1);
+    mixColumn(state1);
+    mixColumn(state1 + 4);
+    mixColumn(state1 + 8);
+    mixColumn(state1 + 12);
+    xorbuffer(state1, schedule, state1);
   }
 
   // Expand the final 16 bytes of the key schedule.
-  kcore(10, schedule);
-  kxor(1, 0, schedule);
-  kxor(2, 1, schedule);
-  kxor(3, 2, schedule);
+  expand_key(schedule, 10);
 
   // Perform the final round.
-  subBytesAndShiftRows(state2, state1);
-  for (posn = 0; posn < 16; ++posn)
-    buffer[posn] = state2[posn] ^ schedule[posn];
+  subBytesAndShiftRows(state1);
+  xorbuffer(state1, schedule, buffer);
 }
