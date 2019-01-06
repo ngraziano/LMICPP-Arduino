@@ -4,7 +4,11 @@
 
 LmicRand::LmicRand(Aes &aes) : aes(aes) {}
 
-void LmicRand::init(Radio &radio) { radio.init_random(randbuf); }
+void LmicRand::init(Radio &radio) {
+  radio.init_random(randbuf);
+  // set initial index
+  randbuf[0] = 16;
+}
 
 // return next random byte derived from seed buffer
 // (buf[0] holds index of next byte to be returned)

@@ -594,7 +594,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
       randbuf[i] = (randbuf[i] << 1) | b;
     }
   }
-  randbuf[0] = 16; // set initial index
+
   // stop RX
   opmode(OPMODE_SLEEP);
 }
