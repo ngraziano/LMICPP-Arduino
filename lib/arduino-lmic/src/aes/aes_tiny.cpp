@@ -21,9 +21,11 @@
  */
 
 /*
-Extract from https://github.com/rweather/arduinolibs/
+Extract of https://github.com/rweather/arduinolibs/
 
-Change to use this project type
+Modified in 2019 by Nicolas Graziano
+
+Change to use this project type and adapt to some C++ type.
 
 */
 

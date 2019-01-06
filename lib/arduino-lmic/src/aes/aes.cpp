@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2016 Matthijs Kooijman
+ *               2019 Nicolas Graziano
  *
  * LICENSE
  *
