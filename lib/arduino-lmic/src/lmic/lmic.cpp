@@ -980,7 +980,7 @@ void Lmic::engineUpdate() {
 #endif
     // Find next suitable channel and return availability time
     if (opmode.test(OpState::NEXTCHNL)) {
-      txbeg = txend = nextTx(now);
+      txbeg = nextTx(now);
       opmode.reset(OpState::NEXTCHNL);
       PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
                     txbeg.tick());
@@ -1042,9 +1042,10 @@ void Lmic::engineUpdate() {
     opmode.reset(OpState::POLL);
     opmode.set(OpState::TXRXPEND);
     opmode.set(OpState::NEXTCHNL);
-    OsDeltaTime airtime = calcAirTime(rps, dataLen);
 
+    OsDeltaTime airtime = calcAirTime(rps, dataLen);
     updateTx(txbeg, airtime);
+    
     if (globalDutyRate != 0) {
       globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
       PRINT_DEBUG_2("Updating global duty avail to %lu", globalDutyAvail);
