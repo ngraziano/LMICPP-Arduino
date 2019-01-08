@@ -263,6 +263,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
   do {
     OsTime mintime = now + /*8h*/ OsDeltaTime::from_sec(28800);
     uint8_t band = 0xFF;
+
     for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
         PRINT_DEBUG_2("Considering band %d, which is available at %lu", bi,
@@ -271,6 +272,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
         mintime = bands[band].avail;
       }
     }
+
     if (band == 0xFF) {
       // Try to handle a strange bug wich appen afert 7 hours
       PRINT_DEBUG_2("Error No band available.");

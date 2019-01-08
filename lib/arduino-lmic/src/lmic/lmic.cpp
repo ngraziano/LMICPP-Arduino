@@ -919,7 +919,7 @@ bool Lmic::startJoining() {
     // Cancel scanning
     opmode.reset(OpState::REJOIN)
         .reset(OpState::LINKDEAD)
-        .reset(OpState::LINKDEAD)
+        .reset(OpState::NEXTCHNL)
         .set(OpState::JOINING);
     // Setup state
     rejoinCnt = txCnt = 0;
@@ -963,98 +963,100 @@ void Lmic::engineUpdate() {
   }
 #endif // !DISABLE_JOIN
 
-  const OsTime now = os_getTime();
-  OsTime txbeg = now;
+  if (!opmode.test(OpState::JOINING) && !opmode.test(OpState::REJOIN) &&
+      !opmode.test(OpState::TXDATA) && !opmode.test(OpState::POLL)) {
+    // No TX pending - no scheduled RX
+    return;
+  }
 
-  if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN) ||
-      opmode.test(OpState::TXDATA) || opmode.test(OpState::POLL)) {
-    // Need to TX some data...
-    // Assuming txChnl points to channel which first becomes available again.
-    const bool jacc =
-        opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
-#if LMIC_DEBUG_LEVEL > 1
-    if (jacc)
-      lmic_printf("%lu: Uplink join pending\n", os_getTime().tick());
-    else
-      lmic_printf("%lu: Uplink data pending\n", os_getTime().tick());
-#endif
-    // Find next suitable channel and return availability time
-    if (opmode.test(OpState::NEXTCHNL)) {
-      txbeg = nextTx(now);
-      opmode.reset(OpState::NEXTCHNL);
-      PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
-                    txbeg.tick());
-    } else {
-      txbeg = txend;
-      PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
-                    txbeg.tick());
+  // Need to TX some data...
+  // Assuming txChnl points to channel which first becomes available again.
+  const bool jacc =
+      opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
+  if (jacc){
+    PRINT_DEBUG_2("Uplink join pending");
+  }
+  else {
+    PRINT_DEBUG_2("Uplink data pending");
+  }
+
+  const OsTime now = os_getTime();
+  OsTime txbeg;
+  // Find next suitable channel and return availability time
+  if (opmode.test(OpState::NEXTCHNL)) {
+    txbeg = nextTx(now);
+    opmode.reset(OpState::NEXTCHNL);
+    PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
+                  txbeg.tick());
+  } else {
+    txbeg = txend;
+    PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
+                  txbeg.tick());
+  }
+  // Delayed TX or waiting for duty cycle?
+  if (txbeg < globalDutyAvail) {
+    txbeg = globalDutyAvail;
+    PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg.tick());
+  }
+
+  // Earliest possible time vs overhead to setup radio
+  if (txbeg >= (now + TX_RAMPUP)) {
+    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
+    // Cannot yet TX
+    //  wait for the time to TX
+    osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
+    return;
+  }
+
+  PRINT_DEBUG_1("Ready for uplink");
+  // We could send right now!
+  txbeg = now;
+  dr_t txdr = datarate;
+#if !defined(DISABLE_JOIN)
+  if (jacc) {
+    if (opmode.test(OpState::REJOIN)) {
+      txdr = lowerDR(txdr, rejoinCnt);
     }
-    // Delayed TX or waiting for duty cycle?
-    if (txbeg < globalDutyAvail) {
-      txbeg = globalDutyAvail;
-      PRINT_DEBUG_2("Airtime available at %lu (global duty limit)",
-                    txbeg.tick());
-    }
-    // Earliest possible time vs overhead to setup radio
-    if (txbeg >= (now + TX_RAMPUP)) {
-      PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
-      // Cannot yet TX
-      //  wait for the time to TX
-      osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
+    buildJoinRequest();
+    osjob.setCallbackFuture(&Lmic::jreqDone);
+  } else
+#endif // !DISABLE_JOIN
+  {
+    if (seqnoDn >= 0xFFFFFF80) {
+      // Imminent roll over - proactively reset MAC
+      // Device has to react! NWK will not roll over and just stop sending.
+      // Thus, we have N frames to detect a possible lock up.
+      osjob.setCallbackRunnable(&Lmic::runReset);
       return;
     }
-
-    PRINT_DEBUG_1("Ready for uplink");
-    // We could send right now!
-    txbeg = now;
-    dr_t txdr = datarate;
-#if !defined(DISABLE_JOIN)
-    if (jacc) {
-      if (opmode.test(OpState::REJOIN)) {
-        txdr = lowerDR(txdr, rejoinCnt);
-      }
-      buildJoinRequest();
-      osjob.setCallbackFuture(&Lmic::jreqDone);
-    } else
-#endif // !DISABLE_JOIN
-    {
-      if (seqnoDn >= 0xFFFFFF80) {
-        // Imminent roll over - proactively reset MAC
-        // Device has to react! NWK will not roll over and just stop sending.
-        // Thus, we have N frames to detect a possible lock up.
-        osjob.setCallbackRunnable(&Lmic::runReset);
-        return;
-      }
-      if ((txCnt == 0 && seqnoUp == 0xFFFFFFFF)) {
-        // Roll over of up seq counter
-        // Do not run RESET event callback from here!
-        // App code might do some stuff after send unaware of RESET.
-        osjob.setCallbackRunnable(&Lmic::runReset);
-        return;
-      }
-      buildDataFrame();
-      osjob.setCallbackFuture(&Lmic::updataDone);
+    if ((txCnt == 0 && seqnoUp == 0xFFFFFFFF)) {
+      // Roll over of up seq counter
+      // Do not run RESET event callback from here!
+      // App code might do some stuff after send unaware of RESET.
+      osjob.setCallbackRunnable(&Lmic::runReset);
+      return;
     }
-    rps_t rps = updr2rps(txdr);
-    dndr = txdr; // carry TX datarate (can be != datarate) over to
-                 // txDone/setupRx1
-
-    opmode.reset(OpState::POLL);
-    opmode.set(OpState::TXRXPEND);
-    opmode.set(OpState::NEXTCHNL);
-
-    OsDeltaTime airtime = calcAirTime(rps, dataLen);
-    updateTx(txbeg, airtime);
-    
-    if (globalDutyRate != 0) {
-      globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
-      PRINT_DEBUG_2("Updating global duty avail to %lu", globalDutyAvail);
-    }
-
-    radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
-    osjob.forbidSleep();
+    buildDataFrame();
+    osjob.setCallbackFuture(&Lmic::updataDone);
   }
-  // No TX pending - no scheduled RX
+  rps_t rps = updr2rps(txdr);
+  dndr = txdr; // carry TX datarate (can be != datarate) over to
+               // txDone/setupRx1
+
+  opmode.reset(OpState::POLL);
+  opmode.set(OpState::TXRXPEND);
+  opmode.set(OpState::NEXTCHNL);
+
+  OsDeltaTime airtime = calcAirTime(rps, dataLen);
+  updateTx(txbeg, airtime);
+
+  if (globalDutyRate != 0) {
+    globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
+    PRINT_DEBUG_2("Updating global duty avail to %lu", globalDutyAvail);
+  }
+
+  radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
+  osjob.forbidSleep();
 }
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
@@ -1147,7 +1149,7 @@ void Lmic::tryRejoin(void) {
 //! \param artKey  the 16 byte application router session key used for message
 //! confidentiality.
 void Lmic::setSession(uint32_t const netid, devaddr_t const devaddr,
-                      AesKey const & nwkKey, AesKey const & artKey) {
+                      AesKey const &nwkKey, AesKey const &artKey) {
   this->netid = netid;
   this->devaddr = devaddr;
   aes.setNetworkSessionKey(nwkKey);
