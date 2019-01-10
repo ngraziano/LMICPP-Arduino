@@ -49,25 +49,17 @@ uint8_t os_getBattLevel(void);
 
 #endif // !HAS_os_calls
 
-#if defined(__AVR__)
-#define lmic_printf(fmt, ...) printf_P(PSTR(fmt), ##__VA_ARGS__)
-#else
-#define lmic_printf printf
-#endif
 
-#if LMIC_DEBUG_LEVEL > 0
-#define PRINT_DEBUG_1(str, ...)                                                \
-  lmic_printf("%lu: " str "\n", os_getTime().tick(), ##__VA_ARGS__)
-#else
-#define PRINT_DEBUG_1(str, ...)
-#endif
-
-#if LMIC_DEBUG_LEVEL > 1
-#define PRINT_DEBUG_2(str, ...)                                                \
-  lmic_printf("%lu: " str "\n", os_getTime().tick(), ##__VA_ARGS__)
-#else
-#define PRINT_DEBUG_2(str, ...)
-#endif
+template <typename... T>
+void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
+  if (debugLevel >= X) {
+    printf_P(PSTR("%lu"), os_getTime().tick());
+    PGM_P p = reinterpret_cast<PGM_P>(str);
+    printf_P(p, div...);
+    //printf_P(PSTR("\n"));
+    printf("\n");
+  }
+};
 
 class OsJobBase;
 class OsJob;

@@ -100,15 +100,15 @@ void OsJobBase::setTimed(OsTime time) {
   // fill-in job
   deadline = time;
   scheduler.linkScheduledJob(this);
-  PRINT_DEBUG_2("Scheduled job %p, atRun %lu\n", this, time);
+  PRINT_DEBUG(2,F("Scheduled job %p, atRun %lu\n"), this, time);
 }
 
 void OsJob::call() const { func(); }
 
 OsDeltaTime OsScheduler::runloopOnce() {
-#if LMIC_DEBUG_LEVEL > 1
+
   bool has_deadline = false;
-#endif
+
   OsJobBase const *j = nullptr;
   // check for runnable jobs
   if (runnablejobs) {
@@ -119,13 +119,13 @@ OsDeltaTime OsScheduler::runloopOnce() {
                  scheduledjobs->deadline)) { // check for expired timed jobs
     j = scheduledjobs;
     scheduledjobs = j->next;
-#if LMIC_DEBUG_LEVEL > 1
+
     has_deadline = true;
-#endif
+
   }
 
   if (j) { // run job callback
-    PRINT_DEBUG_2("Running job %p, deadline %lu\n", j,
+    PRINT_DEBUG(2,F("Running job %p, deadline %lu\n"), j,
                   has_deadline ? j->deadline.tick() : 0);
     j->call();
   }

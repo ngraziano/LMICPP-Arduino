@@ -316,7 +316,7 @@ void Radio::configPower(int8_t pw) const {
   } else if (pw < 2) {
     pw = 2;
   }
-  PRINT_DEBUG_1("Config power to %i on PA_BOOST", pw);
+  PRINT_DEBUG(1,F("Config power to %i on PA_BOOST"), pw);
 
   pw -= 2;
   // check board type for output pin
@@ -336,7 +336,7 @@ void Radio::configPower(int8_t pw) const {
     pw = -4;
   }
 
-  PRINT_DEBUG_1("Config power to %i on RFO", pw);
+  PRINT_DEBUG(1,F("Config power to %i on RFO"), pw);
 
   uint8_t pa = 0;
   if (pw >= 0) {
@@ -434,12 +434,12 @@ void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // now we actually start the transmission
   opmode(OPMODE_TX);
 
-#if LMIC_DEBUG_LEVEL > 0
+
   uint8_t sf = rps.sf + 6; // 1 == SF7
-  lmic_printf("%lu: TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d\n",
-              os_getTime().tick(), freq, dataLen, sf, bwForLog(rps),
+  PRINT_DEBUG(1, F("TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
+              freq, dataLen, sf, bwForLog(rps),
               crForLog(rps), rps.ih);
-#endif
+
 }
 
 // start transmitter
@@ -474,7 +474,7 @@ void Radio::rxrssi() const {
   // now instruct the radio to receive
   // continous rx
   opmode(OPMODE_RX);
-  PRINT_DEBUG_1("RXMODE_RSSI");
+  PRINT_DEBUG(1,F("RXMODE_RSSI"));
 }
 
 // start LoRa receiver
@@ -528,16 +528,15 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
     opmode(OPMODE_RX);
   }
 
-#if LMIC_DEBUG_LEVEL > 0
 
   uint8_t const sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG_1("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d",
+  PRINT_DEBUG(1,F("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d"),
                 rxmode == RXMODE_SINGLE
                     ? "RXMODE_SINGLE"
                     : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
                 freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
 
-#endif
+
 }
 
 void Radio::init() {
@@ -555,11 +554,11 @@ void Radio::init() {
   // wait 5ms after reset
   hal_wait(OsDeltaTime::from_ms(5));
 
-#if !defined(CFG_noassert) || LMIC_DEBUG_LEVEL > 0
+
   // some sanity checks, e.g., read version number
   uint8_t const v = readReg(RegVersion);
-  PRINT_DEBUG_1("Chip version : %i", v);
-#endif
+  PRINT_DEBUG(1,F("Chip version : %i"), v);
+
 #ifdef CFG_sx1276_radio
   ASSERT(v == 0x12);
 #elif CFG_sx1272_radio
@@ -622,7 +621,7 @@ OsTime Radio::int_trigger_time() const {
   if ( diff > OsDeltaTime(0) && diff < OsDeltaTime::from_sec(1)) {
     return last_int_trigger;
   } else {
-    PRINT_DEBUG_1("Not using interupt trigger %lu", last_int_trigger.tick());
+    PRINT_DEBUG(1,F("Not using interupt trigger %lu"), last_int_trigger.tick());
     return now;
   }
 }
@@ -635,18 +634,18 @@ void Radio::irq_handler(uint8_t *const framePtr, uint8_t &frameLength,
 
   uint8_t const flags = readReg(LORARegIrqFlags);
 
-  PRINT_DEBUG_2("irq: flags: 0x%x\n", flags);
+  PRINT_DEBUG(2,F("irq: flags: 0x%x\n"), flags);
 
   if (flags & IRQ_LORA_TXDONE_MASK) {
     // save exact tx time
     txEnd = now;
-    PRINT_DEBUG_1("End TX  %lu", txEnd.tick());
+    PRINT_DEBUG(1,F("End TX  %lu"), txEnd.tick());
   } else if (flags & IRQ_LORA_RXDONE_MASK) {
     // save exact rx time
     if (current_rps.getBw() == BandWidth::BW125) {
       now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, current_rps.sf));
     }
-    PRINT_DEBUG_1("End RX -  Start RX : %li us ", (now - rxTime).to_us());
+    PRINT_DEBUG(1,F("End RX -  Start RX : %li us "), (now - rxTime).to_us());
     rxTime = now;
 
     // read the PDU and inform the MAC that we received something
@@ -670,7 +669,7 @@ void Radio::irq_handler(uint8_t *const framePtr, uint8_t &frameLength,
     // RSSI [dBm]  - 139
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-    PRINT_DEBUG_1("RX timeout  %lu", now.tick());
+    PRINT_DEBUG(1,F("RX timeout  %lu"), now.tick());
 
     // indicate timeout
     frameLength = 0;

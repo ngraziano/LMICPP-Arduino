@@ -132,7 +132,7 @@ bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
 }
 
 void LmicEu868::initDefaultChannels(bool join) {
-  PRINT_DEBUG_2("Init Default Channel join?=%d", join);
+  PRINT_DEBUG(2,F("Init Default Channel join?=%d"), join);
 
   channels.disableAll();
   uint8_t su = join ? 0 : 3;
@@ -198,10 +198,10 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
     uint32_t newfreq = convFreq(ptr);
     if (newfreq) {
       setupChannel(chidx, newfreq, 0);
-#if LMIC_DEBUG_LEVEL > 1
-      lmic_printf("%lu: Setup channel, idx=%d, freq=%lu\n", os_getTime().tick(),
+
+      PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%lu"),
                   chidx, newfreq);
-#endif
+
     }
   }
 }
@@ -237,11 +237,11 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 
   band->avail = txbeg + band->txcap * airtime;
 
-#if LMIC_DEBUG_LEVEL > 1
-  lmic_printf("%lu: Updating info for TX at %lu, airtime will be %lu. Setting "
-              "available time for band %d to %lu\n",
-              os_getTime().tick(), txbeg, airtime, freq, band->avail);
-#endif
+
+  PRINT_DEBUG(2,F("Updating info for TX at %lu, airtime will be %lu. Setting "
+              "available time for band %d to %lu"),
+              txbeg, airtime, freq, band->avail);
+
 }
 
 uint32_t LmicEu868::getFreq(uint8_t channel) const {
@@ -254,19 +254,19 @@ uint8_t LmicEu868::getBand(uint8_t channel) const {
 
 OsTime LmicEu868::nextTx(OsTime const now) {
   uint8_t bmap = 0x0F;
-#if LMIC_DEBUG_LEVEL > 1
+
   for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
-    PRINT_DEBUG_2("Band %d, available at %lu and last channel %d", bi,
+    PRINT_DEBUG(2,F("Band %d, available at %lu and last channel %d"), bi,
                   bands[bi].avail, bands[bi].lastchnl);
   }
-#endif
+
   do {
     OsTime mintime = now + /*8h*/ OsDeltaTime::from_sec(28800);
     uint8_t band = 0xFF;
 
     for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
-        PRINT_DEBUG_2("Considering band %d, which is available at %lu", bi,
+        PRINT_DEBUG(2,F("Considering band %d, which is available at %lu"), bi,
                       bands[bi].avail);
         band = bi;
         mintime = bands[band].avail;
@@ -275,10 +275,10 @@ OsTime LmicEu868::nextTx(OsTime const now) {
 
     if (band == 0xFF) {
       // Try to handle a strange bug wich appen afert 7 hours
-      PRINT_DEBUG_2("Error No band available.");
+      PRINT_DEBUG(2,F("Error No band available."));
       OsTime resetTime = now + OsDeltaTime::from_sec(15 * 60);
       for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
-        PRINT_DEBUG_2("Band %i Reseting avail from %lu to %lu, lastchnl: %i.",
+        PRINT_DEBUG(2,F("Band %i Reseting avail from %lu to %lu, lastchnl: %i."),
                       bi, bands[bi].avail, resetTime, bands[bi].lastchnl);
         bands[bi].avail = resetTime;
       }
@@ -295,8 +295,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
         chnl -= MAX_CHANNELS;
       // channel enabled
       if (channels.is_enable(chnl)) {
-        PRINT_DEBUG_2(
-            "Considering channel %d for band %d, set band = %d, drMap = %x",
+        PRINT_DEBUG(2,
+            F("Considering channel %d for band %d, set band = %d, drMap = %x"),
             chnl, band, getBand(chnl), channels[chnl].getDrMap());
         if ((channels[chnl].getDrMap() & (1 << (datarate & 0xF))) != 0 &&
             band == getBand(chnl)) { // in selected band
@@ -306,7 +306,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       }
     }
 
-    PRINT_DEBUG_2("No channel found in band %d", band);
+    PRINT_DEBUG(2,F("No channel found in band %d"), band);
 
     bmap &= ~(1 << band);
     if (bmap == 0) {
@@ -328,7 +328,7 @@ void LmicEu868::initJoinLoop() {
   setDrJoin(static_cast<dr_t>(Dr::SF7));
   initDefaultChannels(true);
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
-  PRINT_DEBUG_1("Init Join loop : avail=%lu txend=%lu",
+  PRINT_DEBUG(1,F("Init Join loop : avail=%lu txend=%lu"),
                 bands[BAND_MILLI].avail.tick(), txend.tick());
 }
 
@@ -357,15 +357,15 @@ bool LmicEu868::nextJoinState() {
   // SF12:255, SF11:127, .., SF7:8secs
   txend =
       time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
-  PRINT_DEBUG_1("Next available : %lu , Choosen %lu", time.tick(),
+  PRINT_DEBUG(1,F("Next available : %lu , Choosen %lu"), time.tick(),
                 txend.tick());
-#if LMIC_DEBUG_LEVEL > 1
+
   if (failed)
-    lmic_printf("%lu: Join failed\n", os_getTime().tick());
+    PRINT_DEBUG(2, F("Join failed"));
   else
-    lmic_printf("%lu: Scheduling next join at %lu\n", os_getTime().tick(),
+    PRINT_DEBUG(2, F("Scheduling next join at %lu"),
                 txend);
-#endif
+
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }

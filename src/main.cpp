@@ -57,29 +57,29 @@ void onEvent(EventType ev)
     switch (ev)
     {
     case EventType::JOINING:
-        PRINT_DEBUG_2("EV_JOINING");
+        PRINT_DEBUG(2,F("EV_JOINING"));
         //        LMIC.setDrJoin(0);
         break;
     case EventType::JOINED:
-        PRINT_DEBUG_2("EV_JOINED");
+        PRINT_DEBUG(2,F("EV_JOINED"));
         // disable ADR because it will be mobile.
         LMIC.setLinkCheckMode(false);
         break;
     case EventType::JOIN_FAILED:
-        PRINT_DEBUG_2("EV_JOIN_FAILED");
+        PRINT_DEBUG(2,F("EV_JOIN_FAILED"));
         break;
     case EventType::REJOIN_FAILED:
-        PRINT_DEBUG_2("EV_REJOIN_FAILED");
+        PRINT_DEBUG(2,F("EV_REJOIN_FAILED"));
         break;
     case EventType::TXCOMPLETE:
-        PRINT_DEBUG_2("EV_TXCOMPLETE (includes waiting for RX windows)");
+        PRINT_DEBUG(2,F("EV_TXCOMPLETE (includes waiting for RX windows)"));
         if (LMIC.getTxRxFlags().test(TxRxStatus::ACK))
         {
-            PRINT_DEBUG_2("Received ack");
+            PRINT_DEBUG(2,F("Received ack"));
         }
         if (LMIC.getDataLen())
         {
-            PRINT_DEBUG_2("Received %d  bytes of payload", LMIC.getDataLen());
+            PRINT_DEBUG(2,F("Received %d  bytes of payload"), LMIC.getDataLen());
             auto data = LMIC.getData();
             if (data)
             {
@@ -95,16 +95,16 @@ void onEvent(EventType ev)
 
         break;
     case EventType::RESET:
-        PRINT_DEBUG_2("EV_RESET");
+        PRINT_DEBUG(2,F("EV_RESET"));
         break;
     case EventType::LINK_DEAD:
-        PRINT_DEBUG_2("EV_LINK_DEAD");
+        PRINT_DEBUG(2,F("EV_LINK_DEAD"));
         break;
     case EventType::LINK_ALIVE:
-        PRINT_DEBUG_2("EV_LINK_ALIVE");
+        PRINT_DEBUG(2,F("EV_LINK_ALIVE"));
         break;
     default:
-        PRINT_DEBUG_2("Unknown event");
+        PRINT_DEBUG(2,F("Unknown event"));
         break;
     }
 }
@@ -114,7 +114,7 @@ void do_send()
     // Check if there is not a current TX/RX job running
     if (LMIC.getOpMode().test(OpState::TXRXPEND))
     {
-        PRINT_DEBUG_1("OpState::TXRXPEND, not sending");
+        PRINT_DEBUG(1,F("OpState::TXRXPEND, not sending"));
         // should not happen so reschedule anymway
         sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
     }
@@ -125,7 +125,7 @@ void do_send()
 
         // Prepare upstream data transmission at the next possible time.
         LMIC.setTxData2(2, &val, 1, false);
-        PRINT_DEBUG_1("Packet queued");
+        PRINT_DEBUG(1,F("Packet queued"));
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
@@ -153,20 +153,20 @@ void pciSetup(byte pin)
 void testDuration(int32_t ms)
 {
     const auto delta = OsDeltaTime::from_ms(ms);
-    PRINT_DEBUG_1("Test sleep time for %i ms.", ms);
+    PRINT_DEBUG(1,F("Test sleep time for %i ms."), ms);
     const OsTime start = os_getTime();
-    PRINT_DEBUG_1("Start Test sleep time.");
+    PRINT_DEBUG(1,F("Start Test sleep time."));
     powersave(delta);
     const OsTime end = os_getTime();
-    PRINT_DEBUG_1("End Test sleep time.");
-    PRINT_DEBUG_1("Test Time should be : %d ms", (end - start).to_ms());
+    PRINT_DEBUG(1,F("End Test sleep time."));
+    PRINT_DEBUG(1,F("Test Time should be : %d ms"), (end - start).to_ms());
 }
 
 void setup()
 {
-#if LMIC_DEBUG_LEVEL > 0
+if(debugLevel>0) {
     Serial.begin(BAUDRATE);
-#endif
+}
     pciSetup(lmic_pins.dio[0]);
     pciSetup(lmic_pins.dio[1]);
 
@@ -241,17 +241,20 @@ void powersave(OsDeltaTime maxTime)
         return;
     }
 
-#if LMIC_DEBUG_LEVEL > 0
-    PRINT_DEBUG_1("Sleep (ostick) :%lix%i", duration_selected.to_ms(), maxTime / duration_selected);
-    Serial.flush();
-#endif
+
+    PRINT_DEBUG(1,F("Sleep (ostick) :%lix%i"), duration_selected.to_ms(), maxTime / duration_selected);
+    if(debugLevel>0) {
+        Serial.flush();
+    }
+    
+
 
     for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--)
     {
         powerDown(period_selected);
         hal_add_time_in_sleep(duration_selected);
     }
-    PRINT_DEBUG_1("Wakeup");
+    PRINT_DEBUG(1,F("Wakeup"));
 }
 
 void loop()

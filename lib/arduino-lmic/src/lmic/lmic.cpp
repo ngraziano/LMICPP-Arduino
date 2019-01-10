@@ -90,7 +90,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   // Need 32bit arithmetic for this last step
   OsDeltaTime val =
       OsDeltaTime((((int32_t)tmp << sfx2) * OSTICKS_PER_SEC + div / 2) / div);
-  PRINT_DEBUG_1("Time on air : %i ms", val.to_ms());
+  PRINT_DEBUG(1,F("Time on air : %i ms"), val.to_ms());
   return val;
 }
 
@@ -174,13 +174,13 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
   ladrAns = 0x80 | // Include an answer into next frame up
             MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
   if (!mapChannels(chMaskCntl, chMask)) {
-    PRINT_DEBUG_1("ADR REQ Invalid map channel maskCtnl=%i, mask=%i",
+    PRINT_DEBUG(1,F("ADR REQ Invalid map channel maskCtnl=%i, mask=%i"),
                   chMaskCntl, chMask);
     ladrAns &= ~MCMD_LADR_ANS_CHACK;
   }
   const dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
   if (!validDR(dr)) {
-    PRINT_DEBUG_1("ADR REQ Invalid dr %i", dr);
+    PRINT_DEBUG(1,F("ADR REQ Invalid dr %i"), dr);
     ladrAns &= ~MCMD_LADR_ANS_DRACK;
   }
   // TODO add a test on power validPower
@@ -190,7 +190,7 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     upRepeat = nbTrans;
     const uint8_t txPowerIndex =
         (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
-    PRINT_DEBUG_1("ADR REQ Change dr to %i, power to %i", dr, txPowerIndex);
+    PRINT_DEBUG(1,F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
     adrTxPow = pow2dBm(txPowerIndex);
     setDrTxpow(dr);
 
@@ -311,7 +311,7 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   }
   if (oidx != olen) {
     // corrupted frame or unknown command
-    PRINT_DEBUG_1("Parse of MAC command incompleted.");
+    PRINT_DEBUG(1,F("Parse of MAC command incompleted."));
   }
 }
 
@@ -330,7 +330,7 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 
   if (diff > 0) {
     // skip in sequence number, missed packet
-    PRINT_DEBUG_1("Current packet receive %lu expected %lu", seqno, seqnoDn);
+    PRINT_DEBUG(1,F("Current packet receive %lu expected %lu"), seqno, seqnoDn);
     return SeqNoValidity::ok;
   }
 
@@ -348,15 +348,15 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 // ================================================================================
 // Decoding frames
 bool Lmic::decodeFrame() {
-#if LMIC_DEBUG_LEVEL > 0
+
   const char *window =
       (txrxFlags.test(TxRxStatus::DNW1))
           ? "RX1"
           : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
-#endif
+
 
   if (dataLen == 0) {
-    PRINT_DEBUG_1("No downlink data, window=%s", window);
+    PRINT_DEBUG(1,F("No downlink data, window=%s"), window);
     return false;
   }
 
@@ -369,13 +369,13 @@ bool Lmic::decodeFrame() {
       (hdr & mhdr::major_mask) != mhdr::major_v1 ||
       (ftype != mhdr::ftype_data_down && ftype != mhdr::ftype_data_conf_down)) {
     // Basic sanity checks failed
-    PRINT_DEBUG_1("Invalid downlink, window=%s", window);
+    PRINT_DEBUG(1,F("Invalid downlink, window=%s"), window);
     return false;
   }
 
   const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
   if (addr != devaddr) {
-    PRINT_DEBUG_1("Invalid address, window=%s", window);
+    PRINT_DEBUG(1,F("Invalid address, window=%s"), window);
     return false;
   }
 
@@ -386,14 +386,14 @@ bool Lmic::decodeFrame() {
   const uint8_t pend = dlen - lengths::MIC; // MIC
 
   if (poff > pend) {
-    PRINT_DEBUG_1("Invalid data offset, window=%s", window);
+    PRINT_DEBUG(1,F("Invalid data offset, window=%s"), window);
     return false;
   }
 
   const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
-    PRINT_DEBUG_1("Fail to verify aes mic, window=%s", window);
+    PRINT_DEBUG(1,F("Fail to verify aes mic, window=%s"), window);
     return false;
   }
 
@@ -458,7 +458,7 @@ bool Lmic::decodeFrame() {
   // stop sending rxTimingSetupAns when receive dowlink message
   rxTimingSetupAns = false;
 
-  PRINT_DEBUG_1("Received downlink, window=%s, port=%d, ack=%d", window,
+  PRINT_DEBUG(1,F("Received downlink, window=%s, port=%d, ack=%d"), window,
                 getPort(), ackup);
   return true;
 }
@@ -475,7 +475,7 @@ void Lmic::setupRx2() {
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
-  PRINT_DEBUG_2("SchedRx RX1/2");
+  PRINT_DEBUG(2,F("SchedRx RX1/2"));
 
   // Half symbol time for the data rate.
   const OsDeltaTime hsym = dr2hsym(dr);
@@ -502,7 +502,7 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
   // Center the receive window on the center of the expected preamble
   // (again note that hsym is half a sumbol time, so no /2 needed)
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
-  PRINT_DEBUG_1("Rx delay : %i ms", (rxtime - txend).to_ms());
+  PRINT_DEBUG(1,F("Rx delay : %i ms"), (rxtime - txend).to_ms());
 
   osjob.setTimed(rxtime - RX_RAMPUP);
 }
@@ -557,7 +557,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
 }
 
 bool Lmic::processJoinAccept() {
-  PRINT_DEBUG_2("Process join accept.");
+  PRINT_DEBUG(2,F("Process join accept."));
   ASSERT(opmode.test(OpState::TXRXPEND));
 
   const uint8_t hdr = frame[0];
@@ -571,14 +571,14 @@ bool Lmic::processJoinAccept() {
        dlen != join_accept::lengths::totalWithOptional) ||
       (hdr & (mhdr::ftype_mask | mhdr::major_mask)) !=
           (mhdr::ftype_join_acc | mhdr::major_v1)) {
-    PRINT_DEBUG_1("Join Accept BAD Length %i or bad header %i ", dlen, hdr);
+    PRINT_DEBUG(1,F("Join Accept BAD Length %i or bad header %i "), dlen, hdr);
 
     // unexpected frame
     return false;
   }
   aes.encrypt(frame + 1, dlen - 1);
   if (!aes.verifyMic0(frame, dlen)) {
-    PRINT_DEBUG_1("Join Accept BAD MIC");
+    PRINT_DEBUG(1,F("Join Accept BAD MIC"));
 
     // bad mic
     return false;
@@ -634,13 +634,13 @@ void Lmic::processRx2Jacc() {
 }
 
 void Lmic::setupRx2Jacc() {
-  PRINT_DEBUG_2("Setup RX2 join accept.");
+  PRINT_DEBUG(2,F("Setup RX2 join accept."));
   this->osjob.setCallbackFuture(&Lmic::processRx2Jacc);
   setupRx2();
 }
 
 void Lmic::processRx1Jacc() {
-  PRINT_DEBUG_2("Result RX1 join accept datalen=%i.", dataLen);
+  PRINT_DEBUG(2,F("Result RX1 join accept datalen=%i."), dataLen);
   if (!processJoinAccept()) {
     osjob.setCallbackFuture(&Lmic::setupRx2Jacc);
     schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
@@ -648,7 +648,7 @@ void Lmic::processRx1Jacc() {
 }
 
 void Lmic::setupRx1Jacc() {
-  PRINT_DEBUG_2("Setup RX1 join accept.");
+  PRINT_DEBUG(2,F("Setup RX1 join accept."));
   this->osjob.setCallbackFuture(&Lmic::processRx1Jacc);
 
   setupRx1();
@@ -951,7 +951,7 @@ void Lmic::processDnData() {
 
 // Decide what to do next for the MAC layer of a device
 void Lmic::engineUpdate() {
-  // PRINT_DEBUG_1("engineUpdate, opmode=0x%hhx.", static_cast
+  // PRINT_DEBUG(1,F("engineUpdate, opmode=0x%hhx."), static_cast
   // <uint8_t>(opmode)); Check for ongoing state: scan or TX/RX transaction
   if (opmode.test(OpState::TXRXPEND) || opmode.test(OpState::SHUTDOWN))
     return;
@@ -974,10 +974,10 @@ void Lmic::engineUpdate() {
   const bool jacc =
       opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
   if (jacc){
-    PRINT_DEBUG_2("Uplink join pending");
+    PRINT_DEBUG(2,F("Uplink join pending"));
   }
   else {
-    PRINT_DEBUG_2("Uplink data pending");
+    PRINT_DEBUG(2,F("Uplink data pending"));
   }
 
   const OsTime now = os_getTime();
@@ -986,29 +986,29 @@ void Lmic::engineUpdate() {
   if (opmode.test(OpState::NEXTCHNL)) {
     txbeg = nextTx(now);
     opmode.reset(OpState::NEXTCHNL);
-    PRINT_DEBUG_2("Airtime available at %lu (channel duty limit)",
+    PRINT_DEBUG(2,F("Airtime available at %lu (channel duty limit)"),
                   txbeg.tick());
   } else {
     txbeg = txend;
-    PRINT_DEBUG_2("Airtime available at %lu (previously determined)",
+    PRINT_DEBUG(2,F("Airtime available at %lu (previously determined)"),
                   txbeg.tick());
   }
   // Delayed TX or waiting for duty cycle?
   if (txbeg < globalDutyAvail) {
     txbeg = globalDutyAvail;
-    PRINT_DEBUG_2("Airtime available at %lu (global duty limit)", txbeg.tick());
+    PRINT_DEBUG(2,F("Airtime available at %lu (global duty limit)"), txbeg.tick());
   }
 
   // Earliest possible time vs overhead to setup radio
   if (txbeg >= (now + TX_RAMPUP)) {
-    PRINT_DEBUG_1("Uplink delayed until %lu", txbeg.tick());
+    PRINT_DEBUG(1,F("Uplink delayed until %lu"), txbeg.tick());
     // Cannot yet TX
     //  wait for the time to TX
     osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
     return;
   }
 
-  PRINT_DEBUG_1("Ready for uplink");
+  PRINT_DEBUG(1,F("Ready for uplink"));
   // We could send right now!
   txbeg = now;
   dr_t txdr = datarate;
@@ -1052,7 +1052,7 @@ void Lmic::engineUpdate() {
 
   if (globalDutyRate != 0) {
     globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
-    PRINT_DEBUG_2("Updating global duty avail to %lu", globalDutyAvail);
+    PRINT_DEBUG(2,F("Updating global duty avail to %lu"), globalDutyAvail);
   }
 
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
