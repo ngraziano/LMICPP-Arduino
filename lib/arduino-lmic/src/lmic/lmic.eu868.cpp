@@ -10,6 +10,8 @@
  *******************************************************************************/
 
 //! \file
+#include "../hal/print_debug.h"
+
 #include "lmic.eu868.h"
 #include "bufferpack.h"
 #include "lmic_table.h"

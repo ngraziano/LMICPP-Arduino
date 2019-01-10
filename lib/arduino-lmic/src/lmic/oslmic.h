@@ -50,16 +50,7 @@ uint8_t os_getBattLevel(void);
 #endif // !HAS_os_calls
 
 
-template <typename... T>
-void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
-  if (debugLevel >= X) {
-    printf_P(PSTR("%lu"), os_getTime().tick());
-    PGM_P p = reinterpret_cast<PGM_P>(str);
-    printf_P(p, div...);
-    //printf_P(PSTR("\n"));
-    printf("\n");
-  }
-};
+
 
 class OsJobBase;
 class OsJob;

@@ -3,6 +3,7 @@
 
 #include <lmic.h>
 #include <hal/hal_io.h>
+#include <hal/print_debug.h>
 
 #include <sleepandwatchdog.h>
 

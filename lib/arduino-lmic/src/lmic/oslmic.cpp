@@ -10,6 +10,7 @@
  *******************************************************************************/
 
 #include "lmic.h"
+#include "../hal/print_debug.h"
 #include <stdbool.h>
 
 OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}

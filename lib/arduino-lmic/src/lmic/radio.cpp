@@ -10,6 +10,8 @@
  *******************************************************************************/
 
 #include "radio.h"
+#include "../hal/print_debug.h"
+
 #include "../aes/aes.h"
 #include "lmic.h"
 #include "lmic_table.h"

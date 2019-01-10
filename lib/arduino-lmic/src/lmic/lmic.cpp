@@ -11,6 +11,7 @@
 
 //! \file
 #include "lmic.h"
+#include "../hal/print_debug.h"
 #include "../aes/aes.h"
 #include "bufferpack.h"
 #include "lmic_table.h"
