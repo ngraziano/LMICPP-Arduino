@@ -14,8 +14,9 @@
 #define _lmicrand_h_
 
 #include <stdint.h>
-#include "../aes/aes.h"
+
 class Radio;
+class Aes;
 
 class LmicRand {
 public:
