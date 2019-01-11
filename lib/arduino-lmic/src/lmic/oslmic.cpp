@@ -9,8 +9,8 @@
  *    IBM Zurich Research Lab - initial API, implementation and documentation
  *******************************************************************************/
 
-#include "lmic.h"
 #include "../hal/print_debug.h"
+#include "lmic.h"
 #include <stdbool.h>
 
 OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}
@@ -27,7 +27,7 @@ void OsJobBase::setRunnable() {
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
   scheduler.unlinkRunableJobs(this);
- 
+
   scheduler.linkRunableJob(this);
 }
 
@@ -101,7 +101,7 @@ void OsJobBase::setTimed(OsTime time) {
   // fill-in job
   deadline = time;
   scheduler.linkScheduledJob(this);
-  PRINT_DEBUG(2,F("Scheduled job %p, atRun %lu\n"), this, time);
+  PRINT_DEBUG(2, F("Scheduled job %p, atRun %lu\n"), this, time);
 }
 
 void OsJob::call() const { func(); }
@@ -111,23 +111,21 @@ OsDeltaTime OsScheduler::runloopOnce() {
   bool has_deadline = false;
 
   OsJobBase const *j = nullptr;
-  // check for runnable jobs
+  
   if (runnablejobs) {
+    // Runnable jobs immediatly
     j = runnablejobs;
     runnablejobs = j->next;
-  } else if (scheduledjobs &&
-             hal_checkTimer(
-                 scheduledjobs->deadline)) { // check for expired timed jobs
+  } else if (scheduledjobs && hal_checkTimer(scheduledjobs->deadline)) {
+    // timed jobs runnable
     j = scheduledjobs;
     scheduledjobs = j->next;
-
     has_deadline = true;
-
   }
 
   if (j) { // run job callback
-    PRINT_DEBUG(2,F("Running job %p, deadline %lu\n"), j,
-                  has_deadline ? j->deadline.tick() : 0);
+    PRINT_DEBUG(2, F("Running job %p, deadline %lu\n"), j,
+                has_deadline ? j->deadline.tick() : 0);
     j->call();
   }
 
