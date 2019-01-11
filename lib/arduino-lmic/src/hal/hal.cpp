@@ -122,6 +122,8 @@ void hal_init() {
 }
 
 void hal_failed(const char *file, uint16_t line) {
+  (void)file;
+  (void)line;
 #if defined(LMIC_FAILURE_TO)
   LMIC_FAILURE_TO.println("FAILURE ");
   LMIC_FAILURE_TO.print(file);
