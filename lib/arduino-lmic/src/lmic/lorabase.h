@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    IBM Zurich Research Lab - initial API, implementation and documentation
+ *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
 #ifndef _lorabase_h_
@@ -14,9 +15,6 @@
 
 #include "oslmic.h"
 
-// ================================================================================
-// BEG: Keep in sync with lorabase.hpp
-//
 
 enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
@@ -26,7 +24,6 @@ typedef uint8_t sf_t;
 typedef uint8_t dr_t;
 
 // Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
-
 struct rps_t {
   sf_t sf : 3;
   uint8_t bwRaw : 2;

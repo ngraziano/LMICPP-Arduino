@@ -7,9 +7,9 @@
  *
  * Contributors:
  *    IBM Zurich Research Lab - initial API, implementation and documentation
+ *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-//! \file
 #include "lmic.us915.h"
 #include "bufferpack.h"
 #include "lmic_table.h"

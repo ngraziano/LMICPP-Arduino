@@ -7,9 +7,9 @@
  *
  * Contributors:
  *    IBM Zurich Research Lab - initial API, implementation and documentation
+ *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-//! \file
 #ifndef _oslmic_h_
 #define _oslmic_h_
 

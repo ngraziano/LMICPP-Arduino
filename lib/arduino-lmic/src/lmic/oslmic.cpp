@@ -7,6 +7,7 @@
  *
  * Contributors:
  *    IBM Zurich Research Lab - initial API, implementation and documentation
+ *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
 #include "../hal/print_debug.h"

@@ -7,10 +7,10 @@
  *
  * Contributors:
  *    IBM Zurich Research Lab - initial API, implementation and documentation
+ *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-//! @file
-//! @brief LMIC API
+
 
 #ifndef _lmic_h_
 #define _lmic_h_
