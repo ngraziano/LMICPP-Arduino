@@ -35,6 +35,23 @@ Change to use this project type and adapt to some C++ type.
 #include <stdint.h>
 namespace {
 
+struct Indices {
+  uint8_t col;
+  uint8_t row;
+};
+
+struct DataBlock {
+  static constexpr uint8_t data_size = 16;
+  uint8_t data[data_size];
+
+  uint8_t *begin() { return data; };
+
+  uint8_t *end() { return data + data_size; };
+
+  uint8_t &operator[](Indices i) { return data[i.col * 4 + i.row]; }
+  uint8_t *column(uint8_t col) { return data + (4 * col); }
+};
+
 constexpr uint8_t sbox[256] PROGMEM = {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, // 0x00
     0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -88,41 +105,39 @@ static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
   output[3] = readsbox(input[0]);
 }
 
-/** @cond aes_funcs */
-constexpr uint8_t idxFrom(uint8_t col, uint8_t row) { return col * 4 + row; }
 
-static inline void subBytesAndShiftRows(uint8_t *buffer) {
+static inline void subBytesAndShiftRows(DataBlock& buffer) {
 
-  std::transform(buffer, buffer + 16, buffer,
+  std::transform(buffer.begin(), buffer.end(), buffer.begin(),
                  [](uint8_t c) -> uint8_t { return readsbox(c); });
 
   // shift row
   /*
-  buffer[idxFrom(0, 0)] = buffer[idxFrom(0, 0)];
-  buffer[idxFrom(1, 0)] = buffer[idxFrom(1, 0)];
-  buffer[idxFrom(2, 0)] = buffer[idxFrom(2, 0)];
-  buffer[idxFrom(3, 0)] = buffer[idxFrom(3, 0)];
+  buffer[{0, 0}] = buffer[{0, 0}];
+  buffer[{1, 0}] = buffer[{1, 0}];
+  buffer[{2, 0}] = buffer[{2, 0}];
+  buffer[{3, 0}] = buffer[{3, 0}];
   */
 
-  const uint8_t temp01 = buffer[idxFrom(0, 1)];
-  buffer[idxFrom(0, 1)] = buffer[idxFrom(1, 1)];
-  buffer[idxFrom(1, 1)] = buffer[idxFrom(2, 1)];
-  buffer[idxFrom(2, 1)] = buffer[idxFrom(3, 1)];
-  buffer[idxFrom(3, 1)] = temp01;
+  const uint8_t temp01 = buffer[{0, 1}];
+  buffer[{0, 1}] = buffer[{1, 1}];
+  buffer[{1, 1}] = buffer[{2, 1}];
+  buffer[{2, 1}] = buffer[{3, 1}];
+  buffer[{3, 1}] = temp01;
 
-  const uint8_t temp02 = buffer[idxFrom(0, 2)];
-  buffer[idxFrom(0, 2)] = buffer[idxFrom(2, 2)];
-  buffer[idxFrom(2, 2)] = temp02;
+  const uint8_t temp02 = buffer[{0, 2}];
+  buffer[{0, 2}] = buffer[{2, 2}];
+  buffer[{2, 2}] = temp02;
 
-  const uint8_t temp03 = buffer[idxFrom(0, 3)];
-  buffer[idxFrom(0, 3)] = buffer[idxFrom(3, 3)];
-  buffer[idxFrom(3, 3)] = buffer[idxFrom(2, 3)];
-  buffer[idxFrom(2, 3)] = buffer[idxFrom(1, 3)];
-  buffer[idxFrom(1, 3)] = temp03;
+  const uint8_t temp03 = buffer[{0, 3}];
+  buffer[{0, 3}] = buffer[{3, 3}];
+  buffer[{3, 3}] = buffer[{2, 3}];
+  buffer[{2, 3}] = buffer[{1, 3}];
+  buffer[{1, 3}] = temp03;
 
-  const uint8_t temp12 = buffer[idxFrom(1, 2)];
-  buffer[idxFrom(1, 2)] = buffer[idxFrom(3, 2)];
-  buffer[idxFrom(3, 2)] = temp12;
+  const uint8_t temp12 = buffer[{1, 2}];
+  buffer[{1, 2}] = buffer[{3, 2}];
+  buffer[{3, 2}] = temp12;
 }
 
 // Multiply x by 2 in the Galois field, to achieve the effect of the following:
@@ -172,29 +187,29 @@ void kxor(uint8_t a, uint8_t b, uint8_t schedule[16]) {
   schedule[a * 4 + 3] ^= schedule[b * 4 + 3];
 }
 
-void expand_key(uint8_t schedule[16], uint8_t round) {
-  kcore(round, schedule);
-  kxor(1, 0, schedule);
-  kxor(2, 1, schedule);
-  kxor(3, 2, schedule);
+void expand_key(AesKey &schedule, uint8_t round) {
+  kcore(round, schedule.data);
+  kxor(1, 0, schedule.data);
+  kxor(2, 1, schedule.data);
+  kxor(3, 2, schedule.data);
 }
 
-void xorbuffer(uint8_t const *source1, uint8_t const *source2, uint8_t *dest) {
-  std::transform(source1, source1 + 16, source2, dest,
+void xorbuffer(uint8_t const *source1, AesKey& source2, uint8_t *dest) {
+  std::transform(source1, source1 + 16, source2.data, dest,
                  [](uint8_t a, uint8_t b) { return a ^ b; });
 }
 
 } // namespace
 
 void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
-  uint8_t schedule[16];
-  uint8_t state1[16];
+  AesKey schedule = key;
+  DataBlock state1;
 
   // Start with the key in the schedule buffer.
-  std::copy(key.data, key.data + key.key_size, schedule);
+  //std::copy(key.data, key.data + key.key_size, schedule);
 
   // Copy the input into the state and XOR with the key schedule.
-  xorbuffer(buffer, schedule, state1);
+  xorbuffer(buffer, schedule, state1.data);
 
   // Perform the first 9 rounds of the cipher.
   for (uint8_t round = 1; round <= 9; ++round) {
@@ -203,11 +218,11 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
 
     // Encrypt using the key schedule.
     subBytesAndShiftRows(state1);
-    mixColumn(state1);
-    mixColumn(state1 + 4);
-    mixColumn(state1 + 8);
-    mixColumn(state1 + 12);
-    xorbuffer(state1, schedule, state1);
+    mixColumn(state1.column(0));
+    mixColumn(state1.column(1));
+    mixColumn(state1.column(2));
+    mixColumn(state1.column(3));
+    xorbuffer(state1.data, schedule, state1.data);
   }
 
   // Expand the final 16 bytes of the key schedule.
@@ -215,5 +230,5 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
 
   // Perform the final round.
   subBytesAndShiftRows(state1);
-  xorbuffer(state1, schedule, buffer);
+  xorbuffer(state1.data, schedule, buffer);
 }
