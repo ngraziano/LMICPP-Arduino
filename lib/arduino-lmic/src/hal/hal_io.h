@@ -5,7 +5,7 @@
 #include "../lmic/osticks.h"
 #include <stdint.h>
 
-static const uint8_t NUM_DIO = 2;
+constexpr uint8_t NUM_DIO = 2;
 
 struct lmic_pinmap {
   uint8_t nss;
@@ -49,6 +49,11 @@ public:
    * check "interrupt" pin and return if one change to 1.
    */
   uint8_t io_check();
+
+  /**
+   * Reset memorized state of the pins
+   */
+  void reset_io_check();
 
   // configure radio I/O and interrupt handler and SPI
   void init();

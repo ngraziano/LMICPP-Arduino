@@ -433,6 +433,8 @@ void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
 
   // enable antenna switch for TX
   hal.pin_rxtx(1);
+  // reset internal val of trigger pin.
+  hal.reset_io_check();
 
   // now we actually start the transmission
   opmode(OPMODE_TX);
@@ -515,6 +517,8 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
 
   // enable antenna switch for RX
   hal.pin_rxtx(0);
+  // reset internal val of trigger pin.
+  hal.reset_io_check();
 
   // now instruct the radio to receive
   if (rxmode == RXMODE_SINGLE) {

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-static const SPISettings settings(10E6, MSBFIRST, SPI_MODE0);
+static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
 HalIo::HalIo(lmic_pinmap const &pins) : lmic_pins(pins) {}
 
@@ -52,10 +52,14 @@ void HalIo::pin_rst(uint8_t val) const {
   }
 }
 
+void HalIo::reset_io_check() {
+  for (uint8_t i = 0; i < NUM_DIO; ++i) {
+    dio_states[i]=0;
+  }
+}
+
 uint8_t HalIo::io_check() {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
-    if (lmic_pins.dio[i] == LMIC_UNUSED_PIN)
-      continue;
     uint8_t newVal = digitalRead(lmic_pins.dio[i]);
     if (dio_states[i] != newVal) {
       dio_states[i] = newVal;
@@ -80,8 +84,7 @@ void HalIo::init() {
     pinMode(lmic_pins.rst, OUTPUT);
 
   pinMode(lmic_pins.dio[0], INPUT);
-  if (lmic_pins.dio[1] != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.dio[1], INPUT);
+  pinMode(lmic_pins.dio[1], INPUT);
 
   // configure radio SPI
   hal_spi_init();
