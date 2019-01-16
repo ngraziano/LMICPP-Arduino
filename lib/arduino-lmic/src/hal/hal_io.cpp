@@ -52,26 +52,17 @@ void HalIo::pin_rst(uint8_t val) const {
   }
 }
 
-void HalIo::reset_io_check() {
-  for (uint8_t i = 0; i < NUM_DIO; ++i) {
-    dio_states[i]=0;
-  }
-}
-
-uint8_t HalIo::io_check() {
+uint8_t HalIo::io_check() const {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
     uint8_t newVal = digitalRead(lmic_pins.dio[i]);
-    if (dio_states[i] != newVal) {
-      dio_states[i] = newVal;
-      if (dio_states[i])  {
-        return i;
-      }
+    if (newVal)  {
+      return i;
     }
   }
   return NUM_DIO;
 }
 
-void HalIo::init() {
+void HalIo::init() const {
   // NSS and DIO0 are required, DIO1 is required for LoRa
   ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);

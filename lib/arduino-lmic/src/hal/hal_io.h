@@ -46,21 +46,15 @@ public:
   void pin_rst(uint8_t val) const;
 
   /**
-   * check "interrupt" pin and return if one change to 1.
+   * check "interrupt" pin and return if one set to 1.
    */
-  uint8_t io_check();
-
-  /**
-   * Reset memorized state of the pins
-   */
-  void reset_io_check();
+  uint8_t io_check() const;
 
   // configure radio I/O and interrupt handler and SPI
-  void init();
+  void init() const;
 
 private:
   const lmic_pinmap &lmic_pins;
-  uint8_t dio_states[NUM_DIO] = {0};
 };
 
 #endif
