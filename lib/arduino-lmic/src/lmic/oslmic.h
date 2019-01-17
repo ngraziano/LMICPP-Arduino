@@ -63,12 +63,9 @@ class OsScheduler final {
 private:
   bool is_sleep_allow = false;
   OsJobBase *scheduledjobs = nullptr;
-  OsJobBase *runnablejobs = nullptr;
   static void unlinkjob(OsJobBase **pnext, OsJobBase *job);
   void unlinkScheduledJobs(OsJobBase *job);
-  void unlinkRunableJobs(OsJobBase *job);
   void linkScheduledJob(OsJobBase *job);
-  void linkRunableJob(OsJobBase *job);
   void allowSleep();
   void forbidSleep();
 

@@ -24,13 +24,7 @@ void OsJob::setCallbackRunnable(osjobcb_t cb) {
 }
 
 // schedule immediately runnable job
-void OsJobBase::setRunnable() {
-  // remove if job was already queued
-  scheduler.unlinkScheduledJobs(this);
-  scheduler.unlinkRunableJobs(this);
-
-  scheduler.linkRunableJob(this);
-}
+void OsJobBase::setRunnable() { setTimed(os_getTime()); }
 
 void OsScheduler::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
   for (; *pnext; pnext = &((*pnext)->next)) {
@@ -55,21 +49,8 @@ void OsScheduler::linkScheduledJob(OsJobBase *job) {
   *pnext = job;
 }
 
-void OsScheduler::linkRunableJob(OsJobBase *job) {
-  // add to end of run queue
-  job->next = nullptr;
-  OsJobBase **pnext;
-  for (pnext = &runnablejobs; *pnext; pnext = &((*pnext)->next))
-    ;
-  *pnext = job;
-}
-
 void OsScheduler::unlinkScheduledJobs(OsJobBase *job) {
   unlinkjob(&scheduledjobs, job);
-}
-
-void OsScheduler::unlinkRunableJobs(OsJobBase *job) {
-  unlinkjob(&runnablejobs, job);
 }
 
 void OsScheduler::allowSleep() { is_sleep_allow = true; }
@@ -82,7 +63,6 @@ bool OsScheduler::isSleepAllow() const { return is_sleep_allow; }
 void OsJobBase::clearCallback() {
   scheduler.allowSleep();
   scheduler.unlinkScheduledJobs(this);
-  scheduler.unlinkRunableJobs(this);
 }
 
 void OsJobBase::forbidSleep() { scheduler.forbidSleep(); }
@@ -98,7 +78,6 @@ void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
 void OsJobBase::setTimed(OsTime time) {
   // remove if job was already queued
   scheduler.unlinkScheduledJobs(this);
-  scheduler.unlinkRunableJobs(this);
   // fill-in job
   deadline = time;
   scheduler.linkScheduledJob(this);
@@ -109,29 +88,21 @@ void OsJob::call() const { func(); }
 
 OsDeltaTime OsScheduler::runloopOnce() {
 
-  bool has_deadline = false;
-
   OsJobBase const *j = nullptr;
-  
-  if (runnablejobs) {
-    // Runnable jobs immediatly
-    j = runnablejobs;
-    runnablejobs = j->next;
-  } else if (scheduledjobs && hal_checkTimer(scheduledjobs->deadline)) {
+
+  if (scheduledjobs && hal_checkTimer(scheduledjobs->deadline)) {
     // timed jobs runnable
     j = scheduledjobs;
     scheduledjobs = j->next;
-    has_deadline = true;
   }
 
   if (j) { // run job callback
-    PRINT_DEBUG(2, F("Running job %p, deadline %lu\n"), j,
-                has_deadline ? j->deadline.tick() : 0);
+    PRINT_DEBUG(2, F("Running job %p, deadline %lu\n"), j, j->deadline.tick());
     j->call();
   }
 
-  if (!runnablejobs && scheduledjobs && isSleepAllow()) {
-    // return the number of milisecond to wait ()
+  if (scheduledjobs && isSleepAllow()) {
+    // return the number of time to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
   // need to run now or nothing to do
