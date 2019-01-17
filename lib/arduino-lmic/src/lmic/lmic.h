@@ -110,6 +110,7 @@ public:
 
 private:
   Radio radio;
+  OsJobType<Lmic>::osjobcbTyped_t next_job;
   OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;

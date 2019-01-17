@@ -61,13 +61,10 @@ class OsScheduler final {
   friend class OsJobBase;
 
 private:
-  bool is_sleep_allow = false;
   OsJobBase *scheduledjobs = nullptr;
   static void unlinkjob(OsJobBase **pnext, OsJobBase *job);
   void unlinkScheduledJobs(OsJobBase *job);
   void linkScheduledJob(OsJobBase *job);
-  void allowSleep();
-  void forbidSleep();
 
 public:
   // Disallow copying
@@ -76,7 +73,6 @@ public:
   OsScheduler() = default;
 
   OsDeltaTime runloopOnce();
-  bool isSleepAllow() const;
 };
 
 class OsJobBase {
@@ -95,8 +91,6 @@ public:
 
   void setRunnable();
   void clearCallback();
-  void allowSleep();
-  void forbidSleep();
 
   void setTimed(OsTime time);
 };

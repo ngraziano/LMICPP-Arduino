@@ -473,7 +473,7 @@ void Lmic::setupRx2() {
   dataLen = 0;
   rps_t rps = dndr2rps(dn2Dr);
   radio.rx(dn2Freq, rps, rxsyms, rxtime);
-  osjob.forbidSleep();
+  osjob.setCallbackRunnable(&Lmic::io_check);
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
@@ -514,7 +514,7 @@ void Lmic::setupRx1() {
   dataLen = 0;
   rps_t rps = dndr2rps(dndr);
   radio.rx(freq, rps, rxsyms, rxtime);
-  osjob.forbidSleep();
+  osjob.setCallbackRunnable(&Lmic::io_check);
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -637,7 +637,7 @@ void Lmic::processRx2Jacc() {
 
 void Lmic::setupRx2Jacc() {
   PRINT_DEBUG(2,F("Setup RX2 join accept."));
-  this->osjob.setCallbackFuture(&Lmic::processRx2Jacc);
+  next_job = &Lmic::processRx2Jacc;
   setupRx2();
 }
 
@@ -651,7 +651,7 @@ void Lmic::processRx1Jacc() {
 
 void Lmic::setupRx1Jacc() {
   PRINT_DEBUG(2,F("Setup RX1 join accept."));
-  this->osjob.setCallbackFuture(&Lmic::processRx1Jacc);
+  next_job = &Lmic::processRx1Jacc;
 
   setupRx1();
 }
@@ -704,7 +704,7 @@ void Lmic::processRx2DnData() {
 }
 
 void Lmic::setupRx2DnData() {
-  osjob.setCallbackFuture(&Lmic::processRx2DnData);
+  next_job = &Lmic::processRx2DnData;
   setupRx2();
 }
 
@@ -722,7 +722,7 @@ void Lmic::processRx1DnData() {
 }
 
 void Lmic::setupRx1DnData() {
-  osjob.setCallbackFuture(&Lmic::processRx1DnData);
+  next_job = &Lmic::processRx1DnData;
   setupRx1();
 }
 
@@ -1020,7 +1020,7 @@ void Lmic::engineUpdate() {
       txdr = lowerDR(txdr, rejoinCnt);
     }
     buildJoinRequest();
-    osjob.setCallbackFuture(&Lmic::jreqDone);
+    next_job = &Lmic::jreqDone;
   } else
 #endif // !DISABLE_JOIN
   {
@@ -1039,7 +1039,7 @@ void Lmic::engineUpdate() {
       return;
     }
     buildDataFrame();
-    osjob.setCallbackFuture(&Lmic::updataDone);
+    next_job = &Lmic::updataDone;
   }
   rps_t rps = updr2rps(txdr);
   dndr = txdr; // carry TX datarate (can be != datarate) over to
@@ -1058,7 +1058,7 @@ void Lmic::engineUpdate() {
   }
 
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
-  osjob.forbidSleep();
+  osjob.setCallbackRunnable(&Lmic::io_check);
 }
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
@@ -1087,7 +1087,6 @@ void Lmic::reset() {
 
 void Lmic::init() {
   radio.init();
-  osjob.allowSleep();
   rand.init(radio);
   opmode.reset().set(OpState::SHUTDOWN);
 }
@@ -1219,9 +1218,10 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
 void Lmic::io_check() {
   if (radio.io_check(frame, dataLen, txend, rxtime)) {
     // if radio task ended, activate next job.
-    osjob.setRunnable();
-    // active chek finish
-    osjob.allowSleep();
+    osjob.setCallbackRunnable(next_job);
+  } else {
+    // if radio has not finish come back later (loop).
+    osjob.setCallbackRunnable(&Lmic::io_check);
   }
 }
 

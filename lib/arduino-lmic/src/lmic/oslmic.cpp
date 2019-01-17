@@ -53,21 +53,10 @@ void OsScheduler::unlinkScheduledJobs(OsJobBase *job) {
   unlinkjob(&scheduledjobs, job);
 }
 
-void OsScheduler::allowSleep() { is_sleep_allow = true; }
-
-void OsScheduler::forbidSleep() { is_sleep_allow = false; }
-
-bool OsScheduler::isSleepAllow() const { return is_sleep_allow; }
-
 // clear scheduled job
 void OsJobBase::clearCallback() {
-  scheduler.allowSleep();
   scheduler.unlinkScheduledJobs(this);
 }
-
-void OsJobBase::forbidSleep() { scheduler.forbidSleep(); }
-
-void OsJobBase::allowSleep() { scheduler.allowSleep(); }
 
 void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
   setCallbackFuture(cb);
@@ -101,7 +90,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
     j->call();
   }
 
-  if (scheduledjobs && isSleepAllow()) {
+  if (scheduledjobs) {
     // return the number of time to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
