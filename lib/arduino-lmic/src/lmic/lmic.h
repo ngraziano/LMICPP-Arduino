@@ -110,7 +110,6 @@ public:
 
 private:
   Radio radio;
-  OsJobType<Lmic>::osjobcbTyped_t next_job;
   OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
@@ -240,8 +239,6 @@ private:
   bool processJoinAccept();
   void processRx1Jacc();
   void processRx2Jacc();
-  void setupRx1Jacc();
-  void setupRx2Jacc();
   void jreqDone();
   void startJoiningCallBack();
 
@@ -250,9 +247,6 @@ private:
 #endif
 
   void processRx2DnData();
-
-  void setupRx1DnData();
-  void setupRx2DnData();
 
   void updataDone();
 
@@ -373,9 +367,11 @@ protected:
   // decrease data rate by n steps
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
+  OsJobType<Lmic>::osjobcbTyped_t job_after_io() const;
+  void io_check();
+  
 public:
   explicit Lmic(lmic_pinmap const &pins, OsScheduler &scheduler);
-  void io_check();
   void store_trigger();
 };
 
