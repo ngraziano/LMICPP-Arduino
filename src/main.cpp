@@ -267,15 +267,4 @@ void loop()
         // Go to sleep if we have nothing to do.
         powersave(to_wait);
     }
-    else
-    {
-        // Instead of using proper interrupts (which are a bit tricky
-        // and/or not available on all pins on AVR), just poll the pin
-        // values. Here makes sure we check at least once every
-        // loop.
-        //
-        // As an additional bonus, this prevents the can of worms that
-        // we would otherwise get for running SPI transfers inside ISRs
-        LMIC.io_check();
-    }
 }
