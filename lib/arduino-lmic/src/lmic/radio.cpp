@@ -14,7 +14,6 @@
 #include "../hal/print_debug.h"
 
 #include "../aes/aes.h"
-#include "lmic.h"
 #include "lmic_table.h"
 
 // ----------------------------------------
@@ -205,7 +204,6 @@ void Radio::opmodeLora() const {
 
 // configure LoRa modem (cfg1, cfg2)
 void Radio::configLoraModem(rps_t rps) {
-  current_rps = rps;
   sf_t const sf = rps.sf;
 
 #ifdef CFG_sx1276_radio
@@ -600,45 +598,17 @@ uint8_t Radio::rssi() const {
   return r;
 }
 
-CONST_TABLE(int32_t, LORA_RXDONE_FIXUP)
-[] = {
-    [FSK] = OsDeltaTime::from_us(0).tick(), // (   0 ticks)
-    [SF7] = OsDeltaTime::from_us(0).tick(), // (   0 ticks)
-    [SF8] = OsDeltaTime::from_us(1648).tick(),
-    [SF9] = OsDeltaTime::from_us(3265).tick(),
-    [SF10] = OsDeltaTime::from_us(7049).tick(),
-    [SF11] = OsDeltaTime::from_us(13641).tick(),
-    [SF12] = OsDeltaTime::from_us(31189).tick(),
-};
-
-OsTime Radio::int_trigger_time() const {
-  OsTime const now = os_getTime();
-  auto const diff = now - last_int_trigger;
-  if (diff > OsDeltaTime(0) && diff < OsDeltaTime::from_sec(1)) {
-    return last_int_trigger;
-  } else {
-    PRINT_DEBUG(1, F("Not using interupt trigger %" PRIu32 ""),
-                last_int_trigger.tick());
-    return now;
-  }
-}
-
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
-  OsTime now = int_trigger_time();
+uint8_t Radio::handle_end_rx(uint8_t *const framePtr) {
 
   uint8_t const flags = readReg(LORARegIrqFlags);
   PRINT_DEBUG(2, F("irq: flags: 0x%x\n"), flags);
 
+  uint8_t length = 0;
   if (flags & IRQ_LORA_RXDONE_MASK) {
-    // save exact rx time
-    if (current_rps.getBw() == BandWidth::BW125) {
-      now -= OsDeltaTime(TABLE_GET_S4(LORA_RXDONE_FIXUP, current_rps.sf));
-    }
-
     // read the PDU and inform the MAC that we received something
-    uint8_t length =
+    length =
         (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
             ? readReg(LORARegPayloadLength)
             : readReg(LORARegRxNbBytes);
@@ -650,7 +620,6 @@ OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
     writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
     // now read the FIFO
     readBuf(RegFifo, framePtr, length);
-    frameLength = length;
 
     // read rx quality parameters
     // SNR [dB] * 4
@@ -658,10 +627,8 @@ OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
     // RSSI [dBm]  - 139
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-    PRINT_DEBUG(1, F("RX timeout"));
-
     // indicate timeout
-    frameLength = 0;
+    PRINT_DEBUG(1, F("RX timeout"));
   }
   // mask all radio IRQs
   writeReg(LORARegIrqFlagsMask, 0xFF);
@@ -669,13 +636,12 @@ OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
   writeReg(LORARegIrqFlags, 0xFF);
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
-  return now;
+
+  // 0 in case of timeout.
+  return length;
 }
 
-OsTime Radio::handle_end_tx() {
-  // save exact tx time
-  OsTime const now = int_trigger_time();
-  PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), now.tick());
+void Radio::handle_end_tx() const {
 
   // mask all radio IRQs
   writeReg(LORARegIrqFlagsMask, 0xFF);
@@ -683,7 +649,6 @@ OsTime Radio::handle_end_tx() {
   writeReg(LORARegIrqFlags, 0xFF);
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
-  return now;
 }
 
 int16_t Radio::get_last_packet_rssi() const {
@@ -736,7 +701,5 @@ bool Radio::io_check() const {
   }
   return false;
 }
-
-void Radio::store_trigger() { last_int_trigger = os_getTime(); }
 
 Radio::Radio(lmic_pinmap const &pins) : hal(pins) {}

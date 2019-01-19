@@ -1192,10 +1192,26 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
   return dr;
 }
 
+OsTime Lmic::int_trigger_time() const {
+  OsTime const now = os_getTime();
+  auto const diff = now - last_int_trigger;
+  if (diff > OsDeltaTime(0) && diff < OsDeltaTime::from_sec(1)) {
+    return last_int_trigger;
+  } else {
+    PRINT_DEBUG(1, F("Not using interupt trigger %" PRIu32 ""),
+                last_int_trigger.tick());
+    return now;
+  }
+}
+
 void Lmic::wait_end_rx() {
   if (radio.io_check()) {
-    const auto now = radio.handle_end_rx(frame, dataLen);
+    const auto now = int_trigger_time();
+
+    dataLen = radio.handle_end_rx(frame);
+
     PRINT_DEBUG(1, F("End RX - Start RX : %li us "), (now - rxtime).to_us());
+    rxtime = now;
 
     // if radio task ended, activate job.
     if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
@@ -1211,7 +1227,13 @@ void Lmic::wait_end_rx() {
 
 void Lmic::wait_end_tx() {
   if (radio.io_check()) {
-    txend = radio.handle_end_tx();
+    // save exact tx time
+    OsTime const txend = int_trigger_time();
+
+    radio.handle_end_tx();
+
+    PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), txend.tick());
+
     // if radio task ended, activate next job.
     if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
       jreqDone();
@@ -1224,7 +1246,7 @@ void Lmic::wait_end_tx() {
   }
 }
 
-void Lmic::store_trigger() { radio.store_trigger(); }
+void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
 Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
     : radio(pins), osjob(*this, scheduler), rand(aes) {}

@@ -30,20 +30,17 @@ public:
   void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
 
   void init_random(uint8_t randbuf[16]);
-  OsTime handle_end_rx(uint8_t *framePtr, uint8_t &frameLength);
-  OsTime handle_end_tx();
+  uint8_t handle_end_rx(uint8_t *framePtr);
+  void handle_end_tx() const;
 
   bool io_check() const;
-  void store_trigger();
   uint8_t rssi() const;
   int16_t get_last_packet_rssi() const;
   int8_t get_last_packet_snr_x4() const;
 
 private:
-  OsTime last_int_trigger;
   int8_t last_packet_snr_reg = 0;
   uint8_t last_packet_rssi_reg = 0;
-  rps_t current_rps;
   HalIo hal;
 
   OsTime int_trigger_time() const;

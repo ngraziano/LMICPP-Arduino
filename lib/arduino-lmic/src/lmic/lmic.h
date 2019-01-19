@@ -113,7 +113,8 @@ private:
   OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
-
+  // time of detect of change of state of radio module
+  OsTime last_int_trigger;
   uint8_t rxsyms = 0;
 
   eventCallback_t eventCallBack = nullptr;
@@ -369,6 +370,7 @@ protected:
   // decrease data rate by n steps
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
+  OsTime int_trigger_time() const;
   void wait_end_rx();
   void wait_end_tx();
   
