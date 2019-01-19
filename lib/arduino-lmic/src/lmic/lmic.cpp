@@ -473,7 +473,7 @@ void Lmic::setupRx1() {
   dataLen = 0;
   rps_t rps = dndr2rps(dndr);
   radio.rx(freq, rps, rxsyms, rxtime);
-  osjob.setCallbackRunnable(&Lmic::io_check);
+  wait_end_rx();
 }
 
 void Lmic::setupRx2() {
@@ -481,7 +481,7 @@ void Lmic::setupRx2() {
   dataLen = 0;
   rps_t rps = dndr2rps(dn2Dr);
   radio.rx(dn2Freq, rps, rxsyms, rxtime);
-  osjob.setCallbackRunnable(&Lmic::io_check);
+  wait_end_rx();
 }
 
 void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
@@ -628,29 +628,34 @@ bool Lmic::processJoinAccept() {
   return true;
 }
 
-void Lmic::processRx2Jacc() {
-  if (dataLen == 0)
-    txrxFlags.reset(); // nothing in 1st/2nd DN slot
+void Lmic::processRxJacc() {
+  PRINT_DEBUG(2, F("Result RX join accept datalen=%i."), dataLen);
   if (!processJoinAccept()) {
-    processJoinAcceptNoJoinFrame();
-  };
-}
-
-void Lmic::processRx1Jacc() {
-  PRINT_DEBUG(2, F("Result RX1 join accept datalen=%i."), dataLen);
-  if (!processJoinAccept()) {
-    osjob.setCallbackFuture(&Lmic::setupRx2);
-    schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
+    if (txrxFlags.test(TxRxStatus::DNW1)) {
+      // wait for RX2
+      osjob.setCallbackFuture(&Lmic::setupRx2);
+      schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
+    } else {
+      // nothing in 1st/2nd DN slot
+      txrxFlags.reset();
+      processJoinAcceptNoJoinFrame();
+    }
   }
 }
 
-void Lmic::jreqDone() {
-  txDone(OsDeltaTime::from_sec(DELAY_JACC1));
-}
+void Lmic::jreqDone() { txDone(OsDeltaTime::from_sec(DELAY_JACC1)); }
 
 #endif // !DISABLE_JOIN
 
 // ======================================== Data frames
+
+void Lmic::processRxDnData() {
+  if (txrxFlags.test(TxRxStatus::DNW1)) {
+    processRx1DnData();
+  } else {
+    processRx2DnData();
+  }
+}
 
 void Lmic::processRx2DnData() {
   if (dataLen == 0) {
@@ -737,9 +742,7 @@ void Lmic::resetAdrCount() {
   }
 }
 
-void Lmic::updataDone() {
-  txDone(rxDelay);
-}
+void Lmic::updataDone() { txDone(rxDelay); }
 
 uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
@@ -1032,7 +1035,7 @@ void Lmic::engineUpdate() {
   }
 
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
-  osjob.setCallbackRunnable(&Lmic::io_check);
+  wait_end_tx();
 }
 
 void Lmic::setAntennaPowerAdjustment(int8_t power) {
@@ -1189,31 +1192,35 @@ dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
   return dr;
 }
 
-OsJobType<Lmic>::osjobcbTyped_t Lmic::job_after_io() const {
-  if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
-    if (txrxFlags.test(TxRxStatus::DNW1)) {
-      return &Lmic::processRx1Jacc;
-    } else if (txrxFlags.test(TxRxStatus::DNW2)) {
-      return &Lmic::processRx2Jacc;
+void Lmic::wait_end_rx() {
+  if (radio.io_check()) {
+    const auto now = radio.handle_end_rx(frame, dataLen);
+    PRINT_DEBUG(1, F("End RX - Start RX : %li us "), (now - rxtime).to_us());
+
+    // if radio task ended, activate job.
+    if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
+      processRxJacc();
+    } else {
+      processRxDnData();
     }
-    return &Lmic::jreqDone;
   } else {
-    if (txrxFlags.test(TxRxStatus::DNW1)) {
-      return &Lmic::processRx1DnData;
-    } else if (txrxFlags.test(TxRxStatus::DNW2)) {
-      return &Lmic::processRx2DnData;
-    }
-    return &Lmic::updataDone;
+    // if radio has not finish come back later (loop).
+    osjob.setCallbackRunnable(&Lmic::wait_end_rx);
   }
 }
 
-void Lmic::io_check() {
-  if (radio.io_check(frame, dataLen, txend, rxtime)) {
+void Lmic::wait_end_tx() {
+  if (radio.io_check()) {
+    txend = radio.handle_end_tx();
     // if radio task ended, activate next job.
-    osjob.setCallbackRunnable(job_after_io());
+    if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
+      jreqDone();
+    } else {
+      updataDone();
+    }
   } else {
     // if radio has not finish come back later (loop).
-    osjob.setCallbackRunnable(&Lmic::io_check);
+    osjob.setCallbackRunnable(&Lmic::wait_end_tx);
   }
 }
 

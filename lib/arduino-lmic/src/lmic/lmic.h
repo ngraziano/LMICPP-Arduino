@@ -223,7 +223,9 @@ protected:
 
 private:
   // callbacks
+  void processRxDnData();
   void processRx1DnData();
+  void processRx2DnData();
   void setupRx1();
   void setupRx2();
   void schedRx12(OsDeltaTime delay, uint8_t dr);
@@ -237,8 +239,8 @@ private:
   void onJoinFailed();
   void processJoinAcceptNoJoinFrame();
   bool processJoinAccept();
-  void processRx1Jacc();
-  void processRx2Jacc();
+  void processRxJacc();
+
   void jreqDone();
   void startJoiningCallBack();
 
@@ -246,7 +248,7 @@ private:
 
 #endif
 
-  void processRx2DnData();
+  
 
   void updataDone();
 
@@ -367,8 +369,8 @@ protected:
   // decrease data rate by n steps
   dr_t lowerDR(dr_t dr, uint8_t n) const;
 
-  OsJobType<Lmic>::osjobcbTyped_t job_after_io() const;
-  void io_check();
+  void wait_end_rx();
+  void wait_end_tx();
   
 public:
   explicit Lmic(lmic_pinmap const &pins, OsScheduler &scheduler);

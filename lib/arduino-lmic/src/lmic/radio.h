@@ -29,11 +29,11 @@ public:
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
   void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
 
-  void irq_handler(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-                   OsTime &rxTime);
   void init_random(uint8_t randbuf[16]);
-  bool io_check(uint8_t *framePtr, uint8_t &frameLength, OsTime &txEnd,
-                OsTime &rxTime);
+  OsTime handle_end_rx(uint8_t *framePtr, uint8_t &frameLength);
+  OsTime handle_end_tx();
+
+  bool io_check() const;
   void store_trigger();
   uint8_t rssi() const;
   int16_t get_last_packet_rssi() const;
