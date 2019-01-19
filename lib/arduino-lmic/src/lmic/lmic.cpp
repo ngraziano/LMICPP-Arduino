@@ -1210,7 +1210,7 @@ void Lmic::wait_end_rx() {
 
     dataLen = radio.handle_end_rx(frame);
 
-    PRINT_DEBUG(1, F("End RX - Start RX : %li us "), (now - rxtime).to_us());
+    PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "), (now - rxtime).to_us());
     rxtime = now;
 
     // if radio task ended, activate job.
@@ -1228,7 +1228,7 @@ void Lmic::wait_end_rx() {
 void Lmic::wait_end_tx() {
   if (radio.io_check()) {
     // save exact tx time
-    OsTime const txend = int_trigger_time();
+    txend = int_trigger_time();
 
     radio.handle_end_tx();
 
