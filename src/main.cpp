@@ -185,7 +185,7 @@ if(debugLevel>0) {
     LMIC.setDevEuiCallback(getDevEui);
     LMIC.setArtEuiCallback(getArtEui);
     // set clock error to allow good connection.
-    LMIC.setClockError(MAX_CLOCK_ERROR * 5 / 100);
+    LMIC.setClockError(MAX_CLOCK_ERROR * 3 / 100);
     LMIC.setAntennaPowerAdjustment(-14);
 
     // Only work with special boot loader.
