@@ -438,7 +438,7 @@ void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
   opmode(OPMODE_TX);
 
   uint8_t sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG(1, F("TXMODE, freq=%lu, len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
+  PRINT_DEBUG(1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
               freq, dataLen, sf, bwForLog(rps), crForLog(rps), rps.ih);
 }
 
@@ -529,7 +529,7 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   }
 
   uint8_t const sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG(1, F("%s, freq=%lu, SF=%d, BW=%d, CR=4/%d, IH=%d"),
+  PRINT_DEBUG(1, F("%s, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
               rxmode == RXMODE_SINGLE
                   ? "RXMODE_SINGLE"
                   : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
@@ -617,7 +617,7 @@ OsTime Radio::int_trigger_time() const {
   if (diff > OsDeltaTime(0) && diff < OsDeltaTime::from_sec(1)) {
     return last_int_trigger;
   } else {
-    PRINT_DEBUG(1, F("Not using interupt trigger %lu"),
+    PRINT_DEBUG(1, F("Not using interupt trigger %" PRIu32 ""),
                 last_int_trigger.tick());
     return now;
   }
@@ -658,7 +658,7 @@ OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
     // RSSI [dBm]  - 139
     last_packet_rssi_reg = readReg(LORARegPktRssiValue);
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
-    PRINT_DEBUG(1, F("RX timeout  %lu"));
+    PRINT_DEBUG(1, F("RX timeout"));
 
     // indicate timeout
     frameLength = 0;
@@ -675,7 +675,7 @@ OsTime Radio::handle_end_rx(uint8_t *const framePtr, uint8_t &frameLength) {
 OsTime Radio::handle_end_tx() {
   // save exact tx time
   OsTime const now = int_trigger_time();
-  PRINT_DEBUG(1, F("End TX  %lu"), now.tick());
+  PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), now.tick());
 
   // mask all radio IRQs
   writeReg(LORARegIrqFlagsMask, 0xFF);

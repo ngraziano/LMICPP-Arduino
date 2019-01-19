@@ -70,7 +70,7 @@ void OsJobBase::setTimed(OsTime time) {
   // fill-in job
   deadline = time;
   scheduler.linkScheduledJob(this);
-  PRINT_DEBUG(2, F("Scheduled job %p, atRun %lu\n"), this, time);
+  PRINT_DEBUG(2, F("Scheduled job %p, atRun %" PRIu32 ""), this, time);
 }
 
 void OsJob::call() const { func(); }
@@ -86,7 +86,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
   }
 
   if (j) { // run job callback
-    PRINT_DEBUG(2, F("Running job %p, deadline %lu\n"), j, j->deadline.tick());
+    PRINT_DEBUG(2, F("Running job %p, deadline %" PRIu32 ""), j, j->deadline.tick());
     j->call();
   }
 

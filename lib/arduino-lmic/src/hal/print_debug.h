@@ -9,8 +9,8 @@
 
 template <typename... T>
 void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
-  if (debugLevel >= X) {
-    printf_P(PSTR("%lu "), hal_ticks().tick());
+  if (debugLevel >= X) { 
+    printf_P(PSTR("%" PRIu32 " "), hal_ticks().tick());
     PGM_P p = reinterpret_cast<PGM_P>(str);
     printf_P(p, div...);
     //printf_P(PSTR("\n"));

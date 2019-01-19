@@ -332,7 +332,7 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 
   if (diff > 0) {
     // skip in sequence number, missed packet
-    PRINT_DEBUG(1, F("Current packet receive %lu expected %lu"), seqno,
+    PRINT_DEBUG(1, F("Current packet receive %" PRIu32 " expected %" PRIu32), seqno,
                 seqnoDn);
     return SeqNoValidity::ok;
   }
@@ -966,23 +966,23 @@ void Lmic::engineUpdate() {
   if (opmode.test(OpState::NEXTCHNL)) {
     txbeg = nextTx(now);
     opmode.reset(OpState::NEXTCHNL);
-    PRINT_DEBUG(2, F("Airtime available at %lu (channel duty limit)"),
+    PRINT_DEBUG(2, F("Airtime available at %" PRIu32 " (channel duty limit)"),
                 txbeg.tick());
   } else {
     txbeg = txend;
-    PRINT_DEBUG(2, F("Airtime available at %lu (previously determined)"),
+    PRINT_DEBUG(2, F("Airtime available at %" PRIu32 " (previously determined)"),
                 txbeg.tick());
   }
   // Delayed TX or waiting for duty cycle?
   if (txbeg < globalDutyAvail) {
     txbeg = globalDutyAvail;
-    PRINT_DEBUG(2, F("Airtime available at %lu (global duty limit)"),
+    PRINT_DEBUG(2, F("Airtime available at %" PRIu32 " (global duty limit)"),
                 txbeg.tick());
   }
 
   // Earliest possible time vs overhead to setup radio
   if (txbeg >= (now + TX_RAMPUP)) {
-    PRINT_DEBUG(1, F("Uplink delayed until %lu"), txbeg.tick());
+    PRINT_DEBUG(1, F("Uplink delayed until %" PRIu32), txbeg.tick());
     // Cannot yet TX
     //  wait for the time to TX
     osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
@@ -1031,7 +1031,7 @@ void Lmic::engineUpdate() {
 
   if (globalDutyRate != 0) {
     globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
-    PRINT_DEBUG(2, F("Updating global duty avail to %lu"), globalDutyAvail);
+    PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""), globalDutyAvail.tick());
   }
 
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
