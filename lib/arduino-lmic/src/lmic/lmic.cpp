@@ -135,9 +135,7 @@ void Lmic::reportEvent(EventType ev) {
 void Lmic::runReset() {
   // Disable session
   reset();
-#if !defined(DISABLE_JOIN)
   startJoining();
-#endif // !DISABLE_JOIN
   reportEvent(EventType::RESET);
 }
 
@@ -332,8 +330,8 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 
   if (diff > 0) {
     // skip in sequence number, missed packet
-    PRINT_DEBUG(1, F("Current packet receive %" PRIu32 " expected %" PRIu32), seqno,
-                seqnoDn);
+    PRINT_DEBUG(1, F("Current packet receive %" PRIu32 " expected %" PRIu32),
+                seqno, seqnoDn);
     return SeqNoValidity::ok;
   }
 
@@ -528,7 +526,6 @@ void Lmic::txDone(OsDeltaTime delay) {
 
 // ======================================== Join frames
 
-#if !defined(DISABLE_JOIN)
 void Lmic::onJoinFailed() {
   // Notify app - must call reset() to stop joining
   // otherwise join procedure continues.
@@ -644,8 +641,6 @@ void Lmic::processRxJacc() {
 }
 
 void Lmic::jreqDone() { txDone(OsDeltaTime::from_sec(DELAY_JACC1)); }
-
-#endif // !DISABLE_JOIN
 
 // ======================================== Data frames
 
@@ -874,7 +869,6 @@ void Lmic::buildDataFrame() {
 //
 // ================================================================================
 
-#if !defined(DISABLE_JOIN)
 void Lmic::buildJoinRequest() {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
@@ -916,7 +910,6 @@ bool Lmic::startJoining() {
   }
   return false; // already joined
 }
-#endif // !DISABLE_JOIN
 
 void Lmic::processDnData() {
   opmode.reset(OpState::TXDATA).reset(OpState::TXRXPEND);
@@ -937,12 +930,10 @@ void Lmic::engineUpdate() {
   if (opmode.test(OpState::TXRXPEND) || opmode.test(OpState::SHUTDOWN))
     return;
 
-#if !defined(DISABLE_JOIN)
   if (devaddr == 0 && !opmode.test(OpState::JOINING)) {
     startJoining();
     return;
   }
-#endif // !DISABLE_JOIN
 
   if (!opmode.test(OpState::JOINING) && !opmode.test(OpState::REJOIN) &&
       !opmode.test(OpState::TXDATA) && !opmode.test(OpState::POLL)) {
@@ -970,7 +961,8 @@ void Lmic::engineUpdate() {
                 txbeg.tick());
   } else {
     txbeg = txend;
-    PRINT_DEBUG(2, F("Airtime available at %" PRIu32 " (previously determined)"),
+    PRINT_DEBUG(2,
+                F("Airtime available at %" PRIu32 " (previously determined)"),
                 txbeg.tick());
   }
   // Delayed TX or waiting for duty cycle?
@@ -993,15 +985,12 @@ void Lmic::engineUpdate() {
   // We could send right now!
   txbeg = now;
   dr_t txdr = datarate;
-#if !defined(DISABLE_JOIN)
   if (jacc) {
     if (opmode.test(OpState::REJOIN)) {
       txdr = lowerDR(txdr, rejoinCnt);
     }
     buildJoinRequest();
-  } else
-#endif // !DISABLE_JOIN
-  {
+  } else {
     if (seqnoDn >= 0xFFFFFF80) {
       // Imminent roll over - proactively reset MAC
       // Device has to react! NWK will not roll over and just stop sending.
@@ -1031,7 +1020,8 @@ void Lmic::engineUpdate() {
 
   if (globalDutyRate != 0) {
     globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
-    PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""), globalDutyAvail.tick());
+    PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
+                globalDutyAvail.tick());
   }
 
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
@@ -1210,7 +1200,8 @@ void Lmic::wait_end_rx() {
 
     dataLen = radio.handle_end_rx(frame);
 
-    PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "), (now - rxtime).to_us());
+    PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "),
+                (now - rxtime).to_us());
     rxtime = now;
 
     // if radio task ended, activate job.

@@ -13,8 +13,8 @@
 //! \file
 #include "../hal/print_debug.h"
 
-#include "lmic.eu868.h"
 #include "bufferpack.h"
+#include "lmic.eu868.h"
 #include "lmic_table.h"
 #include <algorithm>
 
@@ -135,7 +135,7 @@ bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
 }
 
 void LmicEu868::initDefaultChannels(bool join) {
-  PRINT_DEBUG(2,F("Init Default Channel join?=%d"), join);
+  PRINT_DEBUG(2, F("Init Default Channel join?=%d"), join);
 
   channels.disableAll();
   uint8_t su = join ? 0 : 3;
@@ -202,9 +202,8 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
     if (newfreq) {
       setupChannel(chidx, newfreq, 0);
 
-      PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""),
-                  chidx, newfreq);
-
+      PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""), chidx,
+                  newfreq);
     }
   }
 }
@@ -240,11 +239,11 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
 
   band->avail = txbeg + band->txcap * airtime;
 
-
-  PRINT_DEBUG(2,F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32 ". Setting "
-              "available time for band %d to %" PRIu32 ""),
+  PRINT_DEBUG(2,
+              F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32
+                ". Setting "
+                "available time for band %d to %" PRIu32 ""),
               txbeg, airtime, freq, band->avail);
-
 }
 
 uint32_t LmicEu868::getFreq(uint8_t channel) const {
@@ -259,8 +258,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
   uint8_t bmap = 0x0F;
 
   for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
-    PRINT_DEBUG(2,F("Band %d, available at %" PRIu32 " and last channel %d"), bi,
-                  bands[bi].avail, bands[bi].lastchnl);
+    PRINT_DEBUG(2, F("Band %d, available at %" PRIu32 " and last channel %d"),
+                bi, bands[bi].avail, bands[bi].lastchnl);
   }
 
   do {
@@ -269,8 +268,9 @@ OsTime LmicEu868::nextTx(OsTime const now) {
 
     for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
       if ((bmap & (1 << bi)) && mintime > bands[bi].avail) {
-        PRINT_DEBUG(2,F("Considering band %d, which is available at %" PRIu32 ""), bi,
-                      bands[bi].avail.tick());
+        PRINT_DEBUG(2,
+                    F("Considering band %d, which is available at %" PRIu32 ""),
+                    bi, bands[bi].avail.tick());
         band = bi;
         mintime = bands[band].avail;
       }
@@ -278,11 +278,14 @@ OsTime LmicEu868::nextTx(OsTime const now) {
 
     if (band == 0xFF) {
       // Try to handle a strange bug wich appen afert 7 hours
-      PRINT_DEBUG(2,F("Error No band available."));
+      PRINT_DEBUG(2, F("Error No band available."));
       OsTime resetTime = now + OsDeltaTime::from_sec(15 * 60);
       for (uint8_t bi = 0; bi < MAX_BANDS; bi++) {
-        PRINT_DEBUG(2,F("Band %i Reseting avail from %" PRIu32 " to %" PRIu32 ", lastchnl: %i."),
-                      bi, bands[bi].avail.tick(), resetTime.tick(), bands[bi].lastchnl);
+        PRINT_DEBUG(2,
+                    F("Band %i Reseting avail from %" PRIu32 " to %" PRIu32
+                      ", lastchnl: %i."),
+                    bi, bands[bi].avail.tick(), resetTime.tick(),
+                    bands[bi].lastchnl);
         bands[bi].avail = resetTime;
       }
       // force band 0.
@@ -298,7 +301,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
         chnl -= MAX_CHANNELS;
       // channel enabled
       if (channels.is_enable(chnl)) {
-        PRINT_DEBUG(2,
+        PRINT_DEBUG(
+            2,
             F("Considering channel %d for band %d, set band = %d, drMap = %x"),
             chnl, band, getBand(chnl), channels[chnl].getDrMap());
         if ((channels[chnl].getDrMap() & (1 << (datarate & 0xF))) != 0 &&
@@ -309,7 +313,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       }
     }
 
-    PRINT_DEBUG(2,F("No channel found in band %d"), band);
+    PRINT_DEBUG(2, F("No channel found in band %d"), band);
 
     bmap &= ~(1 << band);
     if (bmap == 0) {
@@ -324,15 +328,14 @@ void LmicEu868::setRx1Params() {
   lowerDR(dndr, rx1DrOffset);
 }
 
-#if !defined(DISABLE_JOIN)
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
   setDrJoin(static_cast<dr_t>(Dr::SF7));
   initDefaultChannels(true);
   txend = bands[BAND_MILLI].avail + OsDeltaTime::rnd_delay(rand, 8);
-  PRINT_DEBUG(1,F("Init Join loop : avail=%" PRIu32 " txend=%" PRIu32 ""),
-                bands[BAND_MILLI].avail.tick(), txend.tick());
+  PRINT_DEBUG(1, F("Init Join loop : avail=%" PRIu32 " txend=%" PRIu32 ""),
+              bands[BAND_MILLI].avail.tick(), txend.tick());
 }
 
 bool LmicEu868::nextJoinState() {
@@ -361,20 +364,18 @@ bool LmicEu868::nextJoinState() {
   // SF12:255, SF11:127, .., SF7:8secs
   txend =
       time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
-      
-  PRINT_DEBUG(1,F("Next available : %" PRIu32 " , Choosen %" PRIu32 ""), time.tick(),
-                txend.tick());
+
+  PRINT_DEBUG(1, F("Next available : %" PRIu32 " , Choosen %" PRIu32 ""),
+              time.tick(), txend.tick());
 
   if (failed)
     PRINT_DEBUG(2, F("Join failed"));
   else
-    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""),
-                txend);
+    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), txend);
 
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }
-#endif // !DISABLE_JOIN
 
 dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }

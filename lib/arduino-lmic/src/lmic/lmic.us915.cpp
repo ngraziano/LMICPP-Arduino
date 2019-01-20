@@ -272,7 +272,6 @@ void LmicUs915::setRx1Params() {
     dndr = DR_SF7CR;
 }
 
-#if !defined(DISABLE_JOIN)
 void LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
@@ -308,7 +307,6 @@ bool LmicUs915::nextJoinState() {
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
 }
-#endif // !DISABLE_JOIN
 
 dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }

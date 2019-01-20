@@ -103,10 +103,8 @@ protected:
   void updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;
-#if !defined(DISABLE_JOIN)
   void initJoinLoop() override;
   bool nextJoinState() override;
-#endif
   dr_t defaultRX2Dr() const override;
   uint32_t defaultRX2Freq() const override;
 

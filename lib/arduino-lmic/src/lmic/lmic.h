@@ -10,8 +10,6 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-
-
 #ifndef _lmic_h_
 #define _lmic_h_
 
@@ -236,7 +234,6 @@ private:
   void runReset();
   void runEngineUpdate();
 
-#if !defined(DISABLE_JOIN)
   void onJoinFailed();
   void processJoinAcceptNoJoinFrame();
   bool processJoinAccept();
@@ -246,10 +243,6 @@ private:
   void startJoiningCallBack();
 
   void buildJoinRequest();
-
-#endif
-
-  
 
   void updataDone();
 
@@ -300,11 +293,8 @@ public:
    * Adjust output power by this amount (for antenna gain)
    */
   void setAntennaPowerAdjustment(int8_t power);
-#if !defined(DISABLE_JOIN)
   bool startJoining();
   void tryRejoin();
-
-#endif
 
   void init();
   void shutdown();
@@ -350,10 +340,8 @@ protected:
   virtual void updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
-#if !defined(DISABLE_JOIN)
   virtual void initJoinLoop() = 0;
   virtual bool nextJoinState() = 0;
-#endif
   virtual dr_t defaultRX2Dr() const = 0;
   virtual uint32_t defaultRX2Freq() const = 0;
 
@@ -373,7 +361,7 @@ protected:
   OsTime int_trigger_time() const;
   void wait_end_rx();
   void wait_end_tx();
-  
+
 public:
   explicit Lmic(lmic_pinmap const &pins, OsScheduler &scheduler);
   void store_trigger();
