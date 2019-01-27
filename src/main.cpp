@@ -39,7 +39,7 @@ void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
 constexpr OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 
 constexpr unsigned int BAUDRATE = 19200;
-
+constexpr uint8_t button_pin = 3;
 // Pin mapping
 constexpr lmic_pinmap lmic_pins = {
     .nss = 10,
@@ -51,6 +51,9 @@ OsScheduler OSS;
 LmicEu868 LMIC {lmic_pins, OSS};
 
 OsJob sendjob{OSS};
+
+bool new_click = false;
+bool send_now = false;
 
 void onEvent(EventType ev)
 {
@@ -74,20 +77,18 @@ void onEvent(EventType ev)
         break;
     case EventType::TXCOMPLETE:
         PRINT_DEBUG(2,F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+        send_now =false;
         if (LMIC.getTxRxFlags().test(TxRxStatus::ACK))
         {
-            PRINT_DEBUG(2,F("Received ack"));
+            PRINT_DEBUG(1,F("Received ack"));
         }
         if (LMIC.getDataLen())
         {
-            PRINT_DEBUG(2,F("Received %d  bytes of payload"), LMIC.getDataLen());
+            PRINT_DEBUG(1,F("Received %d bytes of payload"), LMIC.getDataLen());
             auto data = LMIC.getData();
             if (data)
             {
                 uint8_t port = LMIC.getPort();
-                if (port == 9)
-                {
-                }
             }
         }
         // we have transmit
@@ -163,6 +164,18 @@ void testDuration(int32_t ms)
     PRINT_DEBUG(1,F("Test Time should be : %d ms"), (end - start).to_ms());
 }
 
+
+
+void buttonInterupt() {
+    // Do nothing if send is already scheduled.
+    if(send_now) {
+        return;
+    }
+    if(digitalRead(button_pin) ==0) {
+        new_click = true;
+    }
+}
+
 void setup()
 {
 if(debugLevel>0) {
@@ -170,6 +183,9 @@ if(debugLevel>0) {
 }
     pciSetup(lmic_pins.dio[0]);
     pciSetup(lmic_pins.dio[1]);
+
+    pinMode(button_pin, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(button_pin), &buttonInterupt, FALLING); 
 
     // LMIC init
     os_init();
@@ -250,10 +266,12 @@ void powersave(OsDeltaTime maxTime)
     
 
 
-    for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0; nbsleep--)
+    for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0 && !new_click; nbsleep--)
     {
         powerDown(period_selected);
         hal_add_time_in_sleep(duration_selected);
+
+        buttonInterupt();
     }
     PRINT_DEBUG(1,F("Wakeup"));
 }
@@ -266,5 +284,11 @@ void loop()
     {
         // Go to sleep if we have nothing to do.
         powersave(to_wait);
+    }
+
+    if(new_click) {
+        send_now = true;
+        new_click = false;
+        do_send();
     }
 }
