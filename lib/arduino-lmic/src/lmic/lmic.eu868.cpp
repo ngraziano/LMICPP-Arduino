@@ -380,5 +380,18 @@ bool LmicEu868::nextJoinState() {
 dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
+#if defined(ENABLE_SAVE_RESTORE)
+size_t LmicEu868::saveState(uint8_t *buffer) {
+  uint8_t *orig = buffer;
+  buffer += Lmic::saveState(buffer);
+  // todo save BAND
+
+  // todo save 
+
+  PRINT_DEBUG(1, F("Size save %i"), buffer - orig);
+  return buffer - orig;
+}
+#endif
+
 LmicEu868::LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler)
     : Lmic(pins, scheduler) {}

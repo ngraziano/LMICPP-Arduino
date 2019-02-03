@@ -105,8 +105,7 @@ static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
   output[3] = readsbox(input[0]);
 }
 
-
-static inline void subBytesAndShiftRows(DataBlock& buffer) {
+static inline void subBytesAndShiftRows(DataBlock &buffer) {
 
   std::transform(buffer.begin(), buffer.end(), buffer.begin(),
                  [](uint8_t c) -> uint8_t { return readsbox(c); });
@@ -153,7 +152,7 @@ static inline void subBytesAndShiftRows(DataBlock& buffer) {
 uint8_t gmul2(uint8_t const x) {
   uint8_t const t = x << 1;
   uint8_t const xorval = 0x1B * (x >> 7);
-  return static_cast<uint8_t>(t) ^ xorval;
+  return t ^ xorval;
 }
 
 void mixColumn(uint8_t *buffer) {
@@ -194,7 +193,7 @@ void expand_key(AesKey &schedule, uint8_t round) {
   kxor(3, 2, schedule.data);
 }
 
-void xorbuffer(uint8_t const *source1, AesKey& source2, uint8_t *dest) {
+void xorbuffer(uint8_t const *source1, AesKey &source2, uint8_t *dest) {
   std::transform(source1, source1 + 16, source2.data, dest,
                  [](uint8_t a, uint8_t b) { return a ^ b; });
 }
@@ -202,12 +201,11 @@ void xorbuffer(uint8_t const *source1, AesKey& source2, uint8_t *dest) {
 } // namespace
 
 void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
-  AesKey schedule = key;
-  DataBlock state1;
 
   // Start with the key in the schedule buffer.
-  //std::copy(key.data, key.data + key.key_size, schedule);
+  AesKey schedule = key;
 
+  DataBlock state1;
   // Copy the input into the state and XOR with the key schedule.
   xorbuffer(buffer, schedule, state1.data);
 

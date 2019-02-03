@@ -1239,5 +1239,53 @@ void Lmic::wait_end_tx() {
 
 void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
+#if defined(ENABLE_SAVE_RESTORE)
+size_t Lmic::saveState(uint8_t *buffer) {
+  uint8_t *orig = buffer;
+  // TODO radio RSSI,SNR
+  write_to_buffer(buffer, freq);
+  // TODO check if we can avoid storing rxsyms
+  write_to_buffer(buffer, rxsyms);
+  write_to_buffer(buffer, dndr);
+  // maybe adrtxpow is suffisent.
+  write_to_buffer(buffer, txpow);
+  // Todo mode in regional subclass.
+  write_to_buffer(buffer, txChnl);
+
+  write_to_buffer(buffer, globalDutyRate);
+  write_to_buffer(buffer, globalDutyAvail);
+  write_to_buffer(buffer, netid);
+  write_to_buffer(buffer, opmode);
+  write_to_buffer(buffer, upRepeat);
+  write_to_buffer(buffer, adrTxPow);
+  write_to_buffer(buffer, datarate);
+  write_to_buffer(buffer, devNonce);
+  write_to_buffer(buffer, devaddr);
+  write_to_buffer(buffer, seqnoDn);
+  write_to_buffer(buffer, seqnoUp);
+  write_to_buffer(buffer, dnConf);
+  write_to_buffer(buffer, adrAckReq);
+  write_to_buffer(buffer, rxDelay);
+  write_to_buffer(buffer, ladrAns);
+  write_to_buffer(buffer, devsAns);
+  write_to_buffer(buffer, rxTimingSetupAns);
+#if !defined(DISABLE_MCMD_DCAP_REQ)
+  write_to_buffer(buffer, dutyCapAns);
+#endif
+#if !defined(DISABLE_MCMD_SNCH_REQ)
+  // answer set new channel, init afet join.
+  write_to_buffer(buffer, snchAns);
+#endif
+  write_to_buffer(buffer, rx1DrOffset);
+  write_to_buffer(buffer, dn2Dr);
+  write_to_buffer(buffer, dn2Freq);
+#if !defined(DISABLE_MCMD_DN2P_SET)
+  write_to_buffer(buffer, dn2Ans);
+#endif
+  buffer += aes.saveState(buffer);
+  return buffer - orig;
+}
+#endif
+
 Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
     : radio(pins), osjob(*this, scheduler), rand(aes) {}

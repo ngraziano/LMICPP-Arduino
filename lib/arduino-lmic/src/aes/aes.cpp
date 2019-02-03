@@ -222,3 +222,11 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
     aes_tiny_128_encrypt(result, key);
   }
 }
+
+size_t Aes::saveState(uint8_t* buffer) {
+  // Do not save devkey (should be fix)
+  // save 2 keys
+  std::copy(nwkSKey.begin(), nwkSKey.end(), buffer);
+  std::copy(appSKey.begin(), appSKey.end(), buffer + AesKey::key_size);
+  return 2*AesKey::key_size;
+}

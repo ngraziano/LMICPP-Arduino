@@ -4,10 +4,9 @@
 #include <stdint.h>
 
 template <typename T> class EnumFlagsValue {
-private:
+public:
   uint8_t value;
 
-public:
   EnumFlagsValue &set(T bit) {
     value |= (1 << static_cast<uint8_t>(bit));
     return *this;

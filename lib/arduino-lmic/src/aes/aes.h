@@ -44,6 +44,8 @@ public:
   void appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t *pdu,
                  uint8_t len) const;
   void appendMic0(uint8_t *pdu, uint8_t len) const;
+  size_t saveState(uint8_t* buffer);
+
 };
 
 #endif // __aes_h__

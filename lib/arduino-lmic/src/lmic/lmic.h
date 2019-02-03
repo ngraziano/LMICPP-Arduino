@@ -345,6 +345,10 @@ protected:
   virtual dr_t defaultRX2Dr() const = 0;
   virtual uint32_t defaultRX2Freq() const = 0;
 
+#if defined(ENABLE_SAVE_RESTORE)
+  virtual size_t saveState(uint8_t* buffer);
+#endif
+
   rps_t updr2rps(dr_t dr) const;
   rps_t dndr2rps(dr_t dr) const;
   bool isFasterDR(dr_t dr1, dr_t dr2) const;

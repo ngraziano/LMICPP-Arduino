@@ -66,7 +66,7 @@ public:
   }
 };
 
-//! \internal
+
 struct band_t {
   uint16_t txcap;   // duty cycle limitation: 1/txcap
   uint8_t lastchnl; // last used channel
@@ -83,6 +83,10 @@ public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
   explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
+
+#if defined(ENABLE_SAVE_RESTORE)
+  virtual size_t saveState(uint8_t* buffer) override;
+#endif
 
 protected:
   uint8_t getRawRps(dr_t dr) const override;
