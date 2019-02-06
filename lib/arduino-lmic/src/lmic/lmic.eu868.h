@@ -66,6 +66,26 @@ public:
   }
 };
 
+enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
+
+class BandsEu868 {
+public:
+  void init(LmicRand &rand, uint8_t maxchannels);
+  void updateBandAvailability(uint8_t band, OsTime lastusage,
+                              OsDeltaTime duration);
+  void print_state();
+  OsTime getAvailability(uint8_t band) { return avail[band]; };
+  uint8_t getLastChannel(uint8_t band) { return lastchnl[band]; };
+  void setLastChannel(uint8_t band, uint8_t lastChannel) {
+    lastchnl[band] = lastChannel;
+  };
+
+  static const uint8_t MAX_BAND = 3;
+
+private:
+  OsTime avail[MAX_BAND];
+  uint8_t lastchnl[MAX_BAND];
+};
 
 struct band_t {
   uint16_t txcap;   // duty cycle limitation: 1/txcap
@@ -73,19 +93,17 @@ struct band_t {
   OsTime avail;     // channel is blocked until this time
 };
 
-enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2, BAND_AUX = 3 };
-
 class LmicEu868 final : public Lmic {
 public:
   // Max supported channels
   static const uint8_t MAX_CHANNELS = 16;
-  static const uint8_t MAX_BANDS = 4;
+
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
   explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual size_t saveState(uint8_t* buffer) override;
+  virtual size_t saveState(uint8_t *buffer) override;
 #endif
 
 protected:
@@ -113,12 +131,11 @@ protected:
   uint32_t defaultRX2Freq() const override;
 
 private:
-  band_t bands[MAX_BANDS]{};
+  BandsEu868 bands;
   ChannelList<MAX_CHANNELS> channels;
 
   uint32_t getFreq(uint8_t channel) const;
   uint8_t getBand(uint8_t channel) const;
-  bool setupBand(uint8_t bandidx, uint16_t txcap);
 };
 
 #endif
