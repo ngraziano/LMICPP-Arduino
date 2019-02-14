@@ -110,7 +110,7 @@ static CONST_TABLE(uint8_t, DRADJUST)[2 + TXCONF_ATTEMPTS] = {
 
 void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
   const auto delayRef = reftime + OsDeltaTime::rnd_delay(rand, secSpan);
-  if (globalDutyRate == 0 || (delayRef > globalDutyAvail)) {
+  if (delayRef > globalDutyAvail) {
     globalDutyAvail = delayRef;
   }
 }
@@ -1007,23 +1007,23 @@ void Lmic::engineUpdate() {
     }
     buildDataFrame();
   }
-  rps_t rps = updr2rps(txdr);
+  
   dndr = txdr; // carry TX datarate (can be != datarate) over to
                // txDone/setupRx1
-
   opmode.reset(OpState::POLL);
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
-
+  
+  rps_t rps = updr2rps(txdr);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
   updateTx(txbeg, airtime);
 
-  if (globalDutyRate != 0) {
-    globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
-    PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
-                globalDutyAvail.tick());
-  }
+  // if globalDutyRate==0 send available just after transmit.
 
+  globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
+  PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
+              globalDutyAvail.tick());
+  
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
   wait_end_tx();
 }
