@@ -142,13 +142,31 @@ void BandsEu868::updateBandAvailability(uint8_t band, OsTime lastusage,
               avail[band].tick());
 }
 
-void BandsEu868::print_state() {
+void BandsEu868::print_state() const {
 
   for (uint8_t bi = 0; bi < MAX_BAND; bi++) {
     PRINT_DEBUG(2, F("Band %d, available at %" PRIu32 " and last channel %d"),
                 bi, avail[bi].tick(), lastchnl[bi]);
   }
 }
+
+int8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
+                                         uint8_t bmap) const {
+  OsTime mintime = max_delay;
+  int8_t band = -1;
+
+  for (int8_t bi = 0; bi < MAX_BAND; bi++) {
+    if ((bmap & (1 << bi)) && mintime > avail[bi]) {
+      PRINT_DEBUG(2,
+                  F("Considering band %d, which is available at %" PRIu32 ""),
+                  bi, avail[bi].tick());
+      band = bi;
+      mintime = avail[bi];
+    }
+  }
+  return band;
+}
+
 uint8_t LmicEu868::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
@@ -270,32 +288,21 @@ uint8_t LmicEu868::getBand(uint8_t channel) const {
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
-  uint8_t bmap = 0x07;
+  uint8_t bmap = BandsEu868::FULL_MAP;
 
   bands.print_state();
 
   do {
-    OsTime mintime = now + /*8h*/ OsDeltaTime::from_sec(28800);
-    uint8_t band = 0xFF;
+    int8_t band = bands.getNextAvailableBand(
+        now + /*8h*/ OsDeltaTime::from_sec(28800), bmap);
 
-    for (uint8_t bi = 0; bi < bands.MAX_BAND; bi++) {
-      if ((bmap & (1 << bi)) && mintime > bands.getAvailability(bi)) {
-        PRINT_DEBUG(2,
-                    F("Considering band %d, which is available at %" PRIu32 ""),
-                    bi, bands.getAvailability(bi).tick());
-        band = bi;
-        mintime = bands.getAvailability(bi);
-      }
-    }
-
-    if (band == 0xFF) {
+    if (band < 0) {
       // Try to handle a strange bug wich appen afert from time to time
       // Reset all bands value;
       PRINT_DEBUG(2, F("Error No band available."));
       bands.init(rand, MAX_CHANNELS);
       // force band 0.
       band = 0;
-      mintime = os_getTime();
     }
 
     // Find next channel in given band
@@ -305,17 +312,14 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       if (chnl >= MAX_CHANNELS)
         chnl -= MAX_CHANNELS;
       // channel enabled
-      if (channels.is_enable(chnl)) {
-        PRINT_DEBUG(
-            2,
-            F("Considering channel %d for band %d, set band = %d, drMap = %x"),
-            chnl, band, getBand(chnl), channels[chnl].getDrMap());
-        if ((channels[chnl].getDrMap() & (1 << (datarate & 0xF))) != 0 &&
-            band == getBand(chnl)) {
+      if (channels.is_enable(chnl) && band == getBand(chnl)) {
+        PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"),
+                    chnl, band, channels[chnl].getDrMap());
+        if (channels[chnl].isDrActive(datarate)) {
           // in selected band
           bands.setLastChannel(band, chnl);
           txChnl = chnl;
-          return mintime;
+          return bands.getAvailability(band);
         }
       }
     }
@@ -323,11 +327,10 @@ OsTime LmicEu868::nextTx(OsTime const now) {
     PRINT_DEBUG(2, F("No channel found in band %d"), band);
 
     bmap &= ~(1 << band);
-    if (bmap == 0) {
-      // No feasible channel  found!
-      return mintime;
-    }
-  } while (true);
+  } while (bmap != 0);
+  PRINT_DEBUG(1, F("Error Fail to find a channel."));
+  // No feasible channel  found!
+  return now;
 }
 
 void LmicEu868::setRx1Params() {

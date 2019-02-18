@@ -25,6 +25,9 @@ public:
   constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
   constexpr uint32_t getBand() const { return raw & 0x3; };
   constexpr uint16_t getDrMap() const { return drMap; };
+  constexpr bool isDrActive(dr_t datarate) const {
+    return (drMap & (1 << datarate)) != 0;
+  };
   ChannelDetail() = default;
   constexpr ChannelDetail(uint32_t raw, uint16_t drMap)
       : raw(raw), drMap(drMap){};
@@ -73,14 +76,16 @@ public:
   void init(LmicRand &rand, uint8_t maxchannels);
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration);
-  void print_state();
+  void print_state() const;
+  int8_t getNextAvailableBand(OsTime const max_delay, uint8_t bmap) const;
   OsTime getAvailability(uint8_t band) { return avail[band]; };
   uint8_t getLastChannel(uint8_t band) { return lastchnl[band]; };
   void setLastChannel(uint8_t band, uint8_t lastChannel) {
     lastchnl[band] = lastChannel;
   };
 
-  static const uint8_t MAX_BAND = 3;
+  static constexpr uint8_t MAX_BAND = 3;
+  static constexpr uint8_t FULL_MAP = (1 << MAX_BAND) - 1;
 
 private:
   OsTime avail[MAX_BAND];
