@@ -131,7 +131,7 @@ static CONST_TABLE(int32_t, DR2HSYM)[] = {
 
 // map DR_SFnCR -> 0-6
 OsDeltaTime LmicUs915::dr2hsym(dr_t dr) const {
-  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)&7));
+  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, dr & 7));
 }
 
 bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {

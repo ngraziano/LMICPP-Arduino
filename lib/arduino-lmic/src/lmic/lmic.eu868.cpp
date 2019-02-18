@@ -125,8 +125,9 @@ void BandsEu868::init(LmicRand &rand, uint8_t maxchannels) {
   }
 }
 
-void BandsEu868::updateBandAvailability(uint8_t band, OsTime lastusage,
-                                        OsDeltaTime duration) {
+void BandsEu868::updateBandAvailability(uint8_t const band,
+                                        OsTime const lastusage,
+                                        OsDeltaTime const duration) {
   uint16_t cap;
   if (band == BAND_MILLI) {
     cap = 1000;
@@ -144,34 +145,34 @@ void BandsEu868::updateBandAvailability(uint8_t band, OsTime lastusage,
 
 void BandsEu868::print_state() const {
 
-  for (uint8_t bi = 0; bi < MAX_BAND; bi++) {
+  for (uint8_t band_index = 0; band_index < MAX_BAND; band_index++) {
     PRINT_DEBUG(2, F("Band %d, available at %" PRIu32 " and last channel %d"),
-                bi, avail[bi].tick(), lastchnl[bi]);
+                band_index, avail[band_index].tick(), lastchnl[band_index]);
   }
 }
 
 int8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
-                                         uint8_t bmap) const {
+                                        uint8_t const bmap) const {
   OsTime mintime = max_delay;
   int8_t band = -1;
 
-  for (int8_t bi = 0; bi < MAX_BAND; bi++) {
-    if ((bmap & (1 << bi)) && mintime > avail[bi]) {
+  for (int8_t band_index = 0; band_index < MAX_BAND; band_index++) {
+    if ((bmap & (1 << band_index)) && mintime > avail[band_index]) {
       PRINT_DEBUG(2,
                   F("Considering band %d, which is available at %" PRIu32 ""),
-                  bi, avail[bi].tick());
-      band = bi;
-      mintime = avail[bi];
+                  band_index, avail[band_index].tick());
+      band = band_index;
+      mintime = avail[band_index];
     }
   }
   return band;
 }
 
-uint8_t LmicEu868::getRawRps(dr_t dr) const {
+uint8_t LmicEu868::getRawRps(dr_t const dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicEu868::pow2dBm(uint8_t powerIndex) const {
+int8_t LmicEu868::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex < 8) {
     return MaxEIRP - 2 * powerIndex;
   }
@@ -181,15 +182,15 @@ int8_t LmicEu868::pow2dBm(uint8_t powerIndex) const {
 
 OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
-OsDeltaTime LmicEu868::dr2hsym(dr_t dr) const {
-  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, (dr)));
+OsDeltaTime LmicEu868::dr2hsym(dr_t const dr) const {
+  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, dr));
 }
 
-bool LmicEu868::validRx1DrOffset(uint8_t drOffset) const {
+bool LmicEu868::validRx1DrOffset(uint8_t const drOffset) const {
   return drOffset < 6;
 }
 
-void LmicEu868::initDefaultChannels(bool join) {
+void LmicEu868::initDefaultChannels(bool const join) {
   PRINT_DEBUG(2, F("Init Default Channel join?=%d"), join);
 
   channels.disableAll();
@@ -202,7 +203,8 @@ void LmicEu868::initDefaultChannels(bool join) {
   bands.init(rand, MAX_CHANNELS);
 }
 
-bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
+bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
+                             uint16_t const drmap) {
   if (chidx >= MAX_CHANNELS)
     return false;
 
@@ -222,7 +224,7 @@ bool LmicEu868::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
   return true;
 }
 
-void LmicEu868::disableChannel(uint8_t channel) { channels.disable(channel); }
+void LmicEu868::disableChannel(uint8_t const channel) { channels.disable(channel); }
 
 uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
   uint32_t newfreq = rlsbf3(ptr) * 100;
@@ -244,7 +246,7 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+bool LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
   // ChMaskCntl=6 => All channels ON
   if (chMaskCntl == 6) {
@@ -264,7 +266,7 @@ bool LmicEu868::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return true;
 }
 
-void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
+void LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
 
   freq = getFreq(txChnl);
 
@@ -279,11 +281,11 @@ void LmicEu868::updateTx(OsTime txbeg, OsDeltaTime airtime) {
       txbeg, airtime);
 }
 
-uint32_t LmicEu868::getFreq(uint8_t channel) const {
+uint32_t LmicEu868::getFreq(uint8_t const channel) const {
   return channels[channel].getFrequency();
 }
 
-uint8_t LmicEu868::getBand(uint8_t channel) const {
+uint8_t LmicEu868::getBand(uint8_t const channel) const {
   return channels[channel].getBand();
 }
 
@@ -313,8 +315,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
         chnl -= MAX_CHANNELS;
       // channel enabled
       if (channels.is_enable(chnl) && band == getBand(chnl)) {
-        PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"),
-                    chnl, band, channels[chnl].getDrMap());
+        PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"), chnl,
+                    band, channels[chnl].getDrMap());
         if (channels[chnl].isDrActive(datarate)) {
           // in selected band
           bands.setLastChannel(band, chnl);
@@ -335,7 +337,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
 
 void LmicEu868::setRx1Params() {
   /*freq remain unchanged*/
-  lowerDR(dndr, rx1DrOffset);
+  dndr = lowerDR(dndr, rx1DrOffset);
 }
 
 void LmicEu868::initJoinLoop() {
@@ -351,7 +353,7 @@ void LmicEu868::initJoinLoop() {
 bool LmicEu868::nextJoinState() {
   bool failed = false;
 
-  // Try 869.x and then 864.x with same DR
+  // Try the tree default channels with same DR
   // If both fail try next lower datarate
   if (++txChnl == 3)
     txChnl = 0;
