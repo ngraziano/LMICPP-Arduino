@@ -330,7 +330,7 @@ protected:
   virtual uint32_t convFreq(const uint8_t *ptr) const = 0;
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 
-  virtual void initDefaultChannels(bool join) = 0;
+  virtual void initDefaultChannels() = 0;
   virtual bool setupChannel(uint8_t channel, uint32_t newfreq,
                             uint16_t drmap) = 0;
   virtual void disableChannel(uint8_t channel) = 0;

@@ -32,7 +32,7 @@ protected:
   uint32_t convFreq(const uint8_t *ptr) const override;
   bool validRx1DrOffset(uint8_t drOffset) const override;
 
-  void initDefaultChannels(bool join) override;
+  void initDefaultChannels() override;
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override;
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;

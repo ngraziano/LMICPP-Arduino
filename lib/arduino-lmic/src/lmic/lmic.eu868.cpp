@@ -92,11 +92,7 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
 };
 
-static CONST_TABLE(uint32_t, iniChannelFreq)[6] = {
-    // Join frequencies and duty cycle limit (0.1%)
-    EU868_F1 | BAND_MILLI,
-    EU868_F2 | BAND_MILLI,
-    EU868_F3 | BAND_MILLI,
+static CONST_TABLE(uint32_t, iniChannelFreq)[] = {
     // Default operational frequencies
     EU868_F1 | BAND_CENTI,
     EU868_F2 | BAND_CENTI,
@@ -190,13 +186,13 @@ bool LmicEu868::validRx1DrOffset(uint8_t const drOffset) const {
   return drOffset < 6;
 }
 
-void LmicEu868::initDefaultChannels(bool const join) {
-  PRINT_DEBUG(2, F("Init Default Channel join?=%d"), join);
+void LmicEu868::initDefaultChannels() {
+  PRINT_DEBUG(2, F("Init Default Channel"));
 
   channels.disableAll();
-  uint8_t su = join ? 0 : 3;
-  for (uint8_t fu = 0; fu < 3; fu++, su++) {
-    channels.configure(fu, ChannelDetail{TABLE_GET_U4(iniChannelFreq, su),
+
+  for (uint8_t fu = 0; fu < 3; fu++) {
+    channels.configure(fu, ChannelDetail{TABLE_GET_U4(iniChannelFreq, fu),
                                          dr_range_map(Dr::SF12, Dr::SF7)});
   }
 
@@ -224,7 +220,9 @@ bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
   return true;
 }
 
-void LmicEu868::disableChannel(uint8_t const channel) { channels.disable(channel); }
+void LmicEu868::disableChannel(uint8_t const channel) {
+  channels.disable(channel);
+}
 
 uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
   uint32_t newfreq = rlsbf3(ptr) * 100;
@@ -344,10 +342,9 @@ void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
   setDrJoin(static_cast<dr_t>(Dr::SF7));
-  initDefaultChannels(true);
-  txend = bands.getAvailability(BAND_MILLI) + OsDeltaTime::rnd_delay(rand, 8);
+  txend = bands.getAvailability(BAND_CENTI) + OsDeltaTime::rnd_delay(rand, 8);
   PRINT_DEBUG(1, F("Init Join loop : avail=%" PRIu32 " txend=%" PRIu32 ""),
-              bands.getAvailability(BAND_MILLI).tick(), txend.tick());
+              bands.getAvailability(BAND_CENTI).tick(), txend.tick());
 }
 
 bool LmicEu868::nextJoinState() {
@@ -368,8 +365,8 @@ bool LmicEu868::nextJoinState() {
   // Move txend to randomize synchronized concurrent joins.
   // Duty cycle is based on txend.
   OsTime time = os_getTime();
-  if (time < bands.getAvailability(BAND_MILLI))
-    time = bands.getAvailability(BAND_MILLI);
+  if (time < bands.getAvailability(BAND_CENTI))
+    time = bands.getAvailability(BAND_CENTI);
 
   // Avoid collision with JOIN ACCEPT @ SF12 being sent by
   // GW (but we missed it) randomize join (street lamp case):

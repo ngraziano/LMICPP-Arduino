@@ -143,11 +143,7 @@ bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
 // BEG: US915 related stuff
 //
 
-void LmicUs915::initDefaultChannels(bool join) {
-  // only init in first phase.
-  if (!join)
-    return;
-
+void LmicUs915::initDefaultChannels() {
   for (uint8_t i = 0; i < 4; i++)
     channelMap[i] = 0xFFFF;
   channelMap[4] = 0x00FF;

@@ -587,8 +587,6 @@ bool Lmic::processJoinAccept() {
   devaddr = rlsbf4(frame + join_accept::offset::devAddr);
   netid = rlsbf4(frame + join_accept::offset::netId) & 0xFFFFFF;
 
-  initDefaultChannels(false);
-
   if (dlen > join_accept::lengths::total) {
     // some region just ignore cflist.
     handleCFList(frame + join_accept::offset::cfList);
@@ -1049,7 +1047,7 @@ void Lmic::reset() {
   dn2Freq = defaultRX2Freq();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
 
-  initDefaultChannels(true);
+  initDefaultChannels();
 }
 
 void Lmic::init() {
@@ -1122,8 +1120,6 @@ void Lmic::setSession(uint32_t const netid, devaddr_t const devaddr,
   this->devaddr = devaddr;
   aes.setNetworkSessionKey(nwkKey);
   aes.setApplicationSessionKey(artKey);
-
-  initDefaultChannels(false);
 
   opmode.reset(OpState::JOINING);
   opmode.reset(OpState::REJOIN);
