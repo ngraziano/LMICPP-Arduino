@@ -1018,7 +1018,7 @@ void Lmic::engineUpdate() {
 
   // if globalDutyRate==0 send available just after transmit.
 
-  globalDutyAvail = txbeg + OsDeltaTime(airtime.tick() << globalDutyRate);
+  globalDutyAvail = txbeg + (airtime << globalDutyRate);
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
   

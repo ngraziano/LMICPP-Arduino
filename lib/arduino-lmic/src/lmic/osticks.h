@@ -104,6 +104,10 @@ constexpr OsDeltaTime operator-(OsTime const &a, OsTime const &b) {
   return OsDeltaTime(a.tick() - b.tick());
 }
 
+constexpr OsDeltaTime operator<<(OsDeltaTime const a, uint8_t const b) {
+  return OsDeltaTime(a.tick() << b);
+}
+
 constexpr bool operator<(OsTime const &lhs, OsTime const &rhs) {
   return lhs - rhs < OsDeltaTime(0);
 }
