@@ -283,6 +283,7 @@ public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
   void setDrTxpow(uint8_t dr);
+  void setDutyRate(uint8_t duty_rate);
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.
   void setLinkCheckMode(bool enabled);

@@ -225,6 +225,11 @@ void Lmic::parse_dn2p(const uint8_t *const opts) {
 #endif // !DISABLE_MCMD_DN2P_SET
 }
 
+void Lmic::setDutyRate(uint8_t rate) {
+  globalDutyRate = rate;
+  globalDutyAvail = os_getTime();
+}
+
 void Lmic::parse_dcap(const uint8_t *const opts) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   const uint8_t cap = opts[1];
