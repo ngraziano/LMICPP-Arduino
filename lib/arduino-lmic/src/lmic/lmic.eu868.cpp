@@ -31,14 +31,11 @@ enum {
   EU868_F4 = 868850000, // g2   SF7-12
   EU868_F5 = 869050000, // g2   SF7-12
   EU868_F6 = 869525000, // g3   SF7-12
-  EU868_J4 = 864100000, // g2   SF7-12  used during join
-  EU868_J5 = 864300000, // g2   SF7-12   ditto
-  EU868_J6 = 864500000, // g2   SF7-12   ditto
 };
 enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
 
-enum { FREQ_PING = EU868_F6 }; // default ping freq
 enum { CHNL_DNW2 = 5 };
+
 enum { FREQ_DNW2 = EU868_F6 };
 
 namespace {
@@ -90,13 +87,6 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7
     OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF7B
     OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
-};
-
-static CONST_TABLE(uint32_t, iniChannelFreq)[] = {
-    // Default operational frequencies
-    EU868_F1 | BAND_CENTI,
-    EU868_F2 | BAND_CENTI,
-    EU868_F3 | BAND_CENTI,
 };
 
 const uint32_t MIN_BAND1_CENTI = 868000000;
@@ -185,11 +175,9 @@ void LmicEu868::initDefaultChannels() {
   PRINT_DEBUG(2, F("Init Default Channel"));
 
   channels.disableAll();
-
-  for (uint8_t fu = 0; fu < 3; fu++) {
-    channels.configure(fu, ChannelDetail{TABLE_GET_U4(iniChannelFreq, fu),
-                                         dr_range_map(Dr::SF12, Dr::SF7)});
-  }
+  setupChannel(0, EU868_F1, 0);
+  setupChannel(1, EU868_F2, 0);
+  setupChannel(2, EU868_F3, 0);
 
   bands.init(rand, MAX_CHANNELS);
 }
