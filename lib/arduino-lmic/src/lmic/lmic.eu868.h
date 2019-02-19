@@ -138,6 +138,8 @@ protected:
 private:
   BandsEu868 bands;
   ChannelList<MAX_CHANNELS> channels;
+  // channel for next TX
+  uint8_t txChnl = 0;
 
   uint32_t getFreq(uint8_t channel) const;
   uint8_t getBand(uint8_t channel) const;

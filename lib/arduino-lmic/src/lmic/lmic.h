@@ -123,7 +123,7 @@ protected:
   OsTime txend;
   uint8_t dndr = 0;
   uint32_t freq = 0;
-  uint8_t txChnl = 0;         // channel for next TX
+  
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
   OsTime globalDutyAvail;     // time device can send again
 

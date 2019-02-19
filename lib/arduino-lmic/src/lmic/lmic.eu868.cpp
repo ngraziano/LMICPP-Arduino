@@ -109,14 +109,9 @@ const uint32_t MAX_BAND2_CENTI = 870000000;
 } // namespace
 
 void BandsEu868::init(LmicRand &rand, uint8_t maxchannels) {
-  // bands[BAND_MILLI].txcap = 1000; // 0.1%
-  // bands[BAND_CENTI].txcap = 100;  // 1%
-  // bands[BAND_DECI].txcap = 10;    // 10%
-  for (int i = 0; i < MAX_BAND; i++) {
-    lastchnl[i] = rand.uint8() % maxchannels;
-  }
   auto now = os_getTime();
-  for (int i = 0; i < MAX_BAND; i++) {
+  for (uint8_t i = 0; i < MAX_BAND; i++) {
+    lastchnl[i] = rand.uint8() % maxchannels;
     avail[i] = now;
   }
 }
@@ -267,10 +262,8 @@ bool LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
 void LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
 
   freq = getFreq(txChnl);
-
   // limit power to value ask in adr (at init MaxEIRP)
   txpow = adrTxPow;
-
   // Update band specific duty cycle stats
   bands.updateBandAvailability(getBand(txChnl), txbeg, airtime);
 

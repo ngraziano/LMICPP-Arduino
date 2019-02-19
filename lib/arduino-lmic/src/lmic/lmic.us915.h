@@ -53,6 +53,8 @@ private:
       xchDrMap[MAX_XCHANNELS]; // extra channel datarate ranges  ---XXX: ditto
   uint16_t channelMap[(72 + MAX_XCHANNELS + 15) / 16]; // enabled bits
   uint16_t chRnd;
+  // channel for next TX
+  uint8_t txChnl = 0;
 
   void enableChannel(uint8_t channel);
   void enableSubBand(uint8_t band);
