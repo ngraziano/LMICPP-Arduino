@@ -6,7 +6,7 @@ cache:
     directories:
         - "~/.platformio"
 env:
-    - PLATFORMIO_CI_SRC=examples/balise
+    - PLATFORMIO_CI_SRC=examples/simple
 install:
     - pip install -U platformio
     - platformio update
