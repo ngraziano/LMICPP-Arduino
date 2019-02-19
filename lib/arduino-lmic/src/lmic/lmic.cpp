@@ -1005,13 +1005,13 @@ void Lmic::engineUpdate() {
     }
     buildDataFrame();
   }
-  
+
   dndr = txdr; // carry TX datarate (can be != datarate) over to
                // txDone/setupRx1
   opmode.reset(OpState::POLL);
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
-  
+
   rps_t rps = updr2rps(txdr);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
   updateTx(txbeg, airtime);
@@ -1021,7 +1021,7 @@ void Lmic::engineUpdate() {
   globalDutyAvail = txbeg + (airtime << globalDutyRate);
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
-  
+
   radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
   wait_end_tx();
 }
@@ -1046,7 +1046,7 @@ void Lmic::reset() {
   dn2Dr = defaultRX2Dr();
   dn2Freq = defaultRX2Freq();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
-
+  globalDutyAvail = os_getTime();
   initDefaultChannels();
 }
 
