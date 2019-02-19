@@ -94,7 +94,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
     // return the number of time to wait ()
     return scheduledjobs->deadline - hal_ticks();
   }
-  // need to run now or nothing to do
+  // nothing to do
   return OsDeltaTime(0);
 }
 
