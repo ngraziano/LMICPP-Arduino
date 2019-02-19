@@ -1,0 +1,15 @@
+{
+  "name": "LMICPP-Arduino",
+  "keywords": "Lora",
+  "description": "Modified Arduino port of the LMIC (LoraWAN-in-C, formerly LoraMAC-in-C) framework provided by IBM. Changed to C++ format.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ngraziano/LMICPP-Arduino.git"
+  },
+  "dependencies": [
+    {
+      "name": "ArduinoSTL",
+      "version": "1.1.0"
+    }
+  ]
+}

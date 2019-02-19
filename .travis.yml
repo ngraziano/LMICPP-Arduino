@@ -10,5 +10,6 @@ env:
 install:
     - pip install -U platformio
     - platformio update
+    - platformio lib -g install ArduinoSTL
 script:
     - platformio ci --lib="." --board=pro8MHzatmega328
