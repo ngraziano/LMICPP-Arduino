@@ -9,28 +9,11 @@
 
 #define DEVICE_BALISE2
 #include "lorakeys.h"
+#include "keyhandler.h"
 
 void do_send();
 void reset_and_do_send();
 void powersave(OsDeltaTime maxTime);
-
-// This EUI must be in little-endian format, so least-significant-byte
-// first. When copying an EUI from ttnctl output, this means to reverse
-// the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
-// 0x70.
-// defined in lorakeys.h
-void getArtEui(uint8_t *buf) { memcpy_P(buf, APPEUI, 8); }
-
-// This should also be in little endian format, see above.
-// defined in lorakeys.h
-// static const uint8_t PROGMEM DEVEUI[8]={ 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
-
-// This key should be in big endian format (or, since it is not really a
-// number but a block of memory, endianness does not really apply). In
-// practice, a key taken from ttnctl can be copied as-is.
-// The key shown here is the semtech default key.
-// defined in lorakeys.h
 
 
 
@@ -193,13 +176,11 @@ if(debugLevel>0) {
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 
-    
-    AesKey buf;
-    memcpy_P(buf.data, APPKEY, 16);
-    LMIC.setDevKey(buf);
     LMIC.setEventCallBack(onEvent);
-    LMIC.setDevEuiCallback(getDevEui);
-    LMIC.setArtEuiCallback(getArtEui);
+
+    SetupLmicKey<appEui, devEui, appKey>::setup(LMIC);
+
+    
     // set clock error to allow good connection.
     LMIC.setClockError(MAX_CLOCK_ERROR * 3 / 100);
     LMIC.setAntennaPowerAdjustment(-14);
