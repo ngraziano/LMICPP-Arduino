@@ -2,6 +2,7 @@
 #include <Arduino.h>
 
 #include <lmic.h>
+#include <keyhandler.h>
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
 
@@ -9,7 +10,6 @@
 
 #define DEVICE_BALISE2
 #include "lorakeys.h"
-#include "keyhandler.h"
 
 void do_send();
 void reset_and_do_send();
