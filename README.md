@@ -11,26 +11,22 @@ Tested with Arduino Pro Mini and RFM95 on EU868 frequencies.
 
 Work with platformio.
 
+Copy balise exemple in a new directory.
+Open with platformio (VSCODE with Platformio extension)
 In ``src`` directory create a file named ``lorakeys.h`` wich contain the keys declared in network (for exemple <https://www.thethingsnetwork.org>)
 
 Exemple of file:
 
 ```c
-#include <Arduino.h>
-// This EUI must be in little-endian format, so least-significant-byte
-// first. When copying an EUI from ttnctl output, this means to reverse
-// the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
-// 0x70.
-static const uint8_t PROGMEM APPEUI[8]={ 0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xD5, 0xB3, 0x70 };
+// Application in string format.
+// For TTN issued EUIs the first bytes should be 70B3D5
+constexpr char const appEui[] = "70B3D5XXXXXXXXXX";
 
-// This should also be in little endian format, see above.
-static const uint8_t PROGMEM DEVEUI[8]={ 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+// Device EUI in string format.
+constexpr char const devEui[] = "XXXXXXXXXXXXXXXX";
+// Application key in string format.
+constexpr char const appKey[] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
-// This key should be in big endian format (or, since it is not really a
-// number but a block of memory, endianness does not really apply). In
-// practice, a key taken from ttnctl can be copied as-is.
-// The key shown here is the semtech default key.
-static const uint8_t PROGMEM APPKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
 ```
 
 In ``main.cpp`` replace the content of ``do_send()`` with the data you want to send.
@@ -42,6 +38,7 @@ In ``main.cpp`` replace the content of ``do_send()`` with the data you want to s
   * ADR_ACK_LIMIT set to 64
   * ADR_ACK_DELAY set to 32
 * Correct set of power for SX1276
+* Various coding style fix (remove goto ...)
 
 ## License
 
