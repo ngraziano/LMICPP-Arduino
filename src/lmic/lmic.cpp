@@ -12,7 +12,7 @@
 
 //! \file
 #include "lmic.h"
-#include "../aes/aes.h"
+#include "../aes/lmic_aes.h"
 #include "../hal/print_debug.h"
 #include "bufferpack.h"
 #include "lmic_table.h"

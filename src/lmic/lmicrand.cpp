@@ -13,7 +13,7 @@
 
 #include "lmicrand.h"
 #include "radio.h"
-#include "../aes/aes.h"
+#include "../aes/lmic_aes.h"
 
 LmicRand::LmicRand(Aes &aes) : aes(aes) {}
 

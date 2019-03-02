@@ -13,7 +13,7 @@
 #ifndef _lmic_h_
 #define _lmic_h_
 
-#include "../aes/aes.h"
+#include "../aes/lmic_aes.h"
 #include "enumflagsvalue.h"
 #include "lmicrand.h"
 #include "lorabase.h"

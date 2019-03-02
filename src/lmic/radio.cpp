@@ -13,7 +13,7 @@
 #include "radio.h"
 #include "../hal/print_debug.h"
 
-#include "../aes/aes.h"
+#include "../aes/lmic_aes.h"
 #include "lmic_table.h"
 
 // ----------------------------------------

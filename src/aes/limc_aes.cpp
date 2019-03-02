@@ -13,7 +13,7 @@
  * NO WARRANTY OF ANY KIND IS PROVIDED.
  *******************************************************************************/
 
-#include "aes.h"
+#include "lmic_aes.h"
 #include "../lmic/bufferpack.h"
 #include "../lmic/lorabase.h"
 #include "../lmic/lorawanpacket.h"

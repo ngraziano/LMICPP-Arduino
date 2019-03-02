@@ -3,7 +3,7 @@
 #define __aes_h__
 #include "../lmic/config.h"
 #include "../lmic/lorabase.h"
-#include"aes_tiny.h"
+#include"aes_encrypt.h"
 #include <stdint.h>
 
 // ======================================================================
