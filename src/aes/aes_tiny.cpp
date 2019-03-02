@@ -31,8 +31,14 @@ Change to use this project type and adapt to some C++ type.
 
 #include "aes_tiny.h"
 #include <algorithm>
-#include <avr/pgmspace.h>
 #include <stdint.h>
+
+#ifdef __AVR__
+#include <avr/pgmspace.h>
+#else 
+#include <pgmspace.h>
+#endif
+
 namespace {
 
 struct Indices {

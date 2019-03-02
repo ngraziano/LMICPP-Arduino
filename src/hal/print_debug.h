@@ -10,7 +10,12 @@
 template <typename... T>
 void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
   if (debugLevel >= X) { 
-    printf_P(PSTR("%" PRIu32 " "), hal_ticks().tick());
+    #ifdef __AVR__
+    printf_P(PSTR("%" PRIu32" "), hal_ticks().tick());
+    #else
+    // on ESP the MACRO PRIu32 cause a problem with syntax above
+    printf("%u ", hal_ticks().tick());
+    #endif
     PGM_P p = reinterpret_cast<PGM_P>(str);
     printf_P(p, div...);
     //printf_P(PSTR("\n"));
