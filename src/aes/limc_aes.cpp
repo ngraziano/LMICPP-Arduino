@@ -97,7 +97,7 @@ bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
 void Aes::encrypt(uint8_t *const pdu, const uint8_t len) const {
   // TODO: Check / handle when len is not a multiple of AES_BLCK_SIZE
   for (uint8_t i = 0; i < len; i += AES_BLCK_SIZE)
-    aes_tiny_128_encrypt(pdu + i, AESDevKey);
+    aes_128_encrypt(pdu + i, AESDevKey);
 }
 
 /**
@@ -127,7 +127,7 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr,
     blockAi[15]++;
     // Encrypt the counter block with the selected key
     std::copy(blockAi, blockAi + AES_BLCK_SIZE, blockSi);
-    aes_tiny_128_encrypt(blockSi, key);
+    aes_128_encrypt(blockSi, key);
 
     // Xor the payload with the resulting ciphertext
     for (uint8_t i = 0; i < AES_BLCK_SIZE && len > 0; i++, len--, payload++)
@@ -153,8 +153,8 @@ void Aes::sessKeys(const uint16_t devnonce, const uint8_t *const artnonce) {
   appSKey = nwkSKey;
   appSKey.data[0] = 0x02;
 
-  aes_tiny_128_encrypt(nwkSKey.data, AESDevKey);
-  aes_tiny_128_encrypt(appSKey.data, AESDevKey);
+  aes_128_encrypt(nwkSKey.data, AESDevKey);
+  aes_128_encrypt(appSKey.data, AESDevKey);
 }
 
 // Shift the given buffer left one bit
@@ -176,7 +176,7 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
                    AesKey const &key, uint8_t result[AES_BLCK_SIZE]) {
   if (prepend_aux)
-    aes_tiny_128_encrypt(result, key);
+    aes_128_encrypt(result, key);
 
   while (len > 0) {
     uint8_t need_padding = 0;
@@ -198,7 +198,7 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
       // shifts and xor on that.
       uint8_t final_key[AES_BLCK_SIZE];
       std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
-      aes_tiny_128_encrypt(final_key, key);
+      aes_128_encrypt(final_key, key);
 
       // Calculate K1
       uint8_t msb = final_key[0] & 0x80;
@@ -219,7 +219,7 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
         result[i] ^= final_key[i];
     }
 
-    aes_tiny_128_encrypt(result, key);
+    aes_128_encrypt(result, key);
   }
 }
 
