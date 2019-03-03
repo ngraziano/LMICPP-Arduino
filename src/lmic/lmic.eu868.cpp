@@ -371,12 +371,13 @@ dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
 #if defined(ENABLE_SAVE_RESTORE)
-size_t LmicEu868::saveState(uint8_t *buffer) {
+size_t LmicEu868::saveState(uint8_t *buffer) const {
   uint8_t *orig = buffer;
   buffer += Lmic::saveState(buffer);
-  // todo save BAND
 
-  // todo save
+  buffer += bands.saveState(buffer);
+  buffer += channels.saveState(buffer);
+  write_to_buffer(buffer, txChnl);
 
   PRINT_DEBUG(1, F("Size save %i"), buffer - orig);
   return buffer - orig;

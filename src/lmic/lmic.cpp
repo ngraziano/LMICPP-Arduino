@@ -1241,7 +1241,7 @@ void Lmic::wait_end_tx() {
 void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
 #if defined(ENABLE_SAVE_RESTORE)
-size_t Lmic::saveState(uint8_t *buffer) {
+size_t Lmic::saveState(uint8_t *buffer) const {
   uint8_t *orig = buffer;
   // TODO radio RSSI,SNR
   write_to_buffer(buffer, freq);
@@ -1250,8 +1250,7 @@ size_t Lmic::saveState(uint8_t *buffer) {
   write_to_buffer(buffer, dndr);
   // maybe adrtxpow is suffisent.
   write_to_buffer(buffer, txpow);
-  // Todo mode in regional subclass.
-  write_to_buffer(buffer, txChnl);
+
 
   write_to_buffer(buffer, globalDutyRate);
   write_to_buffer(buffer, globalDutyAvail);

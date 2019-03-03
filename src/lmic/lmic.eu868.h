@@ -33,6 +33,13 @@ public:
       : raw(raw), drMap(drMap){};
   constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t drMap)
       : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
+  
+#if defined(ENABLE_SAVE_RESTORE)
+  size_t saveState(uint8_t *buffer) const {
+    // TODO raw
+    // TODO drMap
+  };
+#endif
 };
 
 // Channel map is store in one 16bit
@@ -67,6 +74,13 @@ public:
   ChannelDetail const &operator[](int channel) const {
     return channels[channel];
   }
+
+#if defined(ENABLE_SAVE_RESTORE)
+  size_t saveState(uint8_t *buffer) const {
+    // TODO channels
+    // TODO channelMap
+  };
+#endif
 };
 
 enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
@@ -86,6 +100,10 @@ public:
 
   static constexpr uint8_t MAX_BAND = 3;
   static constexpr uint8_t FULL_MAP = (1 << MAX_BAND) - 1;
+
+#if defined(ENABLE_SAVE_RESTORE)
+  size_t saveState(uint8_t *buffer) const;
+#endif
 
 private:
   OsTime avail[MAX_BAND];
@@ -108,7 +126,7 @@ public:
   explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual size_t saveState(uint8_t *buffer) override;
+  virtual size_t saveState(uint8_t *buffer) const override;
 #endif
 
 protected:

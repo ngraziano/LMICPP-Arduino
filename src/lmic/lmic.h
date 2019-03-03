@@ -347,7 +347,7 @@ protected:
   virtual uint32_t defaultRX2Freq() const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual size_t saveState(uint8_t* buffer);
+  virtual size_t saveState(uint8_t* buffer) const;
 #endif
 
   rps_t updr2rps(dr_t dr) const;
