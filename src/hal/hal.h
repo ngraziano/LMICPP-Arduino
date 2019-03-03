@@ -43,7 +43,9 @@ public:
  */
 OsTime hal_ticks();
 
+#ifndef ARDUINO_ARCH_ESP32
 void hal_add_time_in_sleep(OsDeltaTime nb_tick);
+#endif
 
 /*
  * busy-wait until specified timestamp is reached.

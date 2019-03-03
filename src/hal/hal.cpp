@@ -8,6 +8,7 @@
  * This the HAL to run LMIC on top of the Arduino environment.
  *******************************************************************************/
 
+#ifndef ARDUINO_ARCH_ESP32
 #include "hal.h"
 #include <Arduino.h>
 #include <stdio.h>
@@ -135,3 +136,4 @@ void hal_failed(const char *file, uint16_t line) {
   while (1)
     ;
 }
+#endif
