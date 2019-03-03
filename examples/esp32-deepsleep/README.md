@@ -7,6 +7,8 @@ At wake up  if a value was saved the systeme restore the saved state.
 
 This example was tested with HELTEC board.
 
+Only work on EU868.
+
 ## Specific to ESP32
 
 Use:
