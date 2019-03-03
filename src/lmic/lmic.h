@@ -123,7 +123,7 @@ protected:
   OsTime txend;
   uint8_t dndr = 0;
   uint32_t freq = 0;
-  
+
   uint8_t globalDutyRate = 0; // max rate: 1/2^k
   OsTime globalDutyAvail;     // time device can send again
 
@@ -347,7 +347,8 @@ protected:
   virtual uint32_t defaultRX2Freq() const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual size_t saveState(uint8_t* buffer) const;
+  virtual size_t saveState(uint8_t *buffer) const;
+  virtual size_t loadState(uint8_t const *buffer);
 #endif
 
   rps_t updr2rps(dr_t dr) const;

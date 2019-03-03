@@ -45,6 +45,7 @@ public:
                  uint8_t len) const;
   void appendMic0(uint8_t *pdu, uint8_t len) const;
   size_t saveState(uint8_t* buffer) const;
+  size_t loadState(uint8_t const* buffer);
 
 };
 

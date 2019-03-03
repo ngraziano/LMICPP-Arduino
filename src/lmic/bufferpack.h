@@ -64,8 +64,50 @@ inline void write_to_buffer(uint8_t *&buf, OsDeltaTime const &val) {
 }
 
 template <typename T>
-inline void write_to_buffer(uint8_t *&buf, EnumFlagsValue<T> &val) {
+inline void write_to_buffer(uint8_t *&buf, EnumFlagsValue<T> const &val) {
   write_to_buffer(buf, val.value);
+}
+
+inline void read_from_buffer(uint8_t const *&buf, uint8_t &val) {
+  val = *(buf++);
+}
+
+inline void read_from_buffer(uint8_t const *&buf, int8_t &val) {
+  val = *(buf++);
+}
+
+inline void read_from_buffer(uint8_t const *&buf, bool &val) { val = *(buf++); }
+
+inline void read_from_buffer(uint8_t const *&buf, uint16_t &val) {
+  val = *(reinterpret_cast<uint16_t const *>(buf));
+  buf += 2;
+}
+
+inline void read_from_buffer(uint8_t const *&buf, uint32_t &val) {
+  val = *(reinterpret_cast<uint32_t const *>(buf));
+  buf += 4;
+}
+
+inline void read_from_buffer(uint8_t const *&buf, int32_t &val) {
+  val = *(reinterpret_cast<int32_t const *>(buf));
+  buf += 4;
+}
+
+inline void read_from_buffer(uint8_t const *&buf, OsTime &val) {
+  int32_t tick;
+  read_from_buffer(buf, tick);
+  val = OsTime(tick);
+}
+
+inline void read_from_buffer(uint8_t const *&buf, OsDeltaTime &val) {
+  uint32_t tick;
+  read_from_buffer(buf, tick);
+  val = OsDeltaTime(tick);
+}
+
+template <typename T>
+inline void read_from_buffer(uint8_t const *&buf, EnumFlagsValue<T> &val) {
+  read_from_buffer(buf, val.value);
 }
 
 #endif // __bufferpack_h__

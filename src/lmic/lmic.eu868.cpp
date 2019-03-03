@@ -149,6 +149,30 @@ int8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
   return band;
 }
 
+#if defined(ENABLE_SAVE_RESTORE)
+size_t BandsEu868::saveState(uint8_t *buffer) const {
+  uint8_t *orig = buffer;
+  for (int i = 0; i < MAX_BAND; i++) {
+    write_to_buffer(buffer, avail[i]);
+  }
+  for (int i = 0; i < MAX_BAND; i++) {
+    write_to_buffer(buffer, lastchnl[i]);
+  }
+  return buffer - orig;
+}
+
+size_t BandsEu868::loadState(uint8_t const *buffer) {
+  uint8_t const *orig = buffer;
+  for (int i = 0; i < MAX_BAND; i++) {
+    read_from_buffer(buffer, avail[i]);
+  }
+  for (int i = 0; i < MAX_BAND; i++) {
+    read_from_buffer(buffer, lastchnl[i]);
+  }
+  return buffer - orig;
+}
+#endif
+
 uint8_t LmicEu868::getRawRps(dr_t const dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
@@ -380,6 +404,18 @@ size_t LmicEu868::saveState(uint8_t *buffer) const {
   write_to_buffer(buffer, txChnl);
 
   PRINT_DEBUG(1, F("Size save %i"), buffer - orig);
+  return buffer - orig;
+}
+
+size_t LmicEu868::loadState(uint8_t const *buffer) {
+  uint8_t const *orig = buffer;
+  buffer += Lmic::loadState(buffer);
+
+  buffer += bands.loadState(buffer);
+  buffer += channels.loadState(buffer);
+  read_from_buffer(buffer, txChnl);
+
+  PRINT_DEBUG(1, F("Size loaded %i"), buffer - orig);
   return buffer - orig;
 }
 #endif

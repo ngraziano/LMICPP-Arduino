@@ -1285,6 +1285,52 @@ size_t Lmic::saveState(uint8_t *buffer) const {
   buffer += aes.saveState(buffer);
   return buffer - orig;
 }
+
+size_t Lmic::loadState(uint8_t const *buffer) {
+  uint8_t const *orig = buffer;
+  // TODO radio RSSI,SNR
+  read_from_buffer(buffer, freq);
+  // TODO check if we can avoid storing rxsyms
+  read_from_buffer(buffer, rxsyms);
+  read_from_buffer(buffer, dndr);
+  // maybe adrtxpow is suffisent.
+  read_from_buffer(buffer, txpow);
+
+
+  read_from_buffer(buffer, globalDutyRate);
+  read_from_buffer(buffer, globalDutyAvail);
+  read_from_buffer(buffer, netid);
+  read_from_buffer(buffer, opmode);
+  read_from_buffer(buffer, upRepeat);
+  read_from_buffer(buffer, adrTxPow);
+  read_from_buffer(buffer, datarate);
+  read_from_buffer(buffer, devNonce);
+  read_from_buffer(buffer, devaddr);
+  read_from_buffer(buffer, seqnoDn);
+  read_from_buffer(buffer, seqnoUp);
+  read_from_buffer(buffer, dnConf);
+  read_from_buffer(buffer, adrAckReq);
+  read_from_buffer(buffer, rxDelay);
+  read_from_buffer(buffer, ladrAns);
+  read_from_buffer(buffer, devsAns);
+  read_from_buffer(buffer, rxTimingSetupAns);
+#if !defined(DISABLE_MCMD_DCAP_REQ)
+  read_from_buffer(buffer, dutyCapAns);
+#endif
+#if !defined(DISABLE_MCMD_SNCH_REQ)
+  // answer set new channel, init afet join.
+  read_from_buffer(buffer, snchAns);
+#endif
+  read_from_buffer(buffer, rx1DrOffset);
+  read_from_buffer(buffer, dn2Dr);
+  read_from_buffer(buffer, dn2Freq);
+#if !defined(DISABLE_MCMD_DN2P_SET)
+  read_from_buffer(buffer, dn2Ans);
+#endif
+  buffer += aes.loadState(buffer);
+  return buffer - orig;
+}
+
 #endif
 
 Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)

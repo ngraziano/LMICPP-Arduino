@@ -13,6 +13,7 @@
 #ifndef _lmic_eu868_h_
 #define _lmic_eu868_h_
 
+#include "bufferpack.h"
 #include "lmic.h"
 
 struct ChannelDetail {
@@ -33,12 +34,18 @@ public:
       : raw(raw), drMap(drMap){};
   constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t drMap)
       : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
-  
+
 #if defined(ENABLE_SAVE_RESTORE)
   size_t saveState(uint8_t *buffer) const {
-    // TODO raw
-    // TODO drMap
-    return 4+2;
+    write_to_buffer(buffer, raw);
+    write_to_buffer(buffer, drMap);
+    return 4 + 2;
+  };
+
+  size_t loadState(uint8_t const *buffer) {
+    read_from_buffer(buffer, raw);
+    read_from_buffer(buffer, drMap);
+    return 4 + 2;
   };
 #endif
 };
@@ -78,10 +85,25 @@ public:
 
 #if defined(ENABLE_SAVE_RESTORE)
   size_t saveState(uint8_t *buffer) const {
-    // TODO channels
-    // TODO channelMap
+    uint8_t *orig = buffer;
 
-    return size * 6+ 2;
+    for (uint8_t channel = 0; channel < size; channel++) {
+      buffer += channels[channel].saveState(buffer);
+    }
+    write_to_buffer(buffer, channelMap);
+
+    return buffer - orig;
+  };
+
+  size_t loadState(uint8_t const *buffer) {
+    uint8_t const *orig = buffer;
+
+    for (uint8_t channel = 0; channel < size; channel++) {
+      buffer += channels[channel].loadState(buffer);
+    }
+    read_from_buffer(buffer, channelMap);
+
+    return buffer - orig;
   };
 #endif
 };
@@ -106,6 +128,7 @@ public:
 
 #if defined(ENABLE_SAVE_RESTORE)
   size_t saveState(uint8_t *buffer) const;
+  size_t loadState(uint8_t const *buffer);
 #endif
 
 private:
@@ -130,6 +153,7 @@ public:
 
 #if defined(ENABLE_SAVE_RESTORE)
   virtual size_t saveState(uint8_t *buffer) const override;
+  virtual size_t loadState(uint8_t const *buffer) override;
 #endif
 
 protected:
