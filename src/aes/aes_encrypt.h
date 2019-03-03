@@ -10,6 +10,11 @@ struct AesKey {
   uint8_t *begin() { return data; };
   uint8_t *end() { return data + key_size; };
 
+
+  uint8_t const *begin() const { return data; };
+  uint8_t const *end() const { return data + key_size; };
+
+
   AesKey() = default;
 };
 

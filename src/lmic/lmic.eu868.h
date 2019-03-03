@@ -38,6 +38,7 @@ public:
   size_t saveState(uint8_t *buffer) const {
     // TODO raw
     // TODO drMap
+    return 4+2;
   };
 #endif
 };
@@ -79,6 +80,8 @@ public:
   size_t saveState(uint8_t *buffer) const {
     // TODO channels
     // TODO channelMap
+
+    return size * 6+ 2;
   };
 #endif
 };

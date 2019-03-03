@@ -223,7 +223,7 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
   }
 }
 
-size_t Aes::saveState(uint8_t* buffer) {
+size_t Aes::saveState(uint8_t* buffer) const {
   // Do not save devkey (should be fix)
   // save 2 keys
   std::copy(nwkSKey.begin(), nwkSKey.end(), buffer);
