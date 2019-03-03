@@ -10,14 +10,15 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
+#ifndef ARDUINO_ARCH_ESP32
 
 #include "lmicrand.h"
 #include "radio.h"
 #include "../aes/lmic_aes.h"
 
-LmicRandFromAes::LmicRandFromAes(Aes &aes) : aes(aes) {}
+LmicRand::LmicRand(Aes &aes) : aes(aes) {}
 
-void LmicRandFromAes::init(Radio &radio) {
+void LmicRand::init(Radio &radio) {
   radio.init_random(randbuf);
   // set initial index
   randbuf[0] = 16;
@@ -25,7 +26,7 @@ void LmicRandFromAes::init(Radio &radio) {
 
 // return next random byte derived from seed buffer
 // (buf[0] holds index of next byte to be returned)
-uint8_t LmicRandFromAes::uint8() {
+uint8_t LmicRand::uint8() {
   uint8_t i = randbuf[0];
 
   if (i == 16) {
@@ -38,4 +39,6 @@ uint8_t LmicRandFromAes::uint8() {
 }
 
 //! Get random number (default impl for uint16_t).
-uint16_t LmicRandFromAes::uint16() { return ((uint16_t)((uint8() << 8) | uint8())); }
+uint16_t LmicRand::uint16() { return ((uint16_t)((uint8() << 8) | uint8())); }
+
+#endif

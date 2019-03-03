@@ -18,9 +18,21 @@
 class Radio;
 class Aes;
 
-class LmicRandFromAes {
+#ifdef ARDUINO_ARCH_ESP32
+
+class LmicRand {
 public:
-  explicit LmicRandFromAes(Aes &aes);
+  explicit LmicRand(Aes &){};
+  void init(Radio &){};
+  uint8_t uint8();
+  uint16_t uint16();
+};
+
+#else
+
+class LmicRand {
+public:
+  explicit LmicRand(Aes &aes);
   void init(Radio &radio);
   uint8_t uint8();
   uint16_t uint16();
@@ -30,20 +42,6 @@ private:
   // (initialized by init() with radio RSSI, used by rand1())
   uint8_t randbuf[16];
 };
-
-#ifdef ARDUINO_ARCH_ESP32
-
-class LmicRandEsp {
-public:
-  explicit LmicRandFromAes(Aes &){};
-  void init(Radio &){};
-  uint8_t uint8();
-  uint16_t uint16();
-};
-using LmicRand = LmicRandEsp;
-
-#else
-using LmicRand = LmicRandFromAes;
 #endif
 
 #endif
