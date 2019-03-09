@@ -23,8 +23,12 @@
 // enable more verbose output. Make sure that printf is actually
 // configured (e.g. on AVR it is not by default), otherwise using it can
 // cause crashing.
-constexpr int debugLevel = 1;
 
+#ifdef LMIC_DEBUG_LEVEL
+constexpr int debugLevel = LMIC_DEBUG_LEVEL;
+#else
+constexpr int debugLevel = 1;
+#endif
 
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object). This can be easy for debugging. The
