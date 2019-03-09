@@ -172,7 +172,7 @@ protected:
   void handleCFList(const uint8_t *ptr) override;
 
   bool mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTx(OsTime txbeg, OsDeltaTime airtime) override;
+  int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;
   void initJoinLoop() override;

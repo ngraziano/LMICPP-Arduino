@@ -22,8 +22,8 @@
 
 using namespace lorawan;
 
-const uint8_t MINRX_SYMS = 5;
-const uint8_t PAMBL_SYMS = 8;
+constexpr uint8_t MINRX_SYMS = 5;
+constexpr uint8_t PAMBL_SYMS = 8;
 
 // ================================================================================
 // BEG OS - default implementations for certain OS suport functions
@@ -56,9 +56,9 @@ int16_t getSensitivity(rps_t rps) {
 }
 
 OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
-  // 0,1,2 = 125,250,500kHz
+  // BW 0,1,2 = 125,250,500kHz
   const uint8_t bw = rps.bwRaw;
-  //  7..12 = SF7..12
+  // SF 7..12 = SF7..12
   const uint8_t sf = 7 + rps.sf - SF7;
   const uint8_t sfx = 4 * sf;
   const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
@@ -117,7 +117,7 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
 
 void Lmic::setDrJoin(dr_t dr) { datarate = dr; }
 
-void Lmic::setDrTxpow(uint8_t dr) {
+void Lmic::setDrTx(uint8_t dr) {
   if (datarate != dr) {
     datarate = dr;
     opmode.set(OpState::NEXTCHNL);
@@ -192,7 +192,7 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
         (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
     adrTxPow = pow2dBm(txPowerIndex);
-    setDrTxpow(dr);
+    setDrTx(dr);
 
     // parameter have changed, force ADR ACK
     // not explicit in specification
@@ -673,7 +673,7 @@ void Lmic::processRx2DnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt++;
-        setDrTxpow(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)));
+        setDrTx(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)));
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
         opmode.reset(OpState::TXRXPEND);
@@ -720,7 +720,7 @@ void Lmic::incrementAdrCount() {
       opmode.set(OpState::LINKDEAD);
     } else if (decDR(datarate) != datarate) {
       // Lower DR one notch.
-      setDrTxpow(decDR(datarate));
+      setDrTx(decDR(datarate));
       opmode.set(OpState::LINKDEAD);
     } else {
       // we are at max pow and max DR
@@ -1019,10 +1019,9 @@ void Lmic::engineUpdate() {
 
   rps_t rps = updr2rps(txdr);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
-  updateTx(txbeg, airtime);
+  auto txpow = updateTx(txbeg, airtime);
 
   // if globalDutyRate==0 send available just after transmit.
-
   globalDutyAvail = txbeg + (airtime << globalDutyRate);
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
@@ -1248,9 +1247,6 @@ size_t Lmic::saveState(uint8_t *buffer) const {
   // TODO check if we can avoid storing rxsyms
   write_to_buffer(buffer, rxsyms);
   write_to_buffer(buffer, dndr);
-  // maybe adrtxpow is suffisent.
-  write_to_buffer(buffer, txpow);
-
 
   write_to_buffer(buffer, globalDutyRate);
   write_to_buffer(buffer, globalDutyAvail);
@@ -1293,9 +1289,6 @@ size_t Lmic::loadState(uint8_t const *buffer) {
   // TODO check if we can avoid storing rxsyms
   read_from_buffer(buffer, rxsyms);
   read_from_buffer(buffer, dndr);
-  // maybe adrtxpow is suffisent.
-  read_from_buffer(buffer, txpow);
-
 
   read_from_buffer(buffer, globalDutyRate);
   read_from_buffer(buffer, globalDutyAvail);

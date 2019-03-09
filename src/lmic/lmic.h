@@ -128,8 +128,8 @@ protected:
   OsTime globalDutyAvail;     // time device can send again
 
   // ADR adjusted TX power, limit power to this value.
+  // dBm
   int8_t adrTxPow;
-  int8_t txpow = 0; // dBm
   int8_t antennaPowerAdjustment = 0;
 
   dr_t datarate = 0; // current data rate
@@ -282,7 +282,7 @@ private:
 public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
-  void setDrTxpow(uint8_t dr);
+  void setDrTx(uint8_t dr);
   void setDutyRate(uint8_t duty_rate);
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.
@@ -338,7 +338,7 @@ protected:
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
   virtual bool mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
+  virtual int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
   virtual void initJoinLoop() = 0;

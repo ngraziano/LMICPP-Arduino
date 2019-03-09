@@ -271,17 +271,17 @@ bool LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   return true;
 }
 
-void LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
+int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
 
   freq = getFreq(txChnl);
-  // limit power to value ask in adr (at init MaxEIRP)
-  txpow = adrTxPow;
   // Update band specific duty cycle stats
   bands.updateBandAvailability(getBand(txChnl), txbeg, airtime);
 
   PRINT_DEBUG(
       2, F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32 "."),
       txbeg, airtime);
+  // limit power to value ask in adr (at init MaxEIRP)
+  return adrTxPow;
 }
 
 uint32_t LmicEu868::getFreq(uint8_t const channel) const {

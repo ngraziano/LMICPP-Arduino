@@ -218,20 +218,19 @@ bool LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   return true;
 }
 
-void LmicUs915::updateTx(OsTime, OsDeltaTime) {
+int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
-    txpow = 30;
-    return;
-  }
-  txpow = 26;
+    return 30;
+  } 
   if (chnl < 64 + 8) {
     freq = US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
   } else {
     ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
     freq = xchFreq[chnl - 72];
   }
+  return 26;
 }
 
 // US does not have duty cycling - return now as earliest TX time
