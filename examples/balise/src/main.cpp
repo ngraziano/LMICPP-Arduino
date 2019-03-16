@@ -170,7 +170,7 @@ void setup() {
   // test duration and in case of reboot loop  prevent flood
   // testDuration(1000);
   // testDuration(8000);
-  // testDuration(30000);
+  testDuration(30000);
 
   // Start job (sending automatically starts OTAA too)
   sendjob.setCallbackRunnable(do_send);
