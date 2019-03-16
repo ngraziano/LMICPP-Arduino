@@ -124,20 +124,22 @@ protected:
   uint8_t dndr = 0;
   uint32_t freq = 0;
 
-  uint8_t globalDutyRate = 0; // max rate: 1/2^k
-  OsTime globalDutyAvail;     // time device can send again
-
   // ADR adjusted TX power, limit power to this value.
   // dBm
   int8_t adrTxPow;
-  int8_t antennaPowerAdjustment = 0;
-
   dr_t datarate = 0; // current data rate
+
+private:
   // curent opmode set at init
   OpStateValue opmode;
 
-private:
-  uint32_t netid; // current network id (~0 - none)
+  int8_t antennaPowerAdjustment = 0;
+  // max rate: 1/2^k
+  uint8_t globalDutyRate = 0;
+  // time device can send again
+  OsTime globalDutyAvail;
+  // current network id (~0 - none)
+  uint32_t netid; 
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
