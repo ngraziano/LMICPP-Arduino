@@ -31,8 +31,8 @@ struct rps_t {
   bool nocrc : 1;
   uint8_t ih : 8;
 
-  constexpr BandWidth getBw() { return static_cast<BandWidth>(bwRaw); };
-  constexpr CodingRate getCr() { return static_cast<CodingRate>(crRaw); };
+  constexpr BandWidth getBw() const { return static_cast<BandWidth>(bwRaw); };
+  constexpr CodingRate getCr() const { return static_cast<CodingRate>(crRaw); };
   constexpr uint16_t rawValue() {
     return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0) |
             (ih << 8));
