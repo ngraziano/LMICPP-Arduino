@@ -393,62 +393,6 @@ uint16_t bwForLog(rps_t const rps) {
   }
 }
 
-void Radio::txlora(uint32_t const freq, rps_t const rps, int8_t const txpow,
-                   uint8_t const *const frame, uint8_t dataLen) {
-  // select LoRa modem (from sleep mode)
-  // writeReg(RegOpMode, OPMODE_LORA);
-  opmodeLora();
-  ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
-
-  // enter standby mode (required for FIFO loading))
-  opmode(OPMODE_STANDBY);
-  // configure LoRa modem (cfg1, cfg2)
-  configLoraModem(rps);
-  // configure frequency
-  configChannel(freq);
-  // configure output power
-  writeReg(RegPaRamp,
-           (readReg(RegPaRamp) & 0xF0) | 0x08); // set PA ramp-up time 50 uSec
-  configPower(txpow);
-  // set sync word
-  writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
-
-  // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
-  writeReg(RegDioMapping1,
-           MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
-  // clear all radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
-  // mask all IRQs but TxDone
-  writeReg(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK);
-
-  // initialize the payload size and address pointers
-  writeReg(LORARegFifoTxBaseAddr, 0x00);
-  writeReg(LORARegFifoAddrPtr, 0x00);
-  writeReg(LORARegPayloadLength, dataLen);
-
-  // download buffer to the radio FIFO
-  writeBuf(RegFifo, frame, dataLen);
-
-  // enable antenna switch for TX
-  hal.pin_rxtx(1);
-
-  // now we actually start the transmission
-  opmode(OPMODE_TX);
-
-  uint8_t sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG(1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
-              freq, dataLen, sf, bwForLog(rps), crForLog(rps), rps.ih);
-}
-
-// start transmitter
-void Radio::starttx(uint32_t const freq, rps_t const rps, int8_t const txpow,
-                    uint8_t const *const frame, uint8_t dataLen) {
-  ASSERT((readReg(RegOpMode) & OPMODE_MASK) == OPMODE_SLEEP);
-  txlora(freq, rps, txpow, frame, dataLen);
-  // the radio will go back to STANDBY mode as soon as the TX is finished
-  // the corresponding IRQ will inform us about completion.
-}
-
 enum { RXMODE_SINGLE, RXMODE_SCAN };
 
 // start LoRa receiver
@@ -608,10 +552,10 @@ uint8_t Radio::handle_end_rx(uint8_t *const framePtr) {
   uint8_t length = 0;
   if (flags & IRQ_LORA_RXDONE_MASK) {
     // read the PDU and inform the MAC that we received something
-    length =
-        (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
-            ? readReg(LORARegPayloadLength)
-            : readReg(LORARegRxNbBytes);
+    // TODO correct SX1272_MC1_IMPLICIT_HEADER_MODE_ON is not for SX1276
+    length = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
+                 ? readReg(LORARegPayloadLength)
+                 : readReg(LORARegRxNbBytes);
 
     // for security clamp length of data
     length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
@@ -668,8 +612,50 @@ void Radio::rst() const {
 void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
-  // transmit frame now
-  starttx(freq, rps, txpow, framePtr, frameLength);
+  // select LoRa modem (from sleep mode)
+  // writeReg(RegOpMode, OPMODE_LORA);
+  opmodeLora();
+  // enter standby mode (required for FIFO loading))
+  opmode(OPMODE_STANDBY);
+  // configure LoRa modem (cfg1, cfg2)
+  configLoraModem(rps);
+  // configure frequency
+  configChannel(freq);
+  // configure output power
+  // set PA ramp-up time 50 uSec
+  writeReg(RegPaRamp, (readReg(RegPaRamp) & 0xF0) | 0x08);
+  configPower(txpow);
+  // set sync word
+  writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
+
+  // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
+  writeReg(RegDioMapping1,
+           MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
+  // clear all radio IRQ flags
+  writeReg(LORARegIrqFlags, 0xFF);
+  // mask all IRQs but TxDone
+  writeReg(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK);
+
+  // initialize the payload size and address pointers
+  writeReg(LORARegFifoTxBaseAddr, 0x00);
+  writeReg(LORARegFifoAddrPtr, 0x00);
+  writeReg(LORARegPayloadLength, frameLength);
+
+  // download buffer to the radio FIFO
+  writeBuf(RegFifo, framePtr, frameLength);
+
+  // enable antenna switch for TX
+  hal.pin_rxtx(1);
+
+  // now we actually start the transmission
+  opmode(OPMODE_TX);
+
+  uint8_t const sf = rps.sf + 6; // 1 == SF7
+  PRINT_DEBUG(
+      1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
+      freq, frameLength, sf, bwForLog(rps), crForLog(rps), rps.ih);
+  // the radio will go back to STANDBY mode as soon as the TX is finished
+  // the corresponding IRQ will inform us about completion.
 }
 
 void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,

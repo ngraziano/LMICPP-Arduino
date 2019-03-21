@@ -53,10 +53,6 @@ private:
   void configLoraModem(rps_t rps);
   void configChannel(uint32_t freq) const;
   void configPower(int8_t pw) const;
-  void txlora(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *frame,
-              uint8_t dataLen);
-  void starttx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *frame,
-               uint8_t dataLen);
   void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
               OsTime rxtime);
   void rxrssi() const;
