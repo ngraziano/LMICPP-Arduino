@@ -43,11 +43,6 @@ private:
   uint8_t last_packet_rssi_reg = 0;
   HalIo hal;
 
-  OsTime int_trigger_time() const;
-  void writeReg(uint8_t addr, uint8_t data) const;
-  uint8_t readReg(uint8_t addr) const;
-  void writeBuf(uint8_t addr, uint8_t const *buf, uint8_t len) const;
-  void readBuf(uint8_t addr, uint8_t *buf, uint8_t len) const;
   void opmode(uint8_t mode) const;
   void opmodeLora() const;
   void configLoraModem(rps_t rps);

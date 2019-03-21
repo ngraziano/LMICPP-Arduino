@@ -155,43 +155,8 @@ const uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
 
 const uint8_t LNA_RX_GAIN = (0x20 | 0x03);
 
-void Radio::writeReg(uint8_t const addr, uint8_t const data) const {
-  hal.beginspi();
-  hal.spi(addr | 0x80);
-  hal.spi(data);
-  hal.endspi();
-}
-
-uint8_t Radio::readReg(uint8_t const addr) const {
-  hal.beginspi();
-  hal.spi(addr & 0x7F);
-  uint8_t const val = hal.spi(0x00);
-  hal.endspi();
-  return val;
-}
-
-void Radio::writeBuf(uint8_t const addr, uint8_t const *const buf,
-                     uint8_t const len) const {
-  hal.beginspi();
-  hal.spi(addr | 0x80);
-  for (uint8_t i = 0; i < len; i++) {
-    hal.spi(buf[i]);
-  }
-  hal.endspi();
-}
-
-void Radio::readBuf(uint8_t const addr, uint8_t *const buf,
-                    uint8_t const len) const {
-  hal.beginspi();
-  hal.spi(addr & 0x7F);
-  for (uint8_t i = 0; i < len; i++) {
-    buf[i] = hal.spi(0x00);
-  }
-  hal.endspi();
-}
-
 void Radio::opmode(uint8_t const mode) const {
-  writeReg(RegOpMode, (readReg(RegOpMode) & ~OPMODE_MASK) | mode);
+  hal.write_reg(RegOpMode, (hal.read_reg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
 void Radio::opmodeLora() const {
@@ -199,7 +164,7 @@ void Radio::opmodeLora() const {
 #ifdef CFG_sx1276_radio
   u |= 0x8; // TBD: sx1276 high freq
 #endif
-  writeReg(RegOpMode, u);
+  hal.write_reg(RegOpMode, u);
 }
 
 // configure LoRa modem (cfg1, cfg2)
@@ -241,22 +206,22 @@ void Radio::configLoraModem(rps_t rps) {
 
   if (rps.ih) {
     mc1 |= SX1276_MC1_IMPLICIT_HEADER_MODE_ON;
-    writeReg(LORARegPayloadLength, rps.ih); // required length
+    hal.write_reg(LORARegPayloadLength, rps.ih); // required length
   }
   // set ModemConfig1
-  writeReg(LORARegModemConfig1, mc1);
+  hal.write_reg(LORARegModemConfig1, mc1);
 
   uint8_t mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
   if (!rps.nocrc) {
     mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
   }
-  writeReg(LORARegModemConfig2, mc2);
+  hal.write_reg(LORARegModemConfig2, mc2);
 
   uint8_t mc3 = SX1276_MC3_AGCAUTO;
   if ((sf == SF11 || sf == SF12) && rps.getBw() == BandWidth::BW125) {
     mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
   }
-  writeReg(LORARegModemConfig3, mc3);
+  hal.write_reg(LORARegModemConfig3, mc3);
 #elif CFG_sx1272_radio
   uint8_t mc1 = (rps.bw << 6);
 
@@ -285,13 +250,13 @@ void Radio::configLoraModem(rps_t rps) {
 
   if (rps.ih) {
     mc1 |= SX1272_MC1_IMPLICIT_HEADER_MODE_ON;
-    writeReg(LORARegPayloadLength, rps.ih); // required length
+    hal.write_reg(LORARegPayloadLength, rps.ih); // required length
   }
   // set ModemConfig1
-  writeReg(LORARegModemConfig1, mc1);
+  hal.write_reg(LORARegModemConfig1, mc1);
 
   // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi=00)
-  writeReg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf - 1) << 4)) | 0x04);
+  hal.write_reg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf - 1) << 4)) | 0x04);
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif /* CFG_sx1272_radio */
@@ -300,9 +265,9 @@ void Radio::configLoraModem(rps_t rps) {
 void Radio::configChannel(uint32_t const freq) const {
   // set frequency: FQ = (FRF * 32 Mhz) / (2 ^ 19)
   uint64_t const frf = ((uint64_t)freq << 19) / 32000000;
-  writeReg(RegFrfMsb, (uint8_t)(frf >> 16));
-  writeReg(RegFrfMid, (uint8_t)(frf >> 8));
-  writeReg(RegFrfLsb, (uint8_t)(frf >> 0));
+  hal.write_reg(RegFrfMsb, (uint8_t)(frf >> 16));
+  hal.write_reg(RegFrfMid, (uint8_t)(frf >> 8));
+  hal.write_reg(RegFrfLsb, (uint8_t)(frf >> 0));
 }
 
 #define PA_BOOST_PIN 1
@@ -322,9 +287,9 @@ void Radio::configPower(int8_t pw) const {
   pw -= 2;
   // check board type for output pin
   // output on PA_BOOST for RFM95W
-  writeReg(RegPaConfig, (uint8_t)(0x80 | pw));
+  hal.write_reg(RegPaConfig, (uint8_t)(0x80 | pw));
   // no boost +20dB
-  writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
+  hal.write_reg(RegPaDac, (hal.read_reg(RegPaDac) & 0xF8) | 0x4);
 
 #else
   // output on rfo pin
@@ -349,9 +314,9 @@ void Radio::configPower(int8_t pw) const {
     pa += 15 - 11 + pw;
   }
 
-  writeReg(RegPaConfig, pa);
+  hal.write_reg(RegPaConfig, pa);
   // no boost +20dB
-  writeReg(RegPaDac, (readReg(RegPaDac) & 0xF8) | 0x4);
+  hal.write_reg(RegPaDac, (hal.read_reg(RegPaDac) & 0xF8) | 0x4);
 #endif
 #elif CFG_sx1272_radio
   // set PA config (2-17 dBm using PA_BOOST)
@@ -360,7 +325,7 @@ void Radio::configPower(int8_t pw) const {
   } else if (pw < 2) {
     pw = 2;
   }
-  writeReg(RegPaConfig, (uint8_t)(0x80 | (pw - 2)));
+  hal.write_reg(RegPaConfig, (uint8_t)(0x80 | (pw - 2)));
 #else
 #error Missing CFG_sx1272_radio/CFG_sx1276_radio
 #endif /* CFG_sx1272_radio */
@@ -403,14 +368,14 @@ void Radio::rxrssi() const {
   opmode(OPMODE_STANDBY);
   // don't use MAC settings at startup
   // use fixed settings for rssi scan
-  writeReg(LORARegModemConfig1, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1);
-  writeReg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
+  hal.write_reg(LORARegModemConfig1, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1);
+  hal.write_reg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
   // set LNA gain
-  writeReg(RegLna, LNA_RX_GAIN);
+  hal.write_reg(RegLna, LNA_RX_GAIN);
   // clear all radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
+  hal.write_reg(LORARegIrqFlags, 0xFF);
   // mask all irq
-  writeReg(LORARegIrqFlagsMask, ~0x00);
+  hal.write_reg(LORARegIrqFlagsMask, ~0x00);
   // enable antenna switch for RX
   hal.pin_rxtx(0);
   // now instruct the radio to receive
@@ -424,7 +389,7 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
                    uint8_t const rxsyms, OsTime const rxtime) {
   // select LoRa modem (from sleep mode)
   opmodeLora();
-  ASSERT((readReg(RegOpMode) & OPMODE_LORA) != 0);
+  ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
   // enter standby mode (warm up))
   opmode(OPMODE_STANDBY);
   // don't use MAC settings at startup
@@ -434,23 +399,23 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   configChannel(freq);
 
   // set LNA gain
-  writeReg(RegLna, LNA_RX_GAIN);
+  hal.write_reg(RegLna, LNA_RX_GAIN);
   // set max payload size
-  writeReg(LORARegPayloadMaxLength, 64);
+  hal.write_reg(LORARegPayloadMaxLength, 64);
 #if !defined(DISABLE_INVERT_IQ_ON_RX)
   // use inverted I/Q signal (prevent mote-to-mote communication)
-  writeReg(LORARegInvertIQ, readReg(LORARegInvertIQ) | (1 << 6));
+  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
 #endif
   // set symbol timeout (for single rx)
-  writeReg(LORARegSymbTimeoutLsb, rxsyms);
+  hal.write_reg(LORARegSymbTimeoutLsb, rxsyms);
   // set sync word
-  writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
+  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
   // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
-  writeReg(RegDioMapping1,
+  hal.write_reg(RegDioMapping1,
            MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO2_LORA_NOP);
   // clear all radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
+  hal.write_reg(LORARegIrqFlags, 0xFF);
 
   // enable antenna switch for RX
   hal.pin_rxtx(0);
@@ -459,14 +424,14 @@ void Radio::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
   if (rxmode == RXMODE_SINGLE) {
     // single rx
     // enable required radio IRQs
-    writeReg(LORARegIrqFlagsMask,
+    hal.write_reg(LORARegIrqFlagsMask,
              (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
     hal_waitUntil(rxtime); // busy wait until exact rx time
     opmode(OPMODE_RX_SINGLE);
   } else {
     // continous rx (scan)
     // enable required radio IRQs
-    writeReg(LORARegIrqFlagsMask, ~IRQ_LORA_RXDONE_MASK);
+    hal.write_reg(LORARegIrqFlagsMask, ~IRQ_LORA_RXDONE_MASK);
     opmode(OPMODE_RX);
   }
 
@@ -494,7 +459,7 @@ void Radio::init() {
   hal_wait(OsDeltaTime::from_ms(5));
 
   // some sanity checks, e.g., read version number
-  uint8_t const v = readReg(RegVersion);
+  uint8_t const v = hal.read_reg(RegVersion);
   PRINT_DEBUG(1, F("Chip version : %i"), v);
 
 #ifdef CFG_sx1276_radio
@@ -509,7 +474,7 @@ void Radio::init() {
   // Configure max curent
   // limit current to 45mA
   constexpr uint8_t limit = 0;
-  writeReg(RegOcp, 0x20 | limit);
+  hal.write_reg(RegOcp, 0x20 | limit);
   */
   opmode(OPMODE_SLEEP);
 }
@@ -520,13 +485,13 @@ void Radio::init_random(uint8_t randbuf[16]) {
 
   // seed 15-byte randomness via noise rssi
   rxrssi();
-  while ((readReg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
+  while ((hal.read_reg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
   for (uint8_t i = 1; i < 16; i++) {
     for (uint8_t j = 0; j < 8; j++) {
       uint8_t b; // wait for two non-identical subsequent least-significant bits
-      while ((b = readReg(LORARegRssiWideband) & 0x01) ==
-             (readReg(LORARegRssiWideband) & 0x01))
+      while ((b = hal.read_reg(LORARegRssiWideband) & 0x01) ==
+             (hal.read_reg(LORARegRssiWideband) & 0x01))
         ;
       randbuf[i] = (randbuf[i] << 1) | b;
     }
@@ -538,7 +503,7 @@ void Radio::init_random(uint8_t randbuf[16]) {
 
 uint8_t Radio::rssi() const {
   DisableIRQsGard irqguard;
-  uint8_t const r = readReg(LORARegRssiValue);
+  uint8_t const r = hal.read_reg(LORARegRssiValue);
   return r;
 }
 
@@ -546,38 +511,38 @@ uint8_t Radio::rssi() const {
 // (radio goes to stanby mode after tx/rx operations)
 uint8_t Radio::handle_end_rx(uint8_t *const framePtr) {
 
-  uint8_t const flags = readReg(LORARegIrqFlags);
+  uint8_t const flags = hal.read_reg(LORARegIrqFlags);
   PRINT_DEBUG(2, F("irq: flags: 0x%x\n"), flags);
 
   uint8_t length = 0;
   if (flags & IRQ_LORA_RXDONE_MASK) {
     // read the PDU and inform the MAC that we received something
     // TODO correct SX1272_MC1_IMPLICIT_HEADER_MODE_ON is not for SX1276
-    length = (readReg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
-                 ? readReg(LORARegPayloadLength)
-                 : readReg(LORARegRxNbBytes);
+    length = (hal.read_reg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
+                 ? hal.read_reg(LORARegPayloadLength)
+                 : hal.read_reg(LORARegRxNbBytes);
 
     // for security clamp length of data
     length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
 
     // set FIFO read address pointer
-    writeReg(LORARegFifoAddrPtr, readReg(LORARegFifoRxCurrentAddr));
+    hal.write_reg(LORARegFifoAddrPtr, hal.read_reg(LORARegFifoRxCurrentAddr));
     // now read the FIFO
-    readBuf(RegFifo, framePtr, length);
+    hal.read_buffer(RegFifo, framePtr, length);
 
     // read rx quality parameters
     // SNR [dB] * 4
-    last_packet_snr_reg = static_cast<int8_t>(readReg(LORARegPktSnrValue));
+    last_packet_snr_reg = static_cast<int8_t>(hal.read_reg(LORARegPktSnrValue));
     // RSSI [dBm]  - 139
-    last_packet_rssi_reg = readReg(LORARegPktRssiValue);
+    last_packet_rssi_reg = hal.read_reg(LORARegPktRssiValue);
   } else if (flags & IRQ_LORA_RXTOUT_MASK) {
     // indicate timeout
     PRINT_DEBUG(1, F("RX timeout"));
   }
   // mask all radio IRQs
-  writeReg(LORARegIrqFlagsMask, 0xFF);
+  hal.write_reg(LORARegIrqFlagsMask, 0xFF);
   // clear radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
+  hal.write_reg(LORARegIrqFlags, 0xFF);
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 
@@ -588,9 +553,9 @@ uint8_t Radio::handle_end_rx(uint8_t *const framePtr) {
 void Radio::handle_end_tx() const {
 
   // mask all radio IRQs
-  writeReg(LORARegIrqFlagsMask, 0xFF);
+  hal.write_reg(LORARegIrqFlagsMask, 0xFF);
   // clear radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
+  hal.write_reg(LORARegIrqFlags, 0xFF);
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 }
@@ -613,7 +578,7 @@ void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
   // select LoRa modem (from sleep mode)
-  // writeReg(RegOpMode, OPMODE_LORA);
+  // hal.write_reg(RegOpMode, OPMODE_LORA);
   opmodeLora();
   // enter standby mode (required for FIFO loading))
   opmode(OPMODE_STANDBY);
@@ -623,26 +588,26 @@ void Radio::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   configChannel(freq);
   // configure output power
   // set PA ramp-up time 50 uSec
-  writeReg(RegPaRamp, (readReg(RegPaRamp) & 0xF0) | 0x08);
+  hal.write_reg(RegPaRamp, (hal.read_reg(RegPaRamp) & 0xF0) | 0x08);
   configPower(txpow);
   // set sync word
-  writeReg(LORARegSyncWord, LORA_MAC_PREAMBLE);
+  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
   // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
-  writeReg(RegDioMapping1,
+  hal.write_reg(RegDioMapping1,
            MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
   // clear all radio IRQ flags
-  writeReg(LORARegIrqFlags, 0xFF);
+  hal.write_reg(LORARegIrqFlags, 0xFF);
   // mask all IRQs but TxDone
-  writeReg(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK);
+  hal.write_reg(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK);
 
   // initialize the payload size and address pointers
-  writeReg(LORARegFifoTxBaseAddr, 0x00);
-  writeReg(LORARegFifoAddrPtr, 0x00);
-  writeReg(LORARegPayloadLength, frameLength);
+  hal.write_reg(LORARegFifoTxBaseAddr, 0x00);
+  hal.write_reg(LORARegFifoAddrPtr, 0x00);
+  hal.write_reg(LORARegPayloadLength, frameLength);
 
   // download buffer to the radio FIFO
-  writeBuf(RegFifo, framePtr, frameLength);
+  hal.write_buffer(RegFifo, framePtr, frameLength);
 
   // enable antenna switch for TX
   hal.pin_rxtx(1);
