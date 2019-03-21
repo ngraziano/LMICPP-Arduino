@@ -149,7 +149,7 @@ public:
 
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-  explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
+  explicit LmicEu868(Radio &radio, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
   virtual size_t saveState(uint8_t *buffer) const override;

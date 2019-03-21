@@ -420,5 +420,5 @@ size_t LmicEu868::loadState(uint8_t const *buffer) {
 }
 #endif
 
-LmicEu868::LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : Lmic(pins, scheduler) {}
+LmicEu868::LmicEu868(Radio &radio, OsScheduler &scheduler)
+    : Lmic(radio, scheduler) {}

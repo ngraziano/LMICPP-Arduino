@@ -305,5 +305,5 @@ bool LmicUs915::nextJoinState() {
 dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicUs915::LmicUs915(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : Lmic(pins, scheduler) {}
+LmicUs915::LmicUs915(Radio &radio, OsScheduler &scheduler)
+    : Lmic(radio, scheduler) {}

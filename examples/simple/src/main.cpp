@@ -47,7 +47,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {9, 8},
 };
 OsScheduler OSS;
-LmicEu868 LMIC {lmic_pins, OSS};
+Radio radio {lmic_pins};
+LmicEu868 LMIC {radio, OSS};
 
 OsJob sendjob{OSS};
 

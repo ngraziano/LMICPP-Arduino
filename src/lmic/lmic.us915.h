@@ -21,7 +21,7 @@ enum {
 
 class LmicUs915 final : public Lmic {
 public:
-  explicit LmicUs915(lmic_pinmap const &pins, OsScheduler &scheduler);
+  explicit LmicUs915(Radio &radio, OsScheduler &scheduler);
 
 protected:
   uint8_t getRawRps(dr_t dr) const override;

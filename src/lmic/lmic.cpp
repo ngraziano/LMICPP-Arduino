@@ -1326,5 +1326,5 @@ size_t Lmic::loadState(uint8_t const *buffer) {
 
 #endif
 
-Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : radio(pins), osjob(*this, scheduler), rand(aes) {}
+Lmic::Lmic(Radio &radio, OsScheduler &scheduler)
+    : radio(radio), osjob(*this, scheduler), rand(aes) {}
