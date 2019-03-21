@@ -9,7 +9,7 @@
  *    IBM Zurich Research Lab - initial API, implementation and documentation
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
-
+#if 0
 #include "radio.h"
 #include "../hal/print_debug.h"
 
@@ -654,3 +654,4 @@ bool Radio::io_check() const {
 }
 
 Radio::Radio(lmic_pinmap const &pins) : hal(pins) {}
+#endif

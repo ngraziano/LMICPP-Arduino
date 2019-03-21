@@ -13,7 +13,6 @@
 #ifndef _radio_h_
 #define _radio_h_
 
-#include "../hal/hal_io.h"
 #include "lorabase.h"
 #include "osticks.h"
 #include <stdint.h>
@@ -21,36 +20,22 @@
 class Radio {
 
 public:
-  explicit Radio(lmic_pinmap const &pins);
-  void init(void);
-  void rst() const;
-  void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
-          uint8_t frameLength);
-  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
-  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
+  virtual void init(void) = 0;
+  virtual void rst() const = 0;
+  virtual void tx(uint32_t freq, rps_t rps, int8_t txpow,
+                  uint8_t const *framePtr, uint8_t frameLength) = 0;
+  virtual void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) = 0;
+  virtual void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
+                    OsTime rxtime) = 0;
 
-  void init_random(uint8_t randbuf[16]);
-  uint8_t handle_end_rx(uint8_t *framePtr);
-  void handle_end_tx() const;
+  virtual void init_random(uint8_t randbuf[16]) = 0;
+  virtual uint8_t handle_end_rx(uint8_t *framePtr) = 0;
+  virtual void handle_end_tx() const = 0;
 
-  bool io_check() const;
-  uint8_t rssi() const;
-  int16_t get_last_packet_rssi() const;
-  int8_t get_last_packet_snr_x4() const;
-
-private:
-  int8_t last_packet_snr_reg = 0;
-  uint8_t last_packet_rssi_reg = 0;
-  HalIo hal;
-
-  void opmode(uint8_t mode) const;
-  void opmodeLora() const;
-  void configLoraModem(rps_t rps);
-  void configChannel(uint32_t freq) const;
-  void configPower(int8_t pw) const;
-  void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-              OsTime rxtime);
-  void rxrssi() const;
+  virtual bool io_check() const = 0;
+  virtual uint8_t rssi() const = 0;
+  virtual int16_t get_last_packet_rssi() const = 0;
+  virtual int8_t get_last_packet_snr_x4() const = 0;
 };
 
 #endif
