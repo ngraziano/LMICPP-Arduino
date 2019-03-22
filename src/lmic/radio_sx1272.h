@@ -34,12 +34,8 @@ public:
 
   bool io_check() const;
   uint8_t rssi() const;
-  int16_t get_last_packet_rssi() const;
-  int8_t get_last_packet_snr_x4() const;
 
 private:
-  int8_t last_packet_snr_reg = 0;
-  uint8_t last_packet_rssi_reg = 0;
   HalIo hal;
 
   void opmode(uint8_t mode) const;

@@ -32,8 +32,13 @@ public:
 
   virtual bool io_check() const = 0;
   virtual uint8_t rssi() const = 0;
-  virtual int16_t get_last_packet_rssi() const = 0;
-  virtual int8_t get_last_packet_snr_x4() const = 0;
+  virtual int16_t get_last_packet_rssi() const;
+  virtual int8_t get_last_packet_snr_x4() const;
+
+protected:
+  int8_t last_packet_snr_reg = 0;
+  uint8_t last_packet_rssi_reg = 0;
+  
 };
 
 #endif
