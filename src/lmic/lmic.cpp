@@ -64,7 +64,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
   const uint8_t q = sfx - optimiseLowSf;
 
-  int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
+  int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
     tmp *= (rps.crRaw + 5);

@@ -185,14 +185,6 @@ void RadioSx1276::configLoraModem(rps_t rps) {
 
   uint8_t mc1 = bw_to_mc1(rps.getBw());
   mc1 |= cr_to_mc1(rps.getCr());
-
-  // implicit only use in lorawan for beacon
-  // TODO remove it from all code.
-  if (rps.ih) {
-    // required length
-    mc1 |= MC1_IMPLICIT_HEADER_MODE_ON;
-    hal.write_reg(LORARegPayloadLength, rps.ih);
-  }
   // set ModemConfig1
   hal.write_reg(LORARegModemConfig1, mc1);
 
@@ -458,8 +450,8 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   opmode(OPMODE_TX);
 
   PRINT_DEBUG(
-      1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
-      freq, frameLength, rps.sf + 6, bwForLog(rps), crForLog(rps), rps.ih);
+      1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d"),
+      freq, frameLength, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the TX is finished
   // the corresponding IRQ will inform us about completion.
 }
@@ -512,7 +504,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
 
 
   PRINT_DEBUG(1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
-              freq, rps.sf + 6, bwForLog(rps), crForLog(rps), rps.ih);
+              freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
 }

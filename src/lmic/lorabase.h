@@ -18,33 +18,30 @@
 
 enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
-enum class BandWidth { BW125 = 0, BW250, BW500, BWrfu };
+enum class BandWidth { BW125 = 0, BW250, BW500 };
 
 typedef uint8_t sf_t;
 typedef uint8_t dr_t;
 
-// Radio parameter set (encodes SF/BW/CR/IH/NOCRC)
+// Radio parameter set (encodes SF/BW/CR/NOCRC)
 struct rps_t {
   sf_t sf : 3;
   uint8_t bwRaw : 2;
   uint8_t crRaw : 2;
   bool nocrc : 1;
-  uint8_t ih : 8;
 
   constexpr BandWidth getBw() const { return static_cast<BandWidth>(bwRaw); };
   constexpr CodingRate getCr() const { return static_cast<CodingRate>(crRaw); };
-  constexpr uint16_t rawValue() {
-    return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0) |
-            (ih << 8));
+  constexpr uint8_t rawValue() {
+    return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0));
   }
 
-  constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc, uint8_t ih)
+  constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc)
       : sf(sf), bwRaw(static_cast<uint8_t>(bw)),
-        crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc), ih(ih){};
-  explicit constexpr rps_t(uint16_t rawValue)
+        crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc){};
+  explicit constexpr rps_t(uint8_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
-        crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)),
-        ih((rawValue >> 8) & 0xFF)
+        crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7))
         //: rawValue(rawValue)
         {};
   rps_t(){};

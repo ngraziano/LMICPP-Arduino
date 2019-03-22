@@ -69,28 +69,28 @@ CONST_TABLE(uint8_t, maxFrameLens)
 
 namespace {
 constexpr uint8_t rps_DR0 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR1 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR2 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR3 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 
 constexpr uint8_t rps_DR8 =
-    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR9 =
-    rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR10 =
-    rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR11 =
-    rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR12 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR13 =
-    rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 
 } // namespace
 

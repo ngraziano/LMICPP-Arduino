@@ -44,21 +44,21 @@ constexpr LmicEu868::Dr DR_DNW2 = LmicEu868::Dr::SF12;
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 constexpr uint8_t rps_DR0 =
-    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR1 =
-    rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR2 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR3 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR5 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR6 =
-    rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR7 =
-    rps_t{FSK, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{FSK, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS, rps_DR0, rps_DR1, rps_DR2, rps_DR3,
