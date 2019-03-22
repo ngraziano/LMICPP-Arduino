@@ -273,10 +273,8 @@ void RadioSx1276::rxrssi() const {
   hal.write_reg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
   // set LNA gain
   hal.write_reg(RegLna, LNA_RX_GAIN);
-  // clear all radio IRQ flags
-  hal.write_reg(LORARegIrqFlags, 0xFF);
-  // mask all irq
-  hal.write_reg(LORARegIrqFlagsMask, ~0x00);
+  
+  clear_irq();
   // enable antenna switch for RX
   hal.pin_rxtx(0);
   // now instruct the radio to receive
@@ -372,10 +370,7 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
     // indicate timeout
     PRINT_DEBUG(1, F("RX timeout"));
   }
-  // mask all radio IRQs
-  hal.write_reg(LORARegIrqFlagsMask, 0xFF);
-  // clear radio IRQ flags
-  hal.write_reg(LORARegIrqFlags, 0xFF);
+  clear_irq();
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 
@@ -384,14 +379,18 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
 }
 
 void RadioSx1276::handle_end_tx() const {
+  clear_irq();
+  // go from stanby to sleep
+  opmode(OPMODE_SLEEP);
+}
 
+void RadioSx1276::clear_irq() const {
   // mask all radio IRQs
   hal.write_reg(LORARegIrqFlagsMask, 0xFF);
   // clear radio IRQ flags
   hal.write_reg(LORARegIrqFlags, 0xFF);
-  // go from stanby to sleep
-  opmode(OPMODE_SLEEP);
 }
+
 
 void RadioSx1276::rst() const {
   DisableIRQsGard irqguard;

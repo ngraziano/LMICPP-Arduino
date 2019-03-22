@@ -45,6 +45,7 @@ private:
   void configChannel(uint32_t freq) const;
   void configPower(int8_t pw) const;
   void rxrssi() const;
+  void clear_irq() const;
 };
 
 #endif
