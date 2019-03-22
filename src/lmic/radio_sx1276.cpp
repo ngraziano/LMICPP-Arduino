@@ -259,8 +259,6 @@ void RadioSx1276::configPower(int8_t pw) const {
 #endif
 }
 
-enum { RXMODE_SINGLE, RXMODE_SCAN };
-
 // start LoRa receiver
 void RadioSx1276::rxrssi() const {
   // select LoRa modem (from sleep mode)
@@ -349,9 +347,7 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
   uint8_t length = 0;
   if (flags & IRQ_LORA_RXDONE_MASK) {
     // read the PDU and inform the MAC that we received something
-    length = (hal.read_reg(LORARegModemConfig1) & MC1_IMPLICIT_HEADER_MODE_ON)
-                 ? hal.read_reg(LORARegPayloadLength)
-                 : hal.read_reg(LORARegRxNbBytes);
+    length = hal.read_reg(LORARegRxNbBytes);
 
     // for security clamp length of data
     length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
