@@ -27,7 +27,6 @@ public:
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
           uint8_t frameLength);
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
-  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
 
   void init_random(uint8_t randbuf[16]);
   uint8_t handle_end_rx(uint8_t *framePtr);

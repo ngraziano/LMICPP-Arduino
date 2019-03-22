@@ -25,8 +25,6 @@ public:
   virtual void tx(uint32_t freq, rps_t rps, int8_t txpow,
                   uint8_t const *framePtr, uint8_t frameLength) = 0;
   virtual void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) = 0;
-  virtual void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms,
-                    OsTime rxtime) = 0;
 
   virtual void init_random(uint8_t randbuf[16]) = 0;
   virtual uint8_t handle_end_rx(uint8_t *framePtr) = 0;

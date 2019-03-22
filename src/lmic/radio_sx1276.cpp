@@ -293,66 +293,6 @@ void RadioSx1276::rxrssi() const {
   PRINT_DEBUG(1, F("RXMODE_RSSI"));
 }
 
-// start LoRa receiver
-void RadioSx1276::rxlora(uint8_t const rxmode, uint32_t const freq,
-                         rps_t const rps, uint8_t const rxsyms,
-                         OsTime const rxtime) {
-  // select LoRa modem (from sleep mode)
-  opmodeLora();
-  ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
-  // enter standby mode (warm up))
-  opmode(OPMODE_STANDBY);
-  // don't use MAC settings at startup
-  // configure LoRa modem (cfg1, cfg2)
-  configLoraModem(rps);
-  // configure frequency
-  configChannel(freq);
-
-  // set LNA gain
-  hal.write_reg(RegLna, LNA_RX_GAIN);
-  // set max payload size
-  hal.write_reg(LORARegPayloadMaxLength, 64);
-#if !defined(DISABLE_INVERT_IQ_ON_RX)
-  // use inverted I/Q signal (prevent mote-to-mote communication)
-  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
-#endif
-  // set symbol timeout (for single rx)
-  hal.write_reg(LORARegSymbTimeoutLsb, rxsyms);
-  // set sync word
-  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
-
-  // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
-  hal.write_reg(RegDioMapping1, MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT |
-                                    MAP_DIO2_LORA_NOP);
-  // clear all radio IRQ flags
-  hal.write_reg(LORARegIrqFlags, 0xFF);
-
-  // enable antenna switch for RX
-  hal.pin_rxtx(0);
-
-  // now instruct the radio to receive
-  if (rxmode == RXMODE_SINGLE) {
-    // single rx
-    // enable required radio IRQs
-    hal.write_reg(LORARegIrqFlagsMask,
-                  (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-    hal_waitUntil(rxtime); // busy wait until exact rx time
-    opmode(OPMODE_RX_SINGLE);
-  } else {
-    // continous rx (scan)
-    // enable required radio IRQs
-    hal.write_reg(LORARegIrqFlagsMask, ~IRQ_LORA_RXDONE_MASK);
-    opmode(OPMODE_RX);
-  }
-
-  uint8_t const sf = rps.sf + 6; // 1 == SF7
-  PRINT_DEBUG(1, F("%s, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
-              rxmode == RXMODE_SINGLE
-                  ? "RXMODE_SINGLE"
-                  : (rxmode == RXMODE_SCAN ? "RXMODE_SCAN" : "UNKNOWN_RX"),
-              freq, sf, bwForLog(rps), crForLog(rps), rps.ih);
-}
-
 void RadioSx1276::init() {
   DisableIRQsGard irqguard;
   hal.init();
@@ -369,7 +309,6 @@ void RadioSx1276::init() {
   // some sanity checks, e.g., read version number
   uint8_t const v = hal.read_reg(RegVersion);
   PRINT_DEBUG(1, F("Chip version : %i"), v);
-
   ASSERT(v == 0x12);
 
 
@@ -482,7 +421,6 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                      uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
   // select LoRa modem (from sleep mode)
-  // hal.write_reg(RegOpMode, OPMODE_LORA);
   opmodeLora();
   // enter standby mode (required for FIFO loading))
   opmode(OPMODE_STANDBY);
@@ -519,10 +457,9 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // now we actually start the transmission
   opmode(OPMODE_TX);
 
-  uint8_t const sf = rps.sf + 6; // 1 == SF7
   PRINT_DEBUG(
       1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d, IH=%d"),
-      freq, frameLength, sf, bwForLog(rps), crForLog(rps), rps.ih);
+      freq, frameLength, rps.sf + 6, bwForLog(rps), crForLog(rps), rps.ih);
   // the radio will go back to STANDBY mode as soon as the TX is finished
   // the corresponding IRQ will inform us about completion.
 }
@@ -531,16 +468,51 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                      OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
-  rxlora(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
-  // the radio will go back to STANDBY mode as soon as the RX is finished
-  // or timed out, and the corresponding IRQ will inform us about completion.
-}
+    // select LoRa modem (from sleep mode)
+  opmodeLora();
+  ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
+  // enter standby mode (warm up))
+  opmode(OPMODE_STANDBY);
+  // don't use MAC settings at startup
+  // configure LoRa modem (cfg1, cfg2)
+  configLoraModem(rps);
+  // configure frequency
+  configChannel(freq);
 
-void RadioSx1276::rxon(uint32_t const freq, rps_t const rps,
-                       uint8_t const rxsyms, OsTime const rxtime) {
-  DisableIRQsGard irqguard;
-  // start scanning for beacon now
-  rxlora(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
+  // set LNA gain
+  hal.write_reg(RegLna, LNA_RX_GAIN);
+  // set max payload size
+  hal.write_reg(LORARegPayloadMaxLength, 64);
+#if !defined(DISABLE_INVERT_IQ_ON_RX)
+  // use inverted I/Q signal (prevent mote-to-mote communication)
+  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
+#endif
+  // set symbol timeout (for single rx)
+  hal.write_reg(LORARegSymbTimeoutLsb, rxsyms);
+  // set sync word
+  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
+
+  // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
+  hal.write_reg(RegDioMapping1, MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT |
+                                    MAP_DIO2_LORA_NOP);
+  // clear all radio IRQ flags
+  hal.write_reg(LORARegIrqFlags, 0xFF);
+
+  // enable antenna switch for RX
+  hal.pin_rxtx(0);
+
+  // now instruct the radio to receive
+
+  // single rx
+  // enable required radio IRQs
+  hal.write_reg(LORARegIrqFlagsMask,
+                (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
+  hal_waitUntil(rxtime); // busy wait until exact rx time
+  opmode(OPMODE_RX_SINGLE);
+
+
+  PRINT_DEBUG(1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
+              freq, rps.sf + 6, bwForLog(rps), crForLog(rps), rps.ih);
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
 }

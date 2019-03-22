@@ -28,7 +28,6 @@ public:
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
           uint8_t frameLength) override;
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) override;
-  void rxon(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) override;
 
   void init_random(uint8_t randbuf[16]) override;
   uint8_t handle_end_rx(uint8_t *framePtr) override;
@@ -49,8 +48,6 @@ private:
   void configLoraModem(rps_t rps);
   void configChannel(uint32_t freq) const;
   void configPower(int8_t pw) const;
-  void rxlora(uint8_t rxmode, uint32_t freq, rps_t rps, uint8_t rxsyms,
-              OsTime rxtime);
   void rxrssi() const;
 };
 

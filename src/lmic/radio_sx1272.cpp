@@ -632,14 +632,6 @@ void Radio::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-void Radio::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-                 OsTime const rxtime) {
-  DisableIRQsGard irqguard;
-  // start scanning for beacon now
-  rxlora(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
-  // the radio will go back to STANDBY mode as soon as the RX is finished
-  // or timed out, and the corresponding IRQ will inform us about completion.
-}
 
 /**
  * Check the IO pin.
