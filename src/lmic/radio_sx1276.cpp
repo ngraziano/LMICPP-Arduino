@@ -16,154 +16,166 @@
 #include "../aes/lmic_aes.h"
 #include "lmic_table.h"
 
+namespace {
 // ----------------------------------------
 // Registers Mapping
-const uint8_t RegFifo = 0x00;     // common
-const uint8_t RegOpMode = 0x01;   // common
-const uint8_t RegFrfMsb = 0x06;   // common
-const uint8_t RegFrfMid = 0x07;   // common
-const uint8_t RegFrfLsb = 0x08;   // common
-const uint8_t RegPaConfig = 0x09; // common
-const uint8_t RegPaRamp = 0x0A;   // common
-const uint8_t RegOcp = 0x0B;      // common
-const uint8_t RegLna = 0x0C;      // common
-const uint8_t LORARegFifoAddrPtr = 0x0D;
-const uint8_t LORARegFifoTxBaseAddr = 0x0E;
-const uint8_t LORARegFifoRxBaseAddr = 0x0F;
-const uint8_t LORARegFifoRxCurrentAddr = 0x10;
-const uint8_t LORARegIrqFlagsMask = 0x11;
-const uint8_t LORARegIrqFlags = 0x12;
-const uint8_t LORARegRxNbBytes = 0x13;
-const uint8_t LORARegRxHeaderCntValueMsb = 0x14;
-const uint8_t LORARegRxHeaderCntValueLsb = 0x15;
-const uint8_t LORARegRxPacketCntValueMsb = 0x16;
-const uint8_t LORARegRxpacketCntValueLsb = 0x17;
-const uint8_t LORARegModemStat = 0x18;
-const uint8_t LORARegPktSnrValue = 0x19;
-const uint8_t LORARegPktRssiValue = 0x1A;
-const uint8_t LORARegRssiValue = 0x1B;
-const uint8_t LORARegHopChannel = 0x1C;
-const uint8_t LORARegModemConfig1 = 0x1D;
-const uint8_t LORARegModemConfig2 = 0x1E;
-const uint8_t LORARegSymbTimeoutLsb = 0x1F;
-const uint8_t LORARegPreambleMsb = 0x20;
-const uint8_t LORARegPreambleLsb = 0x21;
-const uint8_t LORARegPayloadLength = 0x22;
-const uint8_t LORARegPayloadMaxLength = 0x23;
-const uint8_t LORARegHopPeriod = 0x24;
-const uint8_t LORARegFifoRxByteAddr = 0x25;
-const uint8_t LORARegModemConfig3 = 0x26;
-const uint8_t LORARegFeiMsb = 0x28;
-const uint8_t LORAFeiMib = 0x29;
-const uint8_t LORARegFeiLsb = 0x2A;
-const uint8_t LORARegRssiWideband = 0x2C;
-const uint8_t LORARegDetectOptimize = 0x31;
-const uint8_t LORARegInvertIQ = 0x33;
-const uint8_t LORARegDetectionThreshold = 0x37;
-const uint8_t LORARegSyncWord = 0x39;
-const uint8_t RegDioMapping1 = 0x40; // common
-const uint8_t RegDioMapping2 = 0x41; // common
-const uint8_t RegVersion = 0x42;     // common
-const uint8_t RegPaDac = 0x4D;       // common
+constexpr uint8_t RegFifo = 0x00;     // common
+constexpr uint8_t RegOpMode = 0x01;   // common
+constexpr uint8_t RegFrfMsb = 0x06;   // common
+constexpr uint8_t RegFrfMid = 0x07;   // common
+constexpr uint8_t RegFrfLsb = 0x08;   // common
+constexpr uint8_t RegPaConfig = 0x09; // common
+constexpr uint8_t RegPaRamp = 0x0A;   // common
+constexpr uint8_t RegOcp = 0x0B;      // common
+constexpr uint8_t RegLna = 0x0C;      // common
+constexpr uint8_t LORARegFifoAddrPtr = 0x0D;
+constexpr uint8_t LORARegFifoTxBaseAddr = 0x0E;
+constexpr uint8_t LORARegFifoRxBaseAddr = 0x0F;
+constexpr uint8_t LORARegFifoRxCurrentAddr = 0x10;
+constexpr uint8_t LORARegIrqFlagsMask = 0x11;
+constexpr uint8_t LORARegIrqFlags = 0x12;
+constexpr uint8_t LORARegRxNbBytes = 0x13;
+constexpr uint8_t LORARegRxHeaderCntValueMsb = 0x14;
+constexpr uint8_t LORARegRxHeaderCntValueLsb = 0x15;
+constexpr uint8_t LORARegRxPacketCntValueMsb = 0x16;
+constexpr uint8_t LORARegRxpacketCntValueLsb = 0x17;
+constexpr uint8_t LORARegModemStat = 0x18;
+constexpr uint8_t LORARegPktSnrValue = 0x19;
+constexpr uint8_t LORARegPktRssiValue = 0x1A;
+constexpr uint8_t LORARegRssiValue = 0x1B;
+constexpr uint8_t LORARegHopChannel = 0x1C;
+constexpr uint8_t LORARegModemConfig1 = 0x1D;
+constexpr uint8_t LORARegModemConfig2 = 0x1E;
+constexpr uint8_t LORARegSymbTimeoutLsb = 0x1F;
+constexpr uint8_t LORARegPreambleMsb = 0x20;
+constexpr uint8_t LORARegPreambleLsb = 0x21;
+constexpr uint8_t LORARegPayloadLength = 0x22;
+constexpr uint8_t LORARegPayloadMaxLength = 0x23;
+constexpr uint8_t LORARegHopPeriod = 0x24;
+constexpr uint8_t LORARegFifoRxByteAddr = 0x25;
+constexpr uint8_t LORARegModemConfig3 = 0x26;
+constexpr uint8_t LORARegFeiMsb = 0x28;
+constexpr uint8_t LORAFeiMib = 0x29;
+constexpr uint8_t LORARegFeiLsb = 0x2A;
+constexpr uint8_t LORARegRssiWideband = 0x2C;
+constexpr uint8_t LORARegDetectOptimize = 0x31;
+constexpr uint8_t LORARegInvertIQ = 0x33;
+constexpr uint8_t LORARegDetectionThreshold = 0x37;
+constexpr uint8_t LORARegSyncWord = 0x39;
+constexpr uint8_t RegDioMapping1 = 0x40; // common
+constexpr uint8_t RegDioMapping2 = 0x41; // common
+constexpr uint8_t RegVersion = 0x42;     // common
+constexpr uint8_t RegPaDac = 0x4D;       // common
 
 // ----------------------------------------
 // spread factors and mode for RegModemConfig2
-const uint8_t SX1272_MC2_FSK = 0x00;
-const uint8_t SX1272_MC2_SF7 = 0x70;
-const uint8_t SX1272_MC2_SF8 = 0x80;
-const uint8_t SX1272_MC2_SF9 = 0x90;
-const uint8_t SX1272_MC2_SF10 = 0xA0;
-const uint8_t SX1272_MC2_SF11 = 0xB0;
-const uint8_t SX1272_MC2_SF12 = 0xC0;
-// bandwidth for RegModemConfig1
-const uint8_t SX1272_MC1_BW_125 = 0x00;
-const uint8_t SX1272_MC1_BW_250 = 0x40;
-const uint8_t SX1272_MC1_BW_500 = 0x80;
-// coding rate for RegModemConfig1
-const uint8_t SX1272_MC1_CR_4_5 = 0x08;
-const uint8_t SX1272_MC1_CR_4_6 = 0x10;
-const uint8_t SX1272_MC1_CR_4_7 = 0x18;
-const uint8_t SX1272_MC1_CR_4_8 = 0x20;
-const uint8_t SX1272_MC1_IMPLICIT_HEADER_MODE_ON = 0x04; // required for receive
-const uint8_t SX1272_MC1_RX_PAYLOAD_CRCON = 0x02;
-const uint8_t SX1272_MC1_LOW_DATA_RATE_OPTIMIZE =
-    0x01; // mandated for SF11 and SF12
-// transmit power configuration for RegPaConfig
-const uint8_t SX1272_PAC_PA_SELECT_PA_BOOST = 0x80;
-const uint8_t SX1272_PAC_PA_SELECT_RFIO_PIN = 0x00;
-
-// sx1276 RegModemConfig1
-const uint8_t SX1276_MC1_BW_125 = 0x70;
-const uint8_t SX1276_MC1_BW_250 = 0x80;
-const uint8_t SX1276_MC1_BW_500 = 0x90;
-const uint8_t SX1276_MC1_CR_4_5 = 0x02;
-const uint8_t SX1276_MC1_CR_4_6 = 0x04;
-const uint8_t SX1276_MC1_CR_4_7 = 0x06;
-const uint8_t SX1276_MC1_CR_4_8 = 0x08;
-
-const uint8_t SX1276_MC1_IMPLICIT_HEADER_MODE_ON = 0x01;
-
+constexpr uint8_t sf_to_mc2(sf_t sf) { return (7 - SF7 + sf) << 4; }
 // sx1276 RegModemConfig2
-const uint8_t SX1276_MC2_RX_PAYLOAD_CRCON = 0x04;
+constexpr uint8_t MC2_RX_PAYLOAD_CRCON = 1 << 2;
 
-// sx1276 RegModemConfig3
-const uint8_t SX1276_MC3_LOW_DATA_RATE_OPTIMIZE = 0x08;
-const uint8_t SX1276_MC3_AGCAUTO = 0x04;
+constexpr uint8_t MC1_BW_OFFSET = 4;
+constexpr uint8_t MC1_IDX_BW_125 = 7;
+constexpr uint8_t MC1_IDX_BW_250 = 8;
+constexpr uint8_t MC1_IDX_BW_500 = 9;
+// sx1276 RegModemConfig1
+constexpr uint8_t bw_to_mc1(BandWidth bw) {
+  return (MC1_IDX_BW_125 - static_cast<uint8_t>(BandWidth::BW125) +
+          static_cast<uint8_t>(bw))
+         << MC1_BW_OFFSET;
+}
+
+constexpr uint8_t MC1_CR_OFFSET = 1;
+constexpr uint8_t MC1_IDX_CR_4_5 = 1;
+constexpr uint8_t MC1_IDX_CR_4_6 = 2;
+constexpr uint8_t MC1_IDX_CR_4_7 = 3;
+constexpr uint8_t MC1_IDX_CR_4_8 = 4;
+
+constexpr uint8_t cr_to_mc1(CodingRate cr) {
+  return (MC1_IDX_CR_4_5 - static_cast<uint8_t>(CodingRate::CR_4_5) +
+          static_cast<uint8_t>(cr))
+         << MC1_CR_OFFSET;
+}
+constexpr uint8_t MC1_IMPLICIT_HEADER_MODE_ON = 0x01;
+
+// RegModemConfig3
+constexpr uint8_t MC3_LOW_DATA_RATE_OPTIMIZE = 0x08;
+constexpr uint8_t MC3_AGCAUTO = 0x04;
 
 // preamble for lora networks (nibbles swapped)
-const uint8_t LORA_MAC_PREAMBLE = 0x34;
+constexpr uint8_t LORA_MAC_PREAMBLE = 0x34;
 
-const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1 = 0x0A;
-#ifdef CFG_sx1276_radio
-const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 = 0x70;
-#elif CFG_sx1272_radio
-const uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 = 0x74;
-#endif
+constexpr uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG1 = 0x0A;
+constexpr uint8_t RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2 = 0x70;
 
 // ----------------------------------------
 // Constants for radio registers
-const uint8_t OPMODE_LORA = 0x80;
-const uint8_t OPMODE_MASK = 0x07;
-const uint8_t OPMODE_SLEEP = 0x00;
-const uint8_t OPMODE_STANDBY = 0x01;
-const uint8_t OPMODE_FSTX = 0x02;
-const uint8_t OPMODE_TX = 0x03;
-const uint8_t OPMODE_FSRX = 0x04;
-const uint8_t OPMODE_RX = 0x05;
-const uint8_t OPMODE_RX_SINGLE = 0x06;
-const uint8_t OPMODE_CAD = 0x07;
+constexpr uint8_t OPMODE_LORA = 0x80;
+constexpr uint8_t OPMODE_MASK = 0x07;
+constexpr uint8_t OPMODE_SLEEP = 0x00;
+constexpr uint8_t OPMODE_STANDBY = 0x01;
+constexpr uint8_t OPMODE_FSTX = 0x02;
+constexpr uint8_t OPMODE_TX = 0x03;
+constexpr uint8_t OPMODE_FSRX = 0x04;
+constexpr uint8_t OPMODE_RX = 0x05;
+constexpr uint8_t OPMODE_RX_SINGLE = 0x06;
+constexpr uint8_t OPMODE_CAD = 0x07;
 
 // ----------------------------------------
 // Bits masking the corresponding IRQs from the radio
-const uint8_t IRQ_LORA_RXTOUT_MASK = 0x80;
-const uint8_t IRQ_LORA_RXDONE_MASK = 0x40;
-const uint8_t IRQ_LORA_CRCERR_MASK = 0x20;
-const uint8_t IRQ_LORA_HEADER_MASK = 0x10;
-const uint8_t IRQ_LORA_TXDONE_MASK = 0x08;
-const uint8_t IRQ_LORA_CDDONE_MASK = 0x04;
-const uint8_t IRQ_LORA_FHSSCH_MASK = 0x02;
-const uint8_t IRQ_LORA_CDDETD_MASK = 0x01;
+constexpr uint8_t IRQ_LORA_RXTOUT_MASK = 0x80;
+constexpr uint8_t IRQ_LORA_RXDONE_MASK = 0x40;
+constexpr uint8_t IRQ_LORA_CRCERR_MASK = 0x20;
+constexpr uint8_t IRQ_LORA_HEADER_MASK = 0x10;
+constexpr uint8_t IRQ_LORA_TXDONE_MASK = 0x08;
+constexpr uint8_t IRQ_LORA_CDDONE_MASK = 0x04;
+constexpr uint8_t IRQ_LORA_FHSSCH_MASK = 0x02;
+constexpr uint8_t IRQ_LORA_CDDETD_MASK = 0x01;
 
 // ----------------------------------------
 // DIO function mappings                D0D1D2D3
-const uint8_t MAP_DIO0_LORA_RXDONE = 0x00; // 00------
-const uint8_t MAP_DIO0_LORA_TXDONE = 0x40; // 01------
-const uint8_t MAP_DIO0_LORA_NOP = 0xC0;    // 11------
-const uint8_t MAP_DIO1_LORA_RXTOUT = 0x00; // --00----
-const uint8_t MAP_DIO1_LORA_NOP = 0x30;    // --11----
-const uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
+constexpr uint8_t MAP_DIO0_LORA_RXDONE = 0x00; // 00------
+constexpr uint8_t MAP_DIO0_LORA_TXDONE = 0x40; // 01------
+constexpr uint8_t MAP_DIO0_LORA_NOP = 0xC0;    // 11------
+constexpr uint8_t MAP_DIO1_LORA_RXTOUT = 0x00; // --00----
+constexpr uint8_t MAP_DIO1_LORA_NOP = 0x30;    // --11----
+constexpr uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
 
-const uint8_t LNA_RX_GAIN = (0x20 | 0x03);
+constexpr uint8_t LNA_RX_GAIN = (0x20 | 0x03);
 
+uint8_t crForLog(rps_t const rps) {
+  switch (rps.getCr()) {
+  case CodingRate::CR_4_5:
+    return 5;
+  case CodingRate::CR_4_6:
+    return 6;
+  case CodingRate::CR_4_7:
+    return 7;
+  case CodingRate::CR_4_8:
+    return 8;
+  }
+  return 0;
+}
+
+uint16_t bwForLog(rps_t const rps) {
+  switch (rps.getBw()) {
+  case BandWidth::BW125:
+    return 125;
+  case BandWidth::BW250:
+    return 250;
+  case BandWidth::BW500:
+    return 500;
+  default:
+    return 0;
+  }
+}
+
+} // namespace
 void RadioSx1276::opmode(uint8_t const mode) const {
   hal.write_reg(RegOpMode, (hal.read_reg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
 void RadioSx1276::opmodeLora() const {
   uint8_t u = OPMODE_LORA;
-#ifdef CFG_sx1276_radio
-  u |= 0x8; // TBD: sx1276 high freq
-#endif
   hal.write_reg(RegOpMode, u);
 }
 
@@ -171,95 +183,31 @@ void RadioSx1276::opmodeLora() const {
 void RadioSx1276::configLoraModem(rps_t rps) {
   sf_t const sf = rps.sf;
 
-#ifdef CFG_sx1276_radio
-  uint8_t mc1 = 0;
+  uint8_t mc1 = bw_to_mc1(rps.getBw());
+  mc1 |= cr_to_mc1(rps.getCr());
 
-  switch (rps.getBw()) {
-  case BandWidth::BW125:
-    mc1 |= SX1276_MC1_BW_125;
-    break;
-  case BandWidth::BW250:
-    mc1 |= SX1276_MC1_BW_250;
-    break;
-  case BandWidth::BW500:
-    mc1 |= SX1276_MC1_BW_500;
-    break;
-  default:
-    ASSERT(0);
-  }
-  switch (rps.getCr()) {
-  case CodingRate::CR_4_5:
-    mc1 |= SX1276_MC1_CR_4_5;
-    break;
-  case CodingRate::CR_4_6:
-    mc1 |= SX1276_MC1_CR_4_6;
-    break;
-  case CodingRate::CR_4_7:
-    mc1 |= SX1276_MC1_CR_4_7;
-    break;
-  case CodingRate::CR_4_8:
-    mc1 |= SX1276_MC1_CR_4_8;
-    break;
-  default:
-    ASSERT(0);
-  }
-
+  // implicit only use in lorawan for beacon
+  // TODO remove it from all code.
   if (rps.ih) {
-    mc1 |= SX1276_MC1_IMPLICIT_HEADER_MODE_ON;
-    hal.write_reg(LORARegPayloadLength, rps.ih); // required length
+    // required length
+    mc1 |= MC1_IMPLICIT_HEADER_MODE_ON;
+    hal.write_reg(LORARegPayloadLength, rps.ih);
   }
   // set ModemConfig1
   hal.write_reg(LORARegModemConfig1, mc1);
 
-  uint8_t mc2 = (SX1272_MC2_SF7 + ((sf - 1) << 4));
+  uint8_t mc2 = sf_to_mc2(sf);
   if (!rps.nocrc) {
-    mc2 |= SX1276_MC2_RX_PAYLOAD_CRCON;
+    mc2 |= MC2_RX_PAYLOAD_CRCON;
   }
   hal.write_reg(LORARegModemConfig2, mc2);
 
-  uint8_t mc3 = SX1276_MC3_AGCAUTO;
-  if ((sf == SF11 || sf == SF12) && rps.getBw() == BandWidth::BW125) {
-    mc3 |= SX1276_MC3_LOW_DATA_RATE_OPTIMIZE;
+  uint8_t mc3 = MC3_AGCAUTO;
+  if (((sf == SF11 || sf == SF12) && rps.getBw() == BandWidth::BW125) ||
+      (sf == SF12 && rps.getBw() == BandWidth::BW250)) {
+    mc3 |= MC3_LOW_DATA_RATE_OPTIMIZE;
   }
   hal.write_reg(LORARegModemConfig3, mc3);
-#elif CFG_sx1272_radio
-  uint8_t mc1 = (rps.bw << 6);
-
-  switch (rps.cr) {
-  case CR_4_5:
-    mc1 |= SX1272_MC1_CR_4_5;
-    break;
-  case CR_4_6:
-    mc1 |= SX1272_MC1_CR_4_6;
-    break;
-  case CR_4_7:
-    mc1 |= SX1272_MC1_CR_4_7;
-    break;
-  case CR_4_8:
-    mc1 |= SX1272_MC1_CR_4_8;
-    break;
-  }
-
-  if ((sf == SF11 || sf == SF12) && rps.bw == BW125) {
-    mc1 |= SX1272_MC1_LOW_DATA_RATE_OPTIMIZE;
-  }
-
-  if (rps.nocrc == 0) {
-    mc1 |= SX1272_MC1_RX_PAYLOAD_CRCON;
-  }
-
-  if (rps.ih) {
-    mc1 |= SX1272_MC1_IMPLICIT_HEADER_MODE_ON;
-    hal.write_reg(LORARegPayloadLength, rps.ih); // required length
-  }
-  // set ModemConfig1
-  hal.write_reg(LORARegModemConfig1, mc1);
-
-  // set ModemConfig2 (sf, AgcAutoOn=1 SymbTimeoutHi=00)
-  hal.write_reg(LORARegModemConfig2, (SX1272_MC2_SF7 + ((sf - 1) << 4)) | 0x04);
-#else
-#error Missing CFG_sx1272_radio/CFG_sx1276_radio
-#endif /* CFG_sx1272_radio */
 }
 
 void RadioSx1276::configChannel(uint32_t const freq) const {
@@ -273,7 +221,6 @@ void RadioSx1276::configChannel(uint32_t const freq) const {
 #define PA_BOOST_PIN 1
 
 void RadioSx1276::configPower(int8_t pw) const {
-#ifdef CFG_sx1276_radio
 
 #if PA_BOOST_PIN
   // no boost +20dB used for now
@@ -318,44 +265,6 @@ void RadioSx1276::configPower(int8_t pw) const {
   // no boost +20dB
   hal.write_reg(RegPaDac, (hal.read_reg(RegPaDac) & 0xF8) | 0x4);
 #endif
-#elif CFG_sx1272_radio
-  // set PA config (2-17 dBm using PA_BOOST)
-  if (pw > 17) {
-    pw = 17;
-  } else if (pw < 2) {
-    pw = 2;
-  }
-  hal.write_reg(RegPaConfig, (uint8_t)(0x80 | (pw - 2)));
-#else
-#error Missing CFG_sx1272_radio/CFG_sx1276_radio
-#endif /* CFG_sx1272_radio */
-}
-
-uint8_t crForLog(rps_t const rps) {
-  switch (rps.getCr()) {
-  case CodingRate::CR_4_5:
-    return 5;
-  case CodingRate::CR_4_6:
-    return 6;
-  case CodingRate::CR_4_7:
-    return 7;
-  case CodingRate::CR_4_8:
-    return 8;
-  }
-  return 0;
-}
-
-uint16_t bwForLog(rps_t const rps) {
-  switch (rps.getBw()) {
-  case BandWidth::BW125:
-    return 125;
-  case BandWidth::BW250:
-    return 250;
-  case BandWidth::BW500:
-    return 500;
-  default:
-    return 0;
-  }
 }
 
 enum { RXMODE_SINGLE, RXMODE_SCAN };
@@ -385,8 +294,9 @@ void RadioSx1276::rxrssi() const {
 }
 
 // start LoRa receiver
-void RadioSx1276::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const rps,
-                   uint8_t const rxsyms, OsTime const rxtime) {
+void RadioSx1276::rxlora(uint8_t const rxmode, uint32_t const freq,
+                         rps_t const rps, uint8_t const rxsyms,
+                         OsTime const rxtime) {
   // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
@@ -412,8 +322,8 @@ void RadioSx1276::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const 
   hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
   // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
-  hal.write_reg(RegDioMapping1,
-           MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO2_LORA_NOP);
+  hal.write_reg(RegDioMapping1, MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT |
+                                    MAP_DIO2_LORA_NOP);
   // clear all radio IRQ flags
   hal.write_reg(LORARegIrqFlags, 0xFF);
 
@@ -425,7 +335,7 @@ void RadioSx1276::rxlora(uint8_t const rxmode, uint32_t const freq, rps_t const 
     // single rx
     // enable required radio IRQs
     hal.write_reg(LORARegIrqFlagsMask,
-             (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
+                  (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
     hal_waitUntil(rxtime); // busy wait until exact rx time
     opmode(OPMODE_RX_SINGLE);
   } else {
@@ -447,14 +357,12 @@ void RadioSx1276::init() {
   DisableIRQsGard irqguard;
   hal.init();
   // manually reset radio
-#ifdef CFG_sx1276_radio
-  hal.pin_rst(0); // drive RST pin low
-#else
-  hal.pin_rst(1); // drive RST pin high
-#endif
+  // drive RST pin low
+  hal.pin_rst(0); 
   // wait >100us for SX127x to detect reset
   hal_wait(OsDeltaTime::from_ms(1));
-  hal.pin_rst(2); // configure RST pin floating!
+  // configure RST pin floating!
+  hal.pin_rst(2); 
   // wait 5ms after reset
   hal_wait(OsDeltaTime::from_ms(5));
 
@@ -517,8 +425,7 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
   uint8_t length = 0;
   if (flags & IRQ_LORA_RXDONE_MASK) {
     // read the PDU and inform the MAC that we received something
-    // TODO correct SX1272_MC1_IMPLICIT_HEADER_MODE_ON is not for SX1276
-    length = (hal.read_reg(LORARegModemConfig1) & SX1272_MC1_IMPLICIT_HEADER_MODE_ON)
+    length = (hal.read_reg(LORARegModemConfig1) & MC1_IMPLICIT_HEADER_MODE_ON)
                  ? hal.read_reg(LORARegPayloadLength)
                  : hal.read_reg(LORARegRxNbBytes);
 
@@ -566,7 +473,9 @@ int16_t RadioSx1276::get_last_packet_rssi() const {
   return -139 + last_packet_rssi_reg;
 }
 
-int8_t RadioSx1276::get_last_packet_snr_x4() const { return last_packet_snr_reg; }
+int8_t RadioSx1276::get_last_packet_snr_x4() const {
+  return last_packet_snr_reg;
+}
 
 void RadioSx1276::rst() const {
   DisableIRQsGard irqguard;
@@ -575,7 +484,7 @@ void RadioSx1276::rst() const {
 }
 
 void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
-               uint8_t const *const framePtr, uint8_t const frameLength) {
+                     uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
   // select LoRa modem (from sleep mode)
   // hal.write_reg(RegOpMode, OPMODE_LORA);
@@ -595,7 +504,7 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
 
   // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
   hal.write_reg(RegDioMapping1,
-           MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
+                MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
   // clear all radio IRQ flags
   hal.write_reg(LORARegIrqFlags, 0xFF);
   // mask all IRQs but TxDone
@@ -624,7 +533,7 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
 }
 
 void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-               OsTime const rxtime) {
+                     OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
   rxlora(RXMODE_SINGLE, freq, rps, rxsyms, rxtime);
@@ -632,8 +541,8 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-void RadioSx1276::rxon(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
-                 OsTime const rxtime) {
+void RadioSx1276::rxon(uint32_t const freq, rps_t const rps,
+                       uint8_t const rxsyms, OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // start scanning for beacon now
   rxlora(RXMODE_SCAN, freq, rps, rxsyms, rxtime);
