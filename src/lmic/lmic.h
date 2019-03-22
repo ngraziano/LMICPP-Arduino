@@ -107,7 +107,7 @@ public:
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
 
 private:
-  
+  Radio &radio;
   OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
@@ -214,7 +214,7 @@ private:
   uint8_t dataBeg = 0;
 
   Aes aes;
-  Radio &radio;
+
 protected:
   // 1 RX window DR offset
   uint8_t rx1DrOffset;
