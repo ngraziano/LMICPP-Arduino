@@ -370,13 +370,8 @@ void RadioSx1276::init() {
   uint8_t const v = hal.read_reg(RegVersion);
   PRINT_DEBUG(1, F("Chip version : %i"), v);
 
-#ifdef CFG_sx1276_radio
   ASSERT(v == 0x12);
-#elif CFG_sx1272_radio
-  ASSERT(v == 0x22);
-#else
-#error Missing CFG_sx1272_radio/CFG_sx1276_radio
-#endif
+
 
   /* TODO add a parameter
   // Configure max curent
