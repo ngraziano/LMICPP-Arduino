@@ -19,7 +19,7 @@
 #include "radio.h"
 #include <stdint.h>
 
-class RadioSx1276 : public Radio {
+class RadioSx1276 final : public Radio {
 
 public:
   explicit RadioSx1276(lmic_pinmap const &pins);
