@@ -142,34 +142,20 @@ constexpr uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
 
 constexpr uint8_t LNA_RX_GAIN = (0x20 | 0x03);
 
-uint8_t crForLog(rps_t const rps) {
-  switch (rps.getCr()) {
-  case CodingRate::CR_4_5:
-    return 5;
-  case CodingRate::CR_4_6:
-    return 6;
-  case CodingRate::CR_4_7:
-    return 7;
-  case CodingRate::CR_4_8:
-    return 8;
-  }
-  return 0;
+constexpr uint8_t crForLog(rps_t const rps) {
+  return (5 - static_cast<uint8_t>(CodingRate::CR_4_5) +
+          static_cast<uint8_t>(rps.getCr()));
 }
 
+CONST_TABLE(uint16_t, BW_ENUM_TO_VAL)[] = {125, 250, 500, 0};
+
 uint16_t bwForLog(rps_t const rps) {
-  switch (rps.getBw()) {
-  case BandWidth::BW125:
-    return 125;
-  case BandWidth::BW250:
-    return 250;
-  case BandWidth::BW500:
-    return 500;
-  default:
-    return 0;
-  }
+  auto index = static_cast<uint8_t>(rps.getBw());
+  return TABLE_GET_U2(BW_ENUM_TO_VAL, index);
 }
 
 } // namespace
+
 void RadioSx1276::opmode(uint8_t const mode) const {
   hal.write_reg(RegOpMode, (hal.read_reg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
@@ -271,7 +257,7 @@ void RadioSx1276::rxrssi() const {
   hal.write_reg(LORARegModemConfig2, RXLORA_RXMODE_RSSI_REG_MODEM_CONFIG2);
   // set LNA gain
   hal.write_reg(RegLna, LNA_RX_GAIN);
-  
+
   clear_irq();
   // enable antenna switch for RX
   hal.pin_rxtx(0);
@@ -286,11 +272,11 @@ void RadioSx1276::init() {
   hal.init();
   // manually reset radio
   // drive RST pin low
-  hal.pin_rst(0); 
+  hal.pin_rst(0);
   // wait >100us for SX127x to detect reset
   hal_wait(OsDeltaTime::from_ms(1));
   // configure RST pin floating!
-  hal.pin_rst(2); 
+  hal.pin_rst(2);
   // wait 5ms after reset
   hal_wait(OsDeltaTime::from_ms(5));
 
@@ -298,7 +284,6 @@ void RadioSx1276::init() {
   uint8_t const v = hal.read_reg(RegVersion);
   PRINT_DEBUG(1, F("Chip version : %i"), v);
   ASSERT(v == 0x12);
-
 
   /* TODO add a parameter
   // Configure max curent
@@ -387,7 +372,6 @@ void RadioSx1276::clear_irq() const {
   hal.write_reg(LORARegIrqFlags, 0xFF);
 }
 
-
 void RadioSx1276::rst() const {
   DisableIRQsGard irqguard;
   // put radio to sleep
@@ -409,6 +393,7 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // set PA ramp-up time 50 uSec
   hal.write_reg(RegPaRamp, (hal.read_reg(RegPaRamp) & 0xF0) | 0x08);
   configPower(txpow);
+
   // set sync word
   hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
 
@@ -434,9 +419,8 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // now we actually start the transmission
   opmode(OPMODE_TX);
 
-  PRINT_DEBUG(
-      1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d"),
-      freq, frameLength, rps.sf + 6, bwForLog(rps), crForLog(rps));
+  PRINT_DEBUG(1, F("TXMODE, freq=%" PRIu32 ", len=%d, SF=%d, BW=%d, CR=4/%d"),
+              freq, frameLength, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the TX is finished
   // the corresponding IRQ will inform us about completion.
 }
@@ -445,7 +429,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                      OsTime const rxtime) {
   DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
-    // select LoRa modem (from sleep mode)
+  // select LoRa modem (from sleep mode)
   opmodeLora();
   ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
   // enter standby mode (warm up))
@@ -487,9 +471,9 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   hal_waitUntil(rxtime); // busy wait until exact rx time
   opmode(OPMODE_RX_SINGLE);
 
-
-  PRINT_DEBUG(1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
-              freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
+  PRINT_DEBUG(
+      1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
+      freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
@@ -498,12 +482,6 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
  * Check the IO pin.
  * Return true if the radio has finish it's operation
  */
-bool RadioSx1276::io_check() const {
-  auto const pinInInt = hal.io_check();
-  if (pinInInt < NUM_DIO) {
-    return true;
-  }
-  return false;
-}
+bool RadioSx1276::io_check() const { return hal.io_check(); }
 
 RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : hal(pins) {}

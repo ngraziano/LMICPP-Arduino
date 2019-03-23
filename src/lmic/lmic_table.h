@@ -33,6 +33,7 @@
 // Accessors for table elements
 #define TABLE_GET_U1(table, index) table_get_u1(RESOLVE_TABLE(table), index)
 #define TABLE_GET_S1(table, index) table_get_s1(RESOLVE_TABLE(table), index)
+#define TABLE_GET_U2(table, index) table_get_u2(RESOLVE_TABLE(table), index)
 #define TABLE_GET_U4(table, index) table_get_u4(RESOLVE_TABLE(table), index)
 #define TABLE_GET_S4(table, index) table_get_s4(RESOLVE_TABLE(table), index)
 #define TABLE_GET_U1_TWODIM(table, index1, index2)                             \
@@ -51,6 +52,7 @@
   }
 
 TABLE_GETTER(_u1, uint8_t, byte)
+TABLE_GETTER(_u2, uint16_t, word)
 TABLE_GETTER(_s1, int8_t, byte)
 TABLE_GETTER(_u4, uint32_t, dword)
 TABLE_GETTER(_s4, int32_t, dword)

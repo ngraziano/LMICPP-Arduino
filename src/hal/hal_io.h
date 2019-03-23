@@ -53,7 +53,7 @@ public:
   /**
    * check "interrupt" pin and return if one set to 1.
    */
-  uint8_t io_check() const;
+  bool io_check() const;
 
   // configure radio I/O and interrupt handler and SPI
   void init() const;

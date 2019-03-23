@@ -86,14 +86,14 @@ void HalIo::pin_rst(uint8_t val) const {
   }
 }
 
-uint8_t HalIo::io_check() const {
+bool HalIo::io_check() const {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
     uint8_t newVal = digitalRead(lmic_pins.dio[i]);
     if (newVal) {
-      return i;
+      return true;
     }
   }
-  return NUM_DIO;
+  return false;
 }
 
 void HalIo::init() const {
