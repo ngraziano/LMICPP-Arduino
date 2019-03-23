@@ -21,21 +21,15 @@
 void hal_init(void);
 
 /*
- * disable all CPU interrupts.
- *   - might be invoked nested
- *   - will be followed by matching call to hal_enableIRQs()
+ * disable all CPU interrupts for the current scope.
+ * might be invoked nested.
  */
-void hal_disableIRQs(void);
-
-/*
- * enable CPU interrupts.
- */
-void hal_enableIRQs(void);
-
 class DisableIRQsGard {
+  private:
+    uint8_t sreg_save;
 public:
-  DisableIRQsGard() { hal_disableIRQs(); }
-  ~DisableIRQsGard() { hal_enableIRQs(); }
+  DisableIRQsGard();
+  ~DisableIRQsGard();
 };
 
 /*

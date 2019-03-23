@@ -10,16 +10,15 @@
 
 #ifndef ARDUINO_ARCH_ESP32
 #include "hal.h"
+#include "print_debug.h"
 #include <Arduino.h>
 #include <stdio.h>
-#include "print_debug.h"
-
 
 // -----------------------------------------------------------------------------
 // TIME
 
 namespace {
-  OsDeltaTime time_in_sleep {0};
+OsDeltaTime time_in_sleep{0};
 }
 
 void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
@@ -89,7 +88,6 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-
 // check and rewind for target time
 bool hal_checkTimer(OsTime time) {
 
@@ -98,24 +96,9 @@ bool hal_checkTimer(OsTime time) {
   return false;
 }
 
-namespace {
-  uint8_t irqlevel = 0;
-}
-
-void hal_disableIRQs() {
-  noInterrupts();
-  irqlevel++;
-}
-
-void hal_enableIRQs() {
-  if (--irqlevel == 0) {
-    interrupts();
-  }
-}
-
+DisableIRQsGard::DisableIRQsGard() : sreg_save(SREG) { cli(); }
+DisableIRQsGard::~DisableIRQsGard() { SREG = sreg_save; }
 // -----------------------------------------------------------------------------
-
-
 
 void hal_init() {
   // printf support
@@ -132,7 +115,8 @@ void hal_failed(const char *file, uint16_t line) {
   LMIC_FAILURE_TO.println(line);
   LMIC_FAILURE_TO.flush();
 #endif
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
+
   while (1)
     ;
 }
