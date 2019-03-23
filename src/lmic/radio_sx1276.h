@@ -19,6 +19,16 @@
 #include "radio.h"
 #include <stdint.h>
 
+struct RegSet {
+  const uint8_t reg;
+  const uint8_t val;
+
+  constexpr uint16_t raw() const { return reg << 8 | val; };
+  constexpr RegSet(uint8_t reg, uint8_t val) : reg(reg), val(val){};
+  constexpr RegSet(uint16_t raw) : reg(raw >> 8), val(raw & 0xFF){};
+};
+
+
 class RadioSx1276 final : public Radio {
 
 public:
@@ -46,6 +56,8 @@ private:
   void configPower(int8_t pw) const;
   void rxrssi() const;
   void clear_irq() const;
+  void write_list_of_reg(uint16_t const * listcmd, uint8_t nb_cmd) const;
+
 };
 
 #endif

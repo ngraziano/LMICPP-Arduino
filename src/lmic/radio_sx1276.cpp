@@ -156,6 +156,14 @@ uint16_t bwForLog(rps_t const rps) {
 
 } // namespace
 
+void RadioSx1276::write_list_of_reg(uint16_t const *const listcmd,
+                                    uint8_t nb_cmd) const {
+  for (uint8_t i = 0; i < nb_cmd; i++) {
+    RegSet cmd{table_get_u2(listcmd, i)};
+    hal.write_reg(cmd.reg, cmd.val);
+  }
+}
+
 void RadioSx1276::opmode(uint8_t const mode) const {
   hal.write_reg(RegOpMode, (hal.read_reg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
@@ -378,6 +386,27 @@ void RadioSx1276::rst() const {
   opmode(OPMODE_SLEEP);
 }
 
+CONST_TABLE(uint16_t, TX_INIT_CMD)
+[] = {
+    // set sync word
+    RegSet(LORARegSyncWord, LORA_MAC_PREAMBLE).raw(),
+    // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
+    RegSet(RegDioMapping1,
+           MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP)
+        .raw(),
+    // clear all radio IRQ flags
+    RegSet(LORARegIrqFlags, 0xFF).raw(),
+    // mask all IRQs but TxDone
+    RegSet(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK).raw(),
+
+    // initialize the payload size and address pointers
+    RegSet(LORARegFifoTxBaseAddr, 0x00).raw(),
+    RegSet(LORARegFifoAddrPtr, 0x00).raw(),
+};
+
+constexpr uint8_t NB_TX_INIT_CMD =
+    sizeof(RESOLVE_TABLE(TX_INIT_CMD)) / sizeof(RESOLVE_TABLE(TX_INIT_CMD)[0]);
+
 void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                      uint8_t const *const framePtr, uint8_t const frameLength) {
   DisableIRQsGard irqguard;
@@ -394,20 +423,8 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   hal.write_reg(RegPaRamp, (hal.read_reg(RegPaRamp) & 0xF0) | 0x08);
   configPower(txpow);
 
-  // set sync word
-  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
+  write_list_of_reg(RESOLVE_TABLE(TX_INIT_CMD), NB_TX_INIT_CMD);
 
-  // set the IRQ mapping DIO0=TxDone DIO1=NOP DIO2=NOP
-  hal.write_reg(RegDioMapping1,
-                MAP_DIO0_LORA_TXDONE | MAP_DIO1_LORA_NOP | MAP_DIO2_LORA_NOP);
-  // clear all radio IRQ flags
-  hal.write_reg(LORARegIrqFlags, 0xFF);
-  // mask all IRQs but TxDone
-  hal.write_reg(LORARegIrqFlagsMask, ~IRQ_LORA_TXDONE_MASK);
-
-  // initialize the payload size and address pointers
-  hal.write_reg(LORARegFifoTxBaseAddr, 0x00);
-  hal.write_reg(LORARegFifoAddrPtr, 0x00);
   hal.write_reg(LORARegPayloadLength, frameLength);
 
   // download buffer to the radio FIFO
@@ -425,6 +442,30 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   // the corresponding IRQ will inform us about completion.
 }
 
+CONST_TABLE(uint16_t, RX_INIT_CMD)
+[] = {
+    // set LNA gain
+    RegSet(RegLna, LNA_RX_GAIN).raw(),
+    // set max payload size
+    RegSet(LORARegPayloadMaxLength, 64).raw(),
+    // set sync word
+    RegSet(LORARegSyncWord, LORA_MAC_PREAMBLE).raw(),
+    // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
+    RegSet(RegDioMapping1,
+           MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT | MAP_DIO2_LORA_NOP)
+        .raw(),
+    // clear all radio IRQ flags
+    RegSet(LORARegIrqFlags, 0xFF).raw(),
+    // enable required radio IRQs
+    RegSet(LORARegIrqFlagsMask,
+           (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK))
+        .raw(),
+
+};
+
+constexpr uint8_t NB_RX_INIT_CMD =
+    sizeof(RESOLVE_TABLE(RX_INIT_CMD)) / sizeof(RESOLVE_TABLE(RX_INIT_CMD)[0]);
+
 void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                      OsTime const rxtime) {
   DisableIRQsGard irqguard;
@@ -440,35 +481,21 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // configure frequency
   configChannel(freq);
 
-  // set LNA gain
-  hal.write_reg(RegLna, LNA_RX_GAIN);
-  // set max payload size
-  hal.write_reg(LORARegPayloadMaxLength, 64);
+  // set symbol timeout (for single rx)
+  hal.write_reg(LORARegSymbTimeoutLsb, rxsyms);
 #if !defined(DISABLE_INVERT_IQ_ON_RX)
   // use inverted I/Q signal (prevent mote-to-mote communication)
   hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
 #endif
-  // set symbol timeout (for single rx)
-  hal.write_reg(LORARegSymbTimeoutLsb, rxsyms);
-  // set sync word
-  hal.write_reg(LORARegSyncWord, LORA_MAC_PREAMBLE);
-
-  // configure DIO mapping DIO0=RxDone DIO1=RxTout DIO2=NOP
-  hal.write_reg(RegDioMapping1, MAP_DIO0_LORA_RXDONE | MAP_DIO1_LORA_RXTOUT |
-                                    MAP_DIO2_LORA_NOP);
-  // clear all radio IRQ flags
-  hal.write_reg(LORARegIrqFlags, 0xFF);
+  write_list_of_reg(RESOLVE_TABLE(RX_INIT_CMD), NB_RX_INIT_CMD);
 
   // enable antenna switch for RX
   hal.pin_rxtx(0);
 
   // now instruct the radio to receive
-
+  // busy wait until exact rx time
+  hal_waitUntil(rxtime); 
   // single rx
-  // enable required radio IRQs
-  hal.write_reg(LORARegIrqFlagsMask,
-                (uint8_t) ~(IRQ_LORA_RXDONE_MASK | IRQ_LORA_RXTOUT_MASK));
-  hal_waitUntil(rxtime); // busy wait until exact rx time
   opmode(OPMODE_RX_SINGLE);
 
   PRINT_DEBUG(
