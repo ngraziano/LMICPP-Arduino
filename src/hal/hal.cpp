@@ -96,8 +96,15 @@ bool hal_checkTimer(OsTime time) {
   return false;
 }
 
+#ifdef __AVR__ 
 DisableIRQsGard::DisableIRQsGard() : sreg_save(SREG) { cli(); }
 DisableIRQsGard::~DisableIRQsGard() { SREG = sreg_save; }
+#else
+DisableIRQsGard::DisableIRQsGard()  { noInterrupts(); }
+DisableIRQsGard::~DisableIRQsGard() { interrupts(); }
+#endif
+
+
 // -----------------------------------------------------------------------------
 
 void hal_init() {
