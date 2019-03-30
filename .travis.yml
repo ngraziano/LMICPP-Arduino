@@ -10,5 +10,5 @@ install:
     - platformio update
 #    - platformio lib -g install ArduinoSTL
 script:
-    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini examples/simple
-    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini examples/esp32
+    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini --project-option="lib_ignore=ngraziano/LMICPP-Arduino" examples/simple
+    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini --project-option="lib_ignore=ngraziano/LMICPP-Arduino" examples/esp32
