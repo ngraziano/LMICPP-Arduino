@@ -58,7 +58,8 @@ void hal_failed(const char *file, uint16_t line) {
   LMIC_FAILURE_TO.println(line);
   LMIC_FAILURE_TO.flush();
 #endif
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
+  
   while (1)
     ;
 }
