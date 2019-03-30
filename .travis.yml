@@ -5,11 +5,10 @@ sudo: false
 cache:
     directories:
         - "~/.platformio"
-env:
-    - PLATFORMIO_CI_SRC=examples/simple
 install:
     - pip install -U platformio
     - platformio update
-    - platformio lib -g install ArduinoSTL
+#    - platformio lib -g install ArduinoSTL
 script:
-    - platformio ci --lib="." --board=pro8MHzatmega328
+    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini examples/simple
+    - platformio ci --lib="." --project-conf=examples/simple/platformio.ini examples/esp32
