@@ -40,7 +40,6 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-
 // check and rewind for target time
 bool hal_checkTimer(OsTime time) {
 
@@ -49,24 +48,8 @@ bool hal_checkTimer(OsTime time) {
   return false;
 }
 
-namespace {
-  uint8_t irqlevel = 0;
-}
-
-void hal_disableIRQs() {
-  noInterrupts();
-  irqlevel++;
-}
-
-void hal_enableIRQs() {
-  if (--irqlevel == 0) {
-    interrupts();
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-
+DisableIRQsGard::DisableIRQsGard()  { noInterrupts(); }
+DisableIRQsGard::~DisableIRQsGard() { interrupts(); }
 
 void hal_init() {
   // printf support
