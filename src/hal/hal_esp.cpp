@@ -40,14 +40,6 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-// check and rewind for target time
-bool hal_checkTimer(OsTime time) {
-
-  if (time <= hal_ticks())
-    return true;
-  return false;
-}
-
 DisableIRQsGard::DisableIRQsGard()  { noInterrupts(); }
 DisableIRQsGard::~DisableIRQsGard() { interrupts(); }
 

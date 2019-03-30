@@ -79,7 +79,7 @@ OsDeltaTime OsScheduler::runloopOnce() {
 
   OsJobBase const *j = nullptr;
 
-  if (scheduledjobs && hal_checkTimer(scheduledjobs->deadline)) {
+  if (scheduledjobs && scheduledjobs->deadline <= hal_ticks()) {
     // timed jobs runnable
     j = scheduledjobs;
     scheduledjobs = j->next;

@@ -88,14 +88,6 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-// check and rewind for target time
-bool hal_checkTimer(OsTime time) {
-
-  if (time <= hal_ticks())
-    return true;
-  return false;
-}
-
 #ifdef __AVR__ 
 DisableIRQsGard::DisableIRQsGard() : sreg_save(SREG) { cli(); }
 DisableIRQsGard::~DisableIRQsGard() { SREG = sreg_save; }

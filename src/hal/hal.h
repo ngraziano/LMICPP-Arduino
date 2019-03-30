@@ -52,13 +52,6 @@ void hal_waitUntil(OsTime time);
 void hal_wait(OsDeltaTime time);
 
 /*
- * check and rewind timer for target time.
- *   - return 1 if target time is close
- *   - otherwise rewind timer for target time or full period and return 0
- */
-bool hal_checkTimer(OsTime targettime);
-
-/*
  * perform fatal failure action.
  *   - called by assertions
  *   - action could be HALT or reboot
