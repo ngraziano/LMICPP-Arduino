@@ -68,6 +68,9 @@ inline uint8_t table_get_u1(const uint8_t *table, size_t index) {
 inline int8_t table_get_s1(const int8_t *table, size_t index) {
   return table[index];
 }
+inline uint16_t table_get_u2(const uint16_t *table, size_t index) {
+  return table[index];
+}
 inline uint32_t table_get_u4(const uint32_t *table, size_t index) {
   return table[index];
 }
