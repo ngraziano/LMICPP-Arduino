@@ -19,6 +19,7 @@
 
 namespace {
 OsDeltaTime time_in_sleep{0};
+uint8_t overflow{0};
 }
 
 void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
@@ -46,7 +47,7 @@ OsTime hal_ticks() {
   // jumps, which should result in efficient code. By avoiding shifts
   // other than by multiples of 8 as much as possible, this is also
   // efficient on AVR (which only has 1-bit shifts).
-  static uint8_t overflow = 0;
+  
 
   // Scaled down timestamp. The top US_PER_OSTICK_EXPONENT bits are 0,
   // the others will be the lower bits of our return value.

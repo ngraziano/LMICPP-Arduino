@@ -89,12 +89,12 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
 };
 
-const uint32_t MIN_BAND1_CENTI = 868000000;
-const uint32_t MAX_BAND1_CENTI = 868600000;
-const uint32_t MIN_BAND_DECI = 869400000;
-const uint32_t MAX_BAND_DECI = 869650000;
-const uint32_t MIN_BAND2_CENTI = 869700000;
-const uint32_t MAX_BAND2_CENTI = 870000000;
+constexpr uint32_t MIN_BAND1_CENTI = 868000000;
+constexpr uint32_t MAX_BAND1_CENTI = 868600000;
+constexpr uint32_t MIN_BAND_DECI = 869400000;
+constexpr uint32_t MAX_BAND_DECI = 869650000;
+constexpr uint32_t MIN_BAND2_CENTI = 869700000;
+constexpr uint32_t MAX_BAND2_CENTI = 870000000;
 
 } // namespace
 

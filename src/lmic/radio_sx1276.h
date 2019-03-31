@@ -13,7 +13,6 @@
 #ifndef _radio_sx1276_h_
 #define _radio_sx1276_h_
 
-#include "../hal/hal_io.h"
 #include "lorabase.h"
 #include "osticks.h"
 #include "radio.h"
@@ -43,12 +42,9 @@ public:
   uint8_t handle_end_rx(uint8_t *framePtr) override;
   void handle_end_tx() const override;
 
-  bool io_check() const override;
   uint8_t rssi() const override;
 
 private:
-  HalIo hal;
-
   void opmode(uint8_t mode) const;
   void opmodeLora() const;
   void configLoraModem(rps_t rps);
