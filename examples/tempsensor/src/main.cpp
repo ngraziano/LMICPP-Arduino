@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <lmic.h>
 #include <keyhandler.h>
@@ -198,6 +199,7 @@ void setup()
     pinMode(button_pin, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(button_pin), &buttonInterupt, FALLING);
 
+    SPI.begin();
     // LMIC init
     os_init();
     LMIC.init();

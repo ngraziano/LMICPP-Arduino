@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
@@ -106,6 +107,7 @@ void setup() {
     Serial.begin(BAUDRATE);
   }
 
+  SPI.begin();
   // LMIC init
   os_init();
   LMIC.init();

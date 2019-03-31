@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <lmic.h>
 #include <hal/hal_io.h>
@@ -155,6 +156,7 @@ if(debugLevel>0) {
     pciSetup(lmic_pins.dio[0]);
     pciSetup(lmic_pins.dio[1]);
 
+    SPI.begin();
     // LMIC init
     os_init();
     LMIC.init();

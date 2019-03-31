@@ -65,7 +65,7 @@ uint8_t HalIo::spi(uint8_t const out) const {
   return res;
 }
 
-static void hal_spi_init() { SPI.begin(); }
+
 
 void HalIo::pin_rxtx(uint8_t val) const {
   // val == 1  => tx 1
@@ -97,7 +97,7 @@ bool HalIo::io_check() const {
 }
 
 void HalIo::init() const {
-  // NSS and DIO0 are required, DIO1 is required for LoRa
+  // NSS, DIO0 , DIO1 are required for LoRa
   ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN);
@@ -112,5 +112,4 @@ void HalIo::init() const {
   pinMode(lmic_pins.dio[1], INPUT);
 
   // configure radio SPI
-  hal_spi_init();
 }

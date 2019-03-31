@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
@@ -153,6 +154,7 @@ void setup() {
   pinMode(button_pin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(button_pin), &buttonInterupt, FALLING);
 
+  SPI.begin();
   // LMIC init
   os_init();
   LMIC.init();
