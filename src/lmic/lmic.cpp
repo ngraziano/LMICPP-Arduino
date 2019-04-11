@@ -193,13 +193,6 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
     adrTxPow = pow2dBm(txPowerIndex);
     setDrTx(dr);
-
-    // parameter have changed, force ADR ACK
-    // not explicit in specification
-    if (adrAckReq != LINK_CHECK_OFF) {
-      // force ack to NWK.
-      adrAckReq = 0;
-    }
   }
 }
 
@@ -355,13 +348,16 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 // Decoding frames
 bool Lmic::decodeFrame() {
 
-  const char *window =
-      (txrxFlags.test(TxRxStatus::DNW1))
-          ? "RX1"
-          : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
+  if (txrxFlags.test(TxRxStatus::DNW1)) {
+    PRINT_DEBUG(1, F("Decode Frame RX1"));
+  } else if (txrxFlags.test(TxRxStatus::DNW2)) {
+    PRINT_DEBUG(1, F("Decode Frame RX2"));
+  } else {
+    PRINT_DEBUG(1, F("Decode Frame unk"));
+  }
 
   if (dataLen == 0) {
-    PRINT_DEBUG(1, F("No downlink data, window=%s"), window);
+    PRINT_DEBUG(1, F("No downlink data"));
     return false;
   }
 
@@ -374,13 +370,13 @@ bool Lmic::decodeFrame() {
       (hdr & mhdr::major_mask) != mhdr::major_v1 ||
       (ftype != mhdr::ftype_data_down && ftype != mhdr::ftype_data_conf_down)) {
     // Basic sanity checks failed
-    PRINT_DEBUG(1, F("Invalid downlink, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid downlink"));
     return false;
   }
 
   const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
   if (addr != devaddr) {
-    PRINT_DEBUG(1, F("Invalid address, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid address"));
     return false;
   }
 
@@ -391,14 +387,14 @@ bool Lmic::decodeFrame() {
   const uint8_t pend = dlen - lengths::MIC; // MIC
 
   if (poff > pend) {
-    PRINT_DEBUG(1, F("Invalid data offset, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid data offset"));
     return false;
   }
 
   const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
-    PRINT_DEBUG(1, F("Fail to verify aes mic, window=%s"), window);
+    PRINT_DEBUG(1, F("Fail to verify aes mic"));
     return false;
   }
 
@@ -463,8 +459,7 @@ bool Lmic::decodeFrame() {
   // stop sending rxTimingSetupAns when receive dowlink message
   rxTimingSetupAns = false;
 
-  PRINT_DEBUG(1, F("Received downlink, window=%s, port=%d, ack=%d"), window,
-              getPort(), ackup);
+  PRINT_DEBUG(1, F("Received downlink, port=%d, ack=%d"), getPort(), ackup);
   return true;
 }
 
