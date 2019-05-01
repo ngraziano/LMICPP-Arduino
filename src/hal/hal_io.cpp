@@ -8,6 +8,41 @@ static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
 HalIo::HalIo(lmic_pinmap const &pins) : lmic_pins(pins) {}
 
+void HalIo::write_reg(uint8_t const addr, uint8_t const data) const {
+  beginspi();
+  spi(addr | 0x80);
+  spi(data);
+  endspi();
+}
+
+uint8_t HalIo::read_reg(uint8_t const addr) const {
+  beginspi();
+  spi(addr & 0x7F);
+  uint8_t const val = spi(0x00);
+  endspi();
+  return val;
+}
+
+void HalIo::write_buffer(uint8_t const addr, uint8_t const *const buf,
+                         uint8_t const len) const {
+  beginspi();
+  spi(addr | 0x80);
+  for (uint8_t i = 0; i < len; i++) {
+    spi(buf[i]);
+  }
+  endspi();
+}
+
+void HalIo::read_buffer(uint8_t const addr, uint8_t *const buf,
+                        uint8_t const len) const {
+  beginspi();
+  spi(addr & 0x7F);
+  for (uint8_t i = 0; i < len; i++) {
+    buf[i] = spi(0x00);
+  }
+  endspi();
+}
+
 void HalIo::beginspi() const {
   SPI.beginTransaction(settings);
   digitalWrite(lmic_pins.nss, 0);
@@ -17,7 +52,6 @@ void HalIo::endspi() const {
   digitalWrite(lmic_pins.nss, 1);
   SPI.endTransaction();
 }
-
 
 // perform SPI transaction with radio
 uint8_t HalIo::spi(uint8_t const out) const {
@@ -31,7 +65,7 @@ uint8_t HalIo::spi(uint8_t const out) const {
   return res;
 }
 
-static void hal_spi_init() { SPI.begin(); }
+
 
 void HalIo::pin_rxtx(uint8_t val) const {
   // val == 1  => tx 1
@@ -52,18 +86,18 @@ void HalIo::pin_rst(uint8_t val) const {
   }
 }
 
-uint8_t HalIo::io_check() const {
+bool HalIo::io_check() const {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
     uint8_t newVal = digitalRead(lmic_pins.dio[i]);
-    if (newVal)  {
-      return i;
+    if (newVal) {
+      return true;
     }
   }
-  return NUM_DIO;
+  return false;
 }
 
 void HalIo::init() const {
-  // NSS and DIO0 are required, DIO1 is required for LoRa
+  // NSS, DIO0 , DIO1 are required for LoRa
   ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN);
@@ -78,6 +112,4 @@ void HalIo::init() const {
   pinMode(lmic_pins.dio[1], INPUT);
 
   // configure radio SPI
-  hal_spi_init();
 }
-

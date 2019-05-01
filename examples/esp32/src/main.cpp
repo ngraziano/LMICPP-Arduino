@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
@@ -23,7 +24,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {26, 33},
 };
 OsScheduler OSS;
-LmicEu868 LMIC{lmic_pins, OSS};
+RadioSx1276 radio {lmic_pins};
+LmicEu868 LMIC {radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -99,6 +101,7 @@ void setup() {
     Serial.begin(BAUDRATE);
   }
 
+  SPI.begin();
   // LMIC init
   os_init();
   LMIC.init();

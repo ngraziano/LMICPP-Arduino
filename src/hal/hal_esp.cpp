@@ -40,33 +40,8 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-
-// check and rewind for target time
-bool hal_checkTimer(OsTime time) {
-
-  if (time <= hal_ticks())
-    return true;
-  return false;
-}
-
-namespace {
-  uint8_t irqlevel = 0;
-}
-
-void hal_disableIRQs() {
-  noInterrupts();
-  irqlevel++;
-}
-
-void hal_enableIRQs() {
-  if (--irqlevel == 0) {
-    interrupts();
-  }
-}
-
-// -----------------------------------------------------------------------------
-
-
+DisableIRQsGard::DisableIRQsGard()  { noInterrupts(); }
+DisableIRQsGard::~DisableIRQsGard() { interrupts(); }
 
 void hal_init() {
   // printf support
@@ -83,7 +58,8 @@ void hal_failed(const char *file, uint16_t line) {
   LMIC_FAILURE_TO.println(line);
   LMIC_FAILURE_TO.flush();
 #endif
-  hal_disableIRQs();
+  DisableIRQsGard irqguard;
+  
   while (1)
     ;
 }

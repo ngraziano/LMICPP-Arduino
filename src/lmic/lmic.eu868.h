@@ -26,6 +26,7 @@ public:
   constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
   constexpr uint32_t getBand() const { return raw & 0x3; };
   constexpr uint16_t getDrMap() const { return drMap; };
+  constexpr bool isConfigured() const { return drMap!=0; }
   constexpr bool isDrActive(dr_t datarate) const {
     return (drMap & (1 << datarate)) != 0;
   };
@@ -64,7 +65,7 @@ public:
   void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
   void enable(uint8_t channel) {
     // ignore - channel is not defined
-    if (channels[channel].getFrequency() != 0) {
+    if (channels[channel].isConfigured()) {
       channelMap |= (1 << channel);
     }
   }
@@ -149,7 +150,7 @@ public:
 
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-  explicit LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler);
+  explicit LmicEu868(Radio &radio, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
   virtual size_t saveState(uint8_t *buffer) const override;
@@ -171,7 +172,8 @@ protected:
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 
-  bool mapChannels(uint8_t chpage, uint16_t chmap) override;
+  bool validMapChannels(uint8_t chpage, uint16_t chmap) override;
+  void mapChannels(uint8_t chpage, uint16_t chmap) override;
   int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void setRx1Params() override;

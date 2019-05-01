@@ -69,28 +69,28 @@ CONST_TABLE(uint8_t, maxFrameLens)
 
 namespace {
 constexpr uint8_t rps_DR0 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR1 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR2 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR3 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 
 constexpr uint8_t rps_DR8 =
-    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR9 =
-    rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR10 =
-    rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR11 =
-    rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR12 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR13 =
-    rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
 
 } // namespace
 
@@ -104,6 +104,9 @@ uint8_t LmicUs915::getRawRps(dr_t dr) const {
 }
 
 int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
+  if (powerIndex >= 15) {
+    return InvalidPower;
+  }
   return 30 - (powerIndex * 2);
 }
 
@@ -204,18 +207,32 @@ void LmicUs915::selectSubBand(uint8_t band) {
   }
 }
 
-bool LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+// special channel page enable, bits applied to 64..71
+constexpr uint8_t MCMD_LADR_CHP_125ON = 0x06;
+//  ditto
+constexpr uint8_t MCMD_LADR_CHP_125OFF = 0x07;
+
+bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+  if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF)
+    return true;
+  if (chMaskCntl < 5)
+    return true;
+
+  // TODO handle chMaskCntl = 5
+
+  return false;
+}
+
+void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
     uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
       channelMap[u] = en125;
     channelMap[64 / 16] = chMask;
-  } else {
-    if (chMaskCntl >= (72 + MAX_XCHANNELS + 15) / 16)
-      return false;
+  } else if (chMaskCntl < 5) {
     channelMap[chMaskCntl] = chMask;
   }
-  return true;
+  // TODO handle chMaskCntl = 5
 }
 
 int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
@@ -223,7 +240,7 @@ int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
     return 30;
-  } 
+  }
   if (chnl < 64 + 8) {
     freq = US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
   } else {
@@ -305,5 +322,5 @@ bool LmicUs915::nextJoinState() {
 dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicUs915::LmicUs915(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : Lmic(pins, scheduler) {}
+LmicUs915::LmicUs915(Radio &radio, OsScheduler &scheduler)
+    : Lmic(radio, scheduler) {}

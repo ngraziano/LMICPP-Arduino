@@ -107,7 +107,7 @@ public:
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
 
 private:
-  Radio radio;
+  Radio &radio;
   OsJobType<Lmic> osjob;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
@@ -325,8 +325,13 @@ public:
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
 protected:
+  
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
+  int8_t const  InvalidPower = -128;
+  /**
+   * Return InvalidPower if passed value is invalid
+   */
   virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
   virtual OsDeltaTime dr2hsym(dr_t dr) const = 0;
@@ -339,7 +344,8 @@ protected:
   virtual void disableChannel(uint8_t channel) = 0;
   virtual void handleCFList(const uint8_t *ptr) = 0;
 
-  virtual bool mapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual bool validMapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
@@ -371,7 +377,7 @@ protected:
   void wait_end_tx();
 
 public:
-  explicit Lmic(lmic_pinmap const &pins, OsScheduler &scheduler);
+  explicit Lmic(Radio &radio, OsScheduler &scheduler);
   void store_trigger();
 };
 

@@ -44,21 +44,21 @@ constexpr LmicEu868::Dr DR_DNW2 = LmicEu868::Dr::SF12;
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 constexpr uint8_t rps_DR0 =
-    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR1 =
-    rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR2 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR3 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR5 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR6 =
-    rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5, false}.rawValue();
 constexpr uint8_t rps_DR7 =
-    rps_t{FSK, BandWidth::BW125, CodingRate::CR_4_5, false, 0}.rawValue();
+    rps_t{FSK, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS, rps_DR0, rps_DR1, rps_DR2, rps_DR3,
@@ -89,12 +89,12 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
 };
 
-const uint32_t MIN_BAND1_CENTI = 868000000;
-const uint32_t MAX_BAND1_CENTI = 868600000;
-const uint32_t MIN_BAND_DECI = 869400000;
-const uint32_t MAX_BAND_DECI = 869650000;
-const uint32_t MIN_BAND2_CENTI = 869700000;
-const uint32_t MAX_BAND2_CENTI = 870000000;
+constexpr uint32_t MIN_BAND1_CENTI = 868000000;
+constexpr uint32_t MAX_BAND1_CENTI = 868600000;
+constexpr uint32_t MIN_BAND_DECI = 869400000;
+constexpr uint32_t MAX_BAND_DECI = 869650000;
+constexpr uint32_t MIN_BAND2_CENTI = 869700000;
+constexpr uint32_t MAX_BAND2_CENTI = 870000000;
 
 } // namespace
 
@@ -178,11 +178,11 @@ uint8_t LmicEu868::getRawRps(dr_t const dr) const {
 }
 
 int8_t LmicEu868::pow2dBm(uint8_t const powerIndex) const {
-  if (powerIndex < 8) {
-    return MaxEIRP - 2 * powerIndex;
+  if (powerIndex >= 8) {
+    return InvalidPower;
   }
-  // TODO handle bad value
-  return 0;
+
+  return MaxEIRP - 2 * powerIndex;
 }
 
 OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
@@ -251,24 +251,30 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+bool LmicEu868::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+  // Bad page
+  if (chMaskCntl != 0 && chMaskCntl != 6)  
+    return false;
+
+  //  disable all channel
+  if(chMaskCntl==0  && chMask == 0)
+    return false;
+
+  return true;
+}
+
+void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
   // ChMaskCntl=6 => All channels ON
   if (chMaskCntl == 6) {
     channels.enableAll();
-    return true;
+    return;
   }
-
-  // Bad page, disable all channel
-  if (chMaskCntl != 0 || chMask == 0)
-    return false; // illegal input
 
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
     if ((chMask & (1 << chnl)) != 0)
       channels.enable(chnl);
   }
-
-  return true;
 }
 
 int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
@@ -420,5 +426,5 @@ size_t LmicEu868::loadState(uint8_t const *buffer) {
 }
 #endif
 
-LmicEu868::LmicEu868(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : Lmic(pins, scheduler) {}
+LmicEu868::LmicEu868(Radio &radio, OsScheduler &scheduler)
+    : Lmic(radio, scheduler) {}

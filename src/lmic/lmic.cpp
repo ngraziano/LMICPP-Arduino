@@ -64,7 +64,7 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   const uint8_t optimiseLowSf = (rps.sf >= SF11 ? 8 : 0);
   const uint8_t q = sfx - optimiseLowSf;
 
-  int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16) - (rps.ih ? 20 : 0);
+  int16_t tmp = 8 * plen - sfx + 28 + (rps.nocrc ? 0 : 16);
   if (tmp > 0) {
     tmp = (tmp + q - 1) / q;
     tmp *= (rps.crRaw + 5);
@@ -168,12 +168,15 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
   // must be handle atomic.
   const uint8_t p1 = opts[1];               // txpow + DR
   const uint16_t chMask = rlsbf2(&opts[2]); // list of enabled channels
-  const uint8_t chMaskCntl = opts[4] & MCMD_LADR_CHPAGE_MASK; // channel page
-  const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;    // up repeat count
+  // channel page
+  const uint8_t chMaskCntl = (opts[4] & MCMD_LADR_CHPAGE_MASK) >> MCMD_LADR_CHPAGE_OFFSET;
+  // up repeat count
+  const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;
 
-  ladrAns = 0x80 | // Include an answer into next frame up
-            MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
-  if (!mapChannels(chMaskCntl, chMask)) {
+  // Include an answer into next frame up
+  ladrAns =
+      0x80 | MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+  if (!validMapChannels(chMaskCntl, chMask)) {
     PRINT_DEBUG(1, F("ADR REQ Invalid map channel maskCtnl=%i, mask=%i"),
                 chMaskCntl, chMask);
     ladrAns &= ~MCMD_LADR_ANS_CHACK;
@@ -183,23 +186,22 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     PRINT_DEBUG(1, F("ADR REQ Invalid dr %i"), dr);
     ladrAns &= ~MCMD_LADR_ANS_DRACK;
   }
-  // TODO add a test on power validPower
+
+  uint8_t const txPowerIndex = (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+  auto const newPower = pow2dBm(txPowerIndex);
+  if (newPower == InvalidPower) {
+    PRINT_DEBUG(1, F("ADR REQ Invalid power index %i"), txPowerIndex);
+    ladrAns &= ~MCMD_LADR_ANS_POWACK;
+  }
+
   if ((ladrAns & 0x7F) ==
       (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
     // Nothing went wrong - use settings
     upRepeat = nbTrans;
-    const uint8_t txPowerIndex =
-        (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+    mapChannels(chMaskCntl, chMask);
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
-    adrTxPow = pow2dBm(txPowerIndex);
+    adrTxPow = newPower;
     setDrTx(dr);
-
-    // parameter have changed, force ADR ACK
-    // not explicit in specification
-    if (adrAckReq != LINK_CHECK_OFF) {
-      // force ack to NWK.
-      adrAckReq = 0;
-    }
   }
 }
 
@@ -355,13 +357,16 @@ Lmic::SeqNoValidity Lmic::check_seq_no(const uint32_t seqno,
 // Decoding frames
 bool Lmic::decodeFrame() {
 
-  const char *window =
-      (txrxFlags.test(TxRxStatus::DNW1))
-          ? "RX1"
-          : ((txrxFlags.test(TxRxStatus::DNW2)) ? "RX2" : "Other");
+  if (txrxFlags.test(TxRxStatus::DNW1)) {
+    PRINT_DEBUG(1, F("Decode Frame RX1"));
+  } else if (txrxFlags.test(TxRxStatus::DNW2)) {
+    PRINT_DEBUG(1, F("Decode Frame RX2"));
+  } else {
+    PRINT_DEBUG(1, F("Decode Frame unk"));
+  }
 
   if (dataLen == 0) {
-    PRINT_DEBUG(1, F("No downlink data, window=%s"), window);
+    PRINT_DEBUG(1, F("No downlink data"));
     return false;
   }
 
@@ -374,13 +379,13 @@ bool Lmic::decodeFrame() {
       (hdr & mhdr::major_mask) != mhdr::major_v1 ||
       (ftype != mhdr::ftype_data_down && ftype != mhdr::ftype_data_conf_down)) {
     // Basic sanity checks failed
-    PRINT_DEBUG(1, F("Invalid downlink, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid downlink"));
     return false;
   }
 
   const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
   if (addr != devaddr) {
-    PRINT_DEBUG(1, F("Invalid address, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid address"));
     return false;
   }
 
@@ -391,14 +396,14 @@ bool Lmic::decodeFrame() {
   const uint8_t pend = dlen - lengths::MIC; // MIC
 
   if (poff > pend) {
-    PRINT_DEBUG(1, F("Invalid data offset, window=%s"), window);
+    PRINT_DEBUG(1, F("Invalid data offset"));
     return false;
   }
 
   const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
 
   if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
-    PRINT_DEBUG(1, F("Fail to verify aes mic, window=%s"), window);
+    PRINT_DEBUG(1, F("Fail to verify aes mic"));
     return false;
   }
 
@@ -463,8 +468,7 @@ bool Lmic::decodeFrame() {
   // stop sending rxTimingSetupAns when receive dowlink message
   rxTimingSetupAns = false;
 
-  PRINT_DEBUG(1, F("Received downlink, window=%s, port=%d, ack=%d"), window,
-              getPort(), ackup);
+  PRINT_DEBUG(1, F("Received downlink, port=%d, ack=%d"), getPort(), ackup);
   return true;
 }
 
@@ -1326,5 +1330,5 @@ size_t Lmic::loadState(uint8_t const *buffer) {
 
 #endif
 
-Lmic::Lmic(lmic_pinmap const &pins, OsScheduler &scheduler)
-    : radio(pins), osjob(*this, scheduler), rand(aes) {}
+Lmic::Lmic(Radio &radio, OsScheduler &scheduler)
+    : radio(radio), osjob(*this, scheduler), rand(aes) {}

@@ -21,21 +21,19 @@
 void hal_init(void);
 
 /*
- * disable all CPU interrupts.
- *   - might be invoked nested
- *   - will be followed by matching call to hal_enableIRQs()
+ * disable all CPU interrupts for the current scope.
+ * might be invoked nested.
  */
-void hal_disableIRQs(void);
-
-/*
- * enable CPU interrupts.
- */
-void hal_enableIRQs(void);
-
 class DisableIRQsGard {
+  private:
+  #ifdef __AVR__
+    uint8_t sreg_save;
+  #else
+    static uint8_t intNumber;
+  #endif
 public:
-  DisableIRQsGard() { hal_disableIRQs(); }
-  ~DisableIRQsGard() { hal_enableIRQs(); }
+  DisableIRQsGard();
+  ~DisableIRQsGard();
 };
 
 /*
@@ -56,13 +54,6 @@ void hal_waitUntil(OsTime time);
  * wait this interval.
  */
 void hal_wait(OsDeltaTime time);
-
-/*
- * check and rewind timer for target time.
- *   - return 1 if target time is close
- *   - otherwise rewind timer for target time or full period and return 0
- */
-bool hal_checkTimer(OsTime targettime);
 
 /*
  * perform fatal failure action.

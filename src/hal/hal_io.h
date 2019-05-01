@@ -21,6 +21,11 @@ class HalIo final {
 public:
   explicit HalIo(lmic_pinmap const &pins);
 
+  void write_reg(uint8_t addr, uint8_t data) const;
+  uint8_t read_reg(uint8_t addr) const;
+  void write_buffer(uint8_t addr, uint8_t const *buf, uint8_t len) const;
+  void read_buffer(uint8_t addr, uint8_t *buf, uint8_t len) const;
+
   /**
    * drive radio NSS pin for start transfer.
    */
@@ -48,7 +53,7 @@ public:
   /**
    * check "interrupt" pin and return if one set to 1.
    */
-  uint8_t io_check() const;
+  bool io_check() const;
 
   // configure radio I/O and interrupt handler and SPI
   void init() const;

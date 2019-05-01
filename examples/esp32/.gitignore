@@ -4,7 +4,4 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 
-
-src/lorakeys.h
-
 lora-cppcheck-build-dir/
