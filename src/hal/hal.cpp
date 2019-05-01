@@ -20,7 +20,7 @@
 namespace {
 OsDeltaTime time_in_sleep{0};
 uint8_t overflow{0};
-}
+} // namespace
 
 void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
   time_in_sleep += nb_tick;
@@ -28,6 +28,9 @@ void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
 }
 
 OsTime hal_ticks() {
+  // hal_ticks is use in interrupt and is not reentrant
+  DisableIRQsGard gard;
+
   // Because micros() is scaled down in this function, micros() will
   // overflow before the tick timer should, causing the tick timer to
   // miss a significant part of its values if not corrected. To fix
@@ -47,7 +50,6 @@ OsTime hal_ticks() {
   // jumps, which should result in efficient code. By avoiding shifts
   // other than by multiples of 8 as much as possible, this is also
   // efficient on AVR (which only has 1-bit shifts).
-  
 
   // Scaled down timestamp. The top US_PER_OSTICK_EXPONENT bits are 0,
   // the others will be the lower bits of our return value.
@@ -89,14 +91,22 @@ void hal_wait(OsDeltaTime delta) {
     delayMicroseconds(delta.to_us());
 }
 
-#ifdef __AVR__ 
+#ifdef __AVR__
 DisableIRQsGard::DisableIRQsGard() : sreg_save(SREG) { cli(); }
 DisableIRQsGard::~DisableIRQsGard() { SREG = sreg_save; }
 #else
-DisableIRQsGard::DisableIRQsGard()  { noInterrupts(); }
-DisableIRQsGard::~DisableIRQsGard() { interrupts(); }
+DisableIRQsGard::DisableIRQsGard() {
+  noInterrupts();
+  ++intNumber;
+}
+DisableIRQsGard::~DisableIRQsGard() {
+  if (--intNumber == 0) {
+    interrupts();
+    interrupts();
+  }
+}
+uint8_t DisableIRQsGard::intNumber = 0;
 #endif
-
 
 // -----------------------------------------------------------------------------
 

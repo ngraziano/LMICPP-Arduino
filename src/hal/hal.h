@@ -22,11 +22,15 @@ void hal_init(void);
 
 /*
  * disable all CPU interrupts for the current scope.
- * might be invoked nested only on AVR.
+ * might be invoked nested.
  */
 class DisableIRQsGard {
   private:
+  #ifdef __AVR__
     uint8_t sreg_save;
+  #else
+    static uint8_t intNumber;
+  #endif
 public:
   DisableIRQsGard();
   ~DisableIRQsGard();

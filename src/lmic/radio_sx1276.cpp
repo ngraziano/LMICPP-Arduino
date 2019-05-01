@@ -276,7 +276,6 @@ void RadioSx1276::rxrssi() const {
 }
 
 void RadioSx1276::init() {
-  DisableIRQsGard irqguard;
   hal.init();
   // manually reset radio
   // drive RST pin low
@@ -304,8 +303,6 @@ void RadioSx1276::init() {
 
 // get random seed from wideband noise rssi
 void RadioSx1276::init_random(uint8_t randbuf[16]) {
-  DisableIRQsGard irqguard;
-
   // seed 15-byte randomness via noise rssi
   rxrssi();
   while ((hal.read_reg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
@@ -325,7 +322,6 @@ void RadioSx1276::init_random(uint8_t randbuf[16]) {
 }
 
 uint8_t RadioSx1276::rssi() const {
-  DisableIRQsGard irqguard;
   uint8_t const r = hal.read_reg(LORARegRssiValue);
   return r;
 }
@@ -381,7 +377,6 @@ void RadioSx1276::clear_irq() const {
 }
 
 void RadioSx1276::rst() const {
-  DisableIRQsGard irqguard;
   // put radio to sleep
   opmode(OPMODE_SLEEP);
 }
@@ -409,7 +404,6 @@ constexpr uint8_t NB_TX_INIT_CMD =
 
 void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                      uint8_t const *const framePtr, uint8_t const frameLength) {
-  DisableIRQsGard irqguard;
   // select LoRa modem (from sleep mode)
   opmodeLora();
   // enter standby mode (required for FIFO loading))
@@ -468,7 +462,6 @@ constexpr uint8_t NB_RX_INIT_CMD =
 
 void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                      OsTime const rxtime) {
-  DisableIRQsGard irqguard;
   // receive frame now (exactly at rxtime)
   // select LoRa modem (from sleep mode)
   opmodeLora();
