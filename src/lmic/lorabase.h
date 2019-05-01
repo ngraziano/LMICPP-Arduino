@@ -150,16 +150,11 @@ enum {
 };
 
 // Bit fields byte#3 of MCMD_LADR_REQ payload
-enum {
-  MCMD_LADR_CHP_125ON =
-      0x60, // special channel page enable, bits applied to 64..71
-  MCMD_LADR_CHP_125OFF = 0x70, //  ditto
-  MCMD_LADR_N3RFU_MASK = 0x80,
-  MCMD_LADR_CHPAGE_MASK = 0xF0,
-  MCMD_LADR_REPEAT_MASK = 0x0F,
-  MCMD_LADR_REPEAT_1 = 0x01,
-  MCMD_LADR_CHPAGE_1 = 0x10
-};
+
+constexpr uint8_t MCMD_LADR_CHPAGE_MASK = 0x70;
+constexpr uint8_t MCMD_LADR_CHPAGE_OFFSET = 4;
+constexpr uint8_t MCMD_LADR_REPEAT_MASK = 0x0F;
+
 // Bit fields byte#0 of MCMD_LADR_REQ payload
 enum {
   MCMD_LADR_DR_MASK = 0xF0,

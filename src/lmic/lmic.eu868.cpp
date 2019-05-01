@@ -178,11 +178,11 @@ uint8_t LmicEu868::getRawRps(dr_t const dr) const {
 }
 
 int8_t LmicEu868::pow2dBm(uint8_t const powerIndex) const {
-  if (powerIndex < 8) {
-    return MaxEIRP - 2 * powerIndex;
+  if (powerIndex >= 8) {
+    return InvalidPower;
   }
-  // TODO handle bad value
-  return 0;
+
+  return MaxEIRP - 2 * powerIndex;
 }
 
 OsDeltaTime LmicEu868::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
@@ -251,24 +251,30 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+bool LmicEu868::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+  // Bad page
+  if (chMaskCntl != 0 && chMaskCntl != 6)  
+    return false;
+
+  //  disable all channel
+  if(chMaskCntl==0  && chMask == 0)
+    return false;
+
+  return true;
+}
+
+void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
   // ChMaskCntl=6 => All channels ON
   if (chMaskCntl == 6) {
     channels.enableAll();
-    return true;
+    return;
   }
-
-  // Bad page, disable all channel
-  if (chMaskCntl != 0 || chMask == 0)
-    return false; // illegal input
 
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
     if ((chMask & (1 << chnl)) != 0)
       channels.enable(chnl);
   }
-
-  return true;
 }
 
 int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {

@@ -168,12 +168,15 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
   // must be handle atomic.
   const uint8_t p1 = opts[1];               // txpow + DR
   const uint16_t chMask = rlsbf2(&opts[2]); // list of enabled channels
-  const uint8_t chMaskCntl = opts[4] & MCMD_LADR_CHPAGE_MASK; // channel page
-  const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;    // up repeat count
+  // channel page
+  const uint8_t chMaskCntl = (opts[4] & MCMD_LADR_CHPAGE_MASK) >> MCMD_LADR_CHPAGE_OFFSET;
+  // up repeat count
+  const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;
 
-  ladrAns = 0x80 | // Include an answer into next frame up
-            MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
-  if (!mapChannels(chMaskCntl, chMask)) {
+  // Include an answer into next frame up
+  ladrAns =
+      0x80 | MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+  if (!validMapChannels(chMaskCntl, chMask)) {
     PRINT_DEBUG(1, F("ADR REQ Invalid map channel maskCtnl=%i, mask=%i"),
                 chMaskCntl, chMask);
     ladrAns &= ~MCMD_LADR_ANS_CHACK;
@@ -183,15 +186,21 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     PRINT_DEBUG(1, F("ADR REQ Invalid dr %i"), dr);
     ladrAns &= ~MCMD_LADR_ANS_DRACK;
   }
-  // TODO add a test on power validPower
+
+  uint8_t const txPowerIndex = (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+  auto const newPower = pow2dBm(txPowerIndex);
+  if (newPower == InvalidPower) {
+    PRINT_DEBUG(1, F("ADR REQ Invalid power index %i"), txPowerIndex);
+    ladrAns &= ~MCMD_LADR_ANS_POWACK;
+  }
+
   if ((ladrAns & 0x7F) ==
       (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
     // Nothing went wrong - use settings
     upRepeat = nbTrans;
-    const uint8_t txPowerIndex =
-        (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
+    mapChannels(chMaskCntl, chMask);
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
-    adrTxPow = pow2dBm(txPowerIndex);
+    adrTxPow = newPower;
     setDrTx(dr);
   }
 }

@@ -104,6 +104,9 @@ uint8_t LmicUs915::getRawRps(dr_t dr) const {
 }
 
 int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
+  if (powerIndex >= 15) {
+    return InvalidPower;
+  }
   return 30 - (powerIndex * 2);
 }
 
@@ -204,18 +207,32 @@ void LmicUs915::selectSubBand(uint8_t band) {
   }
 }
 
-bool LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+// special channel page enable, bits applied to 64..71
+constexpr uint8_t MCMD_LADR_CHP_125ON = 0x06;
+//  ditto
+constexpr uint8_t MCMD_LADR_CHP_125OFF = 0x07;
+
+bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+  if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF)
+    return true;
+  if (chMaskCntl < 5)
+    return true;
+
+  // TODO handle chMaskCntl = 5
+
+  return false;
+}
+
+void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
     uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
       channelMap[u] = en125;
     channelMap[64 / 16] = chMask;
-  } else {
-    if (chMaskCntl >= (72 + MAX_XCHANNELS + 15) / 16)
-      return false;
+  } else if (chMaskCntl < 5) {
     channelMap[chMaskCntl] = chMask;
   }
-  return true;
+  // TODO handle chMaskCntl = 5
 }
 
 int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
@@ -223,7 +240,7 @@ int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
   if (chnl < 64) {
     freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
     return 30;
-  } 
+  }
   if (chnl < 64 + 8) {
     freq = US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
   } else {
