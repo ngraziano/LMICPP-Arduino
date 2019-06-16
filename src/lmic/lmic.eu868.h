@@ -128,7 +128,10 @@ public:
   static constexpr uint8_t FULL_MAP = (1 << MAX_BAND) - 1;
 
 #if defined(ENABLE_SAVE_RESTORE)
+
+  size_t saveStateWithoutTimeData(uint8_t *buffer) const;
   size_t saveState(uint8_t *buffer) const;
+  size_t loadStateWithoutTimeData(uint8_t const *buffer);
   size_t loadState(uint8_t const *buffer);
 #endif
 
@@ -154,7 +157,9 @@ public:
 
 #if defined(ENABLE_SAVE_RESTORE)
   virtual size_t saveState(uint8_t *buffer) const override;
+  virtual size_t saveStateWithoutTimeData(uint8_t *buffer) const override;
   virtual size_t loadState(uint8_t const *buffer) override;
+  virtual size_t loadStateWithoutTimeData(uint8_t const *buffer) override;
 #endif
 
 protected:

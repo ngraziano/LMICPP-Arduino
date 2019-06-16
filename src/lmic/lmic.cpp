@@ -169,7 +169,8 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
   const uint8_t p1 = opts[1];               // txpow + DR
   const uint16_t chMask = rlsbf2(&opts[2]); // list of enabled channels
   // channel page
-  const uint8_t chMaskCntl = (opts[4] & MCMD_LADR_CHPAGE_MASK) >> MCMD_LADR_CHPAGE_OFFSET;
+  const uint8_t chMaskCntl =
+      (opts[4] & MCMD_LADR_CHPAGE_MASK) >> MCMD_LADR_CHPAGE_OFFSET;
   // up repeat count
   const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;
 
@@ -1246,6 +1247,13 @@ void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 #if defined(ENABLE_SAVE_RESTORE)
 size_t Lmic::saveState(uint8_t *buffer) const {
   uint8_t *orig = buffer;
+  buffer += saveStateWithoutTimeData(buffer);
+  write_to_buffer(buffer, globalDutyAvail);
+  return buffer - orig;
+}
+
+size_t Lmic::saveStateWithoutTimeData(uint8_t *buffer) const {
+  uint8_t *orig = buffer;
   // TODO radio RSSI,SNR
   write_to_buffer(buffer, freq);
   // TODO check if we can avoid storing rxsyms
@@ -1253,7 +1261,7 @@ size_t Lmic::saveState(uint8_t *buffer) const {
   write_to_buffer(buffer, dndr);
 
   write_to_buffer(buffer, globalDutyRate);
-  write_to_buffer(buffer, globalDutyAvail);
+  
   write_to_buffer(buffer, netid);
   write_to_buffer(buffer, opmode);
   write_to_buffer(buffer, upRepeat);
@@ -1288,6 +1296,13 @@ size_t Lmic::saveState(uint8_t *buffer) const {
 
 size_t Lmic::loadState(uint8_t const *buffer) {
   uint8_t const *orig = buffer;
+  loadStateWithoutTimeData(buffer);
+  read_from_buffer(buffer, globalDutyAvail);
+  return buffer - orig;
+}
+
+size_t Lmic::loadStateWithoutTimeData(uint8_t const *buffer) {
+  uint8_t const *orig = buffer;
   // TODO radio RSSI,SNR
   read_from_buffer(buffer, freq);
   // TODO check if we can avoid storing rxsyms
@@ -1295,7 +1310,7 @@ size_t Lmic::loadState(uint8_t const *buffer) {
   read_from_buffer(buffer, dndr);
 
   read_from_buffer(buffer, globalDutyRate);
-  read_from_buffer(buffer, globalDutyAvail);
+  
   read_from_buffer(buffer, netid);
   read_from_buffer(buffer, opmode);
   read_from_buffer(buffer, upRepeat);

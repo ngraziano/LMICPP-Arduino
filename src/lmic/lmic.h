@@ -176,7 +176,7 @@ private:
   // lower data rate if > LINK_CHECK_DEAD
   int8_t adrAckReq;
 
-  // // Rx delay after TX, init at reset
+  // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
 
   // link adr adapt answer pending, init after join
@@ -191,7 +191,7 @@ private:
   bool dutyCapAns;
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
-  // answer set new channel, init afet join.
+  // answer set new channel, init after join.
   uint8_t snchAns;
 #endif
 
@@ -355,8 +355,11 @@ protected:
   virtual uint32_t defaultRX2Freq() const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
+
   virtual size_t saveState(uint8_t *buffer) const;
+  virtual size_t saveStateWithoutTimeData(uint8_t *buffer) const;
   virtual size_t loadState(uint8_t const *buffer);
+  virtual size_t loadStateWithoutTimeData(uint8_t const *buffer);
 #endif
 
   rps_t updr2rps(dr_t dr) const;
