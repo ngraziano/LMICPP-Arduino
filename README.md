@@ -5,6 +5,11 @@
 * Only class A device (no class B)
 * Add some sleep of arduino board and ESP.
 
+## Limitation
+
+:warning: This library do not compile in Arduino IDE due to dependency to STL (ArduinoSTL in case of AVR platform).
+It need PlatfomIO for the dependencies to be handle correctly.
+
 ## AVR examples
 
 Tested with Arduino Pro Mini and RFM95 on EU868 frequencies. Examples:
