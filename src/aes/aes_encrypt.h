@@ -23,7 +23,7 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key);
 
 #ifdef ARDUINO_ARCH_ESP32
 void aes_esp_128_encrypt(uint8_t *buffer, AesKey const &key);
-constexpr auto aes_128_encrypt=aes_tiny_128_encrypt;
+constexpr auto aes_128_encrypt=aes_esp_128_encrypt;
 #else
 constexpr auto aes_128_encrypt=aes_tiny_128_encrypt;
 #endif
