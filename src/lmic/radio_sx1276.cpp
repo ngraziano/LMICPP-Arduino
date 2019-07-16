@@ -498,4 +498,12 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
+
+/**
+ * Check the IO pin.
+ * Return true if the radio has finish it's operation
+ */
+bool RadioSx1276::io_check() const { return hal.io_check(); }
+
+
 RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : Radio(pins) {}

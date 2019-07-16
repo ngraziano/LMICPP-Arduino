@@ -96,6 +96,14 @@ bool HalIo::io_check() const {
   return false;
 }
 
+bool HalIo::io_check0() const {
+  return digitalRead(lmic_pins.dio[0]) ? true : false ;
+}
+
+bool HalIo::io_check1() const {
+  return digitalRead(lmic_pins.dio[1]) ? true : false ;
+}
+
 void HalIo::init() const {
   // NSS, DIO0 , DIO1 are required for LoRa
   ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);

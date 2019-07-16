@@ -4,3 +4,4 @@
 
 #include "lmic/radio_sx1272.h"
 #include "lmic/radio_sx1276.h"
+#include "lmic/radio_sx1262.h"

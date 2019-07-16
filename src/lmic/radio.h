@@ -34,7 +34,7 @@ public:
 
   virtual uint8_t rssi() const = 0;
 
-  bool io_check() const;
+  virtual bool io_check() const;
   int16_t get_last_packet_rssi() const;
   int8_t get_last_packet_snr_x4() const;
 

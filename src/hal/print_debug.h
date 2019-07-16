@@ -23,6 +23,9 @@ void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
   }
 };
 
+constexpr bool IS_DEBUG_ENABLE(int x) {
+  return debugLevel >= x;
+}
 
 void hal_printf_init();
 

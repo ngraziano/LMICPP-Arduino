@@ -35,7 +35,7 @@ void os_init(void);
 
 //================================================================================
 
-constexpr OsDeltaTime RX_RAMPUP = OsDeltaTime::from_us(2000);
+constexpr OsDeltaTime RX_RAMPUP = OsDeltaTime::from_us(40000);
 constexpr OsDeltaTime TX_RAMPUP = OsDeltaTime::from_us(2000);
 
 #ifndef HAS_os_calls

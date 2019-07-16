@@ -55,6 +55,16 @@ public:
    */
   bool io_check() const;
 
+  /**
+   * Check pin DI0 or busy and return true if set to 1.
+   */
+  bool io_check0() const;
+
+  /**
+   * Check pin DI1 and return true if set to 1.
+   */
+  bool io_check1() const;
+
   // configure radio I/O and interrupt handler and SPI
   void init() const;
 
