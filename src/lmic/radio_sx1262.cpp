@@ -78,8 +78,8 @@ template <int parameter_length> struct Sx1262Command {
   uint8_t *begin() { return parameter; }
   uint8_t *end() { return parameter + parameter_length; }
 
-  uint8_t const *begin() const { return parameter; }
-  uint8_t const *end() const { return parameter + parameter_length; }
+  constexpr uint8_t const *begin() const { return parameter; }
+  constexpr uint8_t const *end() const { return parameter + parameter_length; }
 };
 
 template <int parameter_length>
@@ -128,7 +128,6 @@ void read_register(HalIo const &hal, Sx1262Register<data_length> &reg) {
 
   hal.beginspi();
   wait_ready(hal);
-  // Read register command
   hal.spi(RadioCommand::ReadRegister);
   // send adress
   hal.spi(reg.address >> 8);
@@ -148,7 +147,6 @@ void write_register(HalIo const &hal, Sx1262Register<data_length> const &reg) {
 
   hal.beginspi();
   wait_ready(hal);
-  // Read register command
   hal.spi(RadioCommand::WriteRegister);
   // send adress
   hal.spi(reg.address >> 8);
@@ -203,12 +201,12 @@ void RadioSx1262::init() {
   hal_wait(OsDeltaTime::from_ms(5));
   wait_ready(hal);
 
-  if (IS_DEBUG_ENABLE(1)) {
+  if (IS_DEBUG_ENABLE(2)) {
     // Check defaut config to see if reset is ok
     Sx1262Register<2> regres{0x0740, {0x00, 0x00}};
     read_register(hal, regres);
-    PRINT_DEBUG(1, F("Config synch word %x==14"), regres.data[0]);
-    PRINT_DEBUG(1, F("Config synch word %x==24"), regres.data[1]);
+    PRINT_DEBUG(2, F("Config synch word %x==14"), regres.data[0]);
+    PRINT_DEBUG(2, F("Config synch word %x==24"), regres.data[1]);
     print_status(get_status());
   }
 
@@ -222,13 +220,12 @@ void RadioSx1262::init_random(uint8_t randbuf[16]) {
 
   init_config();
   set_rx_continious();
-
-  delay(100);
+  hal_wait(OsDeltaTime::from_ms(100));
 
   Sx1262Register<4> random_register = {0x0819, {0x00}};
   for (int i = 0; i < 4; i++) {
     read_register(hal, random_register);
-    PRINT_DEBUG(1, F("Random %x %x %x %x "), random_register.data[0],
+    PRINT_DEBUG(2, F("Random %x %x %x %x "), random_register.data[0],
                 random_register.data[1], random_register.data[2],
                 random_register.data[3]);
     std::copy(random_register.begin(), random_register.end(), randbuf + 4 * i);
@@ -355,8 +352,7 @@ void RadioSx1262::set_sleep() const {
 void RadioSx1262::set_standby(bool use_xosc) const {
   // RC mode
   uint8_t const param1 = use_xosc ? 0x01 : 0x00;
-  send_command(hal, Sx1262Command<1>{RadioCommand::SetStandby,
-                                     {param1}});
+  send_command(hal, Sx1262Command<1>{RadioCommand::SetStandby, {param1}});
 }
 
 void RadioSx1262::set_packet_type_lora() const {
@@ -365,19 +361,23 @@ void RadioSx1262::set_packet_type_lora() const {
 }
 
 void RadioSx1262::set_modulation_params_lora(rps_t const rps) const {
-  Sx1262Command<4> cmd = {RadioCommand::SetModulationParams, {0x00}};
-  // sf
-  cmd.parameter[0] = sf_to_parameter(rps.sf);
-  cmd.parameter[1] = bw_to_parameter(rps.getBw());
-  cmd.parameter[2] = cr_to_parameter(rps.getCr());
+  // Low Data Rate Optimization
   // Must be enabled for: SF11/BW125, SF12/BW125, SF12/BW250
+  uint8_t ldro;
   if (((rps.sf == SF11 || rps.sf == SF12) && rps.getBw() == BandWidth::BW125) ||
       (rps.sf == SF12 && rps.getBw() == BandWidth::BW250)) {
-    cmd.parameter[3] = 1;
+    ldro = 1;
   } else {
-    cmd.parameter[3] = 0;
+    ldro = 0;
   }
-  send_command(hal, cmd);
+
+  send_command(hal, Sx1262Command<4>{RadioCommand::SetModulationParams,
+                                     {
+                                         sf_to_parameter(rps.sf),
+                                         bw_to_parameter(rps.getBw()),
+                                         cr_to_parameter(rps.getCr()),
+                                         ldro,
+                                     }});
 }
 
 void RadioSx1262::set_rf_frequency(uint32_t const freq) const {
@@ -462,9 +462,10 @@ void RadioSx1262::write_frame(uint8_t const *framePtr,
   hal.spi(RadioCommand::WriteBuffer);
   // offset
   hal.spi(0x00);
-  for (uint8_t i = 0; i < frameLength; i++) {
-    hal.spi(framePtr[i]);
-  }
+
+  std::for_each(framePtr, framePtr + frameLength,
+                [this](uint8_t const val) { hal.spi(val); });
+
   hal.endspi();
 }
 
@@ -474,19 +475,17 @@ uint8_t RadioSx1262::read_frame(uint8_t *framePtr) const {
                                    {0x00, 0x00}};
   read_command(hal, frame_status);
 
-  uint8_t len = frame_status.parameter[0] > MAX_LEN_FRAME
-                    ? MAX_LEN_FRAME
-                    : frame_status.parameter[0];
+  uint8_t const len = std::min(frame_status.parameter[0], MAX_LEN_FRAME);
+  uint8_t const offset = frame_status.parameter[1];
 
   hal.beginspi();
   wait_ready(hal);
   hal.spi(RadioCommand::ReadBuffer);
-  // offset
-  hal.spi(frame_status.parameter[1]);
+  hal.spi(offset);
   hal.spi(0x00);
-  for (uint8_t i = 0; i < len; i++) {
-    framePtr[i] = hal.spi(0x00);
-  }
+
+  std::generate_n(framePtr, len, [this]() { return hal.spi(0x00); });
+
   hal.endspi();
   return len;
 }
@@ -501,13 +500,13 @@ uint8_t RadioSx1262::get_status() const {
 }
 
 uint16_t RadioSx1262::get_device_errors() const {
-  Sx1262Command<2> cmd = {RadioCommand::GetDeviceErrors, {0x00}};
+  Sx1262Command<2> cmd = {RadioCommand::GetDeviceErrors, {}};
   read_command(hal, cmd);
   return rmsbf2(cmd.parameter);
 }
 
 uint16_t RadioSx1262::get_irq_status() const {
-  Sx1262Command<2> cmd = {RadioCommand::GetIrqStatus, {0x00}};
+  Sx1262Command<2> cmd = {RadioCommand::GetIrqStatus, {}};
   read_command(hal, cmd);
   return rmsbf2(cmd.parameter);
 }
@@ -542,7 +541,7 @@ void RadioSx1262::set_rx_continious() const {
 }
 
 uint8_t RadioSx1262::get_rssi_inst() const {
-  Sx1262Command<1> cmd{RadioCommand::GetRssiInst, {0x00}};
+  Sx1262Command<1> cmd{RadioCommand::GetRssiInst, {}};
   read_command(hal, cmd);
   return cmd.parameter[0];
 }
