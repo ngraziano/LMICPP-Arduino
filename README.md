@@ -1,14 +1,17 @@
-# LORAWAN Librairie for Arduino and SX1276/2 lora chip
+# LORAWAN Librairie for Arduino and SX1276/2 , SX1262 lora chip
 
 * Based on LMIC librairy.
 * Modified to get C++ style.
 * Only class A device (no class B)
 * Add some sleep of arduino board and ESP.
+* Add SX1262 chip
 
 ## Limitation
 
 :warning: This library do not compile in Arduino IDE due to dependency to STL (ArduinoSTL in case of AVR platform).
 It need PlatfomIO for the dependencies to be handle correctly.
+
+For the SX1262 it only support 868 band and board with TCXO. 
 
 ## AVR examples
 
