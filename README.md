@@ -11,7 +11,7 @@
 :warning: This library do not compile in Arduino IDE due to dependency to STL (ArduinoSTL in case of AVR platform).
 It need PlatfomIO for the dependencies to be handle correctly.
 
-For the SX1262 it only support 868 band and board with TCXO. 
+For the SX1262 it only support 868 band and board with TCXO.
 
 ## AVR examples
 
