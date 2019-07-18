@@ -14,7 +14,9 @@
 #include "../hal/print_debug.h"
 
 #include "../aes/lmic_aes.h"
+#include "bufferpack.h"
 #include "lmic_table.h"
+#include <algorithm>
 
 namespace {
 // ----------------------------------------
@@ -206,15 +208,14 @@ void RadioSx1276::configChannel(uint32_t const freq) const {
 
 #define PA_BOOST_PIN 1
 
-void RadioSx1276::configPower(int8_t pw) const {
+void RadioSx1276::configPower(int8_t const txpow) const {
 
 #if PA_BOOST_PIN
   // no boost +20dB used for now
-  if (pw > 17) {
-    pw = 17;
-  } else if (pw < 2) {
-    pw = 2;
-  }
+  int8_t const min_limit = 2;
+  int8_t const max_limit = 17;
+  int8_t pw = clamp(txpow, min_limit, max_limit);
+
   PRINT_DEBUG(1, F("Config power to %i on PA_BOOST"), pw);
 
   pw -= 2;
@@ -229,11 +230,9 @@ void RadioSx1276::configPower(int8_t pw) const {
   // Bit 6-4 Select max output power: Pmax=10.8+0.6*MaxPower [dBm]
   // Bit 0-3 Pout=Pmax-(15-OutputPower) if PaSelect = 0 (RFO pin)
 
-  if (pw > 15) {
-    pw = 15;
-  } else if (pw < -4) {
-    pw = -4;
-  }
+  int8_t const min_limit = -4;
+  int8_t const max_limit = 15;
+  int8_t pw = clamp(txpow, min_limit, max_limit);
 
   PRINT_DEBUG(1, F("Config power to %i on RFO"), pw);
 
@@ -339,7 +338,7 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
     length = hal.read_reg(LORARegRxNbBytes);
 
     // for security clamp length of data
-    length = length < MAX_LEN_FRAME ? length : MAX_LEN_FRAME;
+    length = std::min(length, MAX_LEN_FRAME);
 
     // set FIFO read address pointer
     hal.write_reg(LORARegFifoAddrPtr, hal.read_reg(LORARegFifoRxCurrentAddr));
@@ -487,7 +486,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
 
   // now instruct the radio to receive
   // busy wait until exact rx time
-  hal_waitUntil(rxtime); 
+  hal_waitUntil(rxtime);
   // single rx
   opmode(OPMODE_RX_SINGLE);
 
@@ -498,12 +497,10 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // or timed out, and the corresponding IRQ will inform us about completion.
 }
 
-
 /**
  * Check the IO pin.
  * Return true if the radio has finish it's operation
  */
 bool RadioSx1276::io_check() const { return hal.io_check(); }
-
 
 RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : Radio(pins) {}

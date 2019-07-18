@@ -436,12 +436,11 @@ void RadioSx1262::init_config() const {
 }
 
 void RadioSx1262::set_tx_power(int8_t const txpow) const {
-  int8_t pw = txpow;
   // high power PA: -9 ... +22 dBm
-  if (pw > 22)
-    pw = 22;
-  if (pw < -9)
-    pw = -9;
+  int8_t const min_limit = -9;
+  int8_t const max_limit = 22;
+  int8_t const pw = clamp(txpow, min_limit, max_limit);
+
   // set PA config (and reset OCP to 140mA)
   send_command(hal, Sx1262Command<4>{RadioCommand::SetPaConfig,
                                      {0x04, 0x07, 0x00, 0x01}});

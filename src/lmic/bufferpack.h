@@ -112,4 +112,13 @@ inline void read_from_buffer(uint8_t const *&buf, EnumFlagsValue<T> &val) {
   read_from_buffer(buf, val.value);
 }
 
+/**
+ * If v compares less than lo, returns lo; 
+ * otherwise if hi compares less than v, returns hi; otherwise returns v. 
+ */
+template <typename T>
+constexpr T const &clamp(T const &v, T const &lo, T const &hi) {
+  return v < lo ? lo : hi < v ? hi : v;
+}
+
 #endif // __bufferpack_h__
