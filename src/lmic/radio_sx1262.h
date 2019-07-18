@@ -10,10 +10,21 @@
 #include "radio.h"
 #include <stdint.h>
 
-class RadioSx1262 final : public Radio {
+enum class ImageCalibrationBand : uint8_t {
+  band_430_440 = 0,
+  band_470_510,
+  band_779_787,
+  band_863_870,
+  band_902_928,
+};
 
+class RadioSx1262 final : public Radio {
+private:
+  // ImageCalibrationBand const image_calibration_band;
+  uint16_t const image_calibration_params;
 public:
-  explicit RadioSx1262(lmic_pinmap const &pins);
+  explicit RadioSx1262(lmic_pinmap const &pins,
+                       ImageCalibrationBand calibration_band);
   void init(void) override;
   void rst() const override;
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
@@ -53,7 +64,7 @@ private:
   void set_tx() const;
   void set_fs() const;
   void set_lora_symb_num_timeout(uint8_t rxsyms) const;
-  void calibrate_image_868() const;
+  void calibrate_image() const;
   uint8_t get_rssi_inst() const;
   void set_DIO2_as_rf_switch_ctrl() const;
   void calibrate_all() const;

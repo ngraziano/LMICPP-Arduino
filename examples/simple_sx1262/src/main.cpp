@@ -29,7 +29,7 @@ constexpr lmic_pinmap lmic_pins = {
 };
 OsScheduler OSS;
 // Radio class for SX1262
-RadioSx1262 radio {lmic_pins};
+RadioSx1262 radio {lmic_pins, ImageCalibrationBand::band_863_870};
 LmicEu868 LMIC {radio, OSS};
 
 OsJob sendjob{OSS};

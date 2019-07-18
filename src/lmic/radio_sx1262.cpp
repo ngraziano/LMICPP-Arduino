@@ -185,6 +185,11 @@ uint16_t bwForLog(rps_t const rps) {
   return TABLE_GET_U2(BW_ENUM_TO_VAL, index);
 }
 
+CONST_TABLE(uint16_t, CALIBRATION_CMD)
+[] = {
+    0x6B6F, 0x7581, 0xC1C5, 0xD7DB, 0xE1E9,
+};
+
 } // namespace
 
 void RadioSx1262::init() {
@@ -340,7 +345,11 @@ bool RadioSx1262::io_check() const {
   return hal.io_check1();
 }
 
-RadioSx1262::RadioSx1262(lmic_pinmap const &pins) : Radio(pins) {}
+RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
+                         ImageCalibrationBand const calibration_band)
+    : Radio(pins),
+      image_calibration_params(TABLE_GET_U2(
+          CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))) {}
 
 void RadioSx1262::set_sleep() const {
   PRINT_DEBUG(1, F("Set Radio to sleep"));
@@ -425,7 +434,7 @@ void RadioSx1262::init_config() const {
   set_regulator_mode_dcdc();
 
   // BOARD have TCXO, need calibration
-  calibrate_image_868();
+  calibrate_image();
   set_DIO3_as_tcxo_ctrl();
   calibrate_all();
   set_standby(true);
@@ -560,9 +569,11 @@ void RadioSx1262::set_lora_symb_num_timeout(uint8_t rxsyms) const {
                Sx1262Command<1>{RadioCommand::SetLoRaSymbNumTimeout, {rxsyms}});
 }
 
-void RadioSx1262::calibrate_image_868() const {
-  send_command(hal,
-               Sx1262Command<2>{RadioCommand::CalibrateImage, {0xD7, 0xDB}});
+void RadioSx1262::calibrate_image() const {
+  uint8_t const param1 = (image_calibration_params >> 8) & 0xff;
+  uint8_t const param2 = (image_calibration_params >> 0) & 0xff;
+  send_command(
+      hal, Sx1262Command<2>{RadioCommand::CalibrateImage, {param1, param2}});
 }
 
 void RadioSx1262::set_DIO2_as_rf_switch_ctrl() const {
