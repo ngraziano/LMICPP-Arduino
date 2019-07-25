@@ -12,6 +12,7 @@
 
 #include <algorithm>
 
+
 namespace {
 
 enum RadioCommand : uint8_t {
@@ -190,6 +191,80 @@ CONST_TABLE(uint16_t, CALIBRATION_CMD)
     0x6B6F, 0x7581, 0xC1C5, 0xD7DB, 0xE1E9,
 };
 
+namespace cmds {
+// Commands with parameters.
+struct SetLoraSymbNumCommand : Sx1262Command<1> {
+  SetLoraSymbNumCommand()
+      : Sx1262Command<1>{RadioCommand::SetLoRaSymbNumTimeout, {}} {};
+  void set_lora_symb_num(uint8_t rxsyms) { parameter[0] = rxsyms; };
+};
+
+// Fixed value commands
+/**
+ * Command to start RX (timeout define in char elsewhere)
+ */
+constexpr auto set_rx =
+    Sx1262Command<3>{RadioCommand::SetRx, {0x00, 0x00, 0x00}};
+
+/**
+ * Command to start RX (no timeout)
+ */
+constexpr auto set_rx_continious =
+    Sx1262Command<3>{RadioCommand::SetRx, {0xFF, 0xFF, 0xFF}};
+
+/**
+ * Command to change to FS mode
+ */
+constexpr auto set_fs = Sx1262Command<0>{RadioCommand::SetFs, {}};
+
+/**
+ * Command to start RX (timeout 10s)
+ * Timeout 10s => 0x09C400
+ */
+constexpr auto set_tx_10s =
+    Sx1262Command<3>{RadioCommand::SetTx, {0x09, 0xC4, 0x00}};
+
+/**
+ * Command to set DIO2 as RF switch control
+ */
+constexpr auto set_DIO2_as_rf_switch_ctrl =
+    Sx1262Command<1>{RadioCommand::SetDIO2AsRfSwitchCtrl, {0x01}};
+
+/**
+ * Command to launch calibrate all
+ * All => 7F
+ */
+constexpr auto calibrate_all =
+    Sx1262Command<1>{RadioCommand::Calibrate, {0x7F}};
+
+constexpr auto clear_device_errors =
+    Sx1262Command<1>{RadioCommand::ClearDeviceErrors, {0x00}};
+
+/**
+ * DIO3 control tcxo
+ * 1.8V => 0x02
+ * Time out 5ms => 0x000140
+ */
+constexpr auto set_DIO3_as_tcxo_ctrl =
+    Sx1262Command<4>{RadioCommand::SetDIO3AsTcxoCtrl, {0x02, 0x00, 0x01, 0x40}};
+
+constexpr auto set_sync_word_lora = Sx1262Register<2>{0x740, {0x34, 0x44}};
+
+/**
+ * Set paquet type
+ * LORA = 0x01
+ */
+constexpr auto set_packet_type_lora =
+    Sx1262Command<1>{RadioCommand::SetPacketType, {0x01}};
+
+constexpr auto set_sleep_cold_start =
+    Sx1262Command<1>{RadioCommand::SetSleep, {0x00}};
+
+constexpr auto clear_all_irq =
+    Sx1262Command<2>{RadioCommand::ClearIrqStatus, {0x03, 0xFF}};
+
+} // namespace cmds
+
 } // namespace
 
 void RadioSx1262::init() {
@@ -353,9 +428,7 @@ RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
 
 void RadioSx1262::set_sleep() const {
   PRINT_DEBUG(1, F("Set Radio to sleep"));
-
-  // RTC Disable, Cold start
-  send_command(hal, Sx1262Command<1>{RadioCommand::SetSleep, {0x00}});
+  send_command(hal, cmds::set_sleep_cold_start);
 }
 
 void RadioSx1262::set_standby(bool use_xosc) const {
@@ -365,8 +438,8 @@ void RadioSx1262::set_standby(bool use_xosc) const {
 }
 
 void RadioSx1262::set_packet_type_lora() const {
-  // Set paquet type LORA = 0x01
-  send_command(hal, Sx1262Command<1>{RadioCommand::SetPacketType, {0x01}});
+
+  send_command(hal, cmds::set_packet_type_lora);
 }
 
 void RadioSx1262::set_modulation_params_lora(rps_t const rps) const {
@@ -417,9 +490,7 @@ void RadioSx1262::set_packet_params_lora(rps_t rps, uint8_t frameLength,
 }
 
 void RadioSx1262::set_sync_word_lora() const {
-
-  Sx1262Register<2> reg{0x740, {0x34, 0x44}};
-  write_register(hal, reg);
+  write_register(hal, cmds::set_sync_word_lora);
 }
 
 void RadioSx1262::set_regulator_mode_dcdc() const {
@@ -520,8 +591,7 @@ uint16_t RadioSx1262::get_irq_status() const {
 }
 
 void RadioSx1262::clear_all_irq() const {
-  send_command(hal,
-               Sx1262Command<2>{RadioCommand::ClearIrqStatus, {0x03, 0xFF}});
+  send_command(hal, cmds::clear_all_irq);
 }
 
 void RadioSx1262::set_dio1_irq_params(uint16_t mask) const {
@@ -541,11 +611,11 @@ void RadioSx1262::set_dio1_irq_params(uint16_t mask) const {
 
 void RadioSx1262::set_rx() const {
   // Timeout 0 (symbol timeout)
-  send_command(hal, Sx1262Command<3>{RadioCommand::SetRx, {0x00, 0x00, 0x00}});
+  send_command(hal, cmds::set_rx);
 }
 
 void RadioSx1262::set_rx_continious() const {
-  send_command(hal, Sx1262Command<3>{RadioCommand::SetRx, {0xFF, 0xFF, 0xFF}});
+  send_command(hal, cmds::set_rx_continious);
 }
 
 uint8_t RadioSx1262::get_rssi_inst() const {
@@ -554,19 +624,14 @@ uint8_t RadioSx1262::get_rssi_inst() const {
   return cmd.parameter[0];
 }
 
-void RadioSx1262::set_tx() const {
-  // Timeout 10s => 0x09C400
-  send_command(hal, Sx1262Command<3>{RadioCommand::SetTx, {0x09, 0xC4, 0x00}});
-}
+void RadioSx1262::set_tx() const { send_command(hal, cmds::set_tx_10s); }
 
-void RadioSx1262::set_fs() const {
-
-  send_command(hal, Sx1262Command<0>{RadioCommand::SetFs, {}});
-}
+void RadioSx1262::set_fs() const { send_command(hal, cmds::set_fs); }
 
 void RadioSx1262::set_lora_symb_num_timeout(uint8_t rxsyms) const {
-  send_command(hal,
-               Sx1262Command<1>{RadioCommand::SetLoRaSymbNumTimeout, {rxsyms}});
+  cmds::SetLoraSymbNumCommand cmd;
+  cmd.set_lora_symb_num(rxsyms);
+  send_command(hal, cmd);
 }
 
 void RadioSx1262::calibrate_image() const {
@@ -577,20 +642,17 @@ void RadioSx1262::calibrate_image() const {
 }
 
 void RadioSx1262::set_DIO2_as_rf_switch_ctrl() const {
-  send_command(hal,
-               Sx1262Command<1>{RadioCommand::SetDIO2AsRfSwitchCtrl, {0x01}});
+  send_command(hal, cmds::set_DIO2_as_rf_switch_ctrl);
 }
 
 void RadioSx1262::calibrate_all() const {
-  send_command(hal, Sx1262Command<1>{RadioCommand::Calibrate, {0x7F}});
+  send_command(hal, cmds::calibrate_all);
 }
 
 void RadioSx1262::clear_device_errors() const {
-  send_command(hal, Sx1262Command<1>{RadioCommand::ClearDeviceErrors, {0x00}});
+  send_command(hal, cmds::clear_device_errors);
 }
 
 void RadioSx1262::set_DIO3_as_tcxo_ctrl() const {
-  // 1.8V  5ms
-  send_command(hal, Sx1262Command<4>{RadioCommand::SetDIO3AsTcxoCtrl,
-                                     {0x02, 0x00, 0x01, 0x40}});
+  send_command(hal, cmds::set_DIO3_as_tcxo_ctrl);
 }
