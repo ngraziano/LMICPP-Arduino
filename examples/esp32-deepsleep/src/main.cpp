@@ -19,7 +19,7 @@ constexpr unsigned int BAUDRATE = 115200;
 // Pin mapping
 constexpr lmic_pinmap lmic_pins = {
     .nss = 18,
-    .rxtx = LMIC_UNUSED_PIN,
+    .prepare_antenna_tx = nullptr,
     .rst = 14,
     .dio = {26, 33},
 };

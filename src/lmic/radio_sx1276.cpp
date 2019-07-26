@@ -267,7 +267,7 @@ void RadioSx1276::rxrssi() const {
 
   clear_irq();
   // enable antenna switch for RX
-  hal.pin_rxtx(0);
+  hal.pin_switch_antenna_tx(false);
   // now instruct the radio to receive
   // continous rx
   opmode(OPMODE_RX);
@@ -424,7 +424,7 @@ void RadioSx1276::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   hal.write_buffer(RegFifo, framePtr, frameLength);
 
   // enable antenna switch for TX
-  hal.pin_rxtx(1);
+  hal.pin_switch_antenna_tx(true);
 
   // now we actually start the transmission
   opmode(OPMODE_TX);
@@ -482,7 +482,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   write_list_of_reg(RESOLVE_TABLE(RX_INIT_CMD), NB_RX_INIT_CMD);
 
   // enable antenna switch for RX
-  hal.pin_rxtx(0);
+  hal.pin_switch_antenna_tx(false);
 
   // now instruct the radio to receive
   // busy wait until exact rx time

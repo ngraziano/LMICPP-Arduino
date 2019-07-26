@@ -367,7 +367,7 @@ void RadioSx1262::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   set_packet_params_lora(rps, frameLength, false);
   set_tx_power(txpow);
   // enable antenna switch for TX
-  hal.pin_rxtx(1);
+  hal.pin_switch_antenna_tx(true);
 
   write_frame(framePtr, frameLength);
   clear_all_irq();
@@ -388,7 +388,7 @@ void RadioSx1262::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   set_modulation_params_lora(rps);
   set_packet_params_lora(rps, MAX_LEN_FRAME, true);
   // enable antenna switch for RX
-  hal.pin_rxtx(0);
+  hal.pin_switch_antenna_tx(false);
 
   set_lora_symb_num_timeout(rxsyms);
   uint16_t const RxDone = 1 << 1;

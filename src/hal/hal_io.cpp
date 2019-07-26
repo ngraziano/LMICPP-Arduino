@@ -67,10 +67,10 @@ uint8_t HalIo::spi(uint8_t const out) const {
 
 
 
-void HalIo::pin_rxtx(uint8_t val) const {
+void HalIo::pin_switch_antenna_tx(bool isTx) const {
   // val == 1  => tx 1
-  if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
-    digitalWrite(lmic_pins.rxtx, val);
+  if (lmic_pins.prepare_antenna_tx)
+    lmic_pins.prepare_antenna_tx(isTx);
 }
 
 // set radio RST pin to given value (or keep floating!)
@@ -111,8 +111,7 @@ void HalIo::init() const {
   ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN);
 
   pinMode(lmic_pins.nss, OUTPUT);
-  if (lmic_pins.rxtx != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.rxtx, OUTPUT);
+
   if (lmic_pins.rst != LMIC_UNUSED_PIN)
     pinMode(lmic_pins.rst, OUTPUT);
 

@@ -25,7 +25,7 @@ constexpr uint8_t button_pin = 3;
 // Pin mapping
 constexpr lmic_pinmap lmic_pins = {
     .nss = 10,
-    .rxtx = LMIC_UNUSED_PIN,
+    .prepare_antenna_tx = nullptr,
     .rst = 14,
     .dio = {9, 8},
 };

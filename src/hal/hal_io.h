@@ -7,9 +7,11 @@
 
 constexpr uint8_t NUM_DIO = 2;
 
+using prepare_antenna_type = void (bool);
+
 struct lmic_pinmap {
   uint8_t nss;
-  uint8_t rxtx;
+  prepare_antenna_type* prepare_antenna_tx;
   uint8_t rst;
   uint8_t dio[NUM_DIO];
 };
@@ -42,9 +44,10 @@ public:
   uint8_t spi(uint8_t outval) const;
 
   /**
-   * drive radio RX/TX pins (0=rx, 1=tx).
+   * drive radio RX/TX pins (false=rx, true=tx).
    */
-  void pin_rxtx(uint8_t val) const;
+  void pin_switch_antenna_tx(bool isTx) const;
+
   /**
    * control radio RST pin (0=low, 1=high, 2=floating)
    */
