@@ -12,7 +12,6 @@
 
 #include <algorithm>
 
-
 namespace {
 
 enum RadioCommand : uint8_t {
@@ -83,33 +82,44 @@ template <int parameter_length> struct Sx1262Command {
   constexpr uint8_t const *end() const { return parameter + parameter_length; }
 };
 
-template <int parameter_length>
-void send_command(HalIo const &hal,
-                  Sx1262Command<parameter_length> const &cmd) {
-  PRINT_DEBUG(2, F("Cmd> %x"), cmd.command);
-
+void send_command(HalIo const &hal, RadioCommand cmd,
+                  uint8_t const *begin_parameter,
+                  uint8_t const *end_parameter) {
+  PRINT_DEBUG(2, F("Cmd> %x"), cmd);
   hal.beginspi();
   wait_ready(hal);
-  hal.spi(cmd.command);
+  hal.spi(cmd);
 
-  std::for_each(cmd.begin(), cmd.end(),
+  std::for_each(begin_parameter, end_parameter,
                 [&hal](uint8_t const val) { hal.spi(val); });
 
   hal.endspi();
 }
 
 template <int parameter_length>
-void read_command(HalIo const &hal, Sx1262Command<parameter_length> &cmd) {
-  PRINT_DEBUG(2, F("Cmd< %x"), cmd.command);
+void send_command(HalIo const &hal,
+                  Sx1262Command<parameter_length> const &cmd) {
+  send_command(hal, cmd.command, cmd.begin(), cmd.end());
+}
+
+void read_command(HalIo const &hal, RadioCommand cmd, uint8_t *begin_parameter,
+                  uint8_t *end_parameter) {
+  PRINT_DEBUG(2, F("Cmd< %x"), cmd);
 
   hal.beginspi();
   wait_ready(hal);
-  hal.spi(cmd.command);
+  hal.spi(cmd);
   hal.spi(0x00);
 
-  std::generate(cmd.begin(), cmd.end(), [&hal]() { return hal.spi(0x00); });
+  std::generate(begin_parameter, end_parameter,
+                [&hal]() { return hal.spi(0x00); });
 
   hal.endspi();
+}
+
+template <int parameter_length>
+void read_command(HalIo const &hal, Sx1262Command<parameter_length> &cmd) {
+  read_command(hal, cmd.command, cmd.begin(), cmd.end());
 }
 
 template <int data_length> struct Sx1262Register {
@@ -191,14 +201,14 @@ CONST_TABLE(uint16_t, CALIBRATION_CMD)
     0x6B6F, 0x7581, 0xC1C5, 0xD7DB, 0xE1E9,
 };
 
-
 template <int length> struct Sx1262Command_P {
   Sx1262Command<length> item;
   constexpr Sx1262Command_P(Sx1262Command<length> const &it) : item(it) {}
 };
 
-template <int length> void send_command(HalIo const & hal,Sx1262Command_P<length> const & cmd_P) {
-  Sx1262Command<length> cmd { RadioCommand::ResetStats, {} };
+template <int length>
+void send_command(HalIo const &hal, Sx1262Command_P<length> const &cmd_P) {
+  Sx1262Command<length> cmd{RadioCommand::ResetStats, {}};
   memcpy_P(&cmd, &cmd_P.item, sizeof(cmd));
   send_command(hal, cmd);
 }
@@ -228,7 +238,8 @@ constexpr Sx1262Command_P<3> set_rx_continious PROGMEM =
 /**
  * Command to change to FS mode
  */
-constexpr Sx1262Command_P<0> set_fs PROGMEM = Sx1262Command<0>{RadioCommand::SetFs, {}};
+constexpr Sx1262Command_P<0> set_fs PROGMEM =
+    Sx1262Command<0>{RadioCommand::SetFs,{}};
 
 /**
  * Command to start RX (timeout 10s)
@@ -270,7 +281,7 @@ constexpr auto set_sync_word_lora = Sx1262Register<2>{0x740, {0x34, 0x44}};
 constexpr Sx1262Command_P<1> set_packet_type_lora PROGMEM =
     Sx1262Command<1>{RadioCommand::SetPacketType, {0x01}};
 
-constexpr Sx1262Command_P<1> set_sleep_cold_start PROGMEM=
+constexpr Sx1262Command_P<1> set_sleep_cold_start PROGMEM =
     Sx1262Command<1>{RadioCommand::SetSleep, {0x00}};
 
 constexpr Sx1262Command_P<2> clear_all_irq PROGMEM =
