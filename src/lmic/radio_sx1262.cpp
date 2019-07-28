@@ -191,6 +191,18 @@ CONST_TABLE(uint16_t, CALIBRATION_CMD)
     0x6B6F, 0x7581, 0xC1C5, 0xD7DB, 0xE1E9,
 };
 
+
+template <int length> struct Sx1262Command_P {
+  Sx1262Command<length> item;
+  constexpr Sx1262Command_P(Sx1262Command<length> const &it) : item(it) {}
+};
+
+template <int length> void send_command(HalIo const & hal,Sx1262Command_P<length> const & cmd_P) {
+  Sx1262Command<length> cmd { RadioCommand::ResetStats, {} };
+  memcpy_P(&cmd, &cmd_P.item, sizeof(cmd));
+  send_command(hal, cmd);
+}
+
 namespace cmds {
 // Commands with parameters.
 struct SetLoraSymbNumCommand : Sx1262Command<1> {
@@ -200,44 +212,45 @@ struct SetLoraSymbNumCommand : Sx1262Command<1> {
 };
 
 // Fixed value commands
+
 /**
  * Command to start RX (timeout define in char elsewhere)
  */
-constexpr auto set_rx =
+constexpr Sx1262Command_P<3> set_rx PROGMEM =
     Sx1262Command<3>{RadioCommand::SetRx, {0x00, 0x00, 0x00}};
 
 /**
  * Command to start RX (no timeout)
  */
-constexpr auto set_rx_continious =
+constexpr Sx1262Command_P<3> set_rx_continious PROGMEM =
     Sx1262Command<3>{RadioCommand::SetRx, {0xFF, 0xFF, 0xFF}};
 
 /**
  * Command to change to FS mode
  */
-constexpr auto set_fs = Sx1262Command<0>{RadioCommand::SetFs, {}};
+constexpr Sx1262Command_P<0> set_fs PROGMEM = Sx1262Command<0>{RadioCommand::SetFs, {}};
 
 /**
  * Command to start RX (timeout 10s)
  * Timeout 10s => 0x09C400
  */
-constexpr auto set_tx_10s =
+constexpr Sx1262Command_P<3> set_tx_10s PROGMEM =
     Sx1262Command<3>{RadioCommand::SetTx, {0x09, 0xC4, 0x00}};
 
 /**
  * Command to set DIO2 as RF switch control
  */
-constexpr auto set_DIO2_as_rf_switch_ctrl =
+constexpr Sx1262Command_P<1> set_DIO2_as_rf_switch_ctrl PROGMEM =
     Sx1262Command<1>{RadioCommand::SetDIO2AsRfSwitchCtrl, {0x01}};
 
 /**
  * Command to launch calibrate all
  * All => 7F
  */
-constexpr auto calibrate_all =
+constexpr Sx1262Command_P<1> calibrate_all PROGMEM =
     Sx1262Command<1>{RadioCommand::Calibrate, {0x7F}};
 
-constexpr auto clear_device_errors =
+constexpr Sx1262Command_P<1> clear_device_errors PROGMEM =
     Sx1262Command<1>{RadioCommand::ClearDeviceErrors, {0x00}};
 
 /**
@@ -245,7 +258,7 @@ constexpr auto clear_device_errors =
  * 1.8V => 0x02
  * Time out 5ms => 0x000140
  */
-constexpr auto set_DIO3_as_tcxo_ctrl =
+constexpr Sx1262Command_P<4> set_DIO3_as_tcxo_ctrl PROGMEM =
     Sx1262Command<4>{RadioCommand::SetDIO3AsTcxoCtrl, {0x02, 0x00, 0x01, 0x40}};
 
 constexpr auto set_sync_word_lora = Sx1262Register<2>{0x740, {0x34, 0x44}};
@@ -254,13 +267,13 @@ constexpr auto set_sync_word_lora = Sx1262Register<2>{0x740, {0x34, 0x44}};
  * Set paquet type
  * LORA = 0x01
  */
-constexpr auto set_packet_type_lora =
+constexpr Sx1262Command_P<1> set_packet_type_lora PROGMEM =
     Sx1262Command<1>{RadioCommand::SetPacketType, {0x01}};
 
-constexpr auto set_sleep_cold_start =
+constexpr Sx1262Command_P<1> set_sleep_cold_start PROGMEM=
     Sx1262Command<1>{RadioCommand::SetSleep, {0x00}};
 
-constexpr auto clear_all_irq =
+constexpr Sx1262Command_P<2> clear_all_irq PROGMEM =
     Sx1262Command<2>{RadioCommand::ClearIrqStatus, {0x03, 0xFF}};
 
 } // namespace cmds
