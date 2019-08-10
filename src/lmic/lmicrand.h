@@ -40,6 +40,7 @@ public:
 private:
   Aes &aes;
   // (initialized by init() with radio RSSI, used by rand1())
+  uint8_t index;
   uint8_t randbuf[16];
 };
 #endif
