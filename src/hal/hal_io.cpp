@@ -3,6 +3,7 @@
 #include "hal.h"
 #include <Arduino.h>
 #include <SPI.h>
+#include <algorithm>
 
 static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
@@ -37,9 +38,7 @@ void HalIo::read_buffer(uint8_t const addr, uint8_t *const buf,
                         uint8_t const len) const {
   beginspi();
   spi(addr & 0x7F);
-  for (uint8_t i = 0; i < len; i++) {
-    buf[i] = spi(0x00);
-  }
+  std::generate_n(buf, len, [this]() { return spi(0x00); });
   endspi();
 }
 
@@ -64,8 +63,6 @@ uint8_t HalIo::spi(uint8_t const out) const {
       */
   return res;
 }
-
-
 
 void HalIo::pin_switch_antenna_tx(bool isTx) const {
   // val == 1  => tx 1
@@ -97,11 +94,11 @@ bool HalIo::io_check() const {
 }
 
 bool HalIo::io_check0() const {
-  return digitalRead(lmic_pins.dio[0]) ? true : false ;
+  return digitalRead(lmic_pins.dio[0]) ? true : false;
 }
 
 bool HalIo::io_check1() const {
-  return digitalRead(lmic_pins.dio[1]) ? true : false ;
+  return digitalRead(lmic_pins.dio[1]) ? true : false;
 }
 
 void HalIo::init() const {
