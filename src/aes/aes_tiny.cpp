@@ -96,10 +96,10 @@ static inline uint8_t readsbox(uint8_t val) {
   return pgm_read_byte(sbox + val);
 }
 
-// Rcon(i), 2^i in the Rijndael finite field, for i = 0..10.
+// Rcon(i), 2^(i+1) in the Rijndael finite field, for i = 0..9.
 // http://en.wikipedia.org/wiki/Rijndael_key_schedule
-constexpr uint8_t const rcon[11] PROGMEM = {0x00, 0x01, 0x02, 0x04,
-                                            0x08, 0x10, 0x20, 0x40, // 0x00
+constexpr uint8_t const rcon[10] PROGMEM = {0x01, 0x02, 0x04,
+                                            0x08, 0x10, 0x20, 0x40,
                                             0x80, 0x1B, 0x36};
 
 static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
@@ -216,7 +216,7 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
   xorbuffer(buffer, schedule, state1.data);
 
   // Perform the first 9 rounds of the cipher.
-  for (uint8_t round = 1; round <= 9; ++round) {
+  for (uint8_t round = 0; round < 9; ++round) {
     // Expand the next 16 bytes of the key schedule.
     expand_key(schedule, round);
 
@@ -230,7 +230,7 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
   }
 
   // Expand the final 16 bytes of the key schedule.
-  expand_key(schedule, 10);
+  expand_key(schedule, 9);
 
   // Perform the final round.
   subBytesAndShiftRows(state1);
