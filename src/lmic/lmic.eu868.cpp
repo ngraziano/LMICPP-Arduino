@@ -426,7 +426,7 @@ size_t LmicEu868::saveStateWithoutTimeData(uint8_t *buffer) const {
   buffer += channels.saveState(buffer);
   write_to_buffer(buffer, txChnl);
 
-  PRINT_DEBUG(1, F("Size save %i"), buffer - orig);
+  PRINT_DEBUG(1, F("Size save without time %i"), buffer - orig);
   return buffer - orig;
 }
 
