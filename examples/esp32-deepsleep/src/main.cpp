@@ -30,7 +30,7 @@ LmicEu868 LMIC {radio, OSS};
 OsJob sendjob{OSS};
 
 // buffer to save current lmic state (size may be reduce)
-RTC_DATA_ATTR uint8_t saveState[201];
+RTC_DATA_ATTR uint8_t saveState[301];
 
 void onEvent(EventType ev) {
   switch (ev) {
@@ -64,7 +64,7 @@ void onEvent(EventType ev) {
     // we have transmit
     // save before going to deep sleep.
     auto lbuf = LMIC.saveState(saveState);
-    saveState[200] = 51;
+    saveState[300] = 51;
     PRINT_DEBUG(1, F("State save len = %i"), lbuf);
     ESP.deepSleep(TX_INTERVAL.to_us());
     break;
