@@ -1299,7 +1299,7 @@ size_t Lmic::loadState(uint8_t const *buffer) {
   uint8_t const *orig = buffer;
   buffer += Lmic::loadStateWithoutTimeData(buffer);
   read_from_buffer(buffer, globalDutyAvail);
-  PRINT_DEBUG(2, F("Size save base %i"), buffer - orig);
+  PRINT_DEBUG(2, F("Size load base %i"), buffer - orig);
   return buffer - orig;
 }
 
