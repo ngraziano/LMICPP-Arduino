@@ -120,10 +120,10 @@ void setup() {
   LMIC.setClockError(MAX_CLOCK_ERROR * 3 / 100);
   // LMIC.setAntennaPowerAdjustment(-14);
 
-  if (saveState[200] == 51) {
+  if (saveState[300] == 51) {
     auto lbuf = LMIC.loadState(saveState);
     PRINT_DEBUG(1, F("State load len = %i"), lbuf);
-    saveState[200] =0;
+    saveState[300] =0;
   }
   // Start job (sending automatically starts OTAA too)
   sendjob.setCallbackRunnable(do_send);
