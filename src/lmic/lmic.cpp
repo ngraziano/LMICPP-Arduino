@@ -1247,7 +1247,7 @@ void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 #if defined(ENABLE_SAVE_RESTORE)
 size_t Lmic::saveState(uint8_t *buffer) const {
   uint8_t *orig = buffer;
-  buffer += saveStateWithoutTimeData(buffer);
+  buffer += Lmic::saveStateWithoutTimeData(buffer);
   write_to_buffer(buffer, globalDutyAvail);
   return buffer - orig;
 }
@@ -1296,7 +1296,7 @@ size_t Lmic::saveStateWithoutTimeData(uint8_t *buffer) const {
 
 size_t Lmic::loadState(uint8_t const *buffer) {
   uint8_t const *orig = buffer;
-  loadStateWithoutTimeData(buffer);
+  Lmic::loadStateWithoutTimeData(buffer);
   read_from_buffer(buffer, globalDutyAvail);
   return buffer - orig;
 }
