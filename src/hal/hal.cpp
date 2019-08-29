@@ -87,6 +87,7 @@ void hal_wait(OsDeltaTime delta) {
     delay(16);
     delta -= OsDeltaTime::from_us(16000);
   }
+  
   if (delta > OsDeltaTime(0))
     delayMicroseconds(delta.to_us());
 }

@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <algorithm>
+#include <hal/print_debug.h>
 
 static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
@@ -86,6 +87,7 @@ void HalIo::pin_rst(uint8_t val) const {
 bool HalIo::io_check() const {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
     uint8_t newVal = digitalRead(lmic_pins.dio[i]);
+    PRINT_DEBUG(2, F("Check DIO%d Value=%d"), i, newVal);
     if (newVal) {
       return true;
     }
@@ -106,6 +108,9 @@ void HalIo::init() const {
   ASSERT(lmic_pins.nss != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[0] != LMIC_UNUSED_PIN);
   ASSERT(lmic_pins.dio[1] != LMIC_UNUSED_PIN);
+
+  PRINT_DEBUG(2, F("NSS:%d, RST:%d, DIO0:%d, DIO1:%d"), lmic_pins.nss,
+              lmic_pins.rst, lmic_pins.dio[0], lmic_pins.dio[1]);
 
   pinMode(lmic_pins.nss, OUTPUT);
 
