@@ -62,9 +62,8 @@ class OsScheduler final {
 
 private:
   OsJobBase *scheduledjobs = nullptr;
-  static void unlinkjob(OsJobBase **pnext, OsJobBase *job);
-  void unlinkScheduledJobs(OsJobBase *job);
-  void linkScheduledJob(OsJobBase *job);
+  void unlinkScheduledJobs(OsJobBase &job);
+  void linkScheduledJob(OsJobBase &job);
 
 public:
   // Disallow copying
@@ -119,7 +118,6 @@ protected:
   void call() const override { (refClass.*funcTyped)(); };
 
 public:
-  OsJobType(T &ref) : OsJobBase(), refClass(ref){};
   OsJobType(T &ref, OsScheduler &scheduler)
       : OsJobBase(scheduler), refClass(ref){};
   void setCallbackFuture(osjobcbTyped_t cb) { funcTyped = cb; };

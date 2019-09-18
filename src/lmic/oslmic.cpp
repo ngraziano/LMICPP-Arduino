@@ -26,37 +26,31 @@ void OsJob::setCallbackRunnable(osjobcb_t cb) {
 // schedule immediately runnable job
 void OsJobBase::setRunnable() { setTimed(os_getTime()); }
 
-void OsScheduler::unlinkjob(OsJobBase **pnext, OsJobBase *job) {
-  for (; *pnext; pnext = &((*pnext)->next)) {
-    if (*pnext == job) { // unlink
-      *pnext = job->next;
-    }
-  }
-}
-
-void OsScheduler::linkScheduledJob(OsJobBase *job) {
-  const OsTime time = job->deadline;
-  job->next = nullptr;
+void OsScheduler::linkScheduledJob(OsJobBase &job) {
+  const OsTime time = job.deadline;
+  job.next = nullptr;
   OsJobBase **pnext;
   // insert into schedule
   for (pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
     if ((*pnext)->deadline > time) {
       // enqueue before next element and stop
-      job->next = *pnext;
+      job.next = *pnext;
       break;
     }
   }
-  *pnext = job;
+  *pnext = &job;
 }
 
-void OsScheduler::unlinkScheduledJobs(OsJobBase *job) {
-  unlinkjob(&scheduledjobs, job);
+void OsScheduler::unlinkScheduledJobs(OsJobBase &job) {
+  for (OsJobBase **pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
+    if (*pnext == &job) { // unlink
+      *pnext = job.next;
+    }
+  }
 }
 
 // clear scheduled job
-void OsJobBase::clearCallback() {
-  scheduler.unlinkScheduledJobs(this);
-}
+void OsJobBase::clearCallback() { scheduler.unlinkScheduledJobs(*this); }
 
 void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
   setCallbackFuture(cb);
@@ -66,10 +60,10 @@ void OsJob::setTimedCallback(OsTime time, osjobcb_t cb) {
 // schedule timed job
 void OsJobBase::setTimed(OsTime time) {
   // remove if job was already queued
-  scheduler.unlinkScheduledJobs(this);
+  scheduler.unlinkScheduledJobs(*this);
   // fill-in job
   deadline = time;
-  scheduler.linkScheduledJob(this);
+  scheduler.linkScheduledJob(*this);
   PRINT_DEBUG(2, F("Scheduled job %p, atRun %" PRIu32 ""), this, time);
 }
 
@@ -86,12 +80,13 @@ OsDeltaTime OsScheduler::runloopOnce() {
   }
 
   if (j) { // run job callback
-    PRINT_DEBUG(2, F("Running job %p, deadline %" PRIu32 ""), j, j->deadline.tick());
+    PRINT_DEBUG(2, F("Running job %p, deadline %" PRIu32 ""), j,
+                j->deadline.tick());
     j->call();
   }
 
   if (scheduledjobs) {
-    // return the number of time to wait ()
+    // return the time to wait
     return scheduledjobs->deadline - hal_ticks();
   }
   // nothing to do
