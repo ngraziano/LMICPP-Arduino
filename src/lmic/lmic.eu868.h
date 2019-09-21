@@ -26,7 +26,7 @@ public:
   constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
   constexpr uint32_t getBand() const { return raw & 0x3; };
   constexpr uint16_t getDrMap() const { return drMap; };
-  constexpr bool isConfigured() const { return drMap!=0; }
+  constexpr bool isConfigured() const { return drMap != 0; }
   constexpr bool isDrActive(dr_t datarate) const {
     return (drMap & (1 << datarate)) != 0;
   };
@@ -37,16 +37,14 @@ public:
       : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
 
 #if defined(ENABLE_SAVE_RESTORE)
-  size_t saveState(uint8_t *buffer) const {
-    write_to_buffer(buffer, raw);
-    write_to_buffer(buffer, drMap);
-    return 4 + 2;
+  void saveState(StoringAbtract &store) const {
+    store.write(raw);
+    store.write(drMap);
   };
 
-  size_t loadState(uint8_t const *buffer) {
-    read_from_buffer(buffer, raw);
-    read_from_buffer(buffer, drMap);
-    return 4 + 2;
+  void loadState(RetrieveAbtract &store) {
+    store.read(raw);
+    store.read(drMap);
   };
 #endif
 };
@@ -85,26 +83,20 @@ public:
   }
 
 #if defined(ENABLE_SAVE_RESTORE)
-  size_t saveState(uint8_t *buffer) const {
-    uint8_t *orig = buffer;
+  void saveState(StoringAbtract &store) const {
 
     for (uint8_t channel = 0; channel < size; channel++) {
-      buffer += channels[channel].saveState(buffer);
+      channels[channel].saveState(store);
     }
-    write_to_buffer(buffer, channelMap);
-
-    return buffer - orig;
+    store.write(channelMap);
   };
 
-  size_t loadState(uint8_t const *buffer) {
-    uint8_t const *orig = buffer;
+  void loadState(RetrieveAbtract &store) {
 
     for (uint8_t channel = 0; channel < size; channel++) {
-      buffer += channels[channel].loadState(buffer);
+      channels[channel].loadState(store);
     }
-    read_from_buffer(buffer, channelMap);
-
-    return buffer - orig;
+    store.read(channelMap);
   };
 #endif
 };
@@ -129,10 +121,10 @@ public:
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-  size_t saveStateWithoutTimeData(uint8_t *buffer) const;
-  size_t saveState(uint8_t *buffer) const;
-  size_t loadStateWithoutTimeData(uint8_t const *buffer);
-  size_t loadState(uint8_t const *buffer);
+  void saveStateWithoutTimeData(StoringAbtract &store) const;
+  void saveState(StoringAbtract &store) const;
+  void loadStateWithoutTimeData(RetrieveAbtract &store);
+  void loadState(RetrieveAbtract &store);
 #endif
 
 private:
@@ -156,10 +148,10 @@ public:
   explicit LmicEu868(Radio &radio, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual size_t saveState(uint8_t *buffer) const override;
-  virtual size_t saveStateWithoutTimeData(uint8_t *buffer) const override;
-  virtual size_t loadState(uint8_t const *buffer) override;
-  virtual size_t loadStateWithoutTimeData(uint8_t const *buffer) override;
+  virtual void saveState(StoringAbtract &store) const override;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const override;
+  virtual void loadState(RetrieveAbtract &store) override;
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) override;
 #endif
 
 protected:

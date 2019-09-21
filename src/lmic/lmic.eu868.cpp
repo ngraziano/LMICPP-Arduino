@@ -151,42 +151,34 @@ int8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-size_t BandsEu868::saveStateWithoutTimeData(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
+void BandsEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
   for (int i = 0; i < MAX_BAND; i++) {
-    write_to_buffer(buffer, lastchnl[i]);
+    store.write(lastchnl[i]);
   }
-  return buffer - orig;
 }
 
-size_t BandsEu868::saveState(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
+void BandsEu868::saveState(StoringAbtract &store) const {
   for (int i = 0; i < MAX_BAND; i++) {
-    write_to_buffer(buffer, avail[i]);
+    store.write(avail[i]);
   }
   for (int i = 0; i < MAX_BAND; i++) {
-    write_to_buffer(buffer, lastchnl[i]);
+    store.write(lastchnl[i]);
   }
-  return buffer - orig;
 }
 
-size_t BandsEu868::loadState(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
+void BandsEu868::loadState(RetrieveAbtract &store) {
   for (int i = 0; i < MAX_BAND; i++) {
-    read_from_buffer(buffer, avail[i]);
+    store.read(avail[i]);
   }
   for (int i = 0; i < MAX_BAND; i++) {
-    read_from_buffer(buffer, lastchnl[i]);
+    store.read(lastchnl[i]);
   }
-  return buffer - orig;
 }
 
-size_t BandsEu868::loadStateWithoutTimeData(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
+void BandsEu868::loadStateWithoutTimeData(RetrieveAbtract &store) {
   for (int i = 0; i < MAX_BAND; i++) {
-    read_from_buffer(buffer, lastchnl[i]);
+    store.read(lastchnl[i]);
   }
-  return buffer - orig;
 }
 #endif
 
@@ -268,13 +260,14 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicEu868::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+bool LmicEu868::validMapChannels(uint8_t const chMaskCntl,
+                                 uint16_t const chMask) {
   // Bad page
-  if (chMaskCntl != 0 && chMaskCntl != 6)  
+  if (chMaskCntl != 0 && chMaskCntl != 6)
     return false;
 
   //  disable all channel
-  if(chMaskCntl==0  && chMask == 0)
+  if (chMaskCntl == 0 && chMask == 0)
     return false;
 
   return true;
@@ -418,53 +411,36 @@ dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
 #if defined(ENABLE_SAVE_RESTORE)
-size_t LmicEu868::saveStateWithoutTimeData(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
-  buffer += Lmic::saveStateWithoutTimeData(buffer);
+void LmicEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
+  Lmic::saveStateWithoutTimeData(store);
 
-  buffer += bands.saveStateWithoutTimeData(buffer);
-  buffer += channels.saveState(buffer);
-  write_to_buffer(buffer, txChnl);
-
-  PRINT_DEBUG(1, F("Size save without time %i"), buffer - orig);
-  return buffer - orig;
+  bands.saveStateWithoutTimeData(store);
+  channels.saveState(store);
+  store.write(txChnl);
 }
 
-size_t LmicEu868::saveState(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
-  buffer += Lmic::saveState(buffer);
+void LmicEu868::saveState(StoringAbtract &store) const {
+  Lmic::saveState(store);
 
-  buffer += bands.saveState(buffer);
-  buffer += channels.saveState(buffer);
-  write_to_buffer(buffer, txChnl);
-
-  PRINT_DEBUG(1, F("Size save %i"), buffer - orig);
-  return buffer - orig;
+  bands.saveState(store);
+  channels.saveState(store);
+  store.write(txChnl);
 }
 
+void LmicEu868::loadStateWithoutTimeData(RetrieveAbtract &store) {
+  Lmic::loadStateWithoutTimeData(store);
 
-size_t LmicEu868::loadStateWithoutTimeData(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
-  buffer += Lmic::loadStateWithoutTimeData(buffer);
-
-  buffer += bands.loadStateWithoutTimeData(buffer);
-  buffer += channels.loadState(buffer);
-  read_from_buffer(buffer, txChnl);
-
-  PRINT_DEBUG(1, F("Size loaded %i"), buffer - orig);
-  return buffer - orig;
+  bands.loadStateWithoutTimeData(store);
+  channels.loadState(store);
+  store.read(txChnl);
 }
 
-size_t LmicEu868::loadState(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
-  buffer += Lmic::loadState(buffer);
+void LmicEu868::loadState(RetrieveAbtract &store) {
+  Lmic::loadState(store);
 
-  buffer += bands.loadState(buffer);
-  buffer += channels.loadState(buffer);
-  read_from_buffer(buffer, txChnl);
-
-  PRINT_DEBUG(1, F("Size loaded %i"), buffer - orig);
-  return buffer - orig;
+  bands.loadState(store);
+  channels.loadState(store);
+  store.read(txChnl);
 }
 #endif
 

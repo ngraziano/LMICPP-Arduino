@@ -13,6 +13,7 @@
 #ifndef __bufferpack_h__
 #define __bufferpack_h__
 
+#include <cstring>
 #include <stdint.h>
 
 #include "enumflagsvalue.h"
@@ -36,85 +37,50 @@ uint16_t rmsbf2(const uint8_t *buf);
 //! Write 16-bit quantity into buffer in little endian byte order.
 void wlsbf2(uint8_t *buf, uint16_t value);
 
-inline void write_to_buffer(uint8_t *&buf, uint8_t val) { *(buf++) = val; }
+class StoringAbtract {
+public:
+  template <class T> void write(T const val) { store(&val, sizeof(T)); }
 
-inline void write_to_buffer(uint8_t *&buf, int8_t val) { *(buf++) = val; }
+protected:
+  virtual void store(void const *val, size_t size);
+};
 
-inline void write_to_buffer(uint8_t *&buf, bool val) { *(buf++) = val; }
+class RetrieveAbtract {
+public:
+  template <class T> void read(T &val) { retrieve(&val, sizeof(T)); }
 
-inline void write_to_buffer(uint8_t *&buf, uint16_t val) {
-  *(reinterpret_cast<uint16_t *>(buf)) = val;
-  buf += 2;
-}
+protected:
+  virtual void retrieve(void *val, size_t size);
+};
 
-inline void write_to_buffer(uint8_t *&buf, uint32_t val) {
-  *(reinterpret_cast<uint32_t *>(buf)) = val;
-  buf += 4;
-}
+class StoringBuffer final : public StoringAbtract {
+public:
+  StoringBuffer(uint8_t *const buffer) : original(buffer), current(buffer){};
+  size_t length() const;
 
-inline void write_to_buffer(uint8_t *&buf, int32_t val) {
-  *(reinterpret_cast<int32_t *>(buf)) = val;
-  buf += 4;
-}
+protected:
+  void store(void const *val, size_t size) override;
 
-inline void write_to_buffer(uint8_t *&buf, OsTime const &val) {
-  write_to_buffer(buf, val.tick());
-}
+private:
+  uint8_t *const original;
+  uint8_t *current;
+};
 
-inline void write_to_buffer(uint8_t *&buf, OsDeltaTime const &val) {
-  write_to_buffer(buf, val.tick());
-}
+class RetrieveBuffer final : public RetrieveAbtract {
+public:
+  RetrieveBuffer(uint8_t const *const buffer) : current(buffer){};
+  size_t length() const;
 
-template <typename T>
-inline void write_to_buffer(uint8_t *&buf, EnumFlagsValue<T> const &val) {
-  write_to_buffer(buf, val.value);
-}
+protected:
+  void retrieve(void *val, size_t size) override;
 
-inline void read_from_buffer(uint8_t const *&buf, uint8_t &val) {
-  val = *(buf++);
-}
-
-inline void read_from_buffer(uint8_t const *&buf, int8_t &val) {
-  val = *(buf++);
-}
-
-inline void read_from_buffer(uint8_t const *&buf, bool &val) { val = *(buf++); }
-
-inline void read_from_buffer(uint8_t const *&buf, uint16_t &val) {
-  val = *(reinterpret_cast<uint16_t const *>(buf));
-  buf += 2;
-}
-
-inline void read_from_buffer(uint8_t const *&buf, uint32_t &val) {
-  val = *(reinterpret_cast<uint32_t const *>(buf));
-  buf += 4;
-}
-
-inline void read_from_buffer(uint8_t const *&buf, int32_t &val) {
-  val = *(reinterpret_cast<int32_t const *>(buf));
-  buf += 4;
-}
-
-inline void read_from_buffer(uint8_t const *&buf, OsTime &val) {
-  int32_t tick;
-  read_from_buffer(buf, tick);
-  val = OsTime(tick);
-}
-
-inline void read_from_buffer(uint8_t const *&buf, OsDeltaTime &val) {
-  uint32_t tick;
-  read_from_buffer(buf, tick);
-  val = OsDeltaTime(tick);
-}
-
-template <typename T>
-inline void read_from_buffer(uint8_t const *&buf, EnumFlagsValue<T> &val) {
-  read_from_buffer(buf, val.value);
-}
+private:
+  uint8_t const *current;
+};
 
 /**
- * If v compares less than lo, returns lo; 
- * otherwise if hi compares less than v, returns hi; otherwise returns v. 
+ * If v compares less than lo, returns lo;
+ * otherwise if hi compares less than v, returns hi; otherwise returns v.
  */
 template <typename T>
 constexpr T const &clamp(T const &v, T const &lo, T const &hi) {

@@ -10,7 +10,6 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-
 #include "bufferpack.h"
 
 uint16_t rlsbf2(const uint8_t *const buf) {
@@ -52,4 +51,16 @@ void wmsbf4(uint8_t *const buf, uint32_t const v) {
   buf[2] = v >> 8;
   buf[1] = v >> 16;
   buf[0] = v >> 24;
+}
+
+size_t StoringBuffer::length() const { return current - original; }
+
+void StoringBuffer::store(void const *val, size_t const size) {
+  std::memcpy(current, val, size);
+  current += size;
+}
+
+void RetrieveBuffer::retrieve(void *val, size_t const size) {
+  std::memcpy(val, current, size);
+  current += size;
 }

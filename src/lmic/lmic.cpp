@@ -1245,104 +1245,94 @@ void Lmic::wait_end_tx() {
 void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
 #if defined(ENABLE_SAVE_RESTORE)
-size_t Lmic::saveState(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
-  buffer += Lmic::saveStateWithoutTimeData(buffer);
-  write_to_buffer(buffer, globalDutyAvail);
-  PRINT_DEBUG(2, F("Size save base %i"), buffer - orig);
-  return buffer - orig;
+void Lmic::saveState(StoringAbtract &store) const {
+  Lmic::saveStateWithoutTimeData(store);
+  store.write(globalDutyAvail);
 }
 
-size_t Lmic::saveStateWithoutTimeData(uint8_t *buffer) const {
-  uint8_t *orig = buffer;
+void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   // TODO radio RSSI,SNR
-  write_to_buffer(buffer, freq);
+  store.write(freq);
   // TODO check if we can avoid storing rxsyms
-  write_to_buffer(buffer, rxsyms);
-  write_to_buffer(buffer, dndr);
+  store.write(rxsyms);
+  store.write(dndr);
 
-  write_to_buffer(buffer, globalDutyRate);
-  
-  write_to_buffer(buffer, netid);
-  write_to_buffer(buffer, opmode);
-  write_to_buffer(buffer, upRepeat);
-  write_to_buffer(buffer, adrTxPow);
-  write_to_buffer(buffer, datarate);
-  write_to_buffer(buffer, devNonce);
-  write_to_buffer(buffer, devaddr);
-  write_to_buffer(buffer, seqnoDn);
-  write_to_buffer(buffer, seqnoUp);
-  write_to_buffer(buffer, dnConf);
-  write_to_buffer(buffer, adrAckReq);
-  write_to_buffer(buffer, rxDelay);
-  write_to_buffer(buffer, ladrAns);
-  write_to_buffer(buffer, devsAns);
-  write_to_buffer(buffer, rxTimingSetupAns);
+  store.write(globalDutyRate);
+
+  store.write(netid);
+  store.write(opmode);
+  store.write(upRepeat);
+  store.write(adrTxPow);
+  store.write(datarate);
+  store.write(devNonce);
+  store.write(devaddr);
+  store.write(seqnoDn);
+  store.write(seqnoUp);
+  store.write(dnConf);
+  store.write(adrAckReq);
+  store.write(rxDelay);
+  store.write(ladrAns);
+  store.write(devsAns);
+  store.write(rxTimingSetupAns);
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-  write_to_buffer(buffer, dutyCapAns);
+  store.write(dutyCapAns);
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init afet join.
-  write_to_buffer(buffer, snchAns);
+  store.write(snchAns);
 #endif
-  write_to_buffer(buffer, rx1DrOffset);
-  write_to_buffer(buffer, dn2Dr);
-  write_to_buffer(buffer, dn2Freq);
+  store.write(rx1DrOffset);
+  store.write(dn2Dr);
+  store.write(dn2Freq);
 #if !defined(DISABLE_MCMD_DN2P_SET)
-  write_to_buffer(buffer, dn2Ans);
+  store.write(dn2Ans);
 #endif
-  buffer += aes.saveState(buffer);
-  return buffer - orig;
+  aes.saveState(store);
 }
 
-size_t Lmic::loadState(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
-  buffer += Lmic::loadStateWithoutTimeData(buffer);
-  read_from_buffer(buffer, globalDutyAvail);
-  PRINT_DEBUG(2, F("Size load base %i"), buffer - orig);
-  return buffer - orig;
+void Lmic::loadState(RetrieveAbtract &store) {
+  Lmic::loadStateWithoutTimeData(store);
+  store.read(globalDutyAvail);
 }
 
-size_t Lmic::loadStateWithoutTimeData(uint8_t const *buffer) {
-  uint8_t const *orig = buffer;
+void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   // TODO radio RSSI,SNR
-  read_from_buffer(buffer, freq);
+  store.read(freq);
   // TODO check if we can avoid storing rxsyms
-  read_from_buffer(buffer, rxsyms);
-  read_from_buffer(buffer, dndr);
+  store.read(rxsyms);
+  store.read(dndr);
 
-  read_from_buffer(buffer, globalDutyRate);
-  
-  read_from_buffer(buffer, netid);
-  read_from_buffer(buffer, opmode);
-  read_from_buffer(buffer, upRepeat);
-  read_from_buffer(buffer, adrTxPow);
-  read_from_buffer(buffer, datarate);
-  read_from_buffer(buffer, devNonce);
-  read_from_buffer(buffer, devaddr);
-  read_from_buffer(buffer, seqnoDn);
-  read_from_buffer(buffer, seqnoUp);
-  read_from_buffer(buffer, dnConf);
-  read_from_buffer(buffer, adrAckReq);
-  read_from_buffer(buffer, rxDelay);
-  read_from_buffer(buffer, ladrAns);
-  read_from_buffer(buffer, devsAns);
-  read_from_buffer(buffer, rxTimingSetupAns);
+  store.read(globalDutyRate);
+
+  store.read(netid);
+  store.read(opmode);
+  store.read(upRepeat);
+  store.read(adrTxPow);
+  store.read(datarate);
+  store.read(devNonce);
+  store.read(devaddr);
+  store.read(seqnoDn);
+  store.read(seqnoUp);
+  store.read(dnConf);
+  store.read(adrAckReq);
+  store.read(rxDelay);
+  store.read(ladrAns);
+  store.read(devsAns);
+  store.read(rxTimingSetupAns);
 #if !defined(DISABLE_MCMD_DCAP_REQ)
-  read_from_buffer(buffer, dutyCapAns);
+  store.read(dutyCapAns);
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init afet join.
-  read_from_buffer(buffer, snchAns);
+  store.read(snchAns);
 #endif
-  read_from_buffer(buffer, rx1DrOffset);
-  read_from_buffer(buffer, dn2Dr);
-  read_from_buffer(buffer, dn2Freq);
+  store.read(rx1DrOffset);
+  store.read(dn2Dr);
+  store.read(dn2Freq);
 #if !defined(DISABLE_MCMD_DN2P_SET)
-  read_from_buffer(buffer, dn2Ans);
+  store.read(dn2Ans);
 #endif
-  buffer += aes.loadState(buffer);
-  return buffer - orig;
+  aes.loadState(store);
 }
 
 #endif

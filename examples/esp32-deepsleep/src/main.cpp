@@ -63,9 +63,10 @@ void onEvent(EventType ev) {
     }
     // we have transmit
     // save before going to deep sleep.
-    auto lbuf = LMIC.saveState(saveState);
+    auto store = StoringBuffer{saveState};
+    LMIC.saveState(store);
     saveState[300] = 51;
-    PRINT_DEBUG(1, F("State save len = %i"), lbuf);
+    PRINT_DEBUG(1, F("State save len = %i"), store.length());
     ESP.deepSleep(TX_INTERVAL.to_us());
     break;
   }
@@ -121,8 +122,9 @@ void setup() {
   // LMIC.setAntennaPowerAdjustment(-14);
 
   if (saveState[300] == 51) {
-    auto lbuf = LMIC.loadState(saveState);
-    PRINT_DEBUG(1, F("State load len = %i"), lbuf);
+    auto retrieve = RetrieveBuffer{saveState};
+    LMIC.loadState(retrieve);
+    // PRINT_DEBUG(1, F("State load len = %i"), lbuf);
     saveState[300] =0;
   }
   // Start job (sending automatically starts OTAA too)

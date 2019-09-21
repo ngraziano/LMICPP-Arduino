@@ -13,7 +13,6 @@
  * NO WARRANTY OF ANY KIND IS PROVIDED.
  *******************************************************************************/
 
-#include "../lmic/bufferpack.h"
 #include "../lmic/lorabase.h"
 #include "../lmic/lorawanpacket.h"
 #include "lmic_aes.h"
@@ -222,19 +221,16 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
   }
 }
 
-size_t Aes::saveState(uint8_t *buffer) const {
+void Aes::saveState(StoringAbtract &store) const {
   // Do not save devkey (should be fix value)
   // save 2 keys
-  std::copy(nwkSKey.begin(), nwkSKey.end(), buffer);
-  std::copy(appSKey.begin(), appSKey.end(), buffer + AesKey::key_size);
-  return 2 * AesKey::key_size;
+  store.write(nwkSKey);
+  store.write(appSKey);
 }
 
-size_t Aes::loadState(uint8_t const *buffer) {
+void Aes::loadState(RetrieveAbtract& store) {
   // Do not load devkey (should be fix valuse)
   // save 2 keys
-  std::copy(buffer, buffer + AesKey::key_size, nwkSKey.begin());
-  std::copy(buffer + AesKey::key_size, buffer + 2 * AesKey::key_size,
-            appSKey.begin());
-  return 2 * AesKey::key_size;
+  store.read(nwkSKey);
+  store.read(appSKey);
 }

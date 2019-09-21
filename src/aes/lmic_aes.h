@@ -4,6 +4,8 @@
 #include "../lmic/config.h"
 #include "../lmic/lorabase.h"
 #include"aes_encrypt.h"
+#include "../lmic/bufferpack.h"
+
 #include <stdint.h>
 
 // ======================================================================
@@ -44,8 +46,8 @@ public:
   void appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t *pdu,
                  uint8_t len) const;
   void appendMic0(uint8_t *pdu, uint8_t len) const;
-  size_t saveState(uint8_t* buffer) const;
-  size_t loadState(uint8_t const* buffer);
+  void saveState(StoringAbtract& buffer) const;
+  void loadState(RetrieveAbtract& store);
 
 };
 

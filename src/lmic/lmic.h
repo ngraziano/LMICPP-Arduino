@@ -356,10 +356,10 @@ protected:
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-  virtual size_t saveState(uint8_t *buffer) const;
-  virtual size_t saveStateWithoutTimeData(uint8_t *buffer) const;
-  virtual size_t loadState(uint8_t const *buffer);
-  virtual size_t loadStateWithoutTimeData(uint8_t const *buffer);
+  virtual void saveState(StoringAbtract &store) const;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const;
+  virtual void loadState(RetrieveAbtract &strore);
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &strore);
 #endif
 
   rps_t updr2rps(dr_t dr) const;
