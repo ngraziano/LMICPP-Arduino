@@ -158,9 +158,6 @@ void Lmic::stateJustJoined() {
 #endif
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
-  rx1DrOffset = 0;
-  dn2Dr = defaultRX2Dr();
-  dn2Freq = defaultRX2Freq();
 }
 
 void Lmic::parse_ladr(const uint8_t *const opts) {
@@ -906,8 +903,6 @@ bool Lmic::startJoining() {
         .set(OpState::JOINING);
     // Setup state
     rejoinCnt = txCnt = 0;
-    // remove rx 1 offset
-    rx1DrOffset = 0;
 
     initJoinLoop();
 
@@ -1051,6 +1046,7 @@ void Lmic::reset() {
   devaddr = 0;
   devNonce = rand.uint16();
   opmode.reset();
+  rx1DrOffset = 0;
   // we need this for 2nd DN window of join accept
   dn2Dr = defaultRX2Dr();
   dn2Freq = defaultRX2Freq();

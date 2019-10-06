@@ -148,36 +148,36 @@ public:
   explicit LmicEu868(Radio &radio, OsScheduler &scheduler);
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual void saveState(StoringAbtract &store) const override;
-  virtual void saveStateWithoutTimeData(StoringAbtract &store) const override;
-  virtual void loadState(RetrieveAbtract &store) override;
-  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) override;
+  virtual void saveState(StoringAbtract &store) const final;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
+  virtual void loadState(RetrieveAbtract &store) final;
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
 #endif
 
 protected:
-  uint8_t getRawRps(dr_t dr) const override;
-  int8_t pow2dBm(uint8_t powerIndex) const override;
-  OsDeltaTime getDwn2SafetyZone() const override;
-  OsDeltaTime dr2hsym(dr_t dr) const override;
-  uint32_t convFreq(const uint8_t *ptr) const override;
-  bool validRx1DrOffset(uint8_t drOffset) const override;
+  uint8_t getRawRps(dr_t dr) const final;
+  int8_t pow2dBm(uint8_t powerIndex) const final;
+  OsDeltaTime getDwn2SafetyZone() const final;
+  OsDeltaTime dr2hsym(dr_t dr) const final;
+  uint32_t convFreq(const uint8_t *ptr) const final;
+  bool validRx1DrOffset(uint8_t drOffset) const final;
 
-  void initDefaultChannels() override;
+  void initDefaultChannels() final;
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override;
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
 
-  void disableChannel(uint8_t channel) override;
-  void handleCFList(const uint8_t *ptr) override;
+  void disableChannel(uint8_t channel) final;
+  void handleCFList(const uint8_t *ptr) final;
 
-  bool validMapChannels(uint8_t chpage, uint16_t chmap) override;
-  void mapChannels(uint8_t chpage, uint16_t chmap) override;
-  int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) override;
-  OsTime nextTx(OsTime now) override;
-  void setRx1Params() override;
-  void initJoinLoop() override;
-  bool nextJoinState() override;
-  dr_t defaultRX2Dr() const override;
-  uint32_t defaultRX2Freq() const override;
+  bool validMapChannels(uint8_t chpage, uint16_t chmap) final;
+  void mapChannels(uint8_t chpage, uint16_t chmap) final;
+  int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) final;
+  OsTime nextTx(OsTime now) final;
+  void setRx1Params() final;
+  void initJoinLoop() final;
+  bool nextJoinState() final;
+  dr_t defaultRX2Dr() const final;
+  uint32_t defaultRX2Freq() const final;
 
 private:
   BandsEu868 bands;

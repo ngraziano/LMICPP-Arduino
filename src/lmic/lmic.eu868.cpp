@@ -408,6 +408,7 @@ bool LmicEu868::nextJoinState() {
 }
 
 dr_t LmicEu868::defaultRX2Dr() const { return static_cast<dr_t>(DR_DNW2); }
+
 uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 
 #if defined(ENABLE_SAVE_RESTORE)
