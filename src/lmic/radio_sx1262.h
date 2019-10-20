@@ -25,18 +25,18 @@ private:
 public:
   explicit RadioSx1262(lmic_pinmap const &pins,
                        ImageCalibrationBand calibration_band);
-  void init(void) override;
-  void rst() const override;
+  void init() final;
+  void rst() const final;
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
-          uint8_t frameLength) override;
-  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) override;
+          uint8_t frameLength) final;
+  void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) final;
 
-  void init_random(uint8_t randbuf[16]) override;
-  uint8_t handle_end_rx(uint8_t *framePtr) override;
-  void handle_end_tx() const override;
-  bool io_check() const override;
+  void init_random(uint8_t randbuf[16]) final;
+  uint8_t handle_end_rx(uint8_t *framePtr) final;
+  void handle_end_tx() const final;
+  bool io_check() const final;
 
-  uint8_t rssi() const override;
+  uint8_t rssi() const final;
 
 private:
   void set_sleep() const;
