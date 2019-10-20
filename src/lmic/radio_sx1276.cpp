@@ -170,17 +170,13 @@ void RadioSx1276::opmode(uint8_t const mode) const {
   hal.write_reg(RegOpMode, (hal.read_reg(RegOpMode) & ~OPMODE_MASK) | mode);
 }
 
-void RadioSx1276::opmodeLora() const {
-  uint8_t u = OPMODE_LORA;
-  hal.write_reg(RegOpMode, u);
-}
+void RadioSx1276::opmodeLora() const { hal.write_reg(RegOpMode, OPMODE_LORA); }
 
 // configure LoRa modem (cfg1, cfg2)
 void RadioSx1276::configLoraModem(rps_t rps) {
-  sf_t const sf = rps.sf;
+  auto const sf = rps.sf;
 
-  uint8_t mc1 = bw_to_mc1(rps.getBw());
-  mc1 |= cr_to_mc1(rps.getCr());
+  auto const mc1 = bw_to_mc1(rps.getBw()) | cr_to_mc1(rps.getCr());
   // set ModemConfig1
   hal.write_reg(LORARegModemConfig1, mc1);
 
