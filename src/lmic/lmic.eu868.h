@@ -30,7 +30,7 @@ public:
   constexpr bool isDrActive(dr_t datarate) const {
     return (drMap & (1 << datarate)) != 0;
   };
-  ChannelDetail() = default;
+  constexpr ChannelDetail() = default;
   constexpr ChannelDetail(uint32_t raw, uint16_t drMap)
       : raw(raw), drMap(drMap){};
   constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t drMap)

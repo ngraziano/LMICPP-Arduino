@@ -16,7 +16,7 @@
 
 OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}
 
-OsJob::OsJob(OsScheduler &scheduler) : OsJobBase(scheduler){};
+OsJob::OsJob(OsScheduler &scheduler) : OsJobBase(scheduler) {}
 
 void OsJob::setCallbackRunnable(osjobcb_t cb) {
   setCallbackFuture(cb);
@@ -71,18 +71,14 @@ void OsJob::call() const { func(); }
 
 OsDeltaTime OsScheduler::runloopOnce() {
 
-  OsJobBase const *j = nullptr;
-
-  if (scheduledjobs && scheduledjobs->deadline <= hal_ticks()) {
+  OsJobBase const * const nextJob = scheduledjobs;
+  if (nextJob && nextJob->deadline <= hal_ticks()) {
     // timed jobs runnable
-    j = scheduledjobs;
-    scheduledjobs = j->next;
-  }
-
-  if (j) { // run job callback
-    PRINT_DEBUG(2, F("Running job %p, deadline %" PRIu32 ""), j,
-                j->deadline.tick());
-    j->call();
+    scheduledjobs = nextJob->next;
+    // run job callback
+    PRINT_DEBUG(2, F("Running job %p, deadline %" PRIu32 ""), nextJob,
+            nextJob->deadline.tick());
+    nextJob->call();
   }
 
   if (scheduledjobs) {

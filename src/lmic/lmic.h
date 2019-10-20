@@ -88,19 +88,19 @@ using eventCallback_t = void (*)(EventType);
 using keyCallback_t = void (*)(uint8_t *);
 
 // This value represents 100% error in LMIC.clockError
-const uint8_t MAX_CLOCK_ERROR = 255;
+constexpr uint8_t MAX_CLOCK_ERROR = 255;
 
-const int8_t ADR_ACK_DELAY = 32;
-const int8_t ADR_ACK_LIMIT = 64;
+constexpr int8_t ADR_ACK_DELAY = 32;
+constexpr int8_t ADR_ACK_LIMIT = 64;
 
 // continue with this after reported dead link
-const int8_t LINK_CHECK_CONT = 0;
+constexpr int8_t LINK_CHECK_CONT = 0;
 // after this UP frames and no response from NWK assume link is dead
-const int8_t LINK_CHECK_DEAD = ADR_ACK_DELAY;
+constexpr int8_t LINK_CHECK_DEAD = ADR_ACK_DELAY;
 // UP frame count until we ask for ADRACKReq
-const int8_t LINK_CHECK_INIT = -ADR_ACK_LIMIT;
+constexpr int8_t LINK_CHECK_INIT = -ADR_ACK_LIMIT;
 // link check disabled
-const int8_t LINK_CHECK_OFF = -128;
+constexpr int8_t LINK_CHECK_OFF = -128;
 
 class Lmic {
 public:

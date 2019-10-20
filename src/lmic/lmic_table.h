@@ -46,9 +46,9 @@
 // index is a constant so gcc can optimize it away;
 #define TABLE_GETTER(postfix, type, pgm_type)                                  \
   inline type table_get##postfix(const type *table, size_t index) {            \
-    if (__builtin_constant_p(table[index]))                                    \
-      return table[index];                                                     \
-    return pgm_read_##pgm_type(&table[index]);                                 \
+    return __builtin_constant_p(table[index])                                  \
+               ? table[index]                                                  \
+               : pgm_read_##pgm_type(&table[index]);                           \
   }
 
 TABLE_GETTER(_u1, uint8_t, byte)
@@ -56,7 +56,6 @@ TABLE_GETTER(_u2, uint16_t, word)
 TABLE_GETTER(_s1, int8_t, byte)
 TABLE_GETTER(_u4, uint32_t, dword)
 TABLE_GETTER(_s4, int32_t, dword)
-
 
 // For AVR, store constants in PROGMEM, saving on RAM usage
 #define CONST_TABLE(type, name) constexpr type PROGMEM RESOLVE_TABLE(name)
