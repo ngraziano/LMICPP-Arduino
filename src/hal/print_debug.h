@@ -6,7 +6,7 @@
 #include "stdio.h"
 
 template <typename... T>
-void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
+void PRINT_DEBUG(int X, const __FlashStringHelper *str, T const... div) {
   if (debugLevel >= X) {
 #ifdef ARDUINO_ARCH_ESP32
     // on ESP the MACRO PRIu32 cause a problem with syntax below
@@ -19,7 +19,7 @@ void PRINT_DEBUG(int X, const __FlashStringHelper *str, T... div) {
     // printf_P(PSTR("\n"));
     printf("\n");
   }
-};
+}
 
 constexpr bool IS_DEBUG_ENABLE(int x) { return debugLevel >= x; }
 
