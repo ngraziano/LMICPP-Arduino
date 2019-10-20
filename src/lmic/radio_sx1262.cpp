@@ -82,6 +82,8 @@ template <int parameter_length> struct Sx1262Command {
   constexpr uint8_t const *end() const { return parameter + parameter_length; }
 };
 
+template <> struct Sx1262Command<0> { RadioCommand const command; };
+
 void send_command(HalIo const &hal, RadioCommand cmd,
                   uint8_t const *begin_parameter,
                   uint8_t const *end_parameter) {
@@ -100,6 +102,15 @@ template <int parameter_length>
 void send_command(HalIo const &hal,
                   Sx1262Command<parameter_length> const &cmd) {
   send_command(hal, cmd.command, cmd.begin(), cmd.end());
+}
+
+template <>
+void send_command<0>(HalIo const &hal, Sx1262Command<0> const &cmd) {
+  PRINT_DEBUG(2, F("Cmd> %x"), cmd);
+  hal.beginspi();
+  wait_ready(hal);
+  hal.spi(cmd.command);
+  hal.endspi();
 }
 
 void read_command(HalIo const &hal, RadioCommand cmd, uint8_t *begin_parameter,
@@ -213,6 +224,13 @@ void send_command(HalIo const &hal, Sx1262Command_P<length> const &cmd_P) {
   send_command(hal, cmd);
 }
 
+template <>
+void send_command<0>(HalIo const &hal, Sx1262Command_P<0> const &cmd_P) {
+  Sx1262Command<0> cmd{RadioCommand::ResetStats};
+  memcpy_P(&cmd, &cmd_P.item, sizeof(cmd));
+  send_command(hal, cmd);
+}
+
 namespace cmds {
 // Commands with parameters.
 struct SetLoraSymbNumCommand : Sx1262Command<1> {
@@ -239,7 +257,7 @@ constexpr Sx1262Command_P<3> set_rx_continious PROGMEM =
  * Command to change to FS mode
  */
 constexpr Sx1262Command_P<0> set_fs PROGMEM =
-    Sx1262Command<0>{RadioCommand::SetFs,{}};
+    Sx1262Command<0>{RadioCommand::SetFs};
 
 /**
  * Command to start RX (timeout 10s)
