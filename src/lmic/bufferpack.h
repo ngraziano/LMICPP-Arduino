@@ -59,7 +59,7 @@ public:
   size_t length() const;
 
 protected:
-  void store(void const *val, size_t size) override;
+  void store(void const *val, size_t size) final;
 
 private:
   uint8_t *const original;
@@ -72,7 +72,7 @@ public:
   size_t length() const;
 
 protected:
-  void retrieve(void *val, size_t size) override;
+  void retrieve(void *val, size_t size) final;
 
 private:
   uint8_t const *current;

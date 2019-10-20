@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-template <typename T> class EnumFlagsValue {
+template <typename T> class EnumFlagsValue final {
 public:
   uint8_t value;
 
