@@ -23,7 +23,7 @@ struct RegSet {
   const uint8_t val;
 
   constexpr uint16_t raw() const { return reg << 8 | val; };
-  constexpr RegSet(uint8_t reg, uint8_t val) : reg(reg), val(val){};
+  constexpr RegSet(uint8_t areg, uint8_t aval) : reg(areg), val(aval){};
   constexpr RegSet(uint16_t raw) : reg(raw >> 8), val(raw & 0xFF){};
 };
 

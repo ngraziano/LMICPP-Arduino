@@ -36,9 +36,9 @@ struct rps_t {
     return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0));
   }
 
-  constexpr rps_t(sf_t sf, BandWidth bw, CodingRate cr, bool nocrc)
-      : sf(sf), bwRaw(static_cast<uint8_t>(bw)),
-        crRaw(static_cast<uint8_t>(cr)), nocrc(nocrc){};
+  constexpr rps_t(sf_t asf, BandWidth bw, CodingRate cr, bool anocrc)
+      : sf(asf), bwRaw(static_cast<uint8_t>(bw)),
+        crRaw(static_cast<uint8_t>(cr)), nocrc(anocrc){};
   explicit constexpr rps_t(uint8_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
         crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7))

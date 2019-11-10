@@ -153,21 +153,21 @@ void LmicUs915::initDefaultChannels() {
 }
 
 uint32_t LmicUs915::convFreq(const uint8_t *ptr) const {
-  uint32_t freq = (rlsbf4(ptr - 1) >> 8) * 100;
-  if (freq < US915_FREQ_MIN || freq > US915_FREQ_MAX)
-    freq = 0;
-  return freq;
+  uint32_t newfreq = (rlsbf4(ptr - 1) >> 8) * 100;
+  if (newfreq < US915_FREQ_MIN || newfreq > US915_FREQ_MAX)
+    newfreq = 0;
+  return newfreq;
 }
 
 void LmicUs915::handleCFList(const uint8_t *) {
   // just ignore cflist
 }
 
-bool LmicUs915::setupChannel(uint8_t chidx, uint32_t freq, uint16_t drmap) {
+bool LmicUs915::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
   if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)
     return false; // channels 0..71 are hardwired
   chidx -= 72;
-  xchFreq[chidx] = freq;
+  xchFreq[chidx] = newfreq;
   xchDrMap[chidx] = drmap == 0 ? dr_range_map(DR_SF10, DR_SF8C) : drmap;
   channelMap[chidx >> 4] |= (1 << (chidx & 0xF));
   return true;
@@ -322,5 +322,5 @@ bool LmicUs915::nextJoinState() {
 dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
 uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
 
-LmicUs915::LmicUs915(Radio &radio, OsScheduler &scheduler)
-    : Lmic(radio, scheduler) {}
+LmicUs915::LmicUs915(Radio &aradio, OsScheduler &ascheduler)
+    : Lmic(aradio, ascheduler) {}

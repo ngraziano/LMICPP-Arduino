@@ -14,9 +14,9 @@
 #include "lmic.h"
 #include <stdbool.h>
 
-OsJobBase::OsJobBase(OsScheduler &scheduler) : scheduler(scheduler) {}
+OsJobBase::OsJobBase(OsScheduler &ascheduler) : scheduler(ascheduler) {}
 
-OsJob::OsJob(OsScheduler &scheduler) : OsJobBase(scheduler) {}
+OsJob::OsJob(OsScheduler &ascheduler) : OsJobBase(ascheduler) {}
 
 void OsJob::setCallbackRunnable(osjobcb_t cb) {
   setCallbackFuture(cb);

@@ -16,7 +16,7 @@
 #include "radio.h"
 #include "../aes/lmic_aes.h"
 
-LmicRand::LmicRand(Aes &aes) : aes(aes) {}
+LmicRand::LmicRand(Aes &anaes) : aes(anaes) {}
 
 void LmicRand::init(Radio &radio) {
   radio.init_random(randbuf);

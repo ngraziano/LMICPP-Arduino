@@ -31,10 +31,10 @@ public:
     return (drMap & (1 << datarate)) != 0;
   };
   constexpr ChannelDetail() = default;
-  constexpr ChannelDetail(uint32_t raw, uint16_t drMap)
-      : raw(raw), drMap(drMap){};
-  constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t drMap)
-      : raw((frequency & ~(uint32_t)3) | band), drMap(drMap){};
+  constexpr ChannelDetail(uint32_t araw, uint16_t adrMap)
+      : raw(araw), drMap(adrMap){};
+  constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t adrMap)
+      : raw((frequency & ~(uint32_t)3) | band), drMap(adrMap){};
 
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {

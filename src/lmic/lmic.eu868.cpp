@@ -445,5 +445,5 @@ void LmicEu868::loadState(RetrieveAbtract &store) {
 }
 #endif
 
-LmicEu868::LmicEu868(Radio &radio, OsScheduler &scheduler)
-    : Lmic(radio, scheduler) {}
+LmicEu868::LmicEu868(Radio &aradio, OsScheduler &ascheduler)
+    : Lmic(aradio, ascheduler) {}
