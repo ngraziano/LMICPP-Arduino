@@ -152,8 +152,8 @@ void read_register(HalIo const &hal, Sx1262Register<data_length> &reg) {
   wait_ready(hal);
   hal.spi(RadioCommand::ReadRegister);
   // send adress
-  hal.spi(reg.address >> 8);
-  hal.spi(reg.address & 0xff);
+  hal.spi(static_cast<uint8_t>(reg.address >> 8));
+  hal.spi(static_cast<uint8_t>(reg.address & 0xff));
   // send initial NOP
   hal.spi(0x00);
 
@@ -171,8 +171,8 @@ void write_register(HalIo const &hal, Sx1262Register<data_length> const &reg) {
   wait_ready(hal);
   hal.spi(RadioCommand::WriteRegister);
   // send adress
-  hal.spi(reg.address >> 8);
-  hal.spi(reg.address & 0xff);
+  hal.spi(static_cast<uint8_t>(reg.address >> 8));
+  hal.spi(static_cast<uint8_t>(reg.address & 0xff));
   // Write data
   std::for_each(reg.begin(), reg.end(), [&hal](uint8_t val) { hal.spi(val); });
   hal.endspi();
@@ -638,8 +638,8 @@ void RadioSx1262::clear_all_irq() const {
 
 void RadioSx1262::set_dio1_irq_params(uint16_t mask) const {
 
-  uint8_t maskH = mask >> 8;
-  uint8_t maskL = mask & 0xFF;
+  auto const maskH = static_cast<uint8_t>(mask >> 8);
+  auto maskL = static_cast<uint8_t>(mask & 0xFF);
 
   send_command(hal, Sx1262Command<8>{RadioCommand::SetDioIrqParams,
                                      {maskH, maskL,
@@ -677,8 +677,10 @@ void RadioSx1262::set_lora_symb_num_timeout(uint8_t rxsyms) const {
 }
 
 void RadioSx1262::calibrate_image() const {
-  uint8_t const param1 = (image_calibration_params >> 8) & 0xff;
-  uint8_t const param2 = (image_calibration_params >> 0) & 0xff;
+  auto const param1 =
+      static_cast<uint8_t>((image_calibration_params >> 8) & 0xff);
+  auto const param2 =
+      static_cast<uint8_t>((image_calibration_params >> 0) & 0xff);
   send_command(
       hal, Sx1262Command<2>{RadioCommand::CalibrateImage, {param1, param2}});
 }
