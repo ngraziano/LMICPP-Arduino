@@ -132,12 +132,12 @@ void BandsEu868::print_state() const {
   }
 }
 
-int8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
+uint8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
                                         uint8_t const bmap) const {
   OsTime mintime = max_delay;
-  int8_t band = -1;
+  int8_t band = MAX_BAND;
 
-  for (int8_t band_index = 0; band_index < MAX_BAND; band_index++) {
+  for (uint8_t band_index = 0; band_index < MAX_BAND; band_index++) {
     if ((bmap & (1 << band_index)) && mintime > avail[band_index]) {
       PRINT_DEBUG(2,
                   F("Considering band %d, which is available at %" PRIu32 ""),
@@ -251,7 +251,7 @@ void LmicEu868::handleCFList(const uint8_t *ptr) {
 
   for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
     uint32_t newfreq = convFreq(ptr);
-    if (newfreq) {
+    if (newfreq != 0) {
       setupChannel(chidx, newfreq, 0);
 
       PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""), chidx,
@@ -282,8 +282,9 @@ void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   }
 
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
-    if ((chMask & (1 << chnl)) != 0)
+    if ((chMask & (1 << chnl)) != 0) {
       channels.enable(chnl);
+    }
   }
 }
 
@@ -314,10 +315,10 @@ OsTime LmicEu868::nextTx(OsTime const now) {
   bands.print_state();
 
   do {
-    int8_t band = bands.getNextAvailableBand(
+    uint8_t band = bands.getNextAvailableBand(
         now + /*8h*/ OsDeltaTime::from_sec(28800), bmap);
 
-    if (band < 0) {
+    if (band >= BandsEu868::MAX_BAND) {
       // Try to handle a strange bug wich appen afert from time to time
       // Reset all bands value;
       PRINT_DEBUG(2, F("Error No band available."));

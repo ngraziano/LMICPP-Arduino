@@ -35,6 +35,6 @@ uint8_t LmicRand::uint8() {
 }
 
 //! Get random number (default impl for uint16_t).
-uint16_t LmicRand::uint16() { return ((uint16_t)((uint8() << 8) | uint8())); }
+uint16_t LmicRand::uint16() { return ((uint16_t)((uint8() << 8U) | uint8())); }
 
 #endif

@@ -109,7 +109,7 @@ public:
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration);
   void print_state() const;
-  int8_t getNextAvailableBand(OsTime const max_delay, uint8_t bmap) const;
+  uint8_t getNextAvailableBand(OsTime const max_delay, uint8_t bmap) const;
   OsTime getAvailability(uint8_t band) { return avail[band]; };
   uint8_t getLastChannel(uint8_t band) { return lastchnl[band]; };
   void setLastChannel(uint8_t band, uint8_t lastChannel) {

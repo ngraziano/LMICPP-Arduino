@@ -1154,7 +1154,7 @@ rps_t Lmic::updr2rps(dr_t const dr) const { return rps_t(getRawRps(dr)); }
 
 rps_t Lmic::dndr2rps(dr_t const dr) const {
   auto val = updr2rps(dr);
-  val.nocrc = 1;
+  val.nocrc = true;
   return val;
 }
 
