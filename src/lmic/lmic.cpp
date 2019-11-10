@@ -1119,10 +1119,10 @@ void Lmic::tryRejoin(void) {
 //! \param nwkKey  the 16 byte network session key used for message integrity.
 //! \param artKey  the 16 byte application router session key used for message
 //! confidentiality.
-void Lmic::setSession(uint32_t const netid, devaddr_t const devaddr,
+void Lmic::setSession(uint32_t const newnetid, devaddr_t const newdevaddr,
                       AesKey const &nwkKey, AesKey const &artKey) {
-  this->netid = netid;
-  this->devaddr = devaddr;
+  netid = newnetid;
+  devaddr = newdevaddr;
   aes.setNetworkSessionKey(nwkKey);
   aes.setApplicationSessionKey(artKey);
 
@@ -1333,5 +1333,5 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
 #endif
 
-Lmic::Lmic(Radio &radio, OsScheduler &scheduler)
-    : radio(radio), osjob(*this, scheduler), rand(aes) {}
+Lmic::Lmic(Radio &aradio, OsScheduler &ascheduler)
+    : radio(aradio), osjob(*this, ascheduler), rand(aes) {}
