@@ -86,7 +86,7 @@ protected:
   virtual void call() const = 0;
 
 public:
-  OsJobBase(OsScheduler &scheduler);
+  explicit OsJobBase(OsScheduler &scheduler);
 
   void setRunnable();
   void clearCallback();
@@ -100,7 +100,7 @@ protected:
   void call() const override;
 
 public:
-  OsJob(OsScheduler &scheduler);
+  explicit OsJob(OsScheduler &scheduler);
   void setCallbackFuture(osjobcb_t cb) { func = cb; };
   void setCallbackRunnable(osjobcb_t cb);
   void setTimedCallback(OsTime time, osjobcb_t cb);

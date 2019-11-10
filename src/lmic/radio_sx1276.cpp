@@ -144,14 +144,14 @@ constexpr uint8_t MAP_DIO2_LORA_NOP = 0x0C;    // ----11--
 
 constexpr uint8_t LNA_RX_GAIN = (0x20 | 0x03);
 
-constexpr uint8_t crForLog(rps_t const rps) {
+constexpr uint8_t crForLog(rps_t const & rps) {
   return (5 - static_cast<uint8_t>(CodingRate::CR_4_5) +
           static_cast<uint8_t>(rps.getCr()));
 }
 
 CONST_TABLE(uint16_t, BW_ENUM_TO_VAL)[] = {125, 250, 500, 0};
 
-uint16_t bwForLog(rps_t const rps) {
+uint16_t bwForLog(rps_t const & rps) {
   auto index = static_cast<uint8_t>(rps.getBw());
   return TABLE_GET_U2(BW_ENUM_TO_VAL, index);
 }

@@ -55,7 +55,7 @@ protected:
 
 class StoringBuffer final : public StoringAbtract {
 public:
-  StoringBuffer(uint8_t *const buffer) : original(buffer), current(buffer){};
+  explicit StoringBuffer(uint8_t *const buffer) : original(buffer), current(buffer){};
   size_t length() const;
 
 protected:
@@ -68,7 +68,7 @@ private:
 
 class RetrieveBuffer final : public RetrieveAbtract {
 public:
-  RetrieveBuffer(uint8_t const *const buffer) : current(buffer){};
+  explicit RetrieveBuffer(uint8_t const *const buffer) : current(buffer){};
   size_t length() const;
 
 protected:

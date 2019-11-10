@@ -212,7 +212,7 @@ constexpr uint8_t MCMD_LADR_CHP_125ON = 0x06;
 //  ditto
 constexpr uint8_t MCMD_LADR_CHP_125OFF = 0x07;
 
-bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
+bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const ) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF)
     return true;
   if (chMaskCntl < 5)
