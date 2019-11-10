@@ -13,7 +13,7 @@
 
 // void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
 
-const uint8_t AES_BLCK_SIZE = 16;
+constexpr uint8_t AES_BLCK_SIZE = 16;
 
 class Aes {
 private:
