@@ -981,6 +981,7 @@ void Lmic::engineUpdate() {
     // Cannot yet TX
     //  wait for the time to TX
     osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
+    txend = txbeg;
     return;
   }
 
