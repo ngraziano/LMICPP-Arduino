@@ -96,10 +96,9 @@ constexpr uint32_t MAX_BAND2_CENTI = 870000000;
 
 } // namespace
 
-void BandsEu868::init(LmicRand &rand, uint8_t maxchannels) {
+void BandsEu868::init() {
   auto now = os_getTime();
   for (uint8_t i = 0; i < MAX_BAND; i++) {
-    lastchnl[i] = rand.uint8() % maxchannels;
     avail[i] = now;
   }
 }
@@ -125,25 +124,16 @@ void BandsEu868::updateBandAvailability(uint8_t const band,
 void BandsEu868::print_state() const {
 
   for (uint8_t band_index = 0; band_index < MAX_BAND; band_index++) {
-    PRINT_DEBUG(2, F("Band %d, available at %" PRIu32 " and last channel %d"),
-                band_index, avail[band_index].tick(), lastchnl[band_index]);
+    PRINT_DEBUG(2, F("Band %d, available at %" PRIu32 "."), band_index,
+                avail[band_index].tick());
   }
 }
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-void BandsEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.write(lastchnl[i]);
-  }
-}
-
 void BandsEu868::saveState(StoringAbtract &store) const {
   for (int i = 0; i < MAX_BAND; i++) {
     store.write(avail[i]);
-  }
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.write(lastchnl[i]);
   }
 }
 
@@ -151,16 +141,8 @@ void BandsEu868::loadState(RetrieveAbtract &store) {
   for (int i = 0; i < MAX_BAND; i++) {
     store.read(avail[i]);
   }
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.read(lastchnl[i]);
-  }
 }
 
-void BandsEu868::loadStateWithoutTimeData(RetrieveAbtract &store) {
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.read(lastchnl[i]);
-  }
-}
 #endif
 
 uint8_t LmicEu868::getRawRps(dr_t const dr) const {
@@ -193,7 +175,7 @@ void LmicEu868::initDefaultChannels() {
   setupChannel(1, EU868_F2, 0);
   setupChannel(2, EU868_F3, 0);
 
-  bands.init(rand, MAX_CHANNELS);
+  bands.init();
 }
 
 bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
@@ -397,7 +379,6 @@ uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 void LmicEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
   Lmic::saveStateWithoutTimeData(store);
 
-  bands.saveStateWithoutTimeData(store);
   channels.saveState(store);
   store.write(txChnl);
 }
@@ -413,7 +394,6 @@ void LmicEu868::saveState(StoringAbtract &store) const {
 void LmicEu868::loadStateWithoutTimeData(RetrieveAbtract &store) {
   Lmic::loadStateWithoutTimeData(store);
 
-  bands.loadStateWithoutTimeData(store);
   channels.loadState(store);
   store.read(txChnl);
 }

@@ -105,30 +105,22 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
 
 class BandsEu868 {
 public:
-  void init(LmicRand &rand, uint8_t maxchannels);
+  void init();
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration);
   void print_state() const;
   OsTime getAvailability(uint8_t band) { return avail[band]; };
-  uint8_t getLastChannel(uint8_t band) { return lastchnl[band]; };
-  void setLastChannel(uint8_t band, uint8_t lastChannel) {
-    lastchnl[band] = lastChannel;
-  };
 
   static constexpr uint8_t MAX_BAND = 3;
-  static constexpr uint8_t FULL_MAP = (1 << MAX_BAND) - 1;
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-  void saveStateWithoutTimeData(StoringAbtract &store) const;
   void saveState(StoringAbtract &store) const;
-  void loadStateWithoutTimeData(RetrieveAbtract &store);
   void loadState(RetrieveAbtract &store);
 #endif
 
 private:
   OsTime avail[MAX_BAND];
-  uint8_t lastchnl[MAX_BAND];
 };
 
 struct band_t {
