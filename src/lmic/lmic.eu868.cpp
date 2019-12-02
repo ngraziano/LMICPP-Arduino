@@ -130,23 +130,6 @@ void BandsEu868::print_state() const {
   }
 }
 
-uint8_t BandsEu868::getNextAvailableBand(OsTime const max_delay,
-                                         uint8_t const bmap) const {
-  OsTime mintime = max_delay;
-  int8_t band = MAX_BAND;
-
-  for (uint8_t band_index = 0; band_index < MAX_BAND; band_index++) {
-    if ((bmap & (1 << band_index)) && mintime > avail[band_index]) {
-      PRINT_DEBUG(2,
-                  F("Considering band %d, which is available at %" PRIu32 ""),
-                  band_index, avail[band_index].tick());
-      band = band_index;
-      mintime = avail[band_index];
-    }
-  }
-  return band;
-}
-
 #if defined(ENABLE_SAVE_RESTORE)
 
 void BandsEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
@@ -282,6 +265,8 @@ void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   for (uint8_t chnl = 0; chnl < MAX_CHANNELS; chnl++) {
     if ((chMask & (1 << chnl)) != 0) {
       channels.enable(chnl);
+    } else {
+      channels.disable(chnl);
     }
   }
 }
@@ -308,48 +293,46 @@ uint8_t LmicEu868::getBand(uint8_t const channel) const {
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
-  uint8_t bmap = BandsEu868::FULL_MAP;
 
-  bands.print_state();
+  bool channelFound = false;
+  OsTime nextTransmitTime;
+  uint8_t nextChannel = txChnl + rand.uint8();
+  nextChannel = nextChannel % MAX_CHANNELS;
 
-  do {
-    uint8_t band = bands.getNextAvailableBand(
-        now + /*8h*/ OsDeltaTime::from_sec(28800), bmap);
-
-    if (band >= BandsEu868::MAX_BAND) {
-      // Try to handle a strange bug wich appen afert from time to time
-      // Reset all bands value;
-      PRINT_DEBUG(2, F("Error No band available."));
-      bands.init(rand, MAX_CHANNELS);
-      // force band 0.
-      band = 0;
+  for (uint8_t channelIndex = 0; channelIndex < MAX_CHANNELS; channelIndex++) {
+    if (nextChannel >= MAX_CHANNELS) {
+      nextChannel = 0;
     }
 
-    // Find next channel in given band
-    uint8_t chnl = bands.getLastChannel(band);
-    for (uint8_t ci = 0; ci < MAX_CHANNELS; ci++) {
-      chnl++;
-      if (chnl >= MAX_CHANNELS)
-        chnl -= MAX_CHANNELS;
-      // channel enabled
-      if (channels.is_enable(chnl) && band == getBand(chnl)) {
-        PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"), chnl,
-                    band, channels[chnl].getDrMap());
-        if (channels[chnl].isDrActive(datarate)) {
-          // in selected band
-          bands.setLastChannel(band, chnl);
-          txChnl = chnl;
-          return bands.getAvailability(band);
-        }
+    if (channels.is_enable(nextChannel) &&
+        channels[nextChannel].isDrActive(datarate)) {
+      auto band = getBand(nextChannel);
+      auto availability = bands.getAvailability(band);
+
+      PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"),
+                  nextChannel, band, channels[nextChannel].getDrMap());
+
+      if (!channelFound || availability < nextTransmitTime) {
+        txChnl = nextChannel;
+        nextTransmitTime = availability;
+        channelFound = true;
+      }
+      if (availability < now) {
+        // no need to search better
+        txChnl = nextChannel;
+        return availability;
       }
     }
+    nextChannel++;
+  }
 
-    PRINT_DEBUG(2, F("No channel found in band %d"), band);
+  if (channelFound) {
+    return nextTransmitTime;
+  }
 
-    bmap &= ~(1 << band);
-  } while (bmap != 0);
+  // Fail to find a channel continue on current one.
+  // UGLY FAILBACK
   PRINT_DEBUG(1, F("Error Fail to find a channel."));
-  // No feasible channel  found!
   return now;
 }
 
