@@ -212,7 +212,7 @@ constexpr uint8_t MCMD_LADR_CHP_125ON = 0x06;
 //  ditto
 constexpr uint8_t MCMD_LADR_CHP_125OFF = 0x07;
 
-bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const ) {
+bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF)
     return true;
   if (chMaskCntl < 5)
@@ -235,17 +235,22 @@ void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   // TODO handle chMaskCntl = 5
 }
 
-int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
+uint32_t LmicUs915::getTxFrequency() const {
   uint8_t chnl = txChnl;
   if (chnl < 64) {
-    freq = US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
-    return 30;
+    return US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
   }
   if (chnl < 64 + 8) {
-    freq = US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
+    return US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
   } else {
     ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
-    freq = xchFreq[chnl - 72];
+    return xchFreq[chnl - 72];
+  }
+}
+
+int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
+  if (txChnl < 64) {
+    return 30;
   }
   return 26;
 }
@@ -275,9 +280,13 @@ OsTime LmicUs915::nextTx(OsTime now) {
   return now;
 }
 
+uint32_t LmicUs915::getRx1Frequency() const {
+
+  return US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
+}
+
 void LmicUs915::setRx1Params() {
   // TODO handle offset
-  freq = US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
   if (/* TX datarate */ dndr < DR_SF8C)
     dndr += DR_SF10CR - DR_SF10;
   else if (dndr == DR_SF8C)

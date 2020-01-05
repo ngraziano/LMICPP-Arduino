@@ -122,7 +122,6 @@ private:
 protected:
   OsTime txend;
   uint8_t dndr = 0;
-  uint32_t freq = 0;
 
   // ADR adjusted TX power, limit power to this value.
   // dBm
@@ -139,7 +138,7 @@ private:
   // time device can send again
   OsTime globalDutyAvail;
   // current network id (~0 - none)
-  uint32_t netid; 
+  uint32_t netid;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
@@ -325,10 +324,11 @@ public:
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
 protected:
-  
+  virtual uint32_t getTxFrequency() const = 0;
+  virtual uint32_t getRx1Frequency() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
-  int8_t const  InvalidPower = -128;
+  int8_t const InvalidPower = -128;
   /**
    * Return InvalidPower if passed value is invalid
    */

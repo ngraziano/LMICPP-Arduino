@@ -192,9 +192,16 @@ void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
   }
 }
 
-int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
+uint32_t LmicEu868::getTxFrequency() const {
+  return channels.getFrequency(txChnl);
+}
 
-  freq = channels.getFrequency(txChnl);
+uint32_t LmicEu868::getRx1Frequency() const {
+  // RX1 frequency is same as TX frequency
+  return getTxFrequency();
+}
+
+int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, txbeg, airtime);
 
   PRINT_DEBUG(

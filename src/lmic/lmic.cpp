@@ -477,7 +477,7 @@ void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
   rps_t rps = dndr2rps(dndr);
-  radio.rx(freq, rps, rxsyms, rxtime);
+  radio.rx(getRx1Frequency(), rps, rxsyms, rxtime);
   wait_end_rx();
 }
 
@@ -1027,7 +1027,8 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(freq, rps, txpow + antennaPowerAdjustment, frame, dataLen);
+  radio.tx(getTxFrequency(), rps, txpow + antennaPowerAdjustment, frame,
+           dataLen);
   wait_end_tx();
 }
 
@@ -1249,7 +1250,6 @@ void Lmic::saveState(StoringAbtract &store) const {
 
 void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   // TODO radio RSSI,SNR
-  store.write(freq);
   // TODO check if we can avoid storing rxsyms
   store.write(rxsyms);
   store.write(dndr);
@@ -1294,7 +1294,6 @@ void Lmic::loadState(RetrieveAbtract &store) {
 
 void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   // TODO radio RSSI,SNR
-  store.read(freq);
   // TODO check if we can avoid storing rxsyms
   store.read(rxsyms);
   store.read(dndr);
