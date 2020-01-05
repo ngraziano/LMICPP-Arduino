@@ -201,11 +201,6 @@ int8_t LmicEu868::getTxPower() const {
   return adrTxPow;
 };
 
-uint32_t LmicEu868::getRx1Frequency() const {
-  // RX1 frequency is same as TX frequency
-  return getTxFrequency();
-}
-
 void LmicEu868::updateTxTimes(OsTime const txbeg, OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, txbeg, airtime);
 
@@ -255,7 +250,12 @@ OsTime LmicEu868::nextTx(OsTime const now) {
   return now;
 }
 
-void LmicEu868::setRx1Params() { dndr = lowerDR(dndr, rx1DrOffset); }
+uint32_t LmicEu868::getRx1Frequency() const {
+  // RX1 frequency is same as TX frequency
+  return getTxFrequency();
+}
+
+dr_t LmicEu868::getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); }
 
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;

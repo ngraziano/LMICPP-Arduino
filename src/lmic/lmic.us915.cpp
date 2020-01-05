@@ -287,12 +287,13 @@ uint32_t LmicUs915::getRx1Frequency() const {
   return US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
 }
 
-void LmicUs915::setRx1Params() {
+dr_t LmicUs915::getRx1Dr() const {
   // TODO handle offset
-  if (/* TX datarate */ dndr < DR_SF8C)
-    dndr += DR_SF10CR - DR_SF10;
-  else if (dndr == DR_SF8C)
-    dndr = DR_SF7CR;
+  if (datarate < DR_SF8C)
+    return datarate + DR_SF10CR - DR_SF10;
+  else if (datarate == DR_SF8C)
+    return DR_SF7CR;
+  return datarate;
 }
 
 void LmicUs915::initJoinLoop() {

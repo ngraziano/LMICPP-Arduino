@@ -27,6 +27,7 @@ protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
   uint32_t getRx1Frequency() const final;
+  dr_t getRx1Dr() const final;
   uint8_t getRawRps(dr_t dr) const override;
 
   int8_t pow2dBm(uint8_t powerIndex) const override;
@@ -44,7 +45,6 @@ protected:
   void mapChannels(uint8_t chpage, uint16_t chmap) override;
   void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
-  void setRx1Params() override;
   void initJoinLoop() override;
   bool nextJoinState() override;
   dr_t defaultRX2Dr() const override;

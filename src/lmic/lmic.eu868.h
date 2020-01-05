@@ -38,6 +38,7 @@ protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
   uint32_t getRx1Frequency() const final;
+  dr_t getRx1Dr() const final;
   uint8_t getRawRps(dr_t dr) const final;
   int8_t pow2dBm(uint8_t powerIndex) const final;
   OsDeltaTime getDwn2SafetyZone() const final;
@@ -56,7 +57,6 @@ protected:
   void mapChannels(uint8_t chpage, uint16_t chmap) final;
   void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) final;
   OsTime nextTx(OsTime now) final;
-  void setRx1Params() final;
   void initJoinLoop() final;
   bool nextJoinState() final;
   dr_t defaultRX2Dr() const final;

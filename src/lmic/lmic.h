@@ -121,7 +121,6 @@ private:
 
 protected:
   OsTime txend;
-  uint8_t dndr = 0;
 
   // ADR adjusted TX power, limit power to this value.
   // dBm
@@ -327,6 +326,7 @@ protected:
   virtual uint32_t getTxFrequency() const = 0;
   virtual int8_t getTxPower() const = 0;
   virtual uint32_t getRx1Frequency() const = 0;
+  virtual dr_t getRx1Dr() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
   int8_t const InvalidPower = -128;
@@ -349,7 +349,6 @@ protected:
   virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
-  virtual void setRx1Params() = 0;
   virtual void initJoinLoop() = 0;
   virtual bool nextJoinState() = 0;
   virtual dr_t defaultRX2Dr() const = 0;

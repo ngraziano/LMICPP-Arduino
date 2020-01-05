@@ -476,7 +476,7 @@ bool Lmic::decodeFrame() {
 void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
-  rps_t rps = dndr2rps(dndr);
+  rps_t rps = dndr2rps(getRx1Dr());
   radio.rx(getRx1Frequency(), rps, rxsyms, rxtime);
   wait_end_rx();
 }
@@ -525,10 +525,8 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime
 void Lmic::txDone(OsDeltaTime delay) {
-  // Change RX frequency / rps (US only) before we increment txChnl
-  setRx1Params();
   osjob.setCallbackFuture(&Lmic::setupRx1);
-  schedRx12(delay, dndr);
+  schedRx12(delay, getRx1Dr());
 }
 
 // ======================================== Join frames
@@ -1012,8 +1010,6 @@ void Lmic::engineUpdate() {
     buildDataFrame();
   }
 
-  dndr = txdr; // carry TX datarate (can be != datarate) over to
-               // txDone/setupRx1
   opmode.reset(OpState::POLL);
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
@@ -1252,7 +1248,6 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   // TODO radio RSSI,SNR
   // TODO check if we can avoid storing rxsyms
   store.write(rxsyms);
-  store.write(dndr);
 
   store.write(globalDutyRate);
 
@@ -1296,7 +1291,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   // TODO radio RSSI,SNR
   // TODO check if we can avoid storing rxsyms
   store.read(rxsyms);
-  store.read(dndr);
 
   store.read(globalDutyRate);
 
