@@ -129,6 +129,17 @@ void BandsEu868::print_state() const {
   }
 }
 
+uint8_t BandsEu868::getBandForFrequency(uint32_t const frequency) {
+
+  if (frequency >= MIN_BAND_DECI && frequency <= MAX_BAND_DECI)
+    return BAND_DECI; // 10%
+  else if ((frequency >= MIN_BAND1_CENTI && frequency <= MAX_BAND1_CENTI) ||
+           (frequency >= MIN_BAND2_CENTI && frequency <= MAX_BAND2_CENTI))
+    return BAND_CENTI; // 1%
+  else
+    return BAND_MILLI; // 0.1%
+}
+
 #if defined(ENABLE_SAVE_RESTORE)
 
 void BandsEu868::saveState(StoringAbtract &store) const {
@@ -182,19 +193,8 @@ bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
   if (chidx >= MAX_CHANNELS)
     return false;
 
-  int8_t band;
-  if (newfreq >= MIN_BAND_DECI && newfreq <= MAX_BAND_DECI)
-    band = BAND_DECI; // 10%
-  else if ((newfreq >= MIN_BAND1_CENTI && newfreq <= MAX_BAND1_CENTI) ||
-           (newfreq >= MIN_BAND2_CENTI && newfreq <= MAX_BAND2_CENTI))
-    band = BAND_CENTI; // 1%
-  else
-    band = BAND_MILLI; // 0.1%
-
-  channels.configure(
-      chidx,
-      ChannelDetail{newfreq, band,
-                    drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap});
+  channels.configure(chidx, newfreq,
+                     drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap);
   return true;
 }
 

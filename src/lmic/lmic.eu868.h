@@ -24,7 +24,7 @@ private:
 
 public:
   constexpr uint32_t getFrequency() const { return raw & ~(uint32_t)3; };
-  constexpr uint32_t getBand() const { return raw & 0x3; };
+  constexpr uint8_t getBand() const { return raw & 0x3; };
   constexpr uint16_t getDrMap() const { return drMap; };
   constexpr bool isConfigured() const { return drMap != 0; }
   constexpr bool isDrActive(dr_t datarate) const {
@@ -33,7 +33,7 @@ public:
   constexpr ChannelDetail() = default;
   constexpr ChannelDetail(uint32_t araw, uint16_t adrMap)
       : raw(araw), drMap(adrMap){};
-  constexpr ChannelDetail(uint32_t frequency, int8_t band, uint16_t adrMap)
+  constexpr ChannelDetail(uint32_t frequency, uint8_t band, uint16_t adrMap)
       : raw((frequency & ~(uint32_t)3) | band), drMap(adrMap){};
 
 #if defined(ENABLE_SAVE_RESTORE)
@@ -63,6 +63,7 @@ public:
   OsTime getAvailability(uint8_t band) { return avail[band]; };
 
   static constexpr uint8_t MAX_BAND = 3;
+  static uint8_t getBandForFrequency(uint32_t frequency);
 
 #if defined(ENABLE_SAVE_RESTORE)
 
@@ -104,8 +105,11 @@ public:
            channels[channel].isDrActive(datarate);
   }
 
-  void configure(uint8_t channel, ChannelDetail detail) {
-    channels[channel] = detail;
+  void configure(uint8_t channel, uint32_t const newfreq,
+                 uint16_t const drmap) {
+    auto band = bands.getBandForFrequency(newfreq);
+
+    channels[channel] = ChannelDetail{newfreq, band, drmap};
     channelMap |= 1 << channel;
   }
 
