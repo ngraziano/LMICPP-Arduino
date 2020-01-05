@@ -171,11 +171,10 @@ void LmicEu868::initDefaultChannels() {
   PRINT_DEBUG(2, F("Init Default Channel"));
 
   channels.disableAll();
+  channels.init();
   setupChannel(0, EU868_F1, 0);
   setupChannel(1, EU868_F2, 0);
   setupChannel(2, EU868_F3, 0);
-
-  bands.init();
 }
 
 bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
@@ -255,23 +254,14 @@ void LmicEu868::mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) {
 
 int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
 
-  freq = getFreq(txChnl);
-  // Update band specific duty cycle stats
-  bands.updateBandAvailability(getBand(txChnl), txbeg, airtime);
+  freq = channels.getFrequency(txChnl);
+  channels.updateAvailabitility(txChnl, txbeg, airtime);
 
   PRINT_DEBUG(
       2, F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32 "."),
       txbeg, airtime);
   // limit power to value ask in adr (at init MaxEIRP)
   return adrTxPow;
-}
-
-uint32_t LmicEu868::getFreq(uint8_t const channel) const {
-  return channels[channel].getFrequency();
-}
-
-uint8_t LmicEu868::getBand(uint8_t const channel) const {
-  return channels[channel].getBand();
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
@@ -286,13 +276,10 @@ OsTime LmicEu868::nextTx(OsTime const now) {
       nextChannel = 0;
     }
 
-    if (channels.is_enable(nextChannel) &&
-        channels[nextChannel].isDrActive(datarate)) {
-      auto band = getBand(nextChannel);
-      auto availability = bands.getAvailability(band);
+    if (channels.is_enable_at_dr(nextChannel, datarate)) {
+      auto availability = channels.getAvailability(nextChannel);
 
-      PRINT_DEBUG(2, F("Considering channel %d in band %d, drMap = %x"),
-                  nextChannel, band, channels[nextChannel].getDrMap());
+      PRINT_DEBUG(2, F("Considering channel %d"), nextChannel);
 
       if (!channelFound || availability < nextTransmitTime) {
         txChnl = nextChannel;
@@ -327,9 +314,9 @@ void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
   setDrJoin(static_cast<dr_t>(Dr::SF7));
-  txend = bands.getAvailability(BAND_CENTI) + OsDeltaTime::rnd_delay(rand, 8);
+  txend = channels.getAvailability(0) + OsDeltaTime::rnd_delay(rand, 8);
   PRINT_DEBUG(1, F("Init Join loop : avail=%" PRIu32 " txend=%" PRIu32 ""),
-              bands.getAvailability(BAND_CENTI).tick(), txend.tick());
+              channels.getAvailability(0).tick(), txend.tick());
 }
 
 bool LmicEu868::nextJoinState() {
@@ -350,8 +337,9 @@ bool LmicEu868::nextJoinState() {
   // Move txend to randomize synchronized concurrent joins.
   // Duty cycle is based on txend.
   OsTime time = os_getTime();
-  if (time < bands.getAvailability(BAND_CENTI))
-    time = bands.getAvailability(BAND_CENTI);
+  auto availability = channels.getAvailability(txChnl);
+  if (time < availability)
+    time = availability;
 
   // Avoid collision with JOIN ACCEPT @ SF12 being sent by
   // GW (but we missed it) randomize join (street lamp case):
@@ -379,14 +367,13 @@ uint32_t LmicEu868::defaultRX2Freq() const { return FREQ_DNW2; }
 void LmicEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
   Lmic::saveStateWithoutTimeData(store);
 
-  channels.saveState(store);
+  channels.saveStateWithoutTimeData(store);
   store.write(txChnl);
 }
 
 void LmicEu868::saveState(StoringAbtract &store) const {
   Lmic::saveState(store);
 
-  bands.saveState(store);
   channels.saveState(store);
   store.write(txChnl);
 }
@@ -394,14 +381,13 @@ void LmicEu868::saveState(StoringAbtract &store) const {
 void LmicEu868::loadStateWithoutTimeData(RetrieveAbtract &store) {
   Lmic::loadStateWithoutTimeData(store);
 
-  channels.loadState(store);
+  channels.loadStateWithoutTimeData(store);
   store.read(txChnl);
 }
 
 void LmicEu868::loadState(RetrieveAbtract &store) {
   Lmic::loadState(store);
 
-  bands.loadState(store);
   channels.loadState(store);
   store.read(txChnl);
 }

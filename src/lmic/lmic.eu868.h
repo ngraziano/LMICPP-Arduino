@@ -52,55 +52,6 @@ public:
 // Channel map is store in one 16bit
 enum { LIMIT_CHANNELS = 16 };
 
-template <uint8_t size> class ChannelList {
-private:
-  ChannelDetail channels[size] = {};
-  uint16_t channelMap;
-  static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
-
-public:
-  void disableAll() { channelMap = 0; }
-  void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
-  void enable(uint8_t channel) {
-    // ignore - channel is not defined
-    if (channels[channel].isConfigured()) {
-      channelMap |= (1 << channel);
-    }
-  }
-  void enableAll() {
-    for (uint8_t channel = 0; channel < size; channel++) {
-      enable(channel);
-    }
-  }
-  bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
-  void configure(uint8_t channel, ChannelDetail detail) {
-    channels[channel] = detail;
-    channelMap |= 1 << channel;
-  }
-
-  ChannelDetail const &operator[](int channel) const {
-    return channels[channel];
-  }
-
-#if defined(ENABLE_SAVE_RESTORE)
-  void saveState(StoringAbtract &store) const {
-
-    for (uint8_t channel = 0; channel < size; channel++) {
-      channels[channel].saveState(store);
-    }
-    store.write(channelMap);
-  };
-
-  void loadState(RetrieveAbtract &store) {
-
-    for (uint8_t channel = 0; channel < size; channel++) {
-      channels[channel].loadState(store);
-    }
-    store.read(channelMap);
-  };
-#endif
-};
-
 enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
 
 class BandsEu868 {
@@ -123,10 +74,86 @@ private:
   OsTime avail[MAX_BAND];
 };
 
-struct band_t {
-  uint16_t txcap;   // duty cycle limitation: 1/txcap
-  uint8_t lastchnl; // last used channel
-  OsTime avail;     // channel is blocked until this time
+template <uint8_t size, class BandType> class ChannelList {
+private:
+  ChannelDetail channels[size] = {};
+  uint16_t channelMap;
+  BandType bands;
+
+  static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
+
+public:
+  void init() { bands.init(); }
+  void disableAll() { channelMap = 0; }
+  void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
+  void enable(uint8_t channel) {
+    // ignore - channel is not defined
+    if (channels[channel].isConfigured()) {
+      channelMap |= (1 << channel);
+    }
+  }
+  void enableAll() {
+    for (uint8_t channel = 0; channel < size; channel++) {
+      enable(channel);
+    }
+  }
+  bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
+
+  bool is_enable_at_dr(uint8_t channel, dr_t datarate) const {
+    return (channelMap & (1 << channel)) &&
+           channels[channel].isDrActive(datarate);
+  }
+
+  void configure(uint8_t channel, ChannelDetail detail) {
+    channels[channel] = detail;
+    channelMap |= 1 << channel;
+  }
+
+  uint8_t getBand(uint8_t const channel) const {
+    return channels[channel].getBand();
+  }
+
+  void updateAvailabitility(uint8_t const channel, OsTime const txbeg,
+                            OsDeltaTime const airtime) {
+    // Update band specific duty cycle stats
+    bands.updateBandAvailability(getBand(channel), txbeg, airtime);
+  }
+
+  OsTime getAvailability(uint8_t const channel) {
+    auto band = getBand(channel);
+    return bands.getAvailability(band);
+  };
+
+  constexpr uint32_t getFrequency(uint8_t const channel) {
+    return channels[channel].getFrequency();
+  };
+
+#if defined(ENABLE_SAVE_RESTORE)
+  void saveState(StoringAbtract &store) const {
+    bands.saveState(store);
+    saveState(store);
+  };
+
+  void saveStateWithoutTimeData(StoringAbtract &store) const {
+    for (uint8_t channel = 0; channel < size; channel++) {
+      channels[channel].saveState(store);
+    }
+    store.write(channelMap);
+  };
+
+  void loadState(RetrieveAbtract &store) {
+    bands.loadState(store);
+    loadStateWithoutTimeData(store);
+  };
+
+  void loadStateWithoutTimeData(RetrieveAbtract &store) {
+    bands.loadState(store);
+    for (uint8_t channel = 0; channel < size; channel++) {
+      channels[channel].loadState(store);
+    }
+    store.read(channelMap);
+  };
+#endif
 };
 
 class LmicEu868 final : public Lmic {
@@ -171,13 +198,9 @@ protected:
   uint32_t defaultRX2Freq() const final;
 
 private:
-  BandsEu868 bands;
-  ChannelList<MAX_CHANNELS> channels;
+  ChannelList<MAX_CHANNELS, BandsEu868> channels;
   // channel for next TX
   uint8_t txChnl = 0;
-
-  uint32_t getFreq(uint8_t channel) const;
-  uint8_t getBand(uint8_t channel) const;
 };
 
 #endif
