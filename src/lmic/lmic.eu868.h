@@ -13,6 +13,7 @@
 #ifndef _lmic_eu868_h_
 #define _lmic_eu868_h_
 
+#include "band.eu868.h"
 #include "bufferpack.h"
 #include "lmic.h"
 
@@ -51,29 +52,6 @@ public:
 
 // Channel map is store in one 16bit
 enum { LIMIT_CHANNELS = 16 };
-
-enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
-
-class BandsEu868 {
-public:
-  void init();
-  void updateBandAvailability(uint8_t band, OsTime lastusage,
-                              OsDeltaTime duration);
-  void print_state() const;
-  OsTime getAvailability(uint8_t band) { return avail[band]; };
-
-  static constexpr uint8_t MAX_BAND = 3;
-  static uint8_t getBandForFrequency(uint32_t frequency);
-
-#if defined(ENABLE_SAVE_RESTORE)
-
-  void saveState(StoringAbtract &store) const;
-  void loadState(RetrieveAbtract &store);
-#endif
-
-private:
-  OsTime avail[MAX_BAND];
-};
 
 template <uint8_t size, class BandType> class ChannelList {
 private:
