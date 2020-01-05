@@ -1020,14 +1020,14 @@ void Lmic::engineUpdate() {
 
   rps_t rps = updr2rps(txdr);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
-  auto txpow = updateTx(txbeg, airtime);
+  updateTxTimes(txbeg, airtime);
 
   // if globalDutyRate==0 send available just after transmit.
   globalDutyAvail = txbeg + (airtime << globalDutyRate);
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(getTxFrequency(), rps, txpow + antennaPowerAdjustment, frame,
+  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment, frame,
            dataLen);
   wait_end_tx();
 }

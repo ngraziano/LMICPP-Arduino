@@ -196,19 +196,22 @@ uint32_t LmicEu868::getTxFrequency() const {
   return channels.getFrequency(txChnl);
 }
 
+int8_t LmicEu868::getTxPower() const {
+  // limit power to value ask in adr (at init MaxEIRP)
+  return adrTxPow;
+};
+
 uint32_t LmicEu868::getRx1Frequency() const {
   // RX1 frequency is same as TX frequency
   return getTxFrequency();
 }
 
-int8_t LmicEu868::updateTx(OsTime const txbeg, OsDeltaTime const airtime) {
+void LmicEu868::updateTxTimes(OsTime const txbeg, OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, txbeg, airtime);
 
   PRINT_DEBUG(
       2, F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32 "."),
       txbeg, airtime);
-  // limit power to value ask in adr (at init MaxEIRP)
-  return adrTxPow;
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {
@@ -252,10 +255,7 @@ OsTime LmicEu868::nextTx(OsTime const now) {
   return now;
 }
 
-void LmicEu868::setRx1Params() {
-  /*freq remain unchanged*/
-  dndr = lowerDR(dndr, rx1DrOffset);
-}
+void LmicEu868::setRx1Params() { dndr = lowerDR(dndr, rx1DrOffset); }
 
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;

@@ -248,12 +248,14 @@ uint32_t LmicUs915::getTxFrequency() const {
   }
 }
 
-int8_t LmicUs915::updateTx(OsTime, OsDeltaTime) {
+int8_t LmicUs915::getTxPower() const {
   if (txChnl < 64) {
     return 30;
   }
   return 26;
-}
+};
+
+void LmicUs915::updateTxTimes(OsTime, OsDeltaTime) {}
 
 // US does not have duty cycling - return now as earliest TX time
 OsTime LmicUs915::nextTx(OsTime now) {

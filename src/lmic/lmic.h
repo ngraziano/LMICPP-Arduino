@@ -325,6 +325,7 @@ public:
 
 protected:
   virtual uint32_t getTxFrequency() const = 0;
+  virtual int8_t getTxPower() const = 0;
   virtual uint32_t getRx1Frequency() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
@@ -346,7 +347,7 @@ protected:
 
   virtual bool validMapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual int8_t updateTx(OsTime txbeg, OsDeltaTime airtime) = 0;
+  virtual void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void setRx1Params() = 0;
   virtual void initJoinLoop() = 0;
