@@ -15,7 +15,6 @@
 
 #include "oslmic.h"
 
-
 enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
 enum class BandWidth { BW125 = 0, BW250, BW500 };
@@ -47,7 +46,6 @@ struct rps_t {
   rps_t(){};
 };
 
-
 constexpr uint8_t ILLEGAL_RPS = 0xFF;
 
 // Global maximum frame length
@@ -57,7 +55,8 @@ constexpr uint8_t DELAY_JACC1 = 5;   // in secs
 constexpr uint8_t DELAY_DNW1 = 1;    // in secs down window #1
 constexpr uint8_t DELAY_EXTDNW2 = 1; // in secs
 constexpr uint8_t DELAY_JACC2 = DELAY_JACC1 + DELAY_EXTDNW2; // in secs
-constexpr uint8_t DELAY_DNW2 = DELAY_DNW1 + DELAY_EXTDNW2; // in secs down window #1
+constexpr uint8_t DELAY_DNW2 =
+    DELAY_DNW1 + DELAY_EXTDNW2; // in secs down window #1
 
 enum class PktDir : uint8_t {
   UP = 0,
@@ -91,9 +90,9 @@ enum {
       0x05, // -  2nd DN slot status : u1:7-2:RFU  1/0:datarate/channel ack
   // -  device status ans  : u1:battery 0,1-254,255=?,
   // u1:7-6:RFU,5-0:margin(-32..31)
-  MCMD_DEVS_ANS = 0x06, 
-  // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK  
-  MCMD_SNCH_ANS = 0x07, 
+  MCMD_DEVS_ANS = 0x06,
+  // -  set new channel    : u1: 7-2=RFU, 1/0:DR/freq ACK
+  MCMD_SNCH_ANS = 0x07,
   // Ack to new RX 1 timing.
   MCMD_RXTimingSetup_ANS = 0x08,
   // Class B
