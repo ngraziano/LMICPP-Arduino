@@ -15,7 +15,6 @@
 #define DEVICE_BALISE2
 #include "lorakeys.h"
 
-
 void do_send();
 void begin_read();
 void powersave(OsDeltaTime maxTime);
@@ -34,8 +33,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {9, 8},
 };
 OsScheduler OSS;
-RadioSx1276 radio {lmic_pins};
-LmicEu868 LMIC {radio, OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -66,9 +65,6 @@ void onEvent(EventType ev)
         break;
     case EventType::JOIN_FAILED:
         PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-        break;
-    case EventType::REJOIN_FAILED:
-        PRINT_DEBUG(2, F("EV_REJOIN_FAILED"));
         break;
     case EventType::TXCOMPLETE:
         PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
@@ -114,13 +110,13 @@ void do_send()
     else
     {
         // TODO check buffer is small enought for LMIC.
-        uint8_t buffsize = 1 + 2 *temps_sensors.getDeviceCount();
+        uint8_t buffsize = 1 + 2 * temps_sensors.getDeviceCount();
         uint8_t rawbuff[buffsize];
 
         // battery
         rawbuff[0] = ((uint32_t)analogRead(A1)) * 255 / 683;
-        
-        auto temp_buff =reinterpret_cast<uint16_t*>(rawbuff +1);
+
+        auto temp_buff = reinterpret_cast<uint16_t *>(rawbuff + 1);
         for (int i = 0; i < temps_sensors.getDeviceCount(); i++)
         {
 

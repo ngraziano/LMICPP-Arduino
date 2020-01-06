@@ -24,8 +24,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {26, 33},
 };
 OsScheduler OSS;
-RadioSx1276 radio {lmic_pins};
-LmicEu868 LMIC {radio, OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -42,9 +42,6 @@ void onEvent(EventType ev) {
     break;
   case EventType::JOIN_FAILED:
     PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-    break;
-  case EventType::REJOIN_FAILED:
-    PRINT_DEBUG(2, F("EV_REJOIN_FAILED"));
     break;
   case EventType::TXCOMPLETE:
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
@@ -87,7 +84,7 @@ void do_send() {
   } else {
     // Some analog value
     // val = analogRead(A1) >> 4;
-    uint8_t val = temperatureRead(); 
+    uint8_t val = temperatureRead();
     // Prepare upstream data transmission at the next possible time.
     LMIC.setTxData2(2, &val, 1, false);
     PRINT_DEBUG(1, F("Packet queued"));

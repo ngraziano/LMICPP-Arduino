@@ -142,7 +142,6 @@ void Lmic::runReset() {
 void Lmic::stateJustJoined() {
   seqnoDn = 0;
   seqnoUp = 0;
-  rejoinCnt = 0;
   dnConf = 0;
   ladrAns = 0;
   devsAns = false;
@@ -418,9 +417,6 @@ bool Lmic::decodeFrame() {
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 
-  // We heard from network
-  rejoinCnt = 0;
-
   parseMacCommands(d + mac_payload::offsets::fopts, olen);
 
   if (!replayConf) {
@@ -538,27 +534,17 @@ void Lmic::onJoinFailed() {
 }
 
 void Lmic::processJoinAcceptNoJoinFrame() {
-  if (opmode.test(OpState::REJOIN)) {
-    // REJOIN attempt for roaming
-    // rejoin fail, continue normal operation
-    opmode.reset(OpState::REJOIN);
-    opmode.reset(OpState::TXRXPEND);
-    if (rejoinCnt < 10)
-      rejoinCnt++;
-    reportEvent(EventType::REJOIN_FAILED);
-  } else {
-    opmode.reset(OpState::TXRXPEND);
-    // Clear NEXTCHNL because join state engine controls channel hopping
-    opmode.reset(OpState::NEXTCHNL);
-    const bool succes = nextJoinState();
-    // Build next JOIN REQUEST with next engineUpdate call
-    // Optionally, report join failed.
-    // Both after a random/chosen amount of ticks.
+  opmode.reset(OpState::TXRXPEND);
+  // Clear NEXTCHNL because join state engine controls channel hopping
+  opmode.reset(OpState::NEXTCHNL);
+  const bool succes = nextJoinState();
+  // Build next JOIN REQUEST with next engineUpdate call
+  // Optionally, report join failed.
+  // Both after a random/chosen amount of ticks.
 
-    osjob.setCallbackRunnable(
-        succes ? &Lmic::runEngineUpdate // next step to be delayed
-               : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
-  }
+  osjob.setCallbackRunnable(
+      succes ? &Lmic::runEngineUpdate // next step to be delayed
+             : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
 }
 
 bool Lmic::processJoinAccept() {
@@ -600,15 +586,9 @@ bool Lmic::processJoinAccept() {
   // already incremented when JOIN REQ got sent off
   aes.sessKeys(devNonce - 1, frame + join_accept::offset::appNonce);
 
-  ASSERT(opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN));
-  if (opmode.test(OpState::REJOIN)) {
-    // Lower DR every try below current UP DR
-    // so adjust the current datarate to success join
-    datarate = lowerDR(datarate, rejoinCnt);
-  }
-  opmode.reset(OpState::JOINING)
-      .reset(OpState::REJOIN)
-      .reset(OpState::TXRXPEND);
+  ASSERT(opmode.test(OpState::JOINING));
+
+  opmode.reset(OpState::JOINING).reset(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
 
   txCnt = 0;
@@ -717,15 +697,12 @@ void Lmic::incrementAdrCount() {
     // Restore max power if it not the case
     if (adrTxPow != pow2dBm(0)) {
       adrTxPow = pow2dBm(0);
-      opmode.set(OpState::LINKDEAD);
-    } else if (decDR(datarate) != datarate) {
+    } else {
       // Lower DR one notch.
       setDrTx(decDR(datarate));
-      opmode.set(OpState::LINKDEAD);
-    } else {
-      // we are at max pow and max DR
-      opmode.set(OpState::LINKDEAD).set(OpState::REJOIN);
     }
+
+    opmode.set(OpState::LINKDEAD);
     adrAckReq = LINK_CHECK_CONT;
     reportEvent(EventType::LINK_DEAD);
   }
@@ -895,12 +872,11 @@ bool Lmic::startJoining() {
     // Lift any previous duty limitation
     globalDutyRate = 0;
     // Cancel scanning
-    opmode.reset(OpState::REJOIN)
-        .reset(OpState::LINKDEAD)
+    opmode.reset(OpState::LINKDEAD)
         .reset(OpState::NEXTCHNL)
         .set(OpState::JOINING);
     // Setup state
-    rejoinCnt = txCnt = 0;
+    txCnt = 0;
 
     initJoinLoop();
 
@@ -936,16 +912,15 @@ void Lmic::engineUpdate() {
     return;
   }
 
-  if (!opmode.test(OpState::JOINING) && !opmode.test(OpState::REJOIN) &&
-      !opmode.test(OpState::TXDATA) && !opmode.test(OpState::POLL)) {
+  if (!opmode.test(OpState::JOINING) && !opmode.test(OpState::TXDATA) &&
+      !opmode.test(OpState::POLL)) {
     // No TX pending - no scheduled RX
     return;
   }
 
   // Need to TX some data...
   // Assuming txChnl points to channel which first becomes available again.
-  const bool jacc =
-      opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN);
+  const bool jacc = opmode.test(OpState::JOINING);
   if (jacc) {
     PRINT_DEBUG(2, F("Uplink join pending"));
   } else {
@@ -988,9 +963,6 @@ void Lmic::engineUpdate() {
   txbeg = now;
   dr_t txdr = datarate;
   if (jacc) {
-    if (opmode.test(OpState::REJOIN)) {
-      txdr = lowerDR(txdr, rejoinCnt);
-    }
     buildJoinRequest();
   } else {
     if (seqnoDn >= 0xFFFFFF80) {
@@ -1096,12 +1068,6 @@ void Lmic::sendAlive() {
   engineUpdate();
 }
 
-// Check if other networks are around.
-void Lmic::tryRejoin(void) {
-  opmode.set(OpState::REJOIN);
-  engineUpdate();
-}
-
 //! \brief Setup given session keys
 //! and put the MAC in a state as if
 //! a join request/accept would have negotiated just these keys.
@@ -1125,7 +1091,6 @@ void Lmic::setSession(uint32_t const newnetid, devaddr_t const newdevaddr,
   aes.setApplicationSessionKey(artKey);
 
   opmode.reset(OpState::JOINING);
-  opmode.reset(OpState::REJOIN);
   opmode.reset(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
   stateJustJoined();
@@ -1204,7 +1169,7 @@ void Lmic::wait_end_rx() {
     rxtime = now;
 
     // if radio task ended, activate job.
-    if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
+    if (opmode.test(OpState::JOINING)) {
       processRxJacc();
     } else {
       processRxDnData();
@@ -1225,7 +1190,7 @@ void Lmic::wait_end_tx() {
     PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), txend.tick());
 
     // if radio task ended, activate next job.
-    if (opmode.test(OpState::JOINING) || opmode.test(OpState::REJOIN)) {
+    if (opmode.test(OpState::JOINING)) {
       jreqDone();
     } else {
       updataDone();

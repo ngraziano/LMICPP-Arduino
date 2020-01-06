@@ -24,8 +24,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {26, 33},
 };
 OsScheduler OSS;
-RadioSx1276 radio {lmic_pins};
-LmicEu868 LMIC {radio, OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -45,9 +45,6 @@ void onEvent(EventType ev) {
     break;
   case EventType::JOIN_FAILED:
     PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-    break;
-  case EventType::REJOIN_FAILED:
-    PRINT_DEBUG(2, F("EV_REJOIN_FAILED"));
     break;
   case EventType::TXCOMPLETE: {
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
@@ -125,7 +122,7 @@ void setup() {
     auto retrieve = RetrieveBuffer{saveState};
     LMIC.loadState(retrieve);
     // PRINT_DEBUG(1, F("State load len = %i"), lbuf);
-    saveState[300] =0;
+    saveState[300] = 0;
   }
   // Start job (sending automatically starts OTAA too)
   sendjob.setCallbackRunnable(do_send);

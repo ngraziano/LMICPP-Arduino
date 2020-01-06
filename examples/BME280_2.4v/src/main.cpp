@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <avr/power.h>
 #include <SPI.h>
+#include <avr/power.h>
 
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
@@ -16,7 +16,7 @@
 #include "lorakeys.h"
 #include "powersave.h"
 
-BME280 bmp { BME280::BME280_ADDRESS1 };
+BME280 bmp{BME280::BME280_ADDRESS1};
 
 void do_send();
 void reset_and_do_send();
@@ -35,8 +35,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {9, 8},
 };
 OsScheduler OSS;
-RadioSx1276 radio {lmic_pins};
-LmicEu868 LMIC {radio, OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -56,9 +56,6 @@ void onEvent(EventType ev) {
     break;
   case EventType::JOIN_FAILED:
     PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-    break;
-  case EventType::REJOIN_FAILED:
-    PRINT_DEBUG(2, F("EV_REJOIN_FAILED"));
     break;
   case EventType::TXCOMPLETE:
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
@@ -96,18 +93,19 @@ void onEvent(EventType ev) {
 
 uint16_t read_vcc() {
   // -Selects AVcc external reference
-  // REFS1 REFS0          --> 0 1, AVcc internal ref. 
+  // REFS1 REFS0          --> 0 1, AVcc internal ref.
   // -Selects channel 14, bandgap voltage, to measure
-  // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)         
-  ADMUX = (0 << REFS1) | (1 << REFS0) | (0 << ADLAR) | (1 << MUX3) | (1 << MUX2) | (1 << MUX1) | (0 << MUX0);
+  // MUX3 MUX2 MUX1 MUX0  --> 1110 1.1V (VBG)
+  ADMUX = (0 << REFS1) | (1 << REFS0) | (0 << ADLAR) | (1 << MUX3) |
+          (1 << MUX2) | (1 << MUX1) | (0 << MUX0);
   // Let Vref settle
-  delay(1); 
+  delay(1);
   // start the conversion
-	ADCSRA |= (1 << ADSC);
-  while (bit_is_set(ADCSRA,ADSC));
-  return (1100UL*1023/ADC);
+  ADCSRA |= (1 << ADSC);
+  while (bit_is_set(ADCSRA, ADSC))
+    ;
+  return (1100UL * 1023 / ADC);
 }
-
 
 void do_send() {
   // Check if there is not a current TX/RX job running
@@ -125,8 +123,8 @@ void do_send() {
     bmp.singleMeasure();
     // Typical time to wait for 1 oversampling P T H
     delay(8);
-    bmp.waitMeasureDone();    
-    
+    bmp.waitMeasureDone();
+
     auto values = bmp.getValues16();
     buffer[1] = values.T >> 8;
     buffer[2] = values.T & 0xFF;
@@ -183,13 +181,12 @@ void setup() {
   }
 
   Wire.begin();
-  if(!bmp.begin()){
+  if (!bmp.begin()) {
     PRINT_DEBUG(1, F("BME Init Fail."));
-    while(1);
+    while (1)
+      ;
   }
   PRINT_DEBUG(2, F("BME Init Sucess."));
-
-  
 
   pciSetup(lmic_pins.dio[0]);
   pciSetup(lmic_pins.dio[1]);
@@ -207,7 +204,7 @@ void setup() {
 
   // set clock error to allow good connection.
   LMIC.setClockError(MAX_CLOCK_ERROR * 2 / 100);
-  //LMIC.setAntennaPowerAdjustment(-14);
+  // LMIC.setAntennaPowerAdjustment(-14);
 
   // Only work with special boot loader.
   configure_wdt();
@@ -226,8 +223,6 @@ void loop() {
   OsDeltaTime to_wait = OSS.runloopOnce();
   if (to_wait > OsDeltaTime(0)) {
     // Go to sleep if we have nothing to do.
-    powersave(to_wait, []() {
-      return false;
-    });
+    powersave(to_wait, []() { return false; });
   }
 }

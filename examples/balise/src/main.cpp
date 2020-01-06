@@ -29,8 +29,8 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {9, 8},
 };
 OsScheduler OSS;
-RadioSx1276 radio {lmic_pins};
-LmicEu868 LMIC {radio, OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio, OSS};
 
 OsJob sendjob{OSS};
 
@@ -51,9 +51,6 @@ void onEvent(EventType ev) {
     break;
   case EventType::JOIN_FAILED:
     PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-    break;
-  case EventType::REJOIN_FAILED:
-    PRINT_DEBUG(2, F("EV_REJOIN_FAILED"));
     break;
   case EventType::TXCOMPLETE:
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));

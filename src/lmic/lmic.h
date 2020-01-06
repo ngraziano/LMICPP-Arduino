@@ -40,8 +40,6 @@ enum class OpState : uint8_t {
   TXDATA,
   // send empty UP frame to ACK confirmed DN/fetch more DN data
   POLL,
-  // occasionally send JOIN REQUEST
-  REJOIN,
   // prevent MAC from doing anything
   SHUTDOWN,
   // TX/RX transaction pending
@@ -77,7 +75,6 @@ enum class EventType : uint8_t {
   JOINING = 1,
   JOINED,
   JOIN_FAILED,
-  REJOIN_FAILED,
   TXCOMPLETE,
   RESET,
   LINK_DEAD,
@@ -141,9 +138,6 @@ private:
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
   uint8_t upRepeat;
-
-  // adjustment for rejoin datarate
-  uint8_t rejoinCnt;
 
   uint8_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                           // represents +/-100% error
@@ -295,7 +289,6 @@ public:
    */
   void setAntennaPowerAdjustment(int8_t power);
   bool startJoining();
-  void tryRejoin();
 
   void init();
   void shutdown();
