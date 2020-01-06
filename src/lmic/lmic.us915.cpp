@@ -296,6 +296,10 @@ dr_t LmicUs915::getRx1Dr() const {
   return datarate;
 }
 
+FrequencyAndRate LmicUs915::getRx1Parameter() const {
+  return {getRx1Frequency(), getRx1Dr()};
+}
+
 void LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;

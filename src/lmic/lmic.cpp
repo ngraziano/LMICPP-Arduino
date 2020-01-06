@@ -472,8 +472,9 @@ bool Lmic::decodeFrame() {
 void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
-  rps_t rps = dndr2rps(getRx1Dr());
-  radio.rx(getRx1Frequency(), rps, rxsyms, rxtime);
+  auto parameters = getRx1Parameter();
+  rps_t rps = dndr2rps(parameters.datarate);
+  radio.rx(parameters.frequency, rps, rxsyms, rxtime);
   wait_end_rx();
 }
 
@@ -485,7 +486,7 @@ void Lmic::setupRx2() {
   wait_end_rx();
 }
 
-void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
+void Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
 
   // Half symbol time for the data rate.
@@ -522,7 +523,7 @@ void Lmic::schedRx12(OsDeltaTime delay, uint8_t dr) {
 // rxtime
 void Lmic::txDone(OsDeltaTime delay) {
   osjob.setCallbackFuture(&Lmic::setupRx1);
-  schedRx12(delay, getRx1Dr());
+  schedRx12(delay, getRx1Parameter().datarate);
 }
 
 // ======================================== Join frames

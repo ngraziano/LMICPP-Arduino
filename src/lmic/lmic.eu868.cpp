@@ -257,6 +257,10 @@ uint32_t LmicEu868::getRx1Frequency() const {
 
 dr_t LmicEu868::getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); }
 
+FrequencyAndRate LmicEu868::getRx1Parameter() const {
+  return {getRx1Frequency(), getRx1Dr()};
+}
+
 void LmicEu868::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;

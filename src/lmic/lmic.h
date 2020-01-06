@@ -226,7 +226,7 @@ private:
   void processRx2DnData();
   void setupRx1();
   void setupRx2();
-  void schedRx12(OsDeltaTime delay, uint8_t dr);
+  void schedRx12(OsDeltaTime delay, dr_t dr);
 
   void txDone(OsDeltaTime delay);
 
@@ -323,8 +323,7 @@ public:
 protected:
   virtual uint32_t getTxFrequency() const = 0;
   virtual int8_t getTxPower() const = 0;
-  virtual uint32_t getRx1Frequency() const = 0;
-  virtual dr_t getRx1Dr() const = 0;
+  virtual FrequencyAndRate getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
 
   int8_t const InvalidPower = -128;

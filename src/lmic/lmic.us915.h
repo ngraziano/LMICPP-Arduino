@@ -26,9 +26,8 @@ public:
 protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
-  uint32_t getRx1Frequency() const final;
-  dr_t getRx1Dr() const final;
-  uint8_t getRawRps(dr_t dr) const override;
+  FrequencyAndRate getRx1Parameter() const final;
+  uint8_t getRawRps(dr_t dr) const final;
 
   int8_t pow2dBm(uint8_t powerIndex) const override;
   OsDeltaTime getDwn2SafetyZone() const override;
@@ -63,6 +62,8 @@ private:
   void enableSubBand(uint8_t band);
   void disableSubBand(uint8_t band);
   void selectSubBand(uint8_t band);
+  uint32_t getRx1Frequency() const;
+  dr_t getRx1Dr() const;
 };
 
 #endif
