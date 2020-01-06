@@ -99,6 +99,11 @@ constexpr int8_t LINK_CHECK_INIT = -ADR_ACK_LIMIT;
 // link check disabled
 constexpr int8_t LINK_CHECK_OFF = -128;
 
+struct FrequencyAndRate {
+  uint32_t frequency;
+  dr_t datarate;
+};
+
 class Lmic {
 public:
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
@@ -189,8 +194,8 @@ private:
 
 private:
   // 2nd RX window (after up stream), init at reset
-  dr_t dn2Dr;
-  uint32_t dn2Freq;
+  FrequencyAndRate rx2Parameter;
+
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // 0=no answer pend, 0x80+ACKs, init after join
   uint8_t dn2Ans;

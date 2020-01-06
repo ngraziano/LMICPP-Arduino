@@ -217,8 +217,8 @@ void Lmic::parse_dn2p(const uint8_t *const opts) {
   // Only take parameter into account if all parameter are ok.
   if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
                  MCMD_DN2P_ANS_CHACK)) {
-    dn2Dr = dr;
-    dn2Freq = newfreq;
+    rx2Parameter.datarate = dr;
+    rx2Parameter.frequency = newfreq;
     rx1DrOffset = newRx1DrOffset;
   }
 #endif // !DISABLE_MCMD_DN2P_SET
@@ -480,8 +480,8 @@ void Lmic::setupRx1() {
 void Lmic::setupRx2() {
   txrxFlags.reset().set(TxRxStatus::DNW2);
   dataLen = 0;
-  rps_t rps = dndr2rps(dn2Dr);
-  radio.rx(dn2Freq, rps, rxsyms, rxtime);
+  rps_t const rps = dndr2rps(rx2Parameter.datarate);
+  radio.rx(rx2Parameter.frequency, rps, rxsyms, rxtime);
   wait_end_rx();
 }
 
@@ -595,7 +595,7 @@ bool Lmic::processJoinAccept() {
   stateJustJoined();
 
   const uint8_t dlSettings = frame[join_accept::offset::dlSettings];
-  dn2Dr = dlSettings & 0x0F;
+  rx2Parameter.datarate = dlSettings & 0x0F;
   rx1DrOffset = (dlSettings >> 4) & 0x7;
 
   const uint8_t configuredRxDelay = frame[join_accept::offset::rxDelay];
@@ -614,7 +614,7 @@ void Lmic::processRxJacc() {
     if (txrxFlags.test(TxRxStatus::DNW1)) {
       // wait for RX2
       osjob.setCallbackFuture(&Lmic::setupRx2);
-      schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dn2Dr);
+      schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), rx2Parameter.datarate);
     } else {
       // nothing in 1st/2nd DN slot
       txrxFlags.reset();
@@ -679,7 +679,8 @@ void Lmic::processRx1DnData() {
     dataLen = 0;
     // if nothing receive, wait for RX2 before take actions
     osjob.setCallbackFuture(&Lmic::setupRx2);
-    schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2), dn2Dr);
+    schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
+              rx2Parameter.datarate);
   } else {
     resetAdrCount();
     processDnData();
@@ -1016,8 +1017,8 @@ void Lmic::reset() {
   opmode.reset();
   rx1DrOffset = 0;
   // we need this for 2nd DN window of join accept
-  dn2Dr = defaultRX2Dr();
-  dn2Freq = defaultRX2Freq();
+  rx2Parameter.datarate = defaultRX2Dr();
+  rx2Parameter.frequency = defaultRX2Freq();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   globalDutyAvail = os_getTime();
   initDefaultChannels();
@@ -1237,8 +1238,8 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(snchAns);
 #endif
   store.write(rx1DrOffset);
-  store.write(dn2Dr);
-  store.write(dn2Freq);
+  store.write(rx2Parameter.datarate);
+  store.write(rx2Parameter.frequency);
 #if !defined(DISABLE_MCMD_DN2P_SET)
   store.write(dn2Ans);
 #endif
@@ -1280,8 +1281,8 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(snchAns);
 #endif
   store.read(rx1DrOffset);
-  store.read(dn2Dr);
-  store.read(dn2Freq);
+  store.read(rx2Parameter.datarate);
+  store.read(rx2Parameter.frequency);
 #if !defined(DISABLE_MCMD_DN2P_SET)
   store.read(dn2Ans);
 #endif
