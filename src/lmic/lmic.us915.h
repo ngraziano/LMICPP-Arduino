@@ -47,8 +47,7 @@ protected:
   OsTime nextTx(OsTime now) override;
   void initJoinLoop() override;
   bool nextJoinState() override;
-  dr_t defaultRX2Dr() const override;
-  uint32_t defaultRX2Freq() const override;
+  FrequencyAndRate defaultRX2Parameter() const override;
 
 private:
   uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is

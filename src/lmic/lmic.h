@@ -349,8 +349,7 @@ protected:
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void initJoinLoop() = 0;
   virtual bool nextJoinState() = 0;
-  virtual dr_t defaultRX2Dr() const = 0;
-  virtual uint32_t defaultRX2Freq() const = 0;
+  virtual FrequencyAndRate defaultRX2Parameter() const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
 

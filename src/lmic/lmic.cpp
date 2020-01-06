@@ -1017,8 +1017,7 @@ void Lmic::reset() {
   opmode.reset();
   rx1DrOffset = 0;
   // we need this for 2nd DN window of join accept
-  rx2Parameter.datarate = defaultRX2Dr();
-  rx2Parameter.frequency = defaultRX2Freq();
+  rx2Parameter = defaultRX2Parameter();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   globalDutyAvail = os_getTime();
   initDefaultChannels();

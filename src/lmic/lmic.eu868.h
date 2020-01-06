@@ -59,8 +59,7 @@ protected:
   OsTime nextTx(OsTime now) final;
   void initJoinLoop() final;
   bool nextJoinState() final;
-  dr_t defaultRX2Dr() const final;
-  uint32_t defaultRX2Freq() const final;
+  FrequencyAndRate defaultRX2Parameter() const final;
 
 private:
   ChannelList<MAX_CHANNELS, BandsEu868> channels;

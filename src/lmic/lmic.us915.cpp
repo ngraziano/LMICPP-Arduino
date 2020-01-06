@@ -331,8 +331,9 @@ bool LmicUs915::nextJoinState() {
   return !failed;
 }
 
-dr_t LmicUs915::defaultRX2Dr() const { return DR_DNW2; }
-uint32_t LmicUs915::defaultRX2Freq() const { return FREQ_DNW2; }
+FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
+  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
+}
 
 LmicUs915::LmicUs915(Radio &aradio, OsScheduler &ascheduler)
     : Lmic(aradio, ascheduler) {}
