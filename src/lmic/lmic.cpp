@@ -960,8 +960,6 @@ void Lmic::engineUpdate() {
 
   PRINT_DEBUG(1, F("Ready for uplink"));
   // We could send right now!
-  txbeg = now;
-  dr_t txdr = datarate;
   if (jacc) {
     buildJoinRequest();
   } else {
@@ -986,7 +984,7 @@ void Lmic::engineUpdate() {
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
 
-  rps_t rps = updr2rps(txdr);
+  rps_t rps = updr2rps(datarate);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
   updateTxTimes(airtime);
 
