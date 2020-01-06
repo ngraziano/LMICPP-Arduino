@@ -340,7 +340,7 @@ protected:
 
   virtual bool validMapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) = 0;
+  virtual void updateTxTimes(OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
   virtual void initJoinLoop() = 0;
   virtual bool nextJoinState() = 0;

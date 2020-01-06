@@ -43,7 +43,7 @@ protected:
 
   bool validMapChannels(uint8_t chpage, uint16_t chmap) override;
   void mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) override;
+  void updateTxTimes(OsDeltaTime airtime) override;
   OsTime nextTx(OsTime now) override;
   void initJoinLoop() override;
   bool nextJoinState() override;

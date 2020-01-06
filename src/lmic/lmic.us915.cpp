@@ -255,7 +255,7 @@ int8_t LmicUs915::getTxPower() const {
   return 26;
 };
 
-void LmicUs915::updateTxTimes(OsTime, OsDeltaTime) {}
+void LmicUs915::updateTxTimes(OsDeltaTime) {}
 
 // US does not have duty cycling - return now as earliest TX time
 OsTime LmicUs915::nextTx(OsTime now) {

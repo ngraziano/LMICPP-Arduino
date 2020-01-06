@@ -201,12 +201,12 @@ int8_t LmicEu868::getTxPower() const {
   return adrTxPow;
 };
 
-void LmicEu868::updateTxTimes(OsTime const txbeg, OsDeltaTime const airtime) {
-  channels.updateAvailabitility(txChnl, txbeg, airtime);
+void LmicEu868::updateTxTimes(OsDeltaTime const airtime) {
+  channels.updateAvailabitility(txChnl, os_getTime(), airtime);
 
   PRINT_DEBUG(
-      2, F("Updating info for TX at %" PRIu32 ", airtime will be %" PRIu32 "."),
-      txbeg, airtime);
+      2, F("Updating info for TX channel %d, airtime will be %" PRIu32 "."),
+      txChnl, airtime);
 }
 
 OsTime LmicEu868::nextTx(OsTime const now) {

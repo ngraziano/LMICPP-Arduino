@@ -55,7 +55,7 @@ protected:
 
   bool validMapChannels(uint8_t chpage, uint16_t chmap) final;
   void mapChannels(uint8_t chpage, uint16_t chmap) final;
-  void updateTxTimes(OsTime txbeg, OsDeltaTime airtime) final;
+  void updateTxTimes(OsDeltaTime airtime) final;
   OsTime nextTx(OsTime now) final;
   void initJoinLoop() final;
   bool nextJoinState() final;
