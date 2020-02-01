@@ -87,13 +87,6 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
 };
 
-constexpr uint32_t MIN_BAND1_CENTI = 868000000;
-constexpr uint32_t MAX_BAND1_CENTI = 868600000;
-constexpr uint32_t MIN_BAND_DECI = 869400000;
-constexpr uint32_t MAX_BAND_DECI = 869650000;
-constexpr uint32_t MIN_BAND2_CENTI = 869700000;
-constexpr uint32_t MAX_BAND2_CENTI = 870000000;
-
 } // namespace
 
 uint8_t LmicEu868::getRawRps(dr_t const dr) const {
@@ -213,8 +206,8 @@ OsTime LmicEu868::nextTx(OsTime const now) {
 
   bool channelFound = false;
   OsTime nextTransmitTime;
-  uint8_t nextChannel = txChnl + rand.uint8();
-  nextChannel = nextChannel % MAX_CHANNELS;
+  // next channel or other (random)
+  uint8_t nextChannel = txChnl + 1 + (rand.uint8() % 2);
 
   for (uint8_t channelIndex = 0; channelIndex < MAX_CHANNELS; channelIndex++) {
     if (nextChannel >= MAX_CHANNELS) {
@@ -324,7 +317,6 @@ void LmicEu868::saveStateWithoutTimeData(StoringAbtract &store) const {
 
 void LmicEu868::saveState(StoringAbtract &store) const {
   Lmic::saveState(store);
-
   channels.saveState(store);
   store.write(txChnl);
 }
