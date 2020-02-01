@@ -96,7 +96,7 @@ public:
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {
     bands.saveState(store);
-    saveState(store);
+    saveStateWithoutTimeData(store);
   };
 
   void saveStateWithoutTimeData(StoringAbtract &store) const {
@@ -112,7 +112,6 @@ public:
   };
 
   void loadStateWithoutTimeData(RetrieveAbtract &store) {
-    bands.loadState(store);
     for (uint8_t channel = 0; channel < size; channel++) {
       channels[channel].loadState(store);
     }
