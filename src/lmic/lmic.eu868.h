@@ -34,6 +34,8 @@ public:
   virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
 #endif
 
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
+
 protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
@@ -48,7 +50,6 @@ protected:
 
   void initDefaultChannels() final;
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
 
   void disableChannel(uint8_t channel) final;
   void handleCFList(const uint8_t *ptr) final;

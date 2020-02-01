@@ -226,7 +226,7 @@ private:
   void processRx2DnData();
   void setupRx1();
   void setupRx2();
-  void schedRx12(OsDeltaTime delay, dr_t dr);
+  OsTime schedRx12(OsDeltaTime delay, dr_t dr);
 
   void txDone(OsDeltaTime delay);
 
@@ -282,6 +282,7 @@ public:
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
   void setDrTx(uint8_t dr);
+  void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate);
   void setDutyRate(uint8_t duty_rate);
   // set ADR mode (if mobile turn off)
   // It activate ADR bit and LINK Check.

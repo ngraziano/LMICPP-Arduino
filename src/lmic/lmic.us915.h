@@ -23,6 +23,8 @@ class LmicUs915 final : public Lmic {
 public:
   explicit LmicUs915(Radio &radio, OsScheduler &scheduler);
 
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
+
 protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
@@ -36,7 +38,7 @@ protected:
   bool validRx1DrOffset(uint8_t drOffset) const override;
 
   void initDefaultChannels() override;
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override;
+  
   void disableChannel(uint8_t channel) override;
   void handleCFList(const uint8_t *ptr) override;
 

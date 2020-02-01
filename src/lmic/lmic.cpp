@@ -124,6 +124,10 @@ void Lmic::setDrTx(uint8_t dr) {
   }
 }
 
+void Lmic::setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) {
+  rx2Parameter = {rx2frequency, rx2datarate};
+}
+
 void Lmic::runEngineUpdate() { engineUpdate(); }
 
 void Lmic::reportEvent(EventType ev) {
@@ -486,7 +490,7 @@ void Lmic::setupRx2() {
   wait_end_rx();
 }
 
-void Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
+OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
 
   // Half symbol time for the data rate.
@@ -516,14 +520,14 @@ void Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
   PRINT_DEBUG(1, F("Rx delay : %i ms"), (rxtime - txend).to_ms());
 
-  osjob.setTimed(rxtime - RX_RAMPUP);
+  return (rxtime - RX_RAMPUP);
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime
 void Lmic::txDone(OsDeltaTime delay) {
-  osjob.setCallbackFuture(&Lmic::setupRx1);
-  schedRx12(delay, getRx1Parameter().datarate);
+  auto waitime = schedRx12(delay, getRx1Parameter().datarate);
+  osjob.setTimedCallback(waitime, &Lmic::setupRx1);
 }
 
 // ======================================== Join frames
@@ -614,8 +618,9 @@ void Lmic::processRxJacc() {
   if (!processJoinAccept()) {
     if (txrxFlags.test(TxRxStatus::DNW1)) {
       // wait for RX2
-      osjob.setCallbackFuture(&Lmic::setupRx2);
-      schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), rx2Parameter.datarate);
+      auto waitime =
+          schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), rx2Parameter.datarate);
+      osjob.setTimedCallback(waitime, &Lmic::setupRx2);
     } else {
       // nothing in 1st/2nd DN slot
       txrxFlags.reset();
@@ -679,9 +684,10 @@ void Lmic::processRx1DnData() {
     dataBeg = 0;
     dataLen = 0;
     // if nothing receive, wait for RX2 before take actions
-    osjob.setCallbackFuture(&Lmic::setupRx2);
-    schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
-              rx2Parameter.datarate);
+    auto waitime = schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
+                             rx2Parameter.datarate);
+    osjob.setTimedCallback(waitime, &Lmic::setupRx2);
+
   } else {
     resetAdrCount();
     processDnData();
