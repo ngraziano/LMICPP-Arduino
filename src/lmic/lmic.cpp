@@ -849,6 +849,8 @@ void Lmic::buildDataFrame() {
   aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame, flen);
 
   dataLen = flen;
+
+  PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
 }
 
 // ================================================================================
