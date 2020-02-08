@@ -32,13 +32,11 @@ enum {
   EU868_F5 = 869050000, // g2   SF7-12
   EU868_F6 = 869525000, // g3   SF7-12
 };
-enum { EU868_FREQ_MIN = 863000000, EU868_FREQ_MAX = 870000000 };
-
-enum { CHNL_DNW2 = 5 };
-
-enum { FREQ_DNW2 = EU868_F6 };
 
 namespace {
+constexpr uint32_t EU868_FREQ_MIN = 863000000;
+constexpr uint32_t EU868_FREQ_MAX = 870000000;
+constexpr uint32_t FREQ_DNW2 = EU868_F6;
 constexpr LmicEu868::Dr DR_DNW2 = LmicEu868::Dr::SF12;
 
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);

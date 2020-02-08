@@ -46,6 +46,11 @@ private:
 
   static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
 
+  uint8_t getBand(uint8_t const channel) const {
+    return bands.getBandForFrequency(getFrequency(channel));
+  }
+
+
 public:
   void init() { bands.init(); }
   void disableAll() { channelMap = 0; }
@@ -74,9 +79,6 @@ public:
     channelMap |= 1 << channel;
   }
 
-  uint8_t getBand(uint8_t const channel) const {
-    return bands.getBandForFrequency(getFrequency(channel));
-  }
 
   void updateAvailabitility(uint8_t const channel, OsTime const txbeg,
                             OsDeltaTime const airtime) {
