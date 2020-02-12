@@ -283,11 +283,7 @@ bool LmicEu868::nextJoinState() {
   if (time < availability)
     time = availability;
 
-  // Avoid collision with JOIN ACCEPT @ SF12 being sent by
-  // GW (but we missed it) randomize join (street lamp case):
-  // SF12:255, SF11:127, .., SF7:8secs
-  txend =
-      time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
+  txend = time;
 
   PRINT_DEBUG(1, F("Next available : %" PRIu32 " , Choosen %" PRIu32 ""),
               time.tick(), txend.tick());

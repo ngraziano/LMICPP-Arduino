@@ -134,6 +134,8 @@ private:
   OpStateValue opmode;
 
   int8_t antennaPowerAdjustment = 0;
+  // last time we increase duty rate for back-off
+  OsTime lastDutyRateBackOff;
   // max rate: 1/2^k
   uint8_t globalDutyRate = 0;
   // time device can send again

@@ -304,7 +304,7 @@ void LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
-  txend = os_getTime();
+  txend = os_getTime() + OsDeltaTime::rnd_delay(rand, 8);
   setDrJoin(DR_SF7);
 }
 
@@ -326,12 +326,8 @@ bool LmicUs915::nextJoinState() {
     }
     datarate = dr;
   }
-  // Avoid collision with JOIN ACCEPT being sent by
-  // GW (but we missed it - GW is still busy)
-  // randomize join (street lamp case):
-  // SF10:16, SF9=8,..SF8C:1secs
-  txend = os_getTime() + OsDeltaTime::rnd_delay(rand, 16 >> datarate);
-  // 1 - triggers EV_JOIN_FAILED event
+  txend = os_getTime();
+  
   return !failed;
 }
 
