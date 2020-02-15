@@ -45,6 +45,8 @@ void OsScheduler::unlinkScheduledJobs(OsJobBase &job) {
   for (OsJobBase **pnext = &scheduledjobs; *pnext; pnext = &((*pnext)->next)) {
     if (*pnext == &job) { // unlink
       *pnext = job.next;
+      // stop here, if it last we must not continue. 
+      return;
     }
   }
 }
