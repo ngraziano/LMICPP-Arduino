@@ -23,7 +23,7 @@ OsTime &OsTime::operator-=(const OsDeltaTime &a) {
 }
 
 OsDeltaTime OsDeltaTime::rnd_delay(LmicRand &rand, uint8_t secSpan) {
-  int16_t r = rand.uint16();
+  uint16_t r = rand.uint16();
   OsDeltaTime delay{r};
   // OSTICKS_PER_SEC > max int16_t
   //  if (delay > OSTICKS_PER_SEC)
