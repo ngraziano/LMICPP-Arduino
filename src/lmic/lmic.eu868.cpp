@@ -270,27 +270,23 @@ bool LmicEu868::nextJoinState() {
     txChnl = 0;
   if ((++txCnt & 1) == 0) {
     // Lower DR every 2nd try (having tried 868.x and 864.x with the same DR)
-    if (datarate == static_cast<dr_t>(Dr::SF12))
-      failed = true; // we have tried all DR - signal EV_JOIN_FAILED
+    if (datarate == static_cast<dr_t>(Dr::SF12)) {
+      // we have tried all DR - signal EV_JOIN_FAILED
+      failed = true;
+      // and retry from highest datarate.
+      datarate = static_cast<dr_t>(Dr::SF7);
+    }
     else
       datarate = decDR(datarate);
   }
 
-  // Move txend to randomize synchronized concurrent joins.
-  // Duty cycle is based on txend.
-  OsTime time = os_getTime();
+  // Set minimal next join time
+  auto time = os_getTime();
   auto availability = channels.getAvailability(txChnl);
   if (time < availability)
     time = availability;
 
-  // Avoid collision with JOIN ACCEPT @ SF12 being sent by
-  // GW (but we missed it) randomize join (street lamp case):
-  // SF12:255, SF11:127, .., SF7:8secs
-  txend =
-      time + DNW2_SAFETY_ZONE + OsDeltaTime::rnd_delay(rand, 255 >> datarate);
-
-  PRINT_DEBUG(1, F("Next available : %" PRIu32 " , Choosen %" PRIu32 ""),
-              time.tick(), txend.tick());
+  txend = time;
 
   if (failed)
     PRINT_DEBUG(2, F("Join failed"));

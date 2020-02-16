@@ -150,6 +150,7 @@ void Lmic::stateJustJoined() {
   ladrAns = 0;
   devsAns = false;
   rxTimingSetupAns = false;
+  globalDutyRate = 0;
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   snchAns = 0;
 #endif
@@ -543,10 +544,31 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode.reset(OpState::NEXTCHNL);
   const bool succes = nextJoinState();
+
+  // in §7 of lorawan 1.0.3 
+  // the backoff for join is describe
+  // Duty rate of 2^14 is enought to respect 8.7s by 24h
+  // and divide by every 4000s, from 2^7 to 2^14, is enougth to
+  // respect 36s during first hour and
+  // 36s during next 10h
+
+  if (globalDutyRate < 14 &&
+      os_getTime() - lastDutyRateBackOff > OsDeltaTime::from_sec(3600)) {
+    PRINT_DEBUG(1, F("Reduce join DutyRate: %i"), globalDutyRate);
+    globalDutyRate++;
+    lastDutyRateBackOff = os_getTime();
+  }
+
   // Build next JOIN REQUEST with next engineUpdate call
   // Optionally, report join failed.
   // Both after a random/chosen amount of ticks.
+  if (txend < globalDutyAvail) {
+    txend = globalDutyAvail;
+  }
+  txend += getDwn2SafetyZone();
+  txend +=  OsDeltaTime::rnd_delay(rand, 255 >> datarate);
 
+  PRINT_DEBUG(1, F("Next Join delay : %i s"), (txend - os_getTime()).to_s());
   osjob.setCallbackRunnable(
       succes ? &Lmic::runEngineUpdate // next step to be delayed
              : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
@@ -879,8 +901,11 @@ bool Lmic::startJoining() {
   if (devaddr == 0) {
     // There should be no TX/RX going on
     ASSERT(opmode.test(OpState::POLL) || opmode.test(OpState::TXRXPEND));
-    // Lift any previous duty limitation
-    globalDutyRate = 0;
+    // Reset Duty rate limitation to respect retransmission backoff
+    // (max 36 during first hour)
+    globalDutyRate = 7;
+    lastDutyRateBackOff = os_getTime();
+
     // Cancel scanning
     opmode.reset(OpState::LINKDEAD)
         .reset(OpState::NEXTCHNL)

@@ -38,6 +38,9 @@ public:
   constexpr int32_t to_ms() const {
     return value * (int64_t)1000 / OSTICKS_PER_SEC;
   };
+  constexpr int32_t to_s() const {
+    return value * (int64_t)1 / OSTICKS_PER_SEC;
+  };
   constexpr int32_t tick() const { return value; };
 
   OsDeltaTime &operator+=(const OsDeltaTime &a);
