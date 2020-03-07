@@ -63,7 +63,6 @@ private:
   void enableChannel(uint8_t channel);
   void enableSubBand(uint8_t band);
   void disableSubBand(uint8_t band);
-  //void selectSubBand(uint8_t band);
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;
 };
