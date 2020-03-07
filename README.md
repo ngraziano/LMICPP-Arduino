@@ -1,4 +1,4 @@
-# LORAWAN Librairie for Arduino and SX1276/2 , SX1262 lora chip
+# LORAWAN Librairie for Arduino and SX1276 , SX1262 lora chip
 
 * Based on LMIC librairy.
 * Modified to get C++ style.
@@ -7,6 +7,10 @@
 * Add SX1262 chip
 
 ## Limitation
+
+This library try to comply with lorawan 1.0.x but do not implement all feature. For example FSK datarate is not implemented.
+
+For a more complete Lorawan library based on lmic, please have a look to <https://github.com/mcci-catena/arduino-lmic>
 
 :warning: This library do not compile in Arduino IDE due to dependency to STL (ArduinoSTL in case of AVR platform).
 It need PlatfomIO for the dependencies to be handle correctly.
@@ -57,16 +61,6 @@ Use define in platformio.ini `build_flags` to change activated part.
 
 In ``main.cpp`` replace the content of ``do_send()`` with the data you want to send.
 
-## Main functional change from LMIC
-
-* Try to implement ADR a little more correctl:
-  * Handle Txpower
-  * ADR_ACK_LIMIT set to 64
-  * ADR_ACK_DELAY set to 32
-* Correct set of power for SX1276
-* Various coding style fix (remove goto ...)
-* Add method to save and restore state.
-* Try to use specific of different platform.
 
 ## License
 
