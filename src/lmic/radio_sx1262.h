@@ -22,9 +22,14 @@ class RadioSx1262 final : public Radio {
 private:
   // ImageCalibrationBand const image_calibration_band;
   uint16_t const image_calibration_params;
+  bool const DIO2_as_rf_switch_ctrl;
+
 public:
   explicit RadioSx1262(lmic_pinmap const &pins,
                        ImageCalibrationBand calibration_band);
+  explicit RadioSx1262(lmic_pinmap const &pins,
+                       ImageCalibrationBand calibration_band,
+                       bool dio2_as_rf_switch_ctrl);
   void init() final;
   void rst() const final;
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,

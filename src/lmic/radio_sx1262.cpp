@@ -464,9 +464,15 @@ bool RadioSx1262::io_check() const {
 
 RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
                          ImageCalibrationBand const calibration_band)
+    : RadioSx1262(pins, calibration_band, false) {}
+
+RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
+                         ImageCalibrationBand const calibration_band,
+                         bool dio2_as_rf_switch_ctrl)
     : Radio(pins),
       image_calibration_params(TABLE_GET_U2(
-          CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))) {}
+          CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))),
+      DIO2_as_rf_switch_ctrl(dio2_as_rf_switch_ctrl) {}
 
 void RadioSx1262::set_sleep() const {
   PRINT_DEBUG(1, F("Set Radio to sleep"));
@@ -552,7 +558,10 @@ void RadioSx1262::init_config() const {
   calibrate_all();
   set_standby(true);
 
-  // set_DIO2_as_rf_switch_ctrl();
+  if(DIO2_as_rf_switch_ctrl) {
+    set_DIO2_as_rf_switch_ctrl();
+  }
+
   set_packet_type_lora();
   set_sync_word_lora();
 }
