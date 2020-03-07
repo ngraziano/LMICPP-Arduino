@@ -553,7 +553,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   // 36s during next 10h
 
   if (globalDutyRate < 14 &&
-      os_getTime() - lastDutyRateBackOff > OsDeltaTime::from_sec(3600)) {
+      os_getTime() - lastDutyRateBackOff > OsDeltaTime::from_sec(4000)) {
     PRINT_DEBUG(1, F("Reduce join DutyRate: %i"), globalDutyRate);
     globalDutyRate++;
     lastDutyRateBackOff = os_getTime();
