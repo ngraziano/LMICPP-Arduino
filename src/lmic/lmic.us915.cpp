@@ -15,46 +15,25 @@
 #include "lmic_table.h"
 #include <algorithm>
 
-enum _dr_us915_t {
-  DR_SF10 = 0,
-  DR_SF9,
-  DR_SF8,
-  DR_SF7,
-  DR_SF8C,
-  DR_NONE,
-  // Devices behind a router:
-  DR_SF12CR = 8,
-  DR_SF11CR,
-  DR_SF10CR,
-  DR_SF9CR,
-  DR_SF8CR,
-  DR_SF7CR
-};
-enum { DR_DFLTMIN = DR_SF8C };
+namespace {
 
 // Default frequency plan for US 915MHz
-enum {
-  US915_125kHz_UPFBASE = 902300000,
-  US915_125kHz_UPFSTEP = 200000,
-  US915_500kHz_UPFBASE = 903000000,
-  US915_500kHz_UPFSTEP = 1600000,
-  US915_500kHz_DNFBASE = 923300000,
-  US915_500kHz_DNFSTEP = 600000
-};
-enum { US915_FREQ_MIN = 902000000, US915_FREQ_MAX = 928000000 };
 
+constexpr uint32_t US915_125kHz_UPFBASE = 902300000;
+constexpr uint32_t US915_125kHz_UPFSTEP = 200000;
+constexpr uint32_t US915_500kHz_UPFBASE = 903000000;
+constexpr uint32_t US915_500kHz_UPFSTEP = 1600000;
+constexpr uint32_t US915_500kHz_DNFBASE = 923300000;
+constexpr uint32_t US915_500kHz_DNFSTEP = 600000;
 
-enum { CHNL_DNW2 = 0 };
-enum { FREQ_DNW2 = US915_500kHz_DNFBASE + CHNL_DNW2 * US915_500kHz_DNFSTEP };
-enum { DR_DNW2 = DR_SF12CR };
-enum {
-  CHNL_BCN = 0
-}; // used only for default init of state (rotating beacon scheme)
-enum { DR_BCN = DR_SF10CR };
-
-namespace {
+constexpr uint32_t US915_FREQ_MIN = 902000000;
+constexpr uint32_t US915_FREQ_MAX = 928000000;
 const OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(750);
-}
+constexpr uint8_t CHNL_DNW2 = 0;
+constexpr uint32_t FREQ_DNW2 =
+    US915_500kHz_DNFBASE + CHNL_DNW2 * US915_500kHz_DNFSTEP;
+constexpr dr_t DR_DNW2 = LmicUs915::SF12CR;
+} // namespace
 
 #define maxFrameLen(dr)                                                        \
   ((dr) <= DR_SF11CR ? TABLE_GET_U1(maxFrameLens, (dr)) : 0xFF)
@@ -157,9 +136,9 @@ void LmicUs915::handleCFList(const uint8_t *) {
   // just ignore cflist
 }
 
-bool LmicUs915::setupChannel(uint8_t , uint32_t , uint16_t ) {
-   // channels 0..71 are hardwired
-  return false;  
+bool LmicUs915::setupChannel(uint8_t, uint32_t, uint16_t) {
+  // channels 0..71 are hardwired
+  return false;
 }
 
 void LmicUs915::disableChannel(uint8_t channel) {
@@ -247,7 +226,7 @@ void LmicUs915::updateTxTimes(OsDeltaTime) {}
 OsTime LmicUs915::nextTx(OsTime now) {
   if (chRnd == 0)
     chRnd = rand.uint8() & 0x3F;
-  if (datarate >= DR_SF8C) { // 500kHz
+  if (datarate >= SF8C) { // 500kHz
     uint8_t map = channelMap[64 / 16] & 0xFF;
     for (uint8_t i = 0; i < 8; i++) {
       if ((map & (1 << (++chRnd & 7))) != 0) {
@@ -275,10 +254,11 @@ uint32_t LmicUs915::getRx1Frequency() const {
 
 dr_t LmicUs915::getRx1Dr() const {
   // TODO handle offset
-  if (datarate < DR_SF8C)
-    return datarate + DR_SF10CR - DR_SF10;
-  else if (datarate == DR_SF8C)
-    return DR_SF7CR;
+  if (datarate < SF8C)
+    return datarate + SF10CR -
+           SF10;
+  else if (datarate == SF8C)
+    return SF7CR;
   return datarate;
 }
 
@@ -291,7 +271,7 @@ void LmicUs915::initJoinLoop() {
   txChnl = 0;
   adrTxPow = 20;
   txend = os_getTime() + OsDeltaTime::rnd_delay(rand, 8);
-  setDrJoin(DR_SF7);
+  setDrJoin(SF7);
 }
 
 bool LmicUs915::nextJoinState() {
@@ -300,25 +280,25 @@ bool LmicUs915::nextJoinState() {
   //   SF8C        on a random channel 64..71
   //
   bool failed = false;
-  if (datarate != DR_SF8C) {
+  if (datarate != SF8C) {
     txChnl = 64 + (txChnl & 7);
-    datarate = DR_SF8C;
+    datarate = SF8C;
   } else {
     txChnl = rand.uint8() & 0x3F;
-    int8_t dr = DR_SF7 - ++txCnt;
-    if (dr < DR_SF10) {
-      dr = DR_SF10;
+    int8_t dr = SF7 - ++txCnt;
+    if (dr < SF10) {
+      dr = SF10;
       failed = true; // All DR exhausted - signal failed
     }
     datarate = dr;
   }
   txend = os_getTime();
-  
+
   return !failed;
 }
 
 FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
-  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
+  return {FREQ_DNW2, DR_DNW2};
 }
 
 LmicUs915::LmicUs915(Radio &aradio, OsScheduler &ascheduler)

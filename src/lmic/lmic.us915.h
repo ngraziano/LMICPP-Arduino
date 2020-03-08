@@ -17,34 +17,50 @@
 
 class LmicUs915 final : public Lmic {
 public:
+  enum Dr : dr_t {
+    SF10 = 0,
+    SF9,
+    SF8,
+    SF7,
+    SF8C,
+    // Only for Downlink
+    SF12CR = 8,
+    SF11CR,
+    SF10CR,
+    SF9CR,
+    SF8CR,
+    SF7CR
+  };
+
   explicit LmicUs915(Radio &radio, OsScheduler &scheduler);
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
+
 protected:
   uint32_t getTxFrequency() const final;
   int8_t getTxPower() const final;
   FrequencyAndRate getRx1Parameter() const final;
   uint8_t getRawRps(dr_t dr) const final;
 
-  int8_t pow2dBm(uint8_t powerIndex) const override;
-  OsDeltaTime getDwn2SafetyZone() const override;
-  OsDeltaTime dr2hsym(dr_t dr) const override;
-  uint32_t convFreq(const uint8_t *ptr) const override;
-  bool validRx1DrOffset(uint8_t drOffset) const override;
+  int8_t pow2dBm(uint8_t powerIndex) const final;
+  OsDeltaTime getDwn2SafetyZone() const final;
+  OsDeltaTime dr2hsym(dr_t dr) const final;
+  uint32_t convFreq(const uint8_t *ptr) const final;
+  bool validRx1DrOffset(uint8_t drOffset) const final;
 
-  void initDefaultChannels() override;
-  
-  void disableChannel(uint8_t channel) override;
-  void handleCFList(const uint8_t *ptr) override;
+  void initDefaultChannels() final;
 
-  bool validMapChannels(uint8_t chpage, uint16_t chmap) override;
-  void mapChannels(uint8_t chpage, uint16_t chmap) override;
-  void updateTxTimes(OsDeltaTime airtime) override;
-  OsTime nextTx(OsTime now) override;
-  void initJoinLoop() override;
-  bool nextJoinState() override;
-  FrequencyAndRate defaultRX2Parameter() const override;
+  void disableChannel(uint8_t channel) final;
+  void handleCFList(const uint8_t *ptr) final;
+
+  bool validMapChannels(uint8_t chpage, uint16_t chmap) final;
+  void mapChannels(uint8_t chpage, uint16_t chmap) final;
+  void updateTxTimes(OsDeltaTime airtime) final;
+  OsTime nextTx(OsTime now) final;
+  void initJoinLoop() final;
+  bool nextJoinState() final;
+  FrequencyAndRate defaultRX2Parameter() const final;
 
 private:
   uint16_t channelMap[(72 + 15) / 16]; // enabled bits
