@@ -15,10 +15,6 @@
 
 #include "lmic.h"
 
-enum {
-  MAX_XCHANNELS = 2
-}; // extra channels in RAM, channels 0-71 are immutable
-
 class LmicUs915 final : public Lmic {
 public:
   explicit LmicUs915(Radio &radio, OsScheduler &scheduler);
@@ -51,11 +47,7 @@ protected:
   FrequencyAndRate defaultRX2Parameter() const override;
 
 private:
-  uint32_t xchFreq[MAX_XCHANNELS]; // extra channel frequencies (if device is
-                                   // behind a repeater)
-  uint16_t
-      xchDrMap[MAX_XCHANNELS]; // extra channel datarate ranges  ---XXX: ditto
-  uint16_t channelMap[(72 + MAX_XCHANNELS + 15) / 16]; // enabled bits
+  uint16_t channelMap[(72 + 15) / 16]; // enabled bits
   uint16_t chRnd;
   // channel for next TX
   uint8_t txChnl = 0;

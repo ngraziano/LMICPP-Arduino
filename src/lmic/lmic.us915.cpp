@@ -43,13 +43,7 @@ enum {
 };
 enum { US915_FREQ_MIN = 902000000, US915_FREQ_MAX = 928000000 };
 
-enum {
-  CHNL_PING = 0
-}; // used only for default init of state (follows beacon - rotating)
-enum {
-  FREQ_PING = US915_500kHz_DNFBASE + CHNL_PING * US915_500kHz_DNFSTEP
-};                            // default ping freq
-enum { DR_PING = DR_SF10CR }; // default ping DR
+
 enum { CHNL_DNW2 = 0 };
 enum { FREQ_DNW2 = US915_500kHz_DNFBASE + CHNL_DNW2 * US915_500kHz_DNFSTEP };
 enum { DR_DNW2 = DR_SF12CR };
@@ -163,23 +157,18 @@ void LmicUs915::handleCFList(const uint8_t *) {
   // just ignore cflist
 }
 
-bool LmicUs915::setupChannel(uint8_t chidx, uint32_t newfreq, uint16_t drmap) {
-  if (chidx < 72 || chidx >= 72 + MAX_XCHANNELS)
-    return false; // channels 0..71 are hardwired
-  chidx -= 72;
-  xchFreq[chidx] = newfreq;
-  xchDrMap[chidx] = drmap == 0 ? dr_range_map(DR_SF10, DR_SF8C) : drmap;
-  channelMap[chidx >> 4] |= (1 << (chidx & 0xF));
-  return true;
+bool LmicUs915::setupChannel(uint8_t , uint32_t , uint16_t ) {
+   // channels 0..71 are hardwired
+  return false;  
 }
 
 void LmicUs915::disableChannel(uint8_t channel) {
-  if (channel < 72 + MAX_XCHANNELS)
+  if (channel < 72)
     channelMap[channel >> 4] &= ~(1 << (channel & 0xF));
 }
 
 void LmicUs915::enableChannel(uint8_t channel) {
-  if (channel < 72 + MAX_XCHANNELS)
+  if (channel < 72)
     channelMap[channel >> 4] |= (1 << (channel & 0xF));
 }
 
@@ -237,15 +226,12 @@ void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
 
 uint32_t LmicUs915::getTxFrequency() const {
   uint8_t chnl = txChnl;
+  ASSERT(chnl < 64 + 8);
+
   if (chnl < 64) {
     return US915_125kHz_UPFBASE + chnl * US915_125kHz_UPFSTEP;
   }
-  if (chnl < 64 + 8) {
-    return US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
-  } else {
-    ASSERT(chnl < 64 + 8 + MAX_XCHANNELS);
-    return xchFreq[chnl - 72];
-  }
+  return US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
 }
 
 int8_t LmicUs915::getTxPower() const {
