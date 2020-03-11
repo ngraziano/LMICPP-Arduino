@@ -9,6 +9,7 @@
  *    IBM Zurich Research Lab - initial API, implementation and documentation
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
+#include "../hal/print_debug.h"
 
 #include "lmic.us915.h"
 #include "bufferpack.h"
@@ -121,14 +122,23 @@ void LmicUs915::initDefaultChannels() {
 }
 
 uint32_t LmicUs915::convFreq(const uint8_t *ptr) const {
-  uint32_t newfreq = (rlsbf4(ptr - 1) >> 8) * 100;
+  uint32_t newfreq = rlsbf3(ptr) * 100;
   if (newfreq < US915_FREQ_MIN || newfreq > US915_FREQ_MAX)
     newfreq = 0;
   return newfreq;
 }
 
-void LmicUs915::handleCFList(const uint8_t *) {
-  // just ignore cflist
+void LmicUs915::handleCFList(const uint8_t *ptr) {
+  // Check CFList type
+  if (ptr[15] != 1) {
+    PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
+    return;
+  }
+  for (uint8_t chMaskCntl = 0; chMaskCntl < 5; chMaskCntl++, ptr += 2) {
+    uint16_t chMask = rlsbf2(ptr);
+    mapChannels(chMaskCntl, chMask);
+    PRINT_DEBUG(2, F("Setup mask %d to %d"), chMaskCntl, chMask);
+  }
 }
 
 bool LmicUs915::setupChannel(uint8_t, uint32_t, uint16_t) {

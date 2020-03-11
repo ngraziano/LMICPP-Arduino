@@ -141,7 +141,11 @@ uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
 }
 
 void LmicEu868::handleCFList(const uint8_t *ptr) {
-
+  // Check CFList type 
+  if(ptr[15] != 0) {
+      PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
+      return;
+  }
   for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
     uint32_t newfreq = convFreq(ptr);
     if (newfreq != 0) {
