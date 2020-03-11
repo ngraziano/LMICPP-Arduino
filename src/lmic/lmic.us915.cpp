@@ -114,11 +114,6 @@ bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
   return drOffset < 4;
 }
 
-// ================================================================================
-//
-// BEG: US915 related stuff
-//
-
 void LmicUs915::initDefaultChannels() {
   for (uint8_t i = 0; i < 4; i++)
     channelMap[i] = 0xFFFF;
@@ -253,12 +248,25 @@ uint32_t LmicUs915::getRx1Frequency() const {
 }
 
 dr_t LmicUs915::getRx1Dr() const {
-  // TODO handle offset
-  if (datarate < SF8C)
-    return datarate + SF10CR -
-           SF10;
-  else if (datarate == SF8C)
-    return SF7CR;
+  // |Upstream data rate  | Downstream data rate      |
+  // |RX1DROffset         |  0   |  1   |  2   |  3   |
+  // |--------------------| ---- | ---- | ---- | ---- |
+  // |        DR0         | DR10 | DR9  | DR8  | DR8  |
+  // |        DR1         | DR11 | DR10 | DR9  | DR8  |
+  // |        DR2         | DR12 | DR11 | DR10 | DR9  |
+  // |        DR3         | DR13 | DR12 | DR11 | DR10 |
+  // |        DR4         | DR13 | DR13 | DR12 | DR11 |
+
+  if (datarate < 4) {
+    auto const dr_offset0 = datarate + 10;
+    return lowerDR(datarate, rx1DrOffset);
+  } else if (datarate == 4) {
+    if (rx1DrOffset == 0) {
+      return 13;
+    } else {
+      return lowerDR(13, rx1DrOffset - 1);
+    }
+  }
   return datarate;
 }
 
