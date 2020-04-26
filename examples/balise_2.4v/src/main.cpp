@@ -48,7 +48,8 @@ void onEvent(EventType ev) {
   case EventType::JOINED:
     PRINT_DEBUG(2, F("EV_JOINED"));
     // disable ADR because it will be mobile.
-    // LMIC.setLinkCheckMode(false);
+    LMIC.setLinkCheckMode(false);
+    LMIC.setDrTx(0);
     LMIC.setDutyRate(12);
     break;
   case EventType::JOIN_FAILED:
@@ -116,6 +117,10 @@ void do_send() {
     uint32_t bat_value = read_vcc();
     PRINT_DEBUG(1, F("Batterie value %i"), bat_value);
     uint8_t val = bat_value * 255 / 3000;
+
+    if (LMIC.getTxRxFlags().test(TxRxStatus::NEED_BATTERY_LEVEL)) {
+      LMIC.setBatteryLevel(val);
+    }
 
     // Prepare upstream data transmission at the next possible time.
     LMIC.setTxData2(3, &val, 1, false);
