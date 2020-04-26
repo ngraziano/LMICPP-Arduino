@@ -25,13 +25,6 @@ using namespace lorawan;
 constexpr uint8_t MINRX_SYMS = 5;
 constexpr uint8_t PAMBL_SYMS = 8;
 
-// ================================================================================
-// BEG OS - default implementations for certain OS suport functions
-
-#if !defined(os_getBattLevel)
-uint8_t os_getBattLevel() { return MCMD_DEVS_BATT_NOINFO; }
-#endif
-
 // END OS - default implementations for certain OS suport functions
 // ================================================================================
 
@@ -114,6 +107,15 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
     globalDutyAvail = delayRef;
   }
 }
+
+/**
+ * Set the battery level from : 
+ *  0 : external power source
+ *  1-254 : battery level
+ *  255 : no info
+ * To be call when  txrxFlags have NEED_BATTERY_LEVEL flag
+ **/
+void Lmic::setBatteryLevel(uint8_t level) { battery_level = level; }
 
 void Lmic::setDrJoin(dr_t dr) { datarate = dr; }
 
@@ -282,6 +284,7 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
     }
     // DevStatusReq LoRaWAN™ Specification §5.5
     case MCMD_DEVS_REQ: {
+      txrxFlags.set(TxRxStatus::NEED_BATTERY_LEVEL);
       devsAns = true;
       oidx += 1;
       continue;
@@ -545,7 +548,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   opmode.reset(OpState::NEXTCHNL);
   const bool succes = nextJoinState();
 
-  // in §7 of lorawan 1.0.3 
+  // in §7 of lorawan 1.0.3
   // the backoff for join is describe
   // Duty rate of 2^14 is enought to respect 8.7s by 24h
   // and divide by every 4000s, from 2^7 to 2^14, is enougth to
@@ -566,7 +569,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
     txend = globalDutyAvail;
   }
   txend += getDwn2SafetyZone();
-  txend +=  OsDeltaTime::rnd_delay(rand, 255 >> datarate);
+  txend += OsDeltaTime::rnd_delay(rand, 255 >> datarate);
 
   PRINT_DEBUG(1, F("Next Join delay : %i s"), (txend - os_getTime()).to_s());
   osjob.setCallbackRunnable(
@@ -775,7 +778,7 @@ uint8_t *Lmic::add_opt_devs(uint8_t *pos) {
   // DevStatusAns LoRaWAN™ Specification §5.5
   if (devsAns) { // answer to device status
     *(pos++) = MCMD_DEVS_ANS;
-    *(pos++) = os_getBattLevel();
+    *(pos++) = battery_level;
     // lorawan 1.0.2 §5.5. the margin is the SNR.
     // Convert to real SNR; rounding towards zero.
     const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;

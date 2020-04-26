@@ -43,9 +43,6 @@ constexpr OsDeltaTime TX_RAMPUP = OsDeltaTime::from_us(2000);
 #ifndef os_getTime
 OsTime os_getTime(void);
 #endif
-#ifndef os_getBattLevel
-uint8_t os_getBattLevel(void);
-#endif
 
 #endif // !HAS_os_calls
 

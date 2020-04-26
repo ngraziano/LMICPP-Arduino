@@ -66,6 +66,8 @@ enum class TxRxStatus : uint8_t {
   ACK,
   // confirmed UP frame was not acked
   NACK,
+  // Battery level is needed next TX
+  NEED_BATTERY_LEVEL,
 }; // received in a scheduled RX slot
 
 using TxRxStatusValue = EnumFlagsValue<TxRxStatus>;
@@ -133,6 +135,7 @@ private:
   // curent opmode set at init
   OpStateValue opmode;
 
+  uint8_t battery_level = MCMD_DEVS_BATT_NOINFO;
   int8_t antennaPowerAdjustment = 0;
   // last time we increase duty rate for back-off
   OsTime lastDutyRateBackOff;
@@ -281,6 +284,7 @@ private:
   void incrementAdrCount();
 
 public:
+  void setBatteryLevel(uint8_t level);
   void setDrJoin(dr_t dr);
   // set default/start DR/txpow
   void setDrTx(uint8_t dr);
