@@ -269,7 +269,7 @@ dr_t LmicUs915::getRx1Dr() const {
 
   if (datarate < 4) {
     auto const dr_offset0 = datarate + 10;
-    return lowerDR(datarate, rx1DrOffset);
+    return lowerDR(dr_offset0, rx1DrOffset);
   } else if (datarate == 4) {
     if (rx1DrOffset == 0) {
       return 13;
