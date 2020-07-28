@@ -23,4 +23,27 @@ public:
 #endif
 };
 
+class BandSingle : public Bands {
+public:
+  BandSingle(uint16_t duty);
+  void init() final;
+  void updateBandAvailability(uint8_t band, OsTime lastusage,
+                              OsDeltaTime duration) final;
+  void print_state() const final;
+  OsTime getAvailability(uint8_t) const final { return avail; };
+
+  static constexpr uint8_t MAX_BAND = 1;
+  uint8_t getBandForFrequency(uint32_t frequency) const final;
+
+#if defined(ENABLE_SAVE_RESTORE)
+
+  void saveState(StoringAbtract &store) const final;
+  void loadState(RetrieveAbtract &store) final;
+#endif
+
+private:
+  const uint16_t dutyCycle; 
+  OsTime avail;
+};
+
 #endif
