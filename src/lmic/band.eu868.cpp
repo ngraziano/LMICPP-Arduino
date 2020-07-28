@@ -48,7 +48,7 @@ void BandsEu868::print_state() const {
   }
 }
 
-uint8_t BandsEu868::getBandForFrequency(uint32_t const frequency) {
+uint8_t BandsEu868::getBandForFrequency(uint32_t const frequency) const {
 
   if (frequency >= MIN_BAND_DECI && frequency <= MAX_BAND_DECI)
     return BAND_DECI; // 10%

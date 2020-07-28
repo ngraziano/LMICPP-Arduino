@@ -3,6 +3,7 @@
 
 #include "bufferpack.h"
 #include "lorabase.h"
+#include "bands.h"
 #include <stdint.h>
 
 struct ChannelDetail {
@@ -35,23 +36,25 @@ public:
 #endif
 };
 
-// Channel map is store in one 16bit
-enum { LIMIT_CHANNELS = 16 };
 
-template <uint8_t size, class BandType> class ChannelList {
+
+class ChannelList {
+public:
+  // Channel map store a maximum of 16 channel
+  // (in rp_2-1.0.1 all dynamic channel region have a minumum of 16 )
+  constexpr static const uint8_t LIMIT_CHANNELS = 16 ;
+
 private:
-  ChannelDetail channels[size] = {};
-  uint16_t channelMap;
-  BandType bands;
-
-  static_assert(size <= LIMIT_CHANNELS, "Number of channel too large.");
+  ChannelDetail channels[LIMIT_CHANNELS] = {};
+  uint16_t channelMap = 0;
+  Bands & bands;
 
   uint8_t getBand(uint8_t const channel) const {
     return bands.getBandForFrequency(getFrequency(channel));
   }
 
-
 public:
+  constexpr explicit ChannelList(Bands &b) : bands(b) {}
   void init() { bands.init(); }
   void disableAll() { channelMap = 0; }
   void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
@@ -62,7 +65,7 @@ public:
     }
   }
   void enableAll() {
-    for (uint8_t channel = 0; channel < size; channel++) {
+    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
       enable(channel);
     }
   }
@@ -86,12 +89,12 @@ public:
     bands.updateBandAvailability(getBand(channel), txbeg, airtime);
   }
 
-  OsTime getAvailability(uint8_t const channel) {
+  OsTime getAvailability(uint8_t const channel) const {
     auto band = getBand(channel);
     return bands.getAvailability(band);
   };
 
-  constexpr uint32_t getFrequency(uint8_t const channel) {
+  constexpr uint32_t getFrequency(uint8_t const channel) const {
     return channels[channel].getFrequency();
   };
 
@@ -102,7 +105,7 @@ public:
   };
 
   void saveStateWithoutTimeData(StoringAbtract &store) const {
-    for (uint8_t channel = 0; channel < size; channel++) {
+    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
       channels[channel].saveState(store);
     }
     store.write(channelMap);
@@ -114,7 +117,7 @@ public:
   };
 
   void loadStateWithoutTimeData(RetrieveAbtract &store) {
-    for (uint8_t channel = 0; channel < size; channel++) {
+    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
       channels[channel].loadState(store);
     }
     store.read(channelMap);
