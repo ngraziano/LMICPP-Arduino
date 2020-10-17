@@ -22,7 +22,6 @@
 
 //================================================================================
 
-
 #if !defined(CFG_noassert)
 #define ASSERT(cond)                                                           \
   if (!(cond))                                                                 \
@@ -47,85 +46,56 @@ OsTime os_getTime(void);
 #endif // !HAS_os_calls
 
 
-
-
-class OsJobBase;
-class OsJob;
-
-using osjobcb_t = void (*)();
-
-class OsScheduler final {
-  friend class OsJobBase;
-
-private:
-  OsJobBase *scheduledjobs = nullptr;
-  void unlinkScheduledJobs(OsJobBase &job);
-  void linkScheduledJob(OsJobBase &job);
-
-public:
-  // Disallow copying
-  OsScheduler &operator=(const OsScheduler &) = delete;
-  OsScheduler(const OsScheduler &) = delete;
-  OsScheduler() = default;
-
-  OsDeltaTime runloopOnce();
-};
-
-class OsJobBase {
-  friend class OsScheduler;
-
-private:
-  OsScheduler &scheduler;
-  OsJobBase *next = nullptr;
-  OsTime deadline;
-
-protected:
-  virtual void call() const = 0;
-
-public:
-  explicit OsJobBase(OsScheduler &scheduler);
-
-  void setRunnable();
-  void clearCallback();
-
-  void setTimed(OsTime time);
-};
-
-class OsJob final : public OsJobBase {
-protected:
-  osjobcb_t func = nullptr;
-  void call() const override;
-
-public:
-  explicit OsJob(OsScheduler &scheduler);
-  void setCallbackFuture(osjobcb_t cb) { func = cb; };
-  void setCallbackRunnable(osjobcb_t cb);
-  void setTimedCallback(OsTime time, osjobcb_t cb);
-};
-
-template <class T> class OsJobType final : public OsJobBase {
+template <class T> class OsJobType final {
 public:
   using osjobcbTyped_t = void (T::*)();
 
 private:
-  T &refClass;
   osjobcbTyped_t funcTyped;
-
-protected:
-  void call() const override { (refClass.*funcTyped)(); };
+  OsTime deadline;
 
 public:
-  OsJobType(T &ref, OsScheduler &ascheduler)
-      : OsJobBase(ascheduler), refClass(ref){};
+  // clear scheduled job
+  void clearCallback() { funcTyped = nullptr; }
+
   void setCallbackFuture(osjobcbTyped_t cb) { funcTyped = cb; };
   void setCallbackRunnable(osjobcbTyped_t cb) {
     setCallbackFuture(cb);
     setRunnable();
   };
+  void setRunnable() { setTimed(os_getTime()); }
   void setTimedCallback(OsTime time, osjobcbTyped_t cb) {
     setCallbackFuture(cb);
     setTimed(time);
   };
+  // schedule timed job
+  void setTimed(OsTime time) {
+    // fill-in job
+    deadline = time;
+  }
+
+  OsDeltaTime run(T &refClass) {
+
+    if (funcTyped && deadline <= hal_ticks()) {
+      auto called = funcTyped;
+      funcTyped = nullptr;
+      (refClass.*called)();
+    }
+    // functyped and deadline may have been updated
+    if (funcTyped) {
+      // return the time to wait
+      auto timeToWait = deadline - hal_ticks();
+      if (timeToWait < OsDeltaTime(0)) {
+        return OsDeltaTime(0);
+      } else {
+        return timeToWait;
+      }
+    } else {
+
+      // nothing to do
+      return OsDeltaTime(-1);
+    }
+  }
 };
 
 #endif // _oslmic_h_

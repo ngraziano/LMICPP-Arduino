@@ -31,7 +31,7 @@ public:
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) = 0;
 
 protected:
-  explicit LmicDynamicChannel(Radio &radio, OsScheduler &scheduler,
+  explicit LmicDynamicChannel(Radio &radio,
                               uint8_t aMaxEIRP, dr_t aMaxJoinDr,
                               dr_t aMinJoinDr, Bands &aBands);
 

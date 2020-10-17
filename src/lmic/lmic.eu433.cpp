@@ -128,5 +128,5 @@ FrequencyAndRate LmicEu433::defaultRX2Parameter() const {
   return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
 }
 
-LmicEu433::LmicEu433(Radio &aradio, OsScheduler &ascheduler)
-    : LmicDynamicChannel(aradio, ascheduler, MaxEIRPValue, 5,0, bands) {}
+LmicEu433::LmicEu433(Radio &aradio)
+    : LmicDynamicChannel(aradio, MaxEIRPValue, 5,0, bands) {}

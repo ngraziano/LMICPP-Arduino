@@ -136,5 +136,5 @@ FrequencyAndRate LmicEu868::defaultRX2Parameter() const {
   return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
 }
 
-LmicEu868::LmicEu868(Radio &aradio, OsScheduler &ascheduler)
-    : LmicDynamicChannel(aradio, ascheduler, MaxEIRPValue, 5,0, bandeu) {}
+LmicEu868::LmicEu868(Radio &aradio)
+    : LmicDynamicChannel(aradio, MaxEIRPValue, 5,0, bandeu) {}

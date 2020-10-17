@@ -22,7 +22,7 @@ class LmicEu433 final : public LmicDynamicChannel {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-  explicit LmicEu433(Radio &radio, OsScheduler &scheduler);
+  explicit LmicEu433(Radio &radio);
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
 
