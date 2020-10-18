@@ -83,17 +83,11 @@ public:
     }
     // functyped and deadline may have been updated
     if (funcTyped) {
-      // return the time to wait
-      auto timeToWait = deadline - hal_ticks();
-      if (timeToWait < OsDeltaTime(0)) {
-        return OsDeltaTime(0);
-      } else {
-        return timeToWait;
-      }
+      // return before nex action
+      return deadline - hal_ticks();
     } else {
-
       // nothing to do
-      return OsDeltaTime(-1);
+      return OsInfiniteDeltaTime;
     }
   }
 };

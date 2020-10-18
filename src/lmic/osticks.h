@@ -50,6 +50,8 @@ private:
   int32_t value;
 };
 
+constexpr OsDeltaTime OsInfiniteDeltaTime = OsDeltaTime(INT32_MAX);
+
 class OsTime {
 public:
   constexpr OsTime() : OsTime(0){};
