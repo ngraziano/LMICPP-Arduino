@@ -7,6 +7,7 @@
 #include <keyhandler.h>
 #include <lmic.h>
 
+#include <algorithm>
 #include <sleepandwatchdog.h>
 
 #include <Wire.h>
@@ -34,11 +35,11 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {9, 8},
 };
-OsScheduler OSS;
-RadioSx1276 radio{lmic_pins};
-LmicEu868 LMIC{radio, OSS};
 
-OsJob sendjob{OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio};
+
+OsTime nextSend;
 
 void onEvent(EventType ev) {
   rst_wdt();
@@ -62,19 +63,6 @@ void onEvent(EventType ev) {
     if (LMIC.getTxRxFlags().test(TxRxStatus::ACK)) {
       PRINT_DEBUG(1, F("Received ack"));
     }
-    /*
-    if (LMIC.getDataLen()) {
-      PRINT_DEBUG(1, F("Received %d bytes of payload"), LMIC.getDataLen());
-      auto data = LMIC.getData();
-      if (data) {
-        uint8_t port = LMIC.getPort();
-      }
-    }
-    */
-    // we have transmit
-    // Schedule next transmission
-    sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-
     break;
   case EventType::RESET:
     PRINT_DEBUG(2, F("EV_RESET"));
@@ -108,36 +96,30 @@ uint16_t read_vcc() {
 }
 
 void do_send() {
-  // Check if there is not a current TX/RX job running
-  if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
-    PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-    // should not happen so reschedule anyway
-    sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-  } else {
-    uint8_t buffer[7];
-    // battery
-    uint32_t bat_value = read_vcc();
-    PRINT_DEBUG(1, F("Batterie value %i"), bat_value);
-    buffer[0] = bat_value * 255 / 3000;
 
-    bmp.singleMeasure();
-    // Typical time to wait for 1 oversampling P T H
-    delay(8);
-    bmp.waitMeasureDone();
+  uint8_t buffer[7];
+  // battery
+  uint32_t bat_value = read_vcc();
+  PRINT_DEBUG(1, F("Batterie value %i"), bat_value);
+  buffer[0] = bat_value * 255 / 3000;
 
-    auto values = bmp.getValues16();
-    buffer[1] = values.T >> 8;
-    buffer[2] = values.T & 0xFF;
-    buffer[3] = values.P >> 8;
-    buffer[4] = values.P & 0xFF;
-    buffer[5] = values.H >> 8;
-    buffer[6] = values.H & 0xFF;
+  bmp.singleMeasure();
+  // Typical time to wait for 1 oversampling P T H
+  delay(8);
+  bmp.waitMeasureDone();
 
-    // Prepare upstream data transmission at the next possible time.
-    LMIC.setTxData2(5, buffer, 7, false);
-    PRINT_DEBUG(1, F("Packet queued"));
-  }
-  // Next TX is scheduled after TX_COMPLETE event.
+  auto values = bmp.getValues16();
+  buffer[1] = values.T >> 8;
+  buffer[2] = values.T & 0xFF;
+  buffer[3] = values.P >> 8;
+  buffer[4] = values.P & 0xFF;
+  buffer[5] = values.H >> 8;
+  buffer[6] = values.H & 0xFF;
+
+  // Prepare upstream data transmission at the next possible time.
+  LMIC.setTxData2(5, buffer, 7, false);
+  PRINT_DEBUG(1, F("Packet queued"));
+  nextSend = os_getTime() + TX_INTERVAL;
 }
 
 // lmic_pins.dio[0]  = 9 => PCINT1
@@ -215,14 +197,29 @@ void setup() {
   testDuration(30000);
 
   // Start job (sending automatically starts OTAA too)
-  sendjob.setCallbackRunnable(do_send);
+  nextSend = os_getTime();
 }
 
 void loop() {
   rst_wdt();
-  OsDeltaTime to_wait = OSS.runloopOnce();
-  if (to_wait > OsDeltaTime(0)) {
-    // Go to sleep if we have nothing to do.
-    powersave(to_wait, []() { return false; });
+
+  OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+
+  if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10)) {
+    // we have more than 10 ms to do some work.
+    // the test must be adapted from the time spend in other task
+    if (nextSend < os_getTime()) {
+      if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
+        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+      } else {
+        do_send();
+      }
+    } else {
+      OsDeltaTime freeTimeBeforeSend = nextSend - os_getTime();
+      OsDeltaTime to_wait =
+          std::min(freeTimeBeforeNextCall, freeTimeBeforeSend);
+      // Go to sleep if we have nothing to do.
+      powersave(to_wait, []() { return false; });
+    }
   }
 }
