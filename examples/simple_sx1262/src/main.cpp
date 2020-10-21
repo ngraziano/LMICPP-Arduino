@@ -27,12 +27,11 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {/* busy */ 9, /* DIO1 */ 8},
 };
-OsScheduler OSS;
 // Radio class for SX1262
 RadioSx1262 radio{lmic_pins, ImageCalibrationBand::band_863_870};
-LmicEu868 LMIC{radio, OSS};
+LmicEu868 LMIC{radio};
 
-OsJob sendjob{OSS};
+OsTime nextSend;
 
 void onEvent(EventType ev)
 {
@@ -65,9 +64,6 @@ void onEvent(EventType ev)
                 uint8_t port = LMIC.getPort();
             }
         }
-        // we have transmit
-        // Schedule next transmission
-        sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
 
         break;
     case EventType::RESET:
@@ -87,23 +83,13 @@ void onEvent(EventType ev)
 
 void do_send()
 {
-    // Check if there is not a current TX/RX job running
-    if (LMIC.getOpMode().test(OpState::TXRXPEND))
-    {
-        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-        // should not happen so reschedule anymway
-        sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-    }
-    else
-    {
-        // some value
-        uint8_t val = ((uint32_t)analogRead(A1)) * 255 / 683;
+    // some value
+    uint8_t val = ((uint32_t)analogRead(A1)) * 255 / 683;
 
-        // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(2, &val, 1, false);
-        PRINT_DEBUG(1, F("Packet queued"));
-    }
-    // Next TX is scheduled after TX_COMPLETE event.
+    // Prepare upstream data transmission at the next possible time.
+    LMIC.setTxData2(2, &val, 1, false);
+    PRINT_DEBUG(1, F("Packet queued"));
+    nextSend = hal_ticks() + TX_INTERVAL;
 }
 
 // lmic_pins.dio[0]  = 9 => PCINT1
@@ -148,14 +134,27 @@ void setup()
     LMIC.setClockError(MAX_CLOCK_ERROR * 1 / 100);
 
     // Start job (sending automatically starts OTAA too)
-    do_send();
+   nextSend = os_getTime();
 }
 
 void loop()
 {
-    OsDeltaTime to_wait = OSS.runloopOnce();
-    if (to_wait > OsDeltaTime(0))
+    OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+    if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10))
     {
-        // sleep if we have nothing to do.
+        // we have more than 10 ms to do some work.
+        // the test must be adapted from the time spend in other task
+        if (LMIC.getOpMode().test(OpState::TXRXPEND))
+        {
+            PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+        }
+        else if (nextSend < hal_ticks())
+        {
+            do_send();
+        }
+        else
+        {
+            // sleep if we have nothing to do.
+        }
     }
 }
