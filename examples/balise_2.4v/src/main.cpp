@@ -7,6 +7,7 @@
 #include <keyhandler.h>
 #include <lmic.h>
 
+#include <algorithm>
 #include <sleepandwatchdog.h>
 
 #define DEVICE_TEMP1
@@ -29,11 +30,11 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {9, 8},
 };
-OsScheduler OSS;
-RadioSx1276 radio{lmic_pins};
-LmicEu868 LMIC{radio, OSS};
 
-OsJob sendjob{OSS};
+RadioSx1276 radio{lmic_pins};
+LmicEu868 LMIC{radio};
+
+OsTime nextSend;
 
 bool new_click = false;
 bool send_now = false;
@@ -61,19 +62,6 @@ void onEvent(EventType ev) {
     if (LMIC.getTxRxFlags().test(TxRxStatus::ACK)) {
       PRINT_DEBUG(1, F("Received ack"));
     }
-    /*
-    if (LMIC.getDataLen()) {
-      PRINT_DEBUG(1, F("Received %d bytes of payload"), LMIC.getDataLen());
-      auto data = LMIC.getData();
-      if (data) {
-        uint8_t port = LMIC.getPort();
-      }
-    }
-    */
-    // we have transmit
-    // Schedule next transmission
-    sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-
     break;
   case EventType::RESET:
     PRINT_DEBUG(2, F("EV_RESET"));
@@ -107,26 +95,21 @@ uint16_t read_vcc() {
 }
 
 void do_send() {
-  // Check if there is not a current TX/RX job running
-  if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
-    PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-    // should not happen so reschedule anyway
-    sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-  } else {
-    // battery
-    uint32_t bat_value = read_vcc();
-    PRINT_DEBUG(1, F("Batterie value %i"), bat_value);
-    uint8_t val = bat_value * 255 / 3000;
 
-    if (LMIC.getTxRxFlags().test(TxRxStatus::NEED_BATTERY_LEVEL)) {
-      LMIC.setBatteryLevel(val);
-    }
+  // battery
+  uint32_t bat_value = read_vcc();
+  PRINT_DEBUG(1, F("Batterie value %i"), bat_value);
+  uint8_t val = bat_value * 255 / 3000;
 
-    // Prepare upstream data transmission at the next possible time.
-    LMIC.setTxData2(3, &val, 1, false);
-    PRINT_DEBUG(1, F("Packet queued"));
+  if (LMIC.getTxRxFlags().test(TxRxStatus::NEED_BATTERY_LEVEL)) {
+    LMIC.setBatteryLevel(val);
   }
-  // Next TX is scheduled after TX_COMPLETE event.
+
+  // Prepare upstream data transmission at the next possible time.
+  LMIC.setTxData2(3, &val, 1, false);
+  PRINT_DEBUG(1, F("Packet queued"));
+  nextSend = os_getTime() + TX_INTERVAL;
+
 }
 
 // lmic_pins.dio[0]  = 9 => PCINT1
@@ -207,23 +190,34 @@ void setup() {
   testDuration(30000);
 
   // Start job (sending automatically starts OTAA too)
-  sendjob.setCallbackRunnable(do_send);
+  nextSend = os_getTime();
 }
 
 void loop() {
   rst_wdt();
-  OsDeltaTime to_wait = OSS.runloopOnce();
-  if (to_wait > OsDeltaTime(0)) {
-    // Go to sleep if we have nothing to do.
-    powersave(to_wait, []() {
-      buttonInterupt();
-      return new_click;
-    });
+  OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+
+  if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10)) {
+    // we have more than 10 ms to do some work.
+    // the test must be adapted from the time spend in other task
+    if (nextSend < os_getTime() || new_click) {
+      if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
+        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+      } else {
+        send_now = true;
+        new_click = false;
+        do_send();
+      }
+    } else {
+      OsDeltaTime freeTimeBeforeSend = nextSend - os_getTime();
+      OsDeltaTime to_wait =
+          std::min(freeTimeBeforeNextCall, freeTimeBeforeSend);
+      // Go to sleep if we have nothing to do.
+      powersave(to_wait, []() {
+        buttonInterupt();
+        return new_click;
+      });
+    }
   }
 
-  if (new_click) {
-    send_now = true;
-    new_click = false;
-    sendjob.setCallbackRunnable(do_send);
-  }
 }

@@ -231,9 +231,9 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
 }
 #endif
 
-LmicDynamicChannel::LmicDynamicChannel(Radio &aradio, OsScheduler &ascheduler,
+LmicDynamicChannel::LmicDynamicChannel(Radio &aradio,
                                        uint8_t aMaxEIRP, dr_t aMaxJoinDr,
                                        dr_t aMinJoinDr,
                                        Bands& aBands)
-    : Lmic(aradio, ascheduler), MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
+    : Lmic(aradio), MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
       MinJoinDR(aMinJoinDr),  channels{aBands} {}
