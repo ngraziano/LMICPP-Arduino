@@ -383,8 +383,9 @@ protected:
   void wait_end_tx();
 
 public:
-  explicit Lmic(Radio &radio, OsScheduler &scheduler);
+  explicit Lmic(Radio &radio);
   void store_trigger();
+  OsDeltaTime run(); 
 };
 
 // Construct a bit map of allowed datarates from drlo to drhi (both included).

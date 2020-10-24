@@ -22,11 +22,10 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {26, 33},
 };
-OsScheduler OSS;
 RadioSx1276 radio{lmic_pins};
-LmicEu868 LMIC{radio, OSS};
+LmicEu868 LMIC{radio};
 
-OsJob sendjob{OSS};
+OsTime nextSend;
 
 // buffer to save current lmic state (size may be reduce)
 const size_t SAVE_BUFFER_SIZE = 200;
@@ -81,20 +80,11 @@ void onEvent(EventType ev) {
 }
 
 void do_send() {
-  // Check if there is not a current TX/RX job running
-  if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
-    PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-    // should not happen so reschedule anymway
-    sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-  } else {
-
-    uint8_t val = 51;
-
-    // Prepare upstream data transmission at the next possible time.
-    LMIC.setTxData2(3, &val, 1, false);
-    PRINT_DEBUG(1, F("Packet queued"));
-  }
-  // Next TX is scheduled after TX_COMPLETE event.
+  uint8_t val = 51;
+  // Prepare upstream data transmission at the next possible time.
+  LMIC.setTxData2(3, &val, 1, false);
+  PRINT_DEBUG(1, F("Packet queued"));
+  nextSend = os_getTime() + TX_INTERVAL;
 }
 
 void setup() {
@@ -154,13 +144,27 @@ void setup() {
   }
 
   // Start job to send data
-  sendjob.setCallbackRunnable(do_send);
+  nextSend = os_getTime();
 }
 
 void loop() {
-  OsDeltaTime to_wait = OSS.runloopOnce();
-  if (to_wait > OsDeltaTime(0)) {
-    // if we have nothing to do just wait a little.
-    delay(to_wait.to_ms() / 2);
+
+  OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+
+  if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10)) {
+    // we have more than 10 ms to do some work.
+    // the test must be adapted from the time spend in other task
+    if (nextSend < os_getTime()) {
+      if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
+        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+      } else {
+        do_send();
+      }
+    } else {
+      OsDeltaTime freeTimeBeforeSend = nextSend - os_getTime();
+      OsDeltaTime to_wait =
+          std::min(freeTimeBeforeNextCall, freeTimeBeforeSend);
+      delay(to_wait.to_ms() / 2);
+    }
   }
 }

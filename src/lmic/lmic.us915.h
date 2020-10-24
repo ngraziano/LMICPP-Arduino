@@ -32,7 +32,7 @@ public:
     SF7CR
   };
 
-  explicit LmicUs915(Radio &radio, OsScheduler &scheduler);
+  explicit LmicUs915(Radio &radio);
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);

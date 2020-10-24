@@ -319,5 +319,5 @@ FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
   return {FREQ_DNW2, DR_DNW2};
 }
 
-LmicUs915::LmicUs915(Radio &aradio, OsScheduler &ascheduler)
-    : Lmic(aradio, ascheduler) {}
+LmicUs915::LmicUs915(Radio &aradio)
+    : Lmic(aradio) {}

@@ -1327,5 +1327,9 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
 #endif
 
-Lmic::Lmic(Radio &aradio, OsScheduler &ascheduler)
-    : radio(aradio), osjob(*this, ascheduler), rand(aes) {}
+OsDeltaTime Lmic::run() {
+  return osjob.run(*this);
+}
+
+Lmic::Lmic(Radio &aradio)
+    : radio(aradio), rand(aes) {}
