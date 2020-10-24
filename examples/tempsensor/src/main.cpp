@@ -11,6 +11,8 @@
 
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <algorithm>
+#include "powersave.h"
 
 #define DEVICE_BALISE2
 #include "lorakeys.h"
@@ -32,11 +34,10 @@ constexpr lmic_pinmap lmic_pins = {
     .rst = 14,
     .dio = {9, 8},
 };
-OsScheduler OSS;
 RadioSx1276 radio{lmic_pins};
-LmicEu868 LMIC{radio, OSS};
+LmicEu868 LMIC{radio};
 
-OsJob sendjob{OSS};
+OsTime nextSend;
 
 bool new_click = false;
 bool send_now = false;
@@ -69,10 +70,6 @@ void onEvent(EventType ev)
     case EventType::TXCOMPLETE:
         PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
         send_now = false;
-        // we have transmit
-        // Schedule next transmission
-        sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, begin_read);
-
         break;
     case EventType::RESET:
         PRINT_DEBUG(2, F("EV_RESET"));
@@ -100,42 +97,32 @@ void begin_read()
 void do_send()
 {
 
-    // Check if there is not a current TX/RX job running
-    if (LMIC.getOpMode().test(OpState::TXRXPEND))
-    {
-        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-        // should not happen so reschedule anymway
-        sendjob.setTimedCallback(os_getTime() + TX_INTERVAL, do_send);
-    }
-    else
-    {
-        // TODO check buffer is small enought for LMIC.
-        uint8_t buffsize = 1 + 2 * temps_sensors.getDeviceCount();
-        uint8_t rawbuff[buffsize];
+    // TODO check buffer is small enought for LMIC.
+    uint8_t buffsize = 1 + 2 * temps_sensors.getDeviceCount();
+    uint8_t rawbuff[buffsize];
 
-        // battery
-        rawbuff[0] = ((uint32_t)analogRead(A1)) * 255 / 683;
+    // battery
+    rawbuff[0] = ((uint32_t)analogRead(A1)) * 255 / 683;
 
-        auto temp_buff = reinterpret_cast<uint16_t *>(rawbuff + 1);
-        for (int i = 0; i < temps_sensors.getDeviceCount(); i++)
+    auto temp_buff = reinterpret_cast<uint16_t *>(rawbuff + 1);
+    for (int i = 0; i < temps_sensors.getDeviceCount(); i++)
+    {
+
+        DeviceAddress deviceAddress;
+        if (!temps_sensors.getAddress(deviceAddress, i))
         {
-
-            DeviceAddress deviceAddress;
-            if (!temps_sensors.getAddress(deviceAddress, i))
-            {
-                temp_buff[i] = DEVICE_DISCONNECTED_C;
-            }
-            else
-            {
-                temp_buff[i] = temps_sensors.getTemp(deviceAddress);
-            }
+            temp_buff[i] = DEVICE_DISCONNECTED_C;
         }
-
-        // Prepare upstream data transmission at the next possible time.
-        LMIC.setTxData2(4, rawbuff, buffsize, false);
-        PRINT_DEBUG(1, F("Packet queued"));
+        else
+        {
+            temp_buff[i] = temps_sensors.getTemp(deviceAddress);
+        }
     }
-    // Next TX is scheduled after TX_COMPLETE event.
+
+    // Prepare upstream data transmission at the next possible time.
+    LMIC.setTxData2(4, rawbuff, buffsize, false);
+    PRINT_DEBUG(1, F("Packet queued"));
+    nextSend = hal_ticks() + TX_INTERVAL;
 }
 
 // lmic_pins.dio[0]  = 9 => PCINT1
@@ -224,70 +211,41 @@ void setup()
     temps_sensors.setWaitForConversion(false);
 
     // Start job (sending automatically starts OTAA too)
-    sendjob.setCallbackRunnable(begin_read);
+    nextSend = os_getTime();
 }
 
-const int64_t sleepAdj = 1080;
 
-void powersave(OsDeltaTime maxTime)
-{
-    OsDeltaTime duration_selected;
-    Sleep period_selected;
-    // these value are base on test
-    if (maxTime > OsDeltaTime::from_ms(8700))
-    {
-        duration_selected = OsDeltaTime::from_ms(8000 * sleepAdj / 1000);
-        period_selected = Sleep::P8S;
-    }
-    else if (maxTime > OsDeltaTime::from_ms(4600))
-    {
-        duration_selected = OsDeltaTime::from_ms(4000 * sleepAdj / 1000);
-        period_selected = Sleep::P4S;
-    }
-    else if (maxTime > OsDeltaTime::from_ms(2600))
-    {
-        duration_selected = OsDeltaTime::from_ms(2000 * sleepAdj / 1000);
-        period_selected = Sleep::P2S;
-    }
-    else if (maxTime > OsDeltaTime::from_ms(1500))
-    {
-        duration_selected = OsDeltaTime::from_ms(1000 * sleepAdj / 1000);
-        period_selected = Sleep::P1S;
-    }
-    else if (maxTime > OsDeltaTime::from_ms(800))
-    {
-        duration_selected = OsDeltaTime::from_ms(500 * sleepAdj / 1000);
-        period_selected = Sleep::P500MS;
-    }
-    else if (maxTime > OsDeltaTime::from_ms(500))
-    {
-        duration_selected = OsDeltaTime::from_ms(250 * sleepAdj / 1000);
-        period_selected = Sleep::P250MS;
-    }
-    else
-    {
-        return;
-    }
-
-    PRINT_DEBUG(1, F("Sleep (ostick) :%lix%i"), duration_selected.to_ms(), maxTime / duration_selected);
-    if (debugLevel > 0)
-    {
-        Serial.flush();
-    }
-
-    for (uint16_t nbsleep = maxTime / duration_selected; nbsleep > 0 && !new_click; nbsleep--)
-    {
-        powerDown(period_selected);
-        hal_add_time_in_sleep(duration_selected);
-
-        buttonInterupt();
-    }
-    PRINT_DEBUG(1, F("Wakeup"));
-}
 
 void loop()
 {
     rst_wdt();
+
+    OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+
+    if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10)) {
+        // we have more than 10 ms to do some work.
+        // the test must be adapted from the time spend in other task
+        if (nextSend < os_getTime() || new_click) {
+        if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
+            PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+        } else {
+            send_now = true;
+            new_click = false;
+            do_send();
+        }
+        } else {
+        OsDeltaTime freeTimeBeforeSend = nextSend - os_getTime();
+        OsDeltaTime to_wait =
+            std::min(freeTimeBeforeNextCall, freeTimeBeforeSend);
+        // Go to sleep if we have nothing to do.
+        powersave(to_wait, []() {
+            buttonInterupt();
+            return new_click;
+        });
+        }
+    }
+
+/*
     OsDeltaTime to_wait = OSS.runloopOnce();
     if (to_wait > OsDeltaTime(0))
     {
@@ -300,5 +258,5 @@ void loop()
         send_now = true;
         new_click = false;
         sendjob.setCallbackRunnable(begin_read);
-    }
+    }*/
 }
