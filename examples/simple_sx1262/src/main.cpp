@@ -70,7 +70,7 @@ void setup()
     // clock start at 8MHz / 8 => 1 MHz
     // set clock to 8MHz / 4 => 2MHz
     // maybe 4Mhz could also work
-    clock_prescale_set(clock_div_4);
+    // clock_prescale_set(clock_div_4);
     if (debugLevel > 0)
     {
         Serial.begin(BAUDRATE);
