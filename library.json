@@ -7,5 +7,16 @@
     "type": "git",
     "url": "https://github.com/ngraziano/LMICPP-Arduino.git"
   },
+  "examples": [
+    {
+        "name": "Simple",
+        "base": "examples/simple",
+        "files": [
+            "platformio.ini",
+            "src/main.cpp",
+            "src/lorakeys.h"
+        ]
+    }
+  ],
   "dependencies": []
 }
