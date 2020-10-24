@@ -5,38 +5,18 @@
 #include <lmic.h>
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
+#include <keyhandler.h>
+#include <algorithm>
 
 #define DEVICE_SIMPLE
 #include "lorakeys.h"
-
-void do_send();
-void reset_and_do_send();
-void powersave(OsDeltaTime maxTime);
-
-// This EUI must be in little-endian format, so least-significant-byte
-// first. When copying an EUI from ttnctl output, this means to reverse
-// the bytes. For TTN issued EUIs the last bytes should be 0xD5, 0xB3,
-// 0x70.
-// defined in lorakeys.h
-void getArtEui(uint8_t *buf) { memcpy_P(buf, APPEUI, 8); }
-
-// This should also be in little endian format, see above.
-// defined in lorakeys.h
-// static const uint8_t PROGMEM DEVEUI[8]={ 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-void getDevEui(uint8_t *buf) { memcpy_P(buf, DEVEUI, 8); }
-
-// This key should be in big endian format (or, since it is not really a
-// number but a block of memory, endianness does not really apply). In
-// practice, a key taken from ttnctl can be copied as-is.
-// The key shown here is the semtech default key.
-// defined in lorakeys.h
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
 constexpr OsDeltaTime TX_INTERVAL = OsDeltaTime::from_sec(135);
 
 constexpr unsigned int BAUDRATE = 19200;
-constexpr uint8_t button_pin = 3;
+
 // Pin mapping
 constexpr lmic_pinmap lmic_pins = {
     .nss = 10,
@@ -50,54 +30,6 @@ LmicEu868 LMIC{radio};
 
 OsTime nextSend;
 
-void onEvent(EventType ev)
-{
-    switch (ev)
-    {
-    case EventType::JOINING:
-        PRINT_DEBUG(2, F("EV_JOINING"));
-        //        LMIC.setDrJoin(0);
-        break;
-    case EventType::JOINED:
-        PRINT_DEBUG(2, F("EV_JOINED"));
-        // disable ADR because it will be mobile.
-        LMIC.setLinkCheckMode(false);
-        break;
-    case EventType::JOIN_FAILED:
-        PRINT_DEBUG(2, F("EV_JOIN_FAILED"));
-        break;
-    case EventType::TXCOMPLETE:
-        PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
-        if (LMIC.getTxRxFlags().test(TxRxStatus::ACK))
-        {
-            PRINT_DEBUG(1, F("Received ack"));
-        }
-        if (LMIC.getDataLen())
-        {
-            PRINT_DEBUG(1, F("Received %d bytes of payload"), LMIC.getDataLen());
-            auto data = LMIC.getData();
-            if (data)
-            {
-                uint8_t port = LMIC.getPort();
-            }
-        }
-
-        break;
-    case EventType::RESET:
-        PRINT_DEBUG(2, F("EV_RESET"));
-        break;
-    case EventType::LINK_DEAD:
-        PRINT_DEBUG(2, F("EV_LINK_DEAD"));
-        break;
-    case EventType::LINK_ALIVE:
-        PRINT_DEBUG(2, F("EV_LINK_ALIVE"));
-        break;
-    default:
-        PRINT_DEBUG(2, F("Unknown event"));
-        break;
-    }
-}
-
 void do_send()
 {
     // battery
@@ -109,34 +41,12 @@ void do_send()
     nextSend = hal_ticks() + TX_INTERVAL;
 }
 
-// lmic_pins.dio[0]  = 9 => PCINT1
-// lmic_pins.dio[1]  = 8 => PCINT0
-// PCI2 PCINT[23:16]
-// PCI1 PCINT[14:8]
-// PCI0 PCINT[7:0]
-
-ISR(PCINT0_vect)
-{
-    // one of pins D8 to D13 has changed
-    // store time, will be check in OSS.runloopOnce()
-    LMIC.store_trigger();
-}
-
-void pciSetup(byte pin)
-{
-    *digitalPinToPCMSK(pin) |= bit(digitalPinToPCMSKbit(pin)); // enable pin
-    PCIFR |= bit(digitalPinToPCICRbit(pin));                   // clear any outstanding interrupt
-    PCICR |= bit(digitalPinToPCICRbit(pin));                   // enable interrupt for the group
-}
-
 void setup()
 {
     if (debugLevel > 0)
     {
         Serial.begin(BAUDRATE);
     }
-    pciSetup(lmic_pins.dio[0]);
-    pciSetup(lmic_pins.dio[1]);
 
     SPI.begin();
     // LMIC init
@@ -145,16 +55,11 @@ void setup()
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC.reset();
 
-    AesKey buf;
-    memcpy_P(buf.data, APPKEY, 16);
-    LMIC.setDevKey(buf);
-    LMIC.setEventCallBack(onEvent);
-    LMIC.setDevEuiCallback(getDevEui);
-    LMIC.setArtEuiCallback(getArtEui);
+    SetupLmicKey<appEui, devEui, appKey>::setup(LMIC);
     // set clock error to allow good connection.
     LMIC.setClockError(MAX_CLOCK_ERROR * 3 / 100);
     // reduce power
-    LMIC.setAntennaPowerAdjustment(-14);
+    // LMIC.setAntennaPowerAdjustment(-14);
 
     // Start job (sending automatically starts OTAA too)
     nextSend = os_getTime();
@@ -163,21 +68,37 @@ void setup()
 void loop()
 {
     OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
-    if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10))
+    if (freeTimeBeforeNextCall < OsDeltaTime::from_ms(100))
     {
-        // we have more than 10 ms to do some work.
-        // the test must be adapted from the time spend in other task
-        if (LMIC.getOpMode().test(OpState::TXRXPEND))
-        {
-            PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
-        }
-        else if (nextSend < hal_ticks())
-        {
-            do_send();
-        }
-        else
-        {
-            // sleep if we have nothing to do.
-        }
+        // not enought time, do nothing else.
+        return;
+    }
+
+    if (LMIC.getOpMode().test(OpState::TXRXPEND))
+    {
+        // OpState::TXRXPEND, do not try to send new message
+        // so wait (with 100ms of marging) and return
+        auto waittime = freeTimeBeforeNextCall.to_ms() - 100;
+        PRINT_DEBUG(1, F("Delay TXRXPEND %dms"), waittime);
+        delay(waittime);
+        return;
+    }
+
+    // we have more than 100 ms to do some work.
+    // the test must be adapted from the time spend in other task
+    auto timebeforesend = nextSend - hal_ticks();
+    PRINT_DEBUG(1, F("Time before send %ds"), timebeforesend.to_s());
+
+    if (timebeforesend < OsDeltaTime(0))
+    {
+        // time to send now.
+        do_send();
+    }
+    else
+    {
+        // sleep if we have nothing to do.
+        auto sleeps = std::min(timebeforesend, freeTimeBeforeNextCall).to_s();
+        PRINT_DEBUG(1, F("Sleep %ds"), sleeps);
+        delay(sleeps * 1000);
     }
 }
