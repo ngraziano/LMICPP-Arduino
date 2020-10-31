@@ -72,7 +72,7 @@ void print_status(uint8_t status) {
 }
 
 template <int parameter_length> struct Sx1262Command {
-  RadioCommand const command;
+  RadioCommand command;
   uint8_t parameter[parameter_length];
 
   uint8_t *begin() { return parameter; }
@@ -82,7 +82,7 @@ template <int parameter_length> struct Sx1262Command {
   constexpr uint8_t const *end() const { return parameter + parameter_length; }
 };
 
-template <> struct Sx1262Command<0> { RadioCommand const command; };
+template <> struct Sx1262Command<0> { RadioCommand command; };
 
 void send_command(HalIo const &hal, RadioCommand cmd,
                   uint8_t const *begin_parameter,
