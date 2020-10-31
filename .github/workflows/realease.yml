@@ -5,7 +5,7 @@ on:
     types: [released]
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
