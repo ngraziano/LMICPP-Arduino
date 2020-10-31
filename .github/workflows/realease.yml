@@ -1,0 +1,21 @@
+name: PlatformIO CI
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Set up Python
+        uses: actions/setup-python@v1
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio
+      - name: Release
+        env: # Or as an environment variable
+          PLATFORMIO_AUTH_TOKEN: ${{ secrets.PIO_TOKEN }}
+        run: platformio package publish
