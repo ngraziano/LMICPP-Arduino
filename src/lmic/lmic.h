@@ -19,10 +19,7 @@
 #include "lorabase.h"
 #include "oslmic.h"
 #include "radio.h"
-
-// LMIC version
-#define LMIC_VERSION_MAJOR 1
-#define LMIC_VERSION_MINOR 5
+#include <array>
 
 //!< Transmit attempts for confirmed frames
 const uint8_t TXCONF_ATTEMPTS = 8;
@@ -159,7 +156,7 @@ private:
   // pending data port
   uint8_t pendTxPort;
   // pending data
-  uint8_t pendTxData[MAX_LEN_PAYLOAD];
+  std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData;
 
   // last generated nonce
   // set at random value at reset.
@@ -207,7 +204,8 @@ private:
 #endif
 
   // Public part of MAC state
-  uint8_t frame[MAX_LEN_FRAME];
+  
+  std::array<uint8_t, MAX_LEN_FRAME> frame;
   // transaction flags (TX-RX combo)
   TxRxStatusValue txrxFlags;
   // 0 no data or zero length data, >0 byte count of data
@@ -317,7 +315,7 @@ public:
   TxRxStatusValue getTxRxFlags() const { return txrxFlags; };
   uint8_t getDataLen() const { return dataLen; };
   uint8_t const *getData() const {
-    return dataBeg ? frame + dataBeg : nullptr;
+    return dataBeg ? frame.cbegin() + dataBeg : nullptr;
   };
   uint8_t getPort() const {
     return txrxFlags.test(TxRxStatus::PORT) ? frame[dataBeg - 1] : 0;

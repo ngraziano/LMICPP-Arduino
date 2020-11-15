@@ -375,8 +375,7 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  uint8_t *const d = frame;
-  const uint8_t hdr = d[0];
+  const uint8_t hdr = frame[0];
   const uint8_t ftype = hdr & mhdr::ftype_mask;
   const uint8_t dlen = dataLen;
 
@@ -388,13 +387,13 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
+  const uint32_t addr = rlsbf4(frame.cbegin() + mac_payload::offsets::devAddr);
   if (addr != devaddr) {
     PRINT_DEBUG(1, F("Invalid address"));
     return false;
   }
 
-  const uint8_t fct = d[mac_payload::offsets::fctrl];
+  const uint8_t fct = frame[mac_payload::offsets::fctrl];
   const uint8_t olen = fct & FCT_OPTLEN;
   const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
   const uint8_t poff = mac_payload::offsets::fopts + olen;
@@ -405,9 +404,9 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
+  const uint32_t seqno = read_seqno(frame.cbegin() + mac_payload::offsets::fcnt);
 
-  if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
+  if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, frame.cbegin(), dlen)) {
     PRINT_DEBUG(1, F("Fail to verify aes mic"));
     return false;
   }
@@ -425,21 +424,21 @@ bool Lmic::decodeFrame() {
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 
-  parseMacCommands(d + mac_payload::offsets::fopts, olen);
+  parseMacCommands(frame.cbegin() + mac_payload::offsets::fopts, olen);
 
   if (!replayConf) {
     // Handle payload only if not a replay
     if (pend > poff) {
-      const auto port = d[poff];
+      const auto port = frame[poff];
       dataBeg = poff + 1;
       dataLen = pend - dataBeg;
       // Decrypt payload - if any
       aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
-                                 d + dataBeg, dataLen);
+                                 frame.begin() + dataBeg, dataLen);
       txrxFlags.set(TxRxStatus::PORT);
 
       if (port == 0) {
-        parseMacCommands(d + dataBeg, dataLen);
+        parseMacCommands(frame.cbegin() + dataBeg, dataLen);
       }
     } else {
       txrxFlags.set(TxRxStatus::NOPORT);
@@ -597,24 +596,25 @@ bool Lmic::processJoinAccept() {
     // unexpected frame
     return false;
   }
-  aes.encrypt(frame + 1, dlen - 1);
-  if (!aes.verifyMic0(frame, dlen)) {
+  
+  aes.encrypt(frame.begin() + 1, dlen - 1);
+  if (!aes.verifyMic0(frame.cbegin(), dlen)) {
     PRINT_DEBUG(1, F("Join Accept BAD MIC"));
 
     // bad mic
     return false;
   }
 
-  devaddr = rlsbf4(frame + join_accept::offset::devAddr);
-  netid = rlsbf4(frame + join_accept::offset::netId) & 0xFFFFFF;
+  devaddr = rlsbf4(frame.cbegin()+ join_accept::offset::devAddr);
+  netid = rlsbf4(frame.cbegin() + join_accept::offset::netId) & 0xFFFFFF;
 
   if (dlen > join_accept::lengths::total) {
     // some region just ignore cflist.
-    handleCFList(frame + join_accept::offset::cfList);
+    handleCFList(frame.cbegin() + join_accept::offset::cfList);
   }
 
   // already incremented when JOIN REQ got sent off
-  aes.sessKeys(devNonce - 1, frame + join_accept::offset::appNonce);
+  aes.sessKeys(devNonce - 1, frame.cbegin() + join_accept::offset::appNonce);
 
   ASSERT(opmode.test(OpState::JOINING));
 
@@ -821,7 +821,7 @@ void Lmic::buildDataFrame() {
 
   // Piggyback MAC options
   // Prioritize by importance
-  uint8_t *pos = frame + mac_payload::offsets::fopts;
+  uint8_t *pos = frame.begin() + mac_payload::offsets::fopts;
   pos = add_opt_dcap(pos);
   pos = add_opt_dn2p(pos);
   pos = add_opt_devs(pos);
@@ -829,13 +829,13 @@ void Lmic::buildDataFrame() {
   pos = add_opt_rxtiming(pos);
   pos = add_opt_snch(pos);
 
-  const uint8_t end = pos - frame;
+  const uint8_t end = pos - frame.cbegin();
 
   ASSERT(end <= mac_payload::offsets::fopts + 16);
 
   bool txdata = opmode.test(OpState::TXDATA);
   uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
-  if (flen > MAX_LEN_FRAME) {
+  if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
     txdata = false;
     flen = end + lengths::MIC;
@@ -845,14 +845,14 @@ void Lmic::buildDataFrame() {
   frame[mac_payload::offsets::fctrl] =
       (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
        (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
-  wlsbf4(frame + mac_payload::offsets::devAddr, devaddr);
+  wlsbf4(frame.begin() + mac_payload::offsets::devAddr, devaddr);
 
   // if not a resend
   if (txCnt == 0) {
     seqnoUp++;
   }
   const uint32_t current_seq_no = seqnoUp - 1;
-  wlsbf2(frame + mac_payload::offsets::fcnt, current_seq_no);
+  wlsbf2(frame.begin() + mac_payload::offsets::fcnt, current_seq_no);
 
   // Clear pending DN confirmation
   dnConf = 0;
@@ -864,14 +864,14 @@ void Lmic::buildDataFrame() {
       if (txCnt == 0)
         txCnt = 1;
     }
-    uint8_t *buffer_pos = frame + end;
+    uint8_t *buffer_pos = frame.begin() + end;
 
     *(buffer_pos++) = pendTxPort;
-    std::copy(pendTxData, pendTxData + pendTxLen, buffer_pos);
+    std::copy(begin(pendTxData), begin(pendTxData) + pendTxLen, buffer_pos);
     aes.framePayloadEncryption(pendTxPort, devaddr, current_seq_no, PktDir::UP,
                                buffer_pos, pendTxLen);
   }
-  aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame, flen);
+  aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame.begin(), flen);
 
   dataLen = flen;
 
@@ -888,10 +888,10 @@ void Lmic::buildJoinRequest() {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
   frame[join_request::offset::MHDR] = mhdr::ftype_join_req | mhdr::major_v1;
-  artEuiCallBack(frame + join_request::offset::appEUI);
-  devEuiCallBack(frame + join_request::offset::devEUI);
-  wlsbf2(frame + join_request::offset::devNonce, devNonce);
-  aes.appendMic0(frame, join_request::lengths::totalWithMic);
+  artEuiCallBack(frame.begin() + join_request::offset::appEUI);
+  devEuiCallBack(frame.begin() + join_request::offset::devEUI);
+  wlsbf2(frame.begin() + join_request::offset::devNonce, devNonce);
+  aes.appendMic0(frame.begin(), join_request::lengths::totalWithMic);
 
   dataLen = join_request::lengths::totalWithMic;
   devNonce++;
@@ -1031,7 +1031,7 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment, frame,
+  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment, frame.cbegin(),
            dataLen);
   wait_end_tx();
 }
@@ -1086,10 +1086,10 @@ void Lmic::setTxData() {
 //
 int8_t Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
                         bool confirmed) {
-  if (dlen > MAX_LEN_PAYLOAD)
+  if (dlen > pendTxData.max_size())
     return -2;
   if (data)
-    std::copy(data, data + dlen, pendTxData);
+    std::copy(data, data + dlen, begin(pendTxData));
   pendTxConf = confirmed;
   pendTxPort = port;
   pendTxLen = dlen;
@@ -1197,7 +1197,7 @@ void Lmic::wait_end_rx() {
   if (radio.io_check()) {
     const auto now = int_trigger_time();
 
-    dataLen = radio.handle_end_rx(frame);
+    dataLen = radio.handle_end_rx(frame.begin());
 
     PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "),
                 (now - rxtime).to_us());
