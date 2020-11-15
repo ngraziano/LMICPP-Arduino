@@ -19,7 +19,8 @@ void RadioFake::init_random(uint8_t randbuf[16]) {
   PRINT_DEBUG(1, F("Init random"));
   PRINT_DEBUG(1, F("Fake init with constant values"));
 
-  std::generate_n(randbuf, 16, [i = 0]() mutable { return i++; });
+  uint8_t i;
+  std::generate_n(randbuf, 16, [&i]() { return i++; });
 }
 
 uint8_t RadioFake::rssi() const { return 0; }
@@ -30,7 +31,7 @@ uint8_t RadioFake::handle_end_rx(uint8_t *const framePtr) {
   PRINT_DEBUG(1, F("Handle end rx"));
   uint8_t length = std::min(simulateReceiveSize, (uint8_t)64);
   // max frame size 64
-  std::copy_n(simulateReceive, length, framePtr);
+  std::copy(simulateReceive, simulateReceive + length, framePtr);
   simulateReceiveSize = 0;
   return length;
 }
@@ -56,7 +57,7 @@ void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   endOfOperation = hal_ticks() + Lmic::calcAirTime(rps, frameLength);
   char buffer[64 * 2];
   char *pos = buffer;
-  std::for_each(framePtr, framePtr + frameLength, [&pos](auto elem) {
+  std::for_each(framePtr, framePtr + frameLength, [&pos](uint8_t const elem) {
     // *pos= elem;
     sprintf(pos, "%02X", elem);
     pos += 2;
@@ -100,7 +101,7 @@ void RadioFake::simulateRx(OsTime const timeOfReceive,
                            uint8_t const *const buffer, uint8_t const size) {
   rxTime = timeOfReceive;
   simulateReceiveSize = std::min(size, (uint8_t)64);
-  std::copy_n(buffer, simulateReceiveSize, simulateReceive);
+  std::copy(buffer, buffer + simulateReceiveSize, simulateReceive);
 }
 
 RadioFake::RadioFake(lmic_pinmap const &pins) : Radio(pins) {}
