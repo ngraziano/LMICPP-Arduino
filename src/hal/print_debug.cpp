@@ -5,13 +5,14 @@
 #include <Arduino.h>
 #include <stdio.h>
 
-#if defined(LMIC_PRINTF_TO)
+#ifdef ARDUINO_ARCH_AVR
 static int uart_putchar(char c, FILE *) {
   LMIC_PRINTF_TO.write(c);
   return 0;
 }
 
 void hal_printf_init() {
+
   // create a FILE structure to reference our UART output function
   static FILE uartout = {};
 
@@ -22,7 +23,7 @@ void hal_printf_init() {
   stdout = &uartout;
 }
 #else
-void  hal_printf_init() {
-
+void hal_printf_init() {
+  // no init for other than AVR
 }
 #endif // defined(LMIC_PRINTF_TO)
