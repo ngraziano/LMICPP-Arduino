@@ -29,7 +29,7 @@ public:
   virtual void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) = 0;
 
   virtual void init_random(uint8_t randbuf[16]) = 0;
-  virtual uint8_t handle_end_rx(uint8_t *framePtr) = 0;
+  virtual uint8_t handle_end_rx(FrameBuffer &frame) = 0;
   virtual void handle_end_tx() const = 0;
 
   virtual uint8_t rssi() const = 0;

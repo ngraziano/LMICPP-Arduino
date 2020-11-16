@@ -360,7 +360,7 @@ uint8_t RadioSx1262::rssi() const { return 0; }
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1262::handle_end_rx(uint8_t *const framePtr) {
+uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame) {
   uint16_t flags = get_irq_status();
 
   uint16_t const RxDone = 1 << 1;
@@ -369,7 +369,7 @@ uint8_t RadioSx1262::handle_end_rx(uint8_t *const framePtr) {
   uint8_t length = 0;
   if (flags & RxDone) {
     // read message length
-    length = read_frame(framePtr);
+    length = read_frame(frame);
     // read rx quality parameters
     // SNR [dB] * 4
     // last_packet_snr_reg =
@@ -558,7 +558,7 @@ void RadioSx1262::init_config() const {
   calibrate_all();
   set_standby(true);
 
-  if(DIO2_as_rf_switch_ctrl) {
+  if (DIO2_as_rf_switch_ctrl) {
     set_DIO2_as_rf_switch_ctrl();
   }
 
@@ -599,13 +599,14 @@ void RadioSx1262::write_frame(uint8_t const *framePtr,
   hal.endspi();
 }
 
-uint8_t RadioSx1262::read_frame(uint8_t *framePtr) const {
+uint8_t RadioSx1262::read_frame(FrameBuffer &frame) const {
   // read frame status
   Sx1262Command<2> frame_status = {RadioCommand::GetRxBufferStatus,
                                    {0x00, 0x00}};
   read_command(hal, frame_status);
 
-  uint8_t const len = std::min(frame_status.parameter[0], MAX_LEN_FRAME);
+  uint8_t const len = std::min(frame_status.parameter[0],
+                               static_cast<uint8_t>(frame.max_size()));
   uint8_t const offset = frame_status.parameter[1];
 
   hal.beginspi();
@@ -614,7 +615,7 @@ uint8_t RadioSx1262::read_frame(uint8_t *framePtr) const {
   hal.spi(offset);
   hal.spi(0x00);
 
-  std::generate_n(framePtr, len, [this]() { return hal.spi(0x00); });
+  std::generate_n(begin(frame), len, [this]() { return hal.spi(0x00); });
 
   hal.endspi();
   return len;

@@ -203,9 +203,7 @@ private:
   uint8_t dn2Ans;
 #endif
 
-  // Public part of MAC state
-  
-  std::array<uint8_t, MAX_LEN_FRAME> frame;
+  FrameBuffer frame;
   // transaction flags (TX-RX combo)
   TxRxStatusValue txrxFlags;
   // 0 no data or zero length data, >0 byte count of data

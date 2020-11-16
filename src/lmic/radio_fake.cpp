@@ -27,11 +27,12 @@ uint8_t RadioFake::rssi() const { return 0; }
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioFake::handle_end_rx(uint8_t *const framePtr) {
+uint8_t RadioFake::handle_end_rx(FrameBuffer &frame) {
   PRINT_DEBUG(1, F("Handle end rx"));
-  uint8_t length = std::min(simulateReceiveSize, (uint8_t)64);
+  uint8_t length =
+      std::min(simulateReceiveSize, static_cast<uint8_t>(frame.max_size()));
   // max frame size 64
-  std::copy(simulateReceive, simulateReceive + length, framePtr);
+  std::copy(simulateReceive, simulateReceive + length, begin(frame));
   simulateReceiveSize = 0;
   return length;
 }

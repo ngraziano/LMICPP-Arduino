@@ -39,7 +39,7 @@ public:
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) final;
 
   void init_random(uint8_t randbuf[16]) final;
-  uint8_t handle_end_rx(uint8_t *framePtr) final;
+  uint8_t handle_end_rx(FrameBuffer &frame) final;
   void handle_end_tx() const final;
   bool io_check() const final;
 

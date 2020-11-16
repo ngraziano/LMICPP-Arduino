@@ -1197,7 +1197,7 @@ void Lmic::wait_end_rx() {
   if (radio.io_check()) {
     const auto now = int_trigger_time();
 
-    dataLen = radio.handle_end_rx(frame.begin());
+    dataLen = radio.handle_end_rx(frame);
 
     PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "),
                 (now - rxtime).to_us());

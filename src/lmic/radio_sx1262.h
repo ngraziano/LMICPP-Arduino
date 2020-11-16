@@ -37,7 +37,7 @@ public:
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) final;
 
   void init_random(uint8_t randbuf[16]) final;
-  uint8_t handle_end_rx(uint8_t *framePtr) final;
+  uint8_t handle_end_rx(FrameBuffer &frame) final;
   void handle_end_tx() const final;
   bool io_check() const final;
 
@@ -57,7 +57,7 @@ private:
   void init_config() const;
 
   void write_frame(uint8_t const *framePtr, uint8_t frameLength) const;
-  uint8_t read_frame(uint8_t *framePtr) const;
+  uint8_t read_frame(FrameBuffer &frame) const;
   uint8_t get_status() const;
   uint16_t get_device_errors() const;
   uint16_t get_irq_status() const;

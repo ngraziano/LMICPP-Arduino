@@ -14,6 +14,7 @@
 #define _lorabase_h_
 
 #include "oslmic.h"
+#include <array>
 
 enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
@@ -57,6 +58,8 @@ constexpr uint8_t DELAY_EXTDNW2 = 1; // in secs
 constexpr uint8_t DELAY_JACC2 = DELAY_JACC1 + DELAY_EXTDNW2; // in secs
 constexpr uint8_t DELAY_DNW2 =
     DELAY_DNW1 + DELAY_EXTDNW2; // in secs down window #1
+
+using FrameBuffer = std::array<uint8_t, MAX_LEN_FRAME>;
 
 enum class PktDir : uint8_t {
   UP = 0,

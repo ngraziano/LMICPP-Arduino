@@ -323,7 +323,7 @@ uint8_t RadioSx1276::rssi() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
+uint8_t RadioSx1276::handle_end_rx(FrameBuffer &frame) {
 
   uint8_t const flags = hal.read_reg(LORARegIrqFlags);
   PRINT_DEBUG(2, F("irq: flags: 0x%x\n"), flags);
@@ -334,12 +334,12 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
     length = hal.read_reg(LORARegRxNbBytes);
 
     // for security clamp length of data
-    length = std::min(length, MAX_LEN_FRAME);
+    length = std::min(length, static_cast<uint8_t>(frame.max_size()));
 
     // set FIFO read address pointer
     hal.write_reg(LORARegFifoAddrPtr, hal.read_reg(LORARegFifoRxCurrentAddr));
     // now read the FIFO
-    hal.read_buffer(RegFifo, framePtr, length);
+    hal.read_buffer(RegFifo, frame.begin(), length);
 
     // read rx quality parameters
     // SNR [dB] * 4
