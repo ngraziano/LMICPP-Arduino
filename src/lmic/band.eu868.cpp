@@ -2,6 +2,7 @@
 #include "../hal/print_debug.h"
 #include "bufferpack.h"
 #include "oslmic.h"
+#include <algorithm>
 
 namespace {
 constexpr uint32_t MIN_BAND1_CENTI = 868000000;
@@ -17,9 +18,7 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
 
 void BandsEu868::init() {
   auto now = os_getTime();
-  for (uint8_t i = 0; i < MAX_BAND; i++) {
-    avail[i] = now;
-  }
+  avail.fill(now);
 }
 
 void BandsEu868::updateBandAvailability(uint8_t const band,
@@ -62,15 +61,14 @@ uint8_t BandsEu868::getBandForFrequency(uint32_t const frequency) const {
 #if defined(ENABLE_SAVE_RESTORE)
 
 void BandsEu868::saveState(StoringAbtract &store) const {
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.write(avail[i]);
-  }
+
+  std::for_each(begin(avail), end(avail),
+                [&store](OsTime const date) { store.write(date); });
 }
 
 void BandsEu868::loadState(RetrieveAbtract &store) {
-  for (int i = 0; i < MAX_BAND; i++) {
-    store.read(avail[i]);
-  }
+  std::for_each(begin(avail), end(avail),
+                [&store](OsTime &date) { store.read(date); });
 }
 
 #endif

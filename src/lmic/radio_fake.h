@@ -9,10 +9,11 @@
 #include "osticks.h"
 #include "radio.h"
 #include <stdint.h>
+#include <array>
 
 class RadioFake final : public Radio {
 private:
-  uint8_t simulateReceive[64];
+  std::array<uint8_t, 64> simulateReceive;
   uint8_t simulateReceiveSize = 0;
   OsTime rxTime;
 

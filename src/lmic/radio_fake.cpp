@@ -32,7 +32,7 @@ uint8_t RadioFake::handle_end_rx(FrameBuffer &frame) {
   uint8_t length =
       std::min(simulateReceiveSize, static_cast<uint8_t>(frame.max_size()));
   // max frame size 64
-  std::copy(simulateReceive, simulateReceive + length, begin(frame));
+  std::copy(begin(simulateReceive), begin(simulateReceive) + length, begin(frame));
   simulateReceiveSize = 0;
   return length;
 }
@@ -101,8 +101,8 @@ bool RadioFake::io_check() const { return (endOfOperation < hal_ticks()); }
 void RadioFake::simulateRx(OsTime const timeOfReceive,
                            uint8_t const *const buffer, uint8_t const size) {
   rxTime = timeOfReceive;
-  simulateReceiveSize = std::min(size, (uint8_t)64);
-  std::copy(buffer, buffer + simulateReceiveSize, simulateReceive);
+  simulateReceiveSize = std::min(size, static_cast<uint8_t>(simulateReceive.max_size()));
+  std::copy(buffer, buffer + simulateReceiveSize, begin(simulateReceive));
 }
 
 RadioFake::RadioFake(lmic_pinmap const &pins) : Radio(pins) {}
