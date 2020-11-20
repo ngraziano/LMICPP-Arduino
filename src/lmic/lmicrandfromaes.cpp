@@ -19,16 +19,16 @@
 LmicRand::LmicRand(Aes &anaes) : aes(anaes) {}
 
 void LmicRand::init(Radio &radio) {
-  radio.init_random(randbuf);
+  radio.init_random(randbuf.begin());
   // set initial index to encrypt at next
   index = 16;
 }
 
 // return next random byte derived from seed buffer
 uint8_t LmicRand::uint8() {
-  if (index > 15) {
+  if (index >= randbuf.size()) {
     // encrypt seed with any key
-    aes.encrypt(randbuf, 16); 
+    aes.encrypt(randbuf.begin(), randbuf.size()); 
     index = 0;
   }
   return randbuf[index++];

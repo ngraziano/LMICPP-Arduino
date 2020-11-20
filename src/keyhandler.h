@@ -43,7 +43,7 @@ private:
 public:
   static AesKey getKey() {
     AesKey lmicKey;
-    memcpy_P(lmicKey.data, key, SIZE);
+    memcpy_P(lmicKey.data(), key, lmicKey.size());
     return lmicKey;
   }
 };

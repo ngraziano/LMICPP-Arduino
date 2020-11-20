@@ -14,6 +14,7 @@
 #define _lmicrand_h_
 
 #include <stdint.h>
+#include <array>
 
 class Radio;
 class Aes;
@@ -41,7 +42,7 @@ private:
   Aes &aes;
   // (initialized by init() with radio RSSI, used by rand1())
   uint8_t index;
-  uint8_t randbuf[16];
+  std::array<uint8_t,16> randbuf;
 };
 #endif
 

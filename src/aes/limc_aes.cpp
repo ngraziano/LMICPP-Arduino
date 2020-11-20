@@ -135,24 +135,24 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr,
 
 // Extract session keys
 void Aes::sessKeys(const uint16_t devnonce, const uint8_t *const artnonce) {
-  nwkSKey.data[0] = 0x01;
+  nwkSKey[0] = 0x01;
   std::copy(artnonce,
             artnonce + join_accept::lengths::appNonce +
                 join_accept::lengths::netId,
-            nwkSKey.data + 1);
-  wlsbf2(nwkSKey.data + 1 + join_accept::lengths::appNonce +
+            nwkSKey.begin() + 1);
+  wlsbf2(nwkSKey.begin() + 1 + join_accept::lengths::appNonce +
              join_accept::lengths::netId,
          devnonce);
   // add pading
-  std::fill(nwkSKey.data + 1 + join_accept::lengths::appNonce +
+  std::fill(nwkSKey.begin() + 1 + join_accept::lengths::appNonce +
                 join_accept::lengths::netId + join_request::lengths::devNonce,
-            nwkSKey.data + AES_BLCK_SIZE, 0);
+            nwkSKey.end(), 0);
 
   appSKey = nwkSKey;
-  appSKey.data[0] = 0x02;
+  appSKey[0] = 0x02;
 
-  aes_128_encrypt(nwkSKey.data, AESDevKey);
-  aes_128_encrypt(appSKey.data, AESDevKey);
+  aes_128_encrypt(nwkSKey.begin(), AESDevKey);
+  aes_128_encrypt(appSKey.begin(), AESDevKey);
 }
 
 // Shift the given buffer left one bit
