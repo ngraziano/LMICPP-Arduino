@@ -17,6 +17,7 @@
 #include "lorabase.h"
 #include "osticks.h"
 #include <stdint.h>
+#include <array>
 
 class Radio {
 
@@ -28,7 +29,7 @@ public:
                   uint8_t const *framePtr, uint8_t frameLength) = 0;
   virtual void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) = 0;
 
-  virtual void init_random(uint8_t randbuf[16]) = 0;
+  virtual void init_random(std::array<uint8_t,16> &randbuf) = 0;
   virtual uint8_t handle_end_rx(FrameBuffer &frame) = 0;
   virtual void handle_end_tx() const = 0;
 

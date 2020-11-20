@@ -19,7 +19,7 @@
 LmicRand::LmicRand(Aes &anaes) : aes(anaes) {}
 
 void LmicRand::init(Radio &radio) {
-  radio.init_random(randbuf.begin());
+  radio.init_random(randbuf);
   // set initial index to encrypt at next
   index = 16;
 }

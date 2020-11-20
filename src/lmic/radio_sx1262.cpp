@@ -337,7 +337,7 @@ void RadioSx1262::init() {
 }
 
 // get random seed from wideband noise rssi
-void RadioSx1262::init_random(uint8_t randbuf[16]) {
+void RadioSx1262::init_random(std::array<uint8_t, 16> &randbuf) {
   PRINT_DEBUG(1, F("Init random"));
 
   init_config();
@@ -345,12 +345,13 @@ void RadioSx1262::init_random(uint8_t randbuf[16]) {
   hal_wait(OsDeltaTime::from_ms(100));
 
   Sx1262Register<4> random_register = {0x0819, {0x00}};
-  for (int i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < randbuf.size() / 4; i++) {
     read_register(hal, random_register);
     PRINT_DEBUG(2, F("Random %x %x %x %x "), random_register.data[0],
                 random_register.data[1], random_register.data[2],
                 random_register.data[3]);
-    std::copy(random_register.begin(), random_register.end(), randbuf + 4 * i);
+    std::copy(random_register.begin(), random_register.end(),
+              randbuf.begin() + 4 * i);
   }
   set_standby(false);
   set_sleep();

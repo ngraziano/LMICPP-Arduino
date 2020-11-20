@@ -28,7 +28,7 @@ public:
           uint8_t frameLength);
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime);
 
-  void init_random(uint8_t randbuf[16]);
+  void init_random(std::array<uint8_t,16> &randbuf);
   uint8_t handle_end_rx(uint8_t *framePtr);
   void handle_end_tx() const;
 

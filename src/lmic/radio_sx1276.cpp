@@ -297,12 +297,12 @@ void RadioSx1276::init() {
 }
 
 // get random seed from wideband noise rssi
-void RadioSx1276::init_random(uint8_t randbuf[16]) {
+void RadioSx1276::init_random(std::array<uint8_t, 16> &randbuf) {
   // seed 15-byte randomness via noise rssi
   rxrssi();
   while ((hal.read_reg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
-  for (uint8_t i = 1; i < 16; i++) {
+  for (uint8_t i = 1; i < randbuf.size(); i++) {
     for (uint8_t j = 0; j < 8; j++) {
       uint8_t b; // wait for two non-identical subsequent least-significant bits
       while ((b = hal.read_reg(LORARegRssiWideband) & 0x01) ==

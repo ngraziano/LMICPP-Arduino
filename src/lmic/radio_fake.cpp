@@ -15,12 +15,12 @@
 void RadioFake::init() { PRINT_DEBUG(1, F("Radio Init")); }
 
 // get random seed from wideband noise rssi
-void RadioFake::init_random(uint8_t randbuf[16]) {
+void RadioFake::init_random(std::array<uint8_t, 16> &randbuf) {
   PRINT_DEBUG(1, F("Init random"));
   PRINT_DEBUG(1, F("Fake init with constant values"));
 
   uint8_t i = 0;
-  std::generate_n(randbuf, 16, [&i]() { return i++; });
+  std::generate_n(begin(randbuf), end(randbuf), [&i]() { return i++; });
 }
 
 uint8_t RadioFake::rssi() const { return 0; }
@@ -32,7 +32,8 @@ uint8_t RadioFake::handle_end_rx(FrameBuffer &frame) {
   uint8_t length =
       std::min(simulateReceiveSize, static_cast<uint8_t>(frame.max_size()));
   // max frame size 64
-  std::copy(begin(simulateReceive), begin(simulateReceive) + length, begin(frame));
+  std::copy(begin(simulateReceive), begin(simulateReceive) + length,
+            begin(frame));
   simulateReceiveSize = 0;
   return length;
 }
@@ -101,7 +102,8 @@ bool RadioFake::io_check() const { return (endOfOperation < hal_ticks()); }
 void RadioFake::simulateRx(OsTime const timeOfReceive,
                            uint8_t const *const buffer, uint8_t const size) {
   rxTime = timeOfReceive;
-  simulateReceiveSize = std::min(size, static_cast<uint8_t>(simulateReceive.max_size()));
+  simulateReceiveSize =
+      std::min(size, static_cast<uint8_t>(simulateReceive.max_size()));
   std::copy(buffer, buffer + simulateReceiveSize, begin(simulateReceive));
 }
 
