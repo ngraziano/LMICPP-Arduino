@@ -12,7 +12,7 @@ This library try to comply with lorawan 1.0.x but do not implement all feature. 
 
 For a more complete Lorawan library based on lmic, please have a look to <https://github.com/mcci-catena/arduino-lmic>
 
-:warning: This library do not compile in Arduino IDE due to dependency to STL (ArduinoSTL in case of AVR platform).
+:warning: This library do not compile in Arduino IDE due to dependency to STL (ciband/avr_stl in case of AVR platform).
 It need PlatfomIO for the dependencies to be handle correctly.
 
 For the SX1262 it only support board with TCXO.
