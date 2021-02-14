@@ -268,6 +268,7 @@ void Lmic::parse_rx_timing_setup(const uint8_t *const opts) {
 void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
+    PRINT_DEBUG(1, F("Parse Mac command %d"),opts[oidx]);
     switch (opts[oidx]) {
     // LinkCheckReq LoRaWAN™ Specification §5.1
     case MCMD_LCHK_ANS: {
