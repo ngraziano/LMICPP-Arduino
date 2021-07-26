@@ -108,8 +108,9 @@ public:
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
 
 private:
+  using Job = OsJobType<Lmic>;
   Radio &radio;
-  OsJobType<Lmic> osjob;
+  Job next_job;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
   // time of detect of change of state of radio module

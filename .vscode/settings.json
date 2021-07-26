@@ -53,6 +53,7 @@
         "string_iostream": "cpp",
         "type_traits": "cpp",
         "typeinfo": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "array": "cpp"
     },
 }
