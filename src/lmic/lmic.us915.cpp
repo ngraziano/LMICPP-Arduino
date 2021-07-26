@@ -11,8 +11,8 @@
  *******************************************************************************/
 #include "../hal/print_debug.h"
 
-#include "lmic.us915.h"
 #include "bufferpack.h"
+#include "lmic.us915.h"
 #include "lmic_table.h"
 #include <algorithm>
 
@@ -319,5 +319,4 @@ FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
   return {FREQ_DNW2, DR_DNW2};
 }
 
-LmicUs915::LmicUs915(Radio &aradio)
-    : Lmic(aradio) {}
+LmicUs915::LmicUs915(Radio &aradio) : Lmic(aradio) {}

@@ -40,8 +40,7 @@ public:
 
 private:
   Aes &aes;
-  // (initialized by init() with radio RSSI, used by rand1())
-  uint8_t index;
+  uint8_t index = 16;
   std::array<uint8_t,16> randbuf;
 };
 #endif

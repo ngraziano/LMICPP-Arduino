@@ -28,7 +28,7 @@ public:
   virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
 #endif
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) = 0;
+  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override = 0;
 
 protected:
   explicit LmicDynamicChannel(Radio &radio,
@@ -40,14 +40,14 @@ protected:
   int8_t getTxPower() const final;
   FrequencyAndRate getRx1Parameter() const final;
 
-  uint8_t getRawRps(dr_t dr) const =0;
-  int8_t pow2dBm(uint8_t powerIndex) const =0;
+  uint8_t getRawRps(dr_t dr) const override =0;
+  int8_t pow2dBm(uint8_t powerIndex) const override =0;
   OsDeltaTime getDwn2SafetyZone() const final;
-  OsDeltaTime dr2hsym(dr_t dr) const =0;
-  uint32_t convFreq(const uint8_t *ptr) const =0;
-  bool validRx1DrOffset(uint8_t drOffset) const =0;
+  OsDeltaTime dr2hsym(dr_t dr) const override =0;
+  uint32_t convFreq(const uint8_t *ptr) const override =0;
+  bool validRx1DrOffset(uint8_t drOffset) const override =0;
 
-  virtual void initDefaultChannels();
+  void initDefaultChannels() override;
 
   void disableChannel(uint8_t channel) final;
   void handleCFList(const uint8_t *ptr) final;
@@ -58,7 +58,7 @@ protected:
   OsTime nextTx(OsTime now) final;
   void initJoinLoop() final;
   bool nextJoinState() final;
-  FrequencyAndRate defaultRX2Parameter() const = 0;
+  FrequencyAndRate defaultRX2Parameter() const override = 0;
 
   const int8_t MaxEIRP;
   const dr_t MaxJoinDR;

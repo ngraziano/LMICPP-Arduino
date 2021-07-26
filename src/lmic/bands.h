@@ -25,7 +25,7 @@ public:
 
 class BandSingle : public Bands {
 public:
-  BandSingle(uint16_t duty);
+  explicit BandSingle(uint16_t duty);
   void init() final;
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration) final;

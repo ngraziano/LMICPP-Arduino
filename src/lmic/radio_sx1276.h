@@ -24,7 +24,7 @@ struct RegSet {
 
   constexpr uint16_t raw() const { return reg << 8 | val; };
   constexpr RegSet(uint8_t areg, uint8_t aval) : reg(areg), val(aval){};
-  constexpr RegSet(uint16_t raw) : reg(raw >> 8), val(raw & 0xFF){};
+  explicit constexpr RegSet(uint16_t raw) : reg(raw >> 8), val(raw & 0xFF){};
 };
 
 class RadioSx1276 final : public Radio {
