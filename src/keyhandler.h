@@ -6,11 +6,10 @@
 
 constexpr uint8_t HexCharToInt(char const char1) {
 
-  return (char1 >= '0' && char1 <= '9')
-             ? char1 - '0'
-             : (char1 >= 'A' && char1 <= 'F')
-                   ? char1 - 'A' + 0x0A
-                   : (char1 >= 'a' && char1 <= 'f') ? char1 - 'a' + 0x0A : 0;
+  return (char1 >= '0' && char1 <= '9')   ? char1 - '0'
+         : (char1 >= 'A' && char1 <= 'F') ? char1 - 'A' + 0x0A
+         : (char1 >= 'a' && char1 <= 'f') ? char1 - 'a' + 0x0A
+                                          : 0;
 }
 
 constexpr uint8_t HexCharToInt(char const char1, char const char2) {

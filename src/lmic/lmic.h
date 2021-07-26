@@ -157,7 +157,7 @@ private:
   // pending data port
   uint8_t pendTxPort = 0;
   // pending data
-  std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData = {0};
+  std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData;
 
   // last generated nonce
   // set at random value at reset.
@@ -204,7 +204,7 @@ private:
   uint8_t dn2Ans =0;
 #endif
 
-  FrameBuffer frame = {0};
+  FrameBuffer frame;
   // transaction flags (TX-RX combo)
   TxRxStatusValue txrxFlags;
   // 0 no data or zero length data, >0 byte count of data

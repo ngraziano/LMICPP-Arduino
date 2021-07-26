@@ -14,7 +14,6 @@
 #define _oslmic_h_
 
 #include "../hal/hal.h"
-#include "Arduino.h"
 #include "config.h"
 #include "osticks.h"
 #include <stdint.h>
