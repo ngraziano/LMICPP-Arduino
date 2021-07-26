@@ -126,7 +126,7 @@ protected:
 
   // ADR adjusted TX power, limit power to this value.
   // dBm
-  int8_t adrTxPow;
+  int8_t adrTxPow = 0;
   dr_t datarate = 0; // current data rate
 
 private:
@@ -142,10 +142,10 @@ private:
   // time device can send again
   OsTime globalDutyAvail;
   // current network id (~0 - none)
-  uint32_t netid;
+  uint32_t netid = 0;
   // configured up repeat for unconfirmed message, reset after join.
   // Not handle properly  cf: LoRaWAN™ Specification §5.2
-  uint8_t upRepeat;
+  uint8_t upRepeat = 0;
 
   uint8_t clockError = 0; // Inaccuracy in the clock. CLOCK_ERROR_MAX
                           // represents +/-100% error
@@ -153,46 +153,46 @@ private:
   // pending data length
   uint8_t pendTxLen = 0;
   // pending data ask for confirmation
-  bool pendTxConf;
+  bool pendTxConf =false;
   // pending data port
-  uint8_t pendTxPort;
+  uint8_t pendTxPort = 0;
   // pending data
-  std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData;
+  std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData = {0};
 
   // last generated nonce
   // set at random value at reset.
-  uint16_t devNonce;
+  uint16_t devNonce = 0;
 
   // device address, set at 0 at reset.
-  devaddr_t devaddr;
+  devaddr_t devaddr = 0;
   // device level down stream seqno, reset after join.
-  uint32_t seqnoDn;
+  uint32_t seqnoDn = 0;
   // device level up stream seqno, reset after join.
-  uint32_t seqnoUp;
+  uint32_t seqnoUp = 0;
   // dn frame confirm pending: LORA::FCT_ACK or 0, reset after join
-  uint8_t dnConf;
+  uint8_t dnConf = 0;
   // counter until we reset data rate (-128=off), reset after join
   // ask for confirmation if > 0
   // lower data rate if > LINK_CHECK_DEAD
-  int8_t adrAckReq;
+  int8_t adrAckReq = 0;
 
   // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
 
   // link adr adapt answer pending, init after join
   // use bit 15 as flag, other as value for acq
-  uint8_t ladrAns;
+  uint8_t ladrAns = 0;
   // device status answer pending, init after join
-  bool devsAns;
+  bool devsAns =false;
   // RX timing setup answer pending, init after join
-  bool rxTimingSetupAns;
+  bool rxTimingSetupAns =false;;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   // have to ACK duty cycle settings, init after join
-  bool dutyCapAns;
+  bool dutyCapAns = false;
 #endif
 #if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init after join.
-  uint8_t snchAns;
+  uint8_t snchAns = 0;
 #endif
 
 private:
@@ -201,10 +201,10 @@ private:
 
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // 0=no answer pend, 0x80+ACKs, init after join
-  uint8_t dn2Ans;
+  uint8_t dn2Ans =0;
 #endif
 
-  FrameBuffer frame;
+  FrameBuffer frame = {0};
   // transaction flags (TX-RX combo)
   TxRxStatusValue txrxFlags;
   // 0 no data or zero length data, >0 byte count of data
@@ -216,7 +216,7 @@ private:
 
 protected:
   // 1 RX window DR offset
-  uint8_t rx1DrOffset;
+  uint8_t rx1DrOffset =0;
 
   uint8_t txCnt = 0;
   LmicRand rand;

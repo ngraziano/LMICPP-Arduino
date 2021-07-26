@@ -32,20 +32,13 @@ constexpr uint32_t EU433_FREQ_MAX = 434665000;
 constexpr uint32_t FREQ_DNW2 = EU433_R2;
 constexpr LmicEu433::Dr DR_DNW2 = LmicEu433::Dr::SF12;
 
-constexpr uint8_t rps_DR0 =
-    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR1 =
-    rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR2 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR3 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR5 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR6 =
-    rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5, false}.rawValue();
+constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR2 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR3 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR4 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR5 = rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
 
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {ILLEGAL_RPS, rps_DR0, rps_DR1, rps_DR2,    rps_DR3,
@@ -123,10 +116,9 @@ uint32_t LmicEu433::convFreq(const uint8_t *ptr) const {
   return newfreq;
 }
 
-
 FrequencyAndRate LmicEu433::defaultRX2Parameter() const {
   return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
 }
 
 LmicEu433::LmicEu433(Radio &aradio)
-    : LmicDynamicChannel(aradio, MaxEIRPValue, 5,0, bands) {}
+    : LmicDynamicChannel(aradio, MaxEIRPValue, 5, 0, bands) {}

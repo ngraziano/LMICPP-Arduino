@@ -174,12 +174,12 @@ void RadioSx1276::opmodeLora() const { hal.write_reg(RegOpMode, OPMODE_LORA); }
 
 // configure LoRa modem (cfg1, cfg2)
 void RadioSx1276::configLoraModem(rps_t rps) {
-  auto const sf = rps.sf;
 
   auto const mc1 = bw_to_mc1(rps.getBw()) | cr_to_mc1(rps.getCr());
   // set ModemConfig1
   hal.write_reg(LORARegModemConfig1, mc1);
 
+  auto const sf = rps.sf;
   uint8_t mc2 = sf_to_mc2(sf);
   if (!rps.nocrc) {
     mc2 |= MC2_RX_PAYLOAD_CRCON;
