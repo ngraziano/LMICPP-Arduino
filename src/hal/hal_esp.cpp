@@ -10,7 +10,6 @@
 
 #ifdef ARDUINO_ARCH_ESP32
 #include "hal.h"
-#include <Arduino.h>
 #include <stdio.h>
 #include "print_debug.h"
 #include <sys/time.h>

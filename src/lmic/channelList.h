@@ -64,7 +64,7 @@ public:
     }
   }
   void enableAll() {
-    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
+    for (uint8_t channel = 0; channel < channels.max_size(); channel++) {
       enable(channel);
     }
   }
