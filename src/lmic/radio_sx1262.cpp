@@ -371,11 +371,7 @@ uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame) {
   if (flags & RxDone) {
     // read message length
     length = read_frame(frame);
-    // read rx quality parameters
-    // SNR [dB] * 4
-    // last_packet_snr_reg =
-    // static_cast<int8_t>(hal.read_reg(LORARegPktSnrValue)); RSSI [dBm]  - 139
-    // last_packet_rssi_reg = hal.read_reg(LORARegPktRssiValue);
+    read_packet_status();
   } else if (flags & Timeout) {
     // indicate timeout
     PRINT_DEBUG(1, F("RX timeout"));
@@ -641,6 +637,13 @@ uint16_t RadioSx1262::get_irq_status() const {
   Sx1262Command<2> cmd = {RadioCommand::GetIrqStatus, {}};
   read_command(hal, cmd);
   return rmsbf2(cmd.parameter);
+}
+
+void RadioSx1262::read_packet_status() {
+  Sx1262Command<3> cmd = {RadioCommand::GetPacketStatus, {}};
+  read_command(hal, cmd);
+  last_packet_rssi_reg = 139 - cmd.parameter[0] / 2;
+  last_packet_snr_reg = static_cast<int8_t>(cmd.parameter[1]);
 }
 
 void RadioSx1262::clear_all_irq() const {

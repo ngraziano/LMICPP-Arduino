@@ -61,6 +61,7 @@ private:
   uint8_t get_status() const;
   uint16_t get_device_errors() const;
   uint16_t get_irq_status() const;
+  void read_packet_status();
 
   void clear_all_irq() const;
   void set_dio1_irq_params(uint16_t mask) const;
