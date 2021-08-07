@@ -75,7 +75,6 @@ CONST_TABLE(int32_t, DR2HSYM)
     OsDeltaTime::from_us_round(128 << 3).tick(), // DR_SF8
     OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7
     OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF7B
-    OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
 };
 
 } // namespace
