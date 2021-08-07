@@ -31,32 +31,36 @@ Change to use this project type and adapt to some C++ type.
 
 #include "aes_encrypt.h"
 #include <algorithm>
-#include <stdint.h>
 #include <array>
+#include <stdint.h>
 
 #ifdef __AVR__
 #include <avr/pgmspace.h>
-#else 
+#else
 #include <pgmspace.h>
 #endif
 
 namespace {
 
 struct Indices {
-  uint8_t col;
-  uint8_t row;
+  const uint8_t col;
+  const uint8_t row;
 };
 
 struct DataBlock {
   static constexpr uint8_t data_size = 16;
-  std::array<uint8_t,data_size> data;
 
   uint8_t *begin() { return data.begin(); };
+  uint8_t const *begin() const { return data.begin(); };
 
   uint8_t *end() { return data.end(); };
+  uint8_t const *end() const { return data.end(); };
 
-  uint8_t &operator[](Indices i) { return data[i.col * 4 + i.row]; }
-  uint8_t *column(uint8_t col) { return data.begin() + (4 * col); }
+  uint8_t &operator[](Indices const i) { return data[i.col * 4 + i.row]; }
+  uint8_t *column(uint8_t const col) { return data.begin() + (4 * col); }
+
+private:
+  std::array<uint8_t, data_size> data;
 };
 
 constexpr uint8_t sbox[256] PROGMEM = {
@@ -99,9 +103,8 @@ static inline uint8_t readsbox(uint8_t val) {
 
 // Rcon(i), 2^(i+1) in the Rijndael finite field, for i = 0..9.
 // http://en.wikipedia.org/wiki/Rijndael_key_schedule
-constexpr uint8_t const rcon[10] PROGMEM = {0x01, 0x02, 0x04,
-                                            0x08, 0x10, 0x20, 0x40,
-                                            0x80, 0x1B, 0x36};
+constexpr uint8_t const rcon[10] PROGMEM = {0x01, 0x02, 0x04, 0x08, 0x10,
+                                            0x20, 0x40, 0x80, 0x1B, 0x36};
 
 static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
                                    uint8_t iteration) {
@@ -177,16 +180,16 @@ void mixColumn(uint8_t *buffer) {
   buffer[3] = a2 ^ a ^ b ^ c ^ d2;
 }
 
-void kcore(uint8_t n, uint8_t schedule[16]) {
+void kcore(uint8_t n, AesKey &schedule) {
   uint8_t temp[4];
-  keyScheduleCore(temp, schedule + 12, n);
+  keyScheduleCore(temp, schedule.begin() + 12, n);
   schedule[0] ^= temp[0];
   schedule[1] ^= temp[1];
   schedule[2] ^= temp[2];
   schedule[3] ^= temp[3];
 }
 
-void kxor(uint8_t a, uint8_t b, uint8_t schedule[16]) {
+void kxor(uint8_t const a, uint8_t const b, AesKey &schedule) {
   schedule[a * 4] ^= schedule[b * 4];
   schedule[a * 4 + 1] ^= schedule[b * 4 + 1];
   schedule[a * 4 + 2] ^= schedule[b * 4 + 2];
@@ -194,15 +197,27 @@ void kxor(uint8_t a, uint8_t b, uint8_t schedule[16]) {
 }
 
 void expand_key(AesKey &schedule, uint8_t round) {
-  kcore(round, schedule.begin());
-  kxor(1, 0, schedule.begin());
-  kxor(2, 1, schedule.begin());
-  kxor(3, 2, schedule.begin());
+  kcore(round, schedule);
+  kxor(1, 0, schedule);
+  kxor(2, 1, schedule);
+  kxor(3, 2, schedule);
 }
 
 void xorbuffer(uint8_t const *source1, AesKey &source2, uint8_t *dest) {
   std::transform(source1, source1 + 16, source2.begin(), dest,
                  [](uint8_t a, uint8_t b) { return a ^ b; });
+}
+
+void xorbuffer(DataBlock const &source1, AesKey &source2, uint8_t *dest) {
+  xorbuffer(source1.begin(), source2, dest);
+}
+
+void xorbuffer(uint8_t const *source1, AesKey &source2, DataBlock &dest) {
+  xorbuffer(source1, source2, dest.begin());
+}
+
+void xorbuffer(DataBlock const &source1, AesKey &source2, DataBlock &dest) {
+  xorbuffer(source1.begin(), source2, dest.begin());
 }
 
 } // namespace
@@ -214,7 +229,7 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
 
   DataBlock state1;
   // Copy the input into the state and XOR with the key schedule.
-  xorbuffer(buffer, schedule, state1.data.begin());
+  xorbuffer(buffer, schedule, state1);
 
   // Perform the first 9 rounds of the cipher.
   for (uint8_t round = 0; round < 9; ++round) {
@@ -227,7 +242,7 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
     mixColumn(state1.column(1));
     mixColumn(state1.column(2));
     mixColumn(state1.column(3));
-    xorbuffer(state1.data.begin(), schedule, state1.data.begin());
+    xorbuffer(state1, schedule, state1);
   }
 
   // Expand the final 16 bytes of the key schedule.
@@ -235,5 +250,5 @@ void aes_tiny_128_encrypt(uint8_t *buffer, AesKey const &key) {
 
   // Perform the final round.
   subBytesAndShiftRows(state1);
-  xorbuffer(state1.data.begin(), schedule, buffer);
+  xorbuffer(state1, schedule, buffer);
 }
