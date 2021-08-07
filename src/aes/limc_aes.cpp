@@ -21,14 +21,17 @@
 
 using namespace lorawan;
 
+void block_encrypt(AesBlock &block, AesKey const &key) {
+  aes_128_encrypt(block.begin(), key);
+}
+
 void Aes::setDevKey(AesKey const &key) { AESDevKey = key; }
 void Aes::setNetworkSessionKey(AesKey const &key) { nwkSKey = key; }
 void Aes::setApplicationSessionKey(AesKey const &key) { appSKey = key; }
 
 // Get B0 value in buf
 void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
-                const PktDir dndir, const uint8_t len,
-                AesBlock &buf) {
+                const PktDir dndir, const uint8_t len, AesBlock &buf) {
   buf[0] = 0x49;
   buf[1] = 0;
   buf[2] = 0;
@@ -52,7 +55,8 @@ bool Aes::verifyMic(const uint32_t devaddr, const uint32_t seqno,
   const uint8_t lenWithoutMic = len - lengths::MIC;
   micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
-  return std::equal(buf.begin(), buf.begin() + lengths::MIC, pdu + lenWithoutMic);
+  return std::equal(buf.begin(), buf.begin() + lengths::MIC,
+                    pdu + lenWithoutMic);
 }
 
 /**
@@ -90,7 +94,8 @@ bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
   AesBlock buf = {0};
   const uint8_t lenWithoutMic = len - lengths::MIC;
   aes_cmac(pdu, lenWithoutMic, 0, AESDevKey, buf);
-  return std::equal(buf.begin(), buf.begin() + lengths::MIC, pdu + lenWithoutMic);
+  return std::equal(buf.begin(), buf.begin() + lengths::MIC,
+                    pdu + lenWithoutMic);
 }
 
 void Aes::encrypt(uint8_t *const pdu, const uint8_t len) const {
@@ -120,13 +125,13 @@ void Aes::framePayloadEncryption(const uint8_t port, const uint32_t devaddr,
   blockAi[15] = 0; // block counter
 
   while (len) {
-    AesBlock blockSi;
-
     // Increment the block index byte
     blockAi[15]++;
+
     // Encrypt the counter block with the selected key
-    std::copy(blockAi.begin(), blockAi.end(), blockSi.begin());
-    aes_128_encrypt(blockSi.begin(), key);
+    AesBlock blockSi = blockAi;
+
+    block_encrypt(blockSi, key);
 
     // Xor the payload with the resulting ciphertext
     for (uint8_t i = 0; i < AES_BLCK_SIZE && len > 0; i++, len--, payload++)
@@ -152,12 +157,14 @@ void Aes::sessKeys(const uint16_t devnonce, const uint8_t *const artnonce) {
   appSKey = nwkSKey;
   appSKey[0] = 0x02;
 
-  aes_128_encrypt(nwkSKey.begin(), AESDevKey);
-  aes_128_encrypt(appSKey.begin(), AESDevKey);
+  block_encrypt(nwkSKey, AESDevKey);
+  block_encrypt(appSKey, AESDevKey);
 }
 
 // Shift the given buffer left one bit
-static void shift_left(uint8_t *buf, uint8_t len) {
+static void shift_left(AesBlock &block) {
+  auto buf = block.begin();
+  auto len = block.max_size();
   while (len--) {
     uint8_t next = len ? buf[1] : 0;
 
@@ -175,17 +182,17 @@ static void shift_left(uint8_t *buf, uint8_t len) {
 void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
                    AesKey const &key, AesBlock &result) {
   if (prepend_aux)
-    aes_128_encrypt(result.begin(), key);
+    block_encrypt(result, key);
 
   while (len > 0) {
-    uint8_t need_padding = 0;
+    bool need_padding = false;
     for (uint8_t i = 0; i < AES_BLCK_SIZE; ++i, ++buf, --len) {
       if (len == 0) {
         // The message is padded with 0x80 and then zeroes.
         // Since zeroes are no-op for xor, we can just skip them
         // and leave AESAUX unchanged for them.
         result[i] ^= 0x80;
-        need_padding = 1;
+        need_padding = true;
         break;
       }
       result[i] ^= *buf;
@@ -195,30 +202,30 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
       // Final block, xor with K1 or K2. K1 and K2 are calculated
       // by encrypting the all-zeroes block and then applying some
       // shifts and xor on that.
-      uint8_t final_key[AES_BLCK_SIZE];
-      std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
-      aes_128_encrypt(final_key, key);
+      AesBlock final_key = {0};
+      // std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
+      block_encrypt(final_key, key);
 
       // Calculate K1
       uint8_t msb = final_key[0] & 0x80;
-      shift_left(final_key, sizeof(final_key));
+      shift_left(final_key);
       if (msb)
-        final_key[sizeof(final_key) - 1] ^= 0x87;
+        final_key.back() ^= 0x87;
 
       // If the final block was not complete, calculate K2 from K1
       if (need_padding) {
         msb = final_key[0] & 0x80;
-        shift_left(final_key, sizeof(final_key));
+        shift_left(final_key);
         if (msb)
-          final_key[sizeof(final_key) - 1] ^= 0x87;
+          final_key.back() ^= 0x87;
       }
 
       // Xor with K1 or K2
-      for (uint8_t i = 0; i < sizeof(final_key); ++i)
+      for (uint8_t i = 0; i < final_key.max_size(); ++i)
         result[i] ^= final_key[i];
     }
 
-    aes_128_encrypt(result.begin(), key);
+    block_encrypt(result, key);
   }
 }
 
