@@ -60,12 +60,12 @@ static ValGetter fake_key("000102030405060708090A0B0C0D0E0F");
 void test_aes_key()
 {
     AesKey test_key;
-    TEST_ASSERT_EQUAL(16, test_key.key_size);
+    TEST_ASSERT_EQUAL(16, test_key.max_size());
 
-    std::copy(fake_key.begin(), fake_key.end(), test_key.data);
+    std::copy(fake_key.begin(), fake_key.end(), test_key.begin());
     AesKey copy_key = test_key;
     std::fill(test_key.begin(), test_key.end(), 0);
-    TEST_ASSERT_EQUAL_MEMORY(fake_key.val, copy_key.data, AesKey::key_size);
+    TEST_ASSERT_EQUAL_MEMORY(fake_key.val, copy_key.begin(), copy_key.max_size());
 }
 
 void encrypt_run_key0(ValGetter const &plaintext, ValGetter const &result)

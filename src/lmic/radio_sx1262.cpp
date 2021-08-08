@@ -12,6 +12,11 @@
 
 #include <algorithm>
 
+#ifndef ARDUINO
+#define PROGMEM
+#define memcpy_P memcpy
+#endif
+
 namespace {
 
 enum RadioCommand : uint8_t {
@@ -62,7 +67,7 @@ enum RadioCommand : uint8_t {
 void wait_ready(HalIo const &hal) {
   // wait for busy pin to go low
   while (hal.io_check0()) {
-    yield();
+    hal.yield();
   }
 }
 

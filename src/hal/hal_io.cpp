@@ -1,3 +1,5 @@
+#ifdef ARDUINO
+
 #include "hal_io.h"
 #include "../lmic/lmic.h"
 #include "hal.h"
@@ -9,6 +11,10 @@
 static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
 HalIo::HalIo(lmic_pinmap const &pins) : lmic_pins(pins) {}
+
+void HalIo::yield() const {
+  ::yield();
+}
 
 void HalIo::write_reg(uint8_t const addr, uint8_t const data) const {
   beginspi();
@@ -122,3 +128,5 @@ void HalIo::init() const {
 
   // configure radio SPI
 }
+
+#endif

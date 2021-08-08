@@ -1,3 +1,4 @@
+#ifdef ARDUINO
 #include <Arduino.h>
 #include <unity.h>
 
@@ -15,3 +16,4 @@ void loop() {
         sleep_mode();
     #endif
 }
+#endif

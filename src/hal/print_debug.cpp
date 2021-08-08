@@ -2,10 +2,12 @@
 
 #include "print_debug.h"
 
-#include <Arduino.h>
 #include <stdio.h>
 
 #ifdef ARDUINO_ARCH_AVR
+#include <Arduino.h>
+
+
 static int uart_putchar(char c, FILE *) {
   LMIC_PRINTF_TO.write(c);
   return 0;

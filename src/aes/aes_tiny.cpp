@@ -34,12 +34,17 @@ Change to use this project type and adapt to some C++ type.
 #include <array>
 #include <stdint.h>
 
+
+#ifdef ARDUINO
 #ifdef __AVR__
 #include <avr/pgmspace.h>
 #else
 #include <pgmspace.h>
 #endif
-
+#else
+#define PROGMEM
+#define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+#endif
 namespace {
 
 struct Indices {
