@@ -20,7 +20,7 @@ private:
   OsTime endOfOperation;
 
 public:
-  explicit RadioFake(lmic_pinmap const &pins);
+  explicit RadioFake();
 
   void simulateRx(OsTime timeofreceive, uint8_t const *buffer, uint8_t size);
 

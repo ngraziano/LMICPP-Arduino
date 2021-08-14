@@ -471,7 +471,7 @@ RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
 RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
                          ImageCalibrationBand const calibration_band,
                          bool dio2_as_rf_switch_ctrl)
-    : Radio(pins),
+    : hal(pins),
       image_calibration_params(TABLE_GET_U2(
           CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))),
       DIO2_as_rf_switch_ctrl(dio2_as_rf_switch_ctrl) {}

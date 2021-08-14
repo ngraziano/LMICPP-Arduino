@@ -107,4 +107,4 @@ void RadioFake::simulateRx(OsTime const timeOfReceive,
   std::copy(buffer, buffer + simulateReceiveSize, begin(simulateReceive));
 }
 
-RadioFake::RadioFake(lmic_pinmap const &pins) : Radio(pins) {}
+RadioFake::RadioFake()  {}

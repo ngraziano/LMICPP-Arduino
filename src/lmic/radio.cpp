@@ -11,4 +11,4 @@ int8_t Radio::get_last_packet_snr_x4() const {
 }
 
 
-Radio::Radio(lmic_pinmap const &pins) : hal(pins) {}
+Radio::Radio() {}

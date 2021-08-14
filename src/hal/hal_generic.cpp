@@ -6,11 +6,12 @@
  *
  * This the HAL to run LMIC on other environment than arduino.
  *******************************************************************************/
+#include "../boardconfig.h"
+#if LMIC_HAL == LMIC_GENERIC
 
-#ifndef ARDUINO
 #include "hal.h"
-#include <stdio.h>
 #include "print_debug.h"
+#include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -20,7 +21,8 @@
 OsTime hal_ticks() {
   timeval val;
   gettimeofday(&val, nullptr);
-  return OsTime((val.tv_sec * OSTICKS_PER_SEC) + (val.tv_usec >> US_PER_OSTICK_EXPONENT));
+  return OsTime((val.tv_sec * OSTICKS_PER_SEC) +
+                (val.tv_usec >> US_PER_OSTICK_EXPONENT));
 }
 
 void hal_waitUntil(OsTime time) {
@@ -28,12 +30,10 @@ void hal_waitUntil(OsTime time) {
   hal_wait(delta);
 }
 
-void hal_wait(OsDeltaTime delta) {
-  usleep(delta.to_us());
-}
+void hal_wait(OsDeltaTime delta) { usleep(delta.to_us()); }
 
-DisableIRQsGard::DisableIRQsGard()  { }
-DisableIRQsGard::~DisableIRQsGard() { }
+DisableIRQsGard::DisableIRQsGard() {}
+DisableIRQsGard::~DisableIRQsGard() {}
 
 void hal_init() {
   // nothing to do
@@ -42,7 +42,7 @@ void hal_init() {
 void hal_failed(const char *file, uint16_t line) {
   (void)file;
   (void)line;
-  
+
   /*
 #if defined(LMIC_FAILURE_TO)
   LMIC_FAILURE_TO.println("FAILURE ");
@@ -52,7 +52,7 @@ void hal_failed(const char *file, uint16_t line) {
   LMIC_FAILURE_TO.flush();
 #endif
 */
-  
+
   while (1)
     ;
 }

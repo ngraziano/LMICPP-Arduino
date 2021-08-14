@@ -20,6 +20,7 @@ enum class ImageCalibrationBand : uint8_t {
 
 class RadioSx1262 final : public Radio {
 private:
+  HalIo hal;
   // ImageCalibrationBand const image_calibration_band;
   uint16_t const image_calibration_params;
   bool const DIO2_as_rf_switch_ctrl;
@@ -76,6 +77,7 @@ private:
   void calibrate_all() const;
   void clear_device_errors() const;
   void set_DIO3_as_tcxo_ctrl() const;
+
 };
 
 #endif

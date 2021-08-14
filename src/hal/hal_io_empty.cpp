@@ -1,20 +1,19 @@
 #include "../boardconfig.h"
-#if LMIC_HAL_IO == LMIC_ARDUINO
+#if LMIC_HAL_IO == LMIC_GENERIC
 
 #include "hal_io.h"
 #include "../lmic/lmic.h"
 #include "hal.h"
-#include <Arduino.h>
-#include <SPI.h>
+// #include <Arduino.h>
+// #include <SPI.h>
 #include <algorithm>
 #include <hal/print_debug.h>
 
-static const SPISettings settings(10000000, MSBFIRST, SPI_MODE0);
 
 HalIo::HalIo(lmic_pinmap const &pins) : lmic_pins(pins) {}
 
 void HalIo::yield() const {
-  ::yield();
+  
 }
 
 void HalIo::write_reg(uint8_t const addr, uint8_t const data) const {
@@ -51,25 +50,26 @@ void HalIo::read_buffer(uint8_t const addr, uint8_t *const buf,
 }
 
 void HalIo::beginspi() const {
-  SPI.beginTransaction(settings);
-  digitalWrite(lmic_pins.nss, 0);
+  // SPI.beginTransaction(settings);
+  // digitalWrite(lmic_pins.nss, 0);
 }
 
 void HalIo::endspi() const {
-  digitalWrite(lmic_pins.nss, 1);
-  SPI.endTransaction();
+  // digitalWrite(lmic_pins.nss, 1);
+  // SPI.endTransaction();
 }
 
 // perform SPI transaction with radio
 uint8_t HalIo::spi(uint8_t const out) const {
-  uint8_t res = SPI.transfer(out);
+  // uint8_t res = SPI.transfer(out);
   /*
       Serial.print(">");
       Serial.print(out, HEX);
       Serial.print("<");
       Serial.println(res, HEX);
       */
-  return res;
+  // return res;
+  return 0;
 }
 
 void HalIo::pin_switch_antenna_tx(bool isTx) const {
@@ -84,30 +84,32 @@ void HalIo::pin_rst(uint8_t val) const {
     return;
 
   if (val == 0 || val == 1) { // drive pin
-    pinMode(lmic_pins.rst, OUTPUT);
-    digitalWrite(lmic_pins.rst, val);
+  //  pinMode(lmic_pins.rst, OUTPUT);
+  //  digitalWrite(lmic_pins.rst, val);
   } else { // keep pin floating
-    pinMode(lmic_pins.rst, INPUT);
+  //  pinMode(lmic_pins.rst, INPUT);
   }
 }
 
 bool HalIo::io_check() const {
   for (uint8_t i = 0; i < NUM_DIO; ++i) {
-    uint8_t newVal = digitalRead(lmic_pins.dio[i]);
-    PRINT_DEBUG(2, F("Check DIO%d Value=%d"), i, newVal);
-    if (newVal) {
+    // uint8_t newVal = digitalRead(lmic_pins.dio[i]);
+    // PRINT_DEBUG(2, F("Check DIO%d Value=%d"), i, newVal);
+    //if (newVal) {
       return true;
-    }
+    //}
   }
   return false;
 }
 
 bool HalIo::io_check0() const {
-  return digitalRead(lmic_pins.dio[0]) ? true : false;
+  // return digitalRead(lmic_pins.dio[0]) ? true : false;
+  return true;
 }
 
 bool HalIo::io_check1() const {
-  return digitalRead(lmic_pins.dio[1]) ? true : false;
+  // return digitalRead(lmic_pins.dio[1]) ? true : false;
+  return true;
 }
 
 void HalIo::init() const {
@@ -119,13 +121,13 @@ void HalIo::init() const {
   PRINT_DEBUG(2, F("NSS:%d, RST:%d, DIO0:%d, DIO1:%d"), lmic_pins.nss,
               lmic_pins.rst, lmic_pins.dio[0], lmic_pins.dio[1]);
 
-  pinMode(lmic_pins.nss, OUTPUT);
+  // pinMode(lmic_pins.nss, OUTPUT);
 
-  if (lmic_pins.rst != LMIC_UNUSED_PIN)
-    pinMode(lmic_pins.rst, OUTPUT);
+  // if (lmic_pins.rst != LMIC_UNUSED_PIN)
+  //  pinMode(lmic_pins.rst, OUTPUT);
 
-  pinMode(lmic_pins.dio[0], INPUT);
-  pinMode(lmic_pins.dio[1], INPUT);
+  // pinMode(lmic_pins.dio[0], INPUT);
+  // pinMode(lmic_pins.dio[1], INPUT);
 
   // configure radio SPI
 }

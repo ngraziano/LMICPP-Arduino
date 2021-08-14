@@ -7,8 +7,9 @@
  *
  * This the HAL to run LMIC on top of the Arduino environment.
  *******************************************************************************/
+#include "../boardconfig.h"
+#if LMIC_HAL == LMIC_ESP32
 
-#ifdef ARDUINO_ARCH_ESP32
 #include "hal.h"
 #include <stdio.h>
 #include "print_debug.h"

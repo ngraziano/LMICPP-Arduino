@@ -22,7 +22,7 @@
 class Radio {
 
 public:
-  explicit Radio(lmic_pinmap const &pins);
+  explicit Radio();
   virtual void init(void) = 0;
   virtual void rst() const = 0;
   virtual void tx(uint32_t freq, rps_t rps, int8_t txpow,
@@ -42,7 +42,7 @@ public:
 protected:
   int8_t last_packet_snr_reg = 0;
   uint8_t last_packet_rssi_reg = 0;
-  HalIo hal;
+
 };
 
 #endif

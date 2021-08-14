@@ -53,6 +53,7 @@ private:
   void rxrssi() const;
   void clear_irq() const;
   void write_list_of_reg(uint16_t const *listcmd, uint8_t nb_cmd) const;
+    HalIo hal;
 };
 
 #endif

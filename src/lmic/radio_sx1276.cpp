@@ -499,4 +499,4 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
  */
 bool RadioSx1276::io_check() const { return hal.io_check(); }
 
-RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : Radio(pins) {}
+RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : hal(pins) {}
