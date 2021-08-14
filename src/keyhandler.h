@@ -1,7 +1,14 @@
 #ifndef _lorakeyhandler_h_
 #define _lorakeyhandler_h_
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#define PROGMEM
+#define memcpy_P memcpy
+#endif
+
+
 #include <lmic.h>
 
 constexpr uint8_t HexCharToInt(char const char1) {
