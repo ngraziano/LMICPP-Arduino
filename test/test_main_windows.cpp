@@ -6,8 +6,8 @@
 
 int main() {
      UNITY_BEGIN();
-     test_aes::run();
      test_keyhandler::run();
+     test_aes::run();
      UNITY_END();
 }
 
