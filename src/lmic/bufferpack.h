@@ -42,7 +42,7 @@ public:
   template <class T> void write(T const val) { store(&val, sizeof(T)); }
 
 protected:
-  virtual void store(void const *val, size_t size);
+  virtual void store(void const *val, size_t size) = 0;
 };
 
 class RetrieveAbtract {
@@ -50,12 +50,13 @@ public:
   template <class T> void read(T &val) { retrieve(&val, sizeof(T)); }
 
 protected:
-  virtual void retrieve(void *val, size_t size);
+  virtual void retrieve(void *val, size_t size) = 0;
 };
 
 class StoringBuffer final : public StoringAbtract {
 public:
-  explicit StoringBuffer(uint8_t *const buffer) : original(buffer), current(buffer){};
+  explicit StoringBuffer(uint8_t *const buffer)
+      : original(buffer), current(buffer){};
   size_t length() const;
 
 protected:
