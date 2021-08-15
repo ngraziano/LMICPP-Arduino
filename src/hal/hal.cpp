@@ -9,7 +9,7 @@
  *******************************************************************************/
 
 #include "../boardconfig.h"
-#if LMIC_HAL == LMIC_ESP32
+#if LMIC_HAL == LMIC_ARDUINO
 #include "hal.h"
 #include "print_debug.h"
 #include <Arduino.h>
