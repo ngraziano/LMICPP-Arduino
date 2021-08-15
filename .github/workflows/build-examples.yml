@@ -13,6 +13,8 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install platformio
+      - name: Run unit test
+        run: platformio test -e linux
       - name: Build simple exemple
         run: platformio ci --lib="." --board=pro8MHzatmega328 --project-option="lib_deps=ciband/avr_stl" examples/simple
       - name: Build simple sx1262 exemple
