@@ -30,8 +30,9 @@ void Aes::setNetworkSessionKey(AesKey const &key) { nwkSKey = key; }
 void Aes::setApplicationSessionKey(AesKey const &key) { appSKey = key; }
 
 // Get B0 value in buf
-void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
-                const PktDir dndir, const uint8_t len, AesBlock &buf) {
+AesBlock Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
+                    const PktDir dndir, const uint8_t len) {
+  AesBlock buf;
   buf[0] = 0x49;
   buf[1] = 0;
   buf[2] = 0;
@@ -42,6 +43,7 @@ void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
   wlsbf4(buf.begin() + 10, seqno);
   buf[14] = 0;
   buf[15] = len;
+  return buf;
 }
 
 /**
@@ -51,9 +53,8 @@ void Aes::micB0(const uint32_t devaddr, const uint32_t seqno,
 bool Aes::verifyMic(const uint32_t devaddr, const uint32_t seqno,
                     const PktDir dndir, const uint8_t *const pdu,
                     const uint8_t len) const {
-  AesBlock buf;
   const uint8_t lenWithoutMic = len - lengths::MIC;
-  micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
+  AesBlock buf = micB0(devaddr, seqno, dndir, lenWithoutMic);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
   return std::equal(buf.begin(), buf.begin() + lengths::MIC,
                     pdu + lenWithoutMic);
@@ -66,9 +67,8 @@ bool Aes::verifyMic(const uint32_t devaddr, const uint32_t seqno,
 void Aes::appendMic(const uint32_t devaddr, const uint32_t seqno,
                     const PktDir dndir, uint8_t *const pdu,
                     const uint8_t len) const {
-  AesBlock buf;
   const uint8_t lenWithoutMic = len - lengths::MIC;
-  micB0(devaddr, seqno, dndir, lenWithoutMic, buf);
+  AesBlock buf = micB0(devaddr, seqno, dndir, lenWithoutMic);
   aes_cmac(pdu, lenWithoutMic, true, nwkSKey, buf);
   // Copy MIC at the end
   std::copy(buf.begin(), buf.begin() + lengths::MIC, pdu + lenWithoutMic);
@@ -93,7 +93,7 @@ void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
 bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
   AesBlock buf = {0};
   const uint8_t lenWithoutMic = len - lengths::MIC;
-  aes_cmac(pdu, lenWithoutMic, 0, AESDevKey, buf);
+  aes_cmac(pdu, lenWithoutMic, false, AESDevKey, buf);
   return std::equal(buf.begin(), buf.begin() + lengths::MIC,
                     pdu + lenWithoutMic);
 }

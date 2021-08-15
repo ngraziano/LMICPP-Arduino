@@ -9,6 +9,7 @@ namespace test_aes {
     void test_aes_encript_with_buff0();
     void test_aes_mic();
     void test_aes_micverify();
+    void test_aes_mic_packet();
 }
 
 #endif

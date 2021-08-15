@@ -22,8 +22,7 @@ private:
   // application session key
   AesKey appSKey;
 
-  static void micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
-                    AesBlock &buf);
+  static AesBlock micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len);
   static void aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
                        AesKey const &key, AesBlock &result);
 
