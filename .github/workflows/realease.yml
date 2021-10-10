@@ -18,4 +18,4 @@ jobs:
       - name: Release
         env: # Or as an environment variable
           PLATFORMIO_AUTH_TOKEN: ${{ secrets.PIO_TOKEN }}
-        run: platformio package publish
+        run: platformio package publish --non-interactive
