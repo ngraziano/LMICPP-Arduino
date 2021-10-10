@@ -13,7 +13,6 @@
 #ifndef _lmic_table_h_
 #define _lmic_table_h_
 
-#include "Arduino.h"
 #include <stdint.h>
 
 // ======================================================================

@@ -63,8 +63,8 @@ protected:
   FrequencyAndRate defaultRX2Parameter() const final;
 
 private:
-  uint16_t channelMap[(72 + 15) / 16]; // enabled bits
-  uint16_t chRnd;
+  uint16_t channelMap[(72 + 15) / 16] = {0}; // enabled bits
+  uint16_t chRnd = 0;
   // channel for next TX
   uint8_t txChnl = 0;
 

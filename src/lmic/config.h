@@ -24,9 +24,8 @@ constexpr int debugLevel = 1;
 #endif
 
 // Enable this to allow using printf() to print to the given serial port
-// (or any other Print object). This can be easy for debugging. The
-// current implementation only works on AVR, though.
-#ifdef __AVR__
+// (or any other Print object).
+#ifndef LMIC_PRINTF_TO
 #define LMIC_PRINTF_TO Serial
 #endif
 

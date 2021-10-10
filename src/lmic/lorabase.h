@@ -14,6 +14,7 @@
 #define _lorabase_h_
 
 #include "oslmic.h"
+#include <array>
 
 enum class CodingRate : uint8_t { CR_4_5 = 0, CR_4_6, CR_4_7, CR_4_8 };
 enum _sf_t { FSK = 0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
@@ -31,19 +32,17 @@ struct rps_t {
 
   constexpr BandWidth getBw() const { return static_cast<BandWidth>(bwRaw); };
   constexpr CodingRate getCr() const { return static_cast<CodingRate>(crRaw); };
-  constexpr uint8_t rawValue() {
+
+  constexpr operator uint8_t() const {
     return (sf | (bwRaw << 3) | (crRaw << 5) | (nocrc ? (1 << 7) : 0));
   }
 
-  constexpr rps_t(sf_t asf, BandWidth bw, CodingRate cr, bool anocrc)
+  constexpr rps_t(sf_t asf, BandWidth bw, CodingRate cr, bool anocrc = false)
       : sf(asf), bwRaw(static_cast<uint8_t>(bw)),
         crRaw(static_cast<uint8_t>(cr)), nocrc(anocrc){};
   explicit constexpr rps_t(uint8_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
-        crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7))
-        //: rawValue(rawValue)
-        {};
-  rps_t(){};
+        crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)){};
 };
 
 constexpr uint8_t ILLEGAL_RPS = 0xFF;
@@ -57,6 +56,8 @@ constexpr uint8_t DELAY_EXTDNW2 = 1; // in secs
 constexpr uint8_t DELAY_JACC2 = DELAY_JACC1 + DELAY_EXTDNW2; // in secs
 constexpr uint8_t DELAY_DNW2 =
     DELAY_DNW1 + DELAY_EXTDNW2; // in secs down window #1
+
+using FrameBuffer = std::array<uint8_t, MAX_LEN_FRAME>;
 
 enum class PktDir : uint8_t {
   UP = 0,

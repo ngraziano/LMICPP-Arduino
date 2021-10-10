@@ -20,6 +20,7 @@ enum class ImageCalibrationBand : uint8_t {
 
 class RadioSx1262 final : public Radio {
 private:
+  HalIo hal;
   // ImageCalibrationBand const image_calibration_band;
   uint16_t const image_calibration_params;
   bool const DIO2_as_rf_switch_ctrl;
@@ -36,8 +37,8 @@ public:
           uint8_t frameLength) final;
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) final;
 
-  void init_random(uint8_t randbuf[16]) final;
-  uint8_t handle_end_rx(uint8_t *framePtr) final;
+  void init_random(std::array<uint8_t, 16> &randbuf) final;
+  uint8_t handle_end_rx(FrameBuffer &frame) final;
   void handle_end_tx() const final;
   bool io_check() const final;
 
@@ -57,10 +58,11 @@ private:
   void init_config() const;
 
   void write_frame(uint8_t const *framePtr, uint8_t frameLength) const;
-  uint8_t read_frame(uint8_t *framePtr) const;
+  uint8_t read_frame(FrameBuffer &frame) const;
   uint8_t get_status() const;
   uint16_t get_device_errors() const;
   uint16_t get_irq_status() const;
+  void read_packet_status();
 
   void clear_all_irq() const;
   void set_dio1_irq_params(uint16_t mask) const;
@@ -75,6 +77,7 @@ private:
   void calibrate_all() const;
   void clear_device_errors() const;
   void set_DIO3_as_tcxo_ctrl() const;
+
 };
 
 #endif

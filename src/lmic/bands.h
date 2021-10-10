@@ -8,24 +8,24 @@
 
 class Bands {
 public:
-  virtual void init();
+  virtual void init() = 0;
   virtual void updateBandAvailability(uint8_t band, OsTime lastusage,
-                                      OsDeltaTime duration);
-  virtual void print_state() const;
-  virtual OsTime getAvailability(uint8_t band) const;
+                                      OsDeltaTime duration) = 0;
+  virtual void print_state() const = 0;
+  virtual OsTime getAvailability(uint8_t band) const = 0;
 
-  virtual uint8_t getBandForFrequency(uint32_t frequency) const;
+  virtual uint8_t getBandForFrequency(uint32_t frequency) const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-  virtual void saveState(StoringAbtract &store) const;
-  virtual void loadState(RetrieveAbtract &store);
+  virtual void saveState(StoringAbtract &store) const = 0;
+  virtual void loadState(RetrieveAbtract &store) = 0;
 #endif
 };
 
 class BandSingle : public Bands {
 public:
-  BandSingle(uint16_t duty);
+  explicit BandSingle(uint16_t duty);
   void init() final;
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration) final;
@@ -42,7 +42,7 @@ public:
 #endif
 
 private:
-  const uint16_t dutyCycle; 
+  const uint16_t dutyCycle;
   OsTime avail;
 };
 

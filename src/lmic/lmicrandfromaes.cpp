@@ -26,9 +26,9 @@ void LmicRand::init(Radio &radio) {
 
 // return next random byte derived from seed buffer
 uint8_t LmicRand::uint8() {
-  if (index > 15) {
+  if (index >= randbuf.size()) {
     // encrypt seed with any key
-    aes.encrypt(randbuf, 16); 
+    aes.encrypt(randbuf.begin(), randbuf.size()); 
     index = 0;
   }
   return randbuf[index++];

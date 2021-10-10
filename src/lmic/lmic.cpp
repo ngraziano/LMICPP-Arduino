@@ -109,7 +109,7 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
 }
 
 /**
- * Set the battery level from : 
+ * Set the battery level from :
  *  0 : external power source
  *  1-254 : battery level
  *  255 : no info
@@ -268,6 +268,7 @@ void Lmic::parse_rx_timing_setup(const uint8_t *const opts) {
 void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
   uint8_t oidx = 0;
   while (oidx < olen) {
+    PRINT_DEBUG(1, F("Parse Mac command %d"), opts[oidx]);
     switch (opts[oidx]) {
     // LinkCheckReq LoRaWAN™ Specification §5.1
     case MCMD_LCHK_ANS: {
@@ -375,8 +376,7 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  uint8_t *const d = frame;
-  const uint8_t hdr = d[0];
+  const uint8_t hdr = frame[0];
   const uint8_t ftype = hdr & mhdr::ftype_mask;
   const uint8_t dlen = dataLen;
 
@@ -388,13 +388,13 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  const uint32_t addr = rlsbf4(&d[mac_payload::offsets::devAddr]);
+  const uint32_t addr = rlsbf4(frame.cbegin() + mac_payload::offsets::devAddr);
   if (addr != devaddr) {
     PRINT_DEBUG(1, F("Invalid address"));
     return false;
   }
 
-  const uint8_t fct = d[mac_payload::offsets::fctrl];
+  const uint8_t fct = frame[mac_payload::offsets::fctrl];
   const uint8_t olen = fct & FCT_OPTLEN;
   const bool ackup = (fct & FCT_ACK) != 0 ? true : false; // ACK last up frame
   const uint8_t poff = mac_payload::offsets::fopts + olen;
@@ -405,9 +405,10 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
-  const uint32_t seqno = read_seqno(&d[mac_payload::offsets::fcnt]);
+  const uint32_t seqno =
+      read_seqno(frame.cbegin() + mac_payload::offsets::fcnt);
 
-  if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, d, dlen)) {
+  if (!aes.verifyMic(devaddr, seqno, PktDir::DOWN, frame.cbegin(), dlen)) {
     PRINT_DEBUG(1, F("Fail to verify aes mic"));
     return false;
   }
@@ -425,21 +426,21 @@ bool Lmic::decodeFrame() {
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 
-  parseMacCommands(d + mac_payload::offsets::fopts, olen);
+  parseMacCommands(frame.cbegin() + mac_payload::offsets::fopts, olen);
 
   if (!replayConf) {
     // Handle payload only if not a replay
     if (pend > poff) {
-      const auto port = d[poff];
+      const auto port = frame[poff];
       dataBeg = poff + 1;
       dataLen = pend - dataBeg;
       // Decrypt payload - if any
       aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
-                                 d + dataBeg, dataLen);
+                                 frame.begin() + dataBeg, dataLen);
       txrxFlags.set(TxRxStatus::PORT);
 
       if (port == 0) {
-        parseMacCommands(d + dataBeg, dataLen);
+        parseMacCommands(frame.cbegin() + dataBeg, dataLen);
       }
     } else {
       txrxFlags.set(TxRxStatus::NOPORT);
@@ -528,10 +529,10 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
-// rxtime
-void Lmic::txDone(OsDeltaTime delay) {
-  auto waitime = schedRx12(delay, getRx1Parameter().datarate);
-  osjob.setTimedCallback(waitime, &Lmic::setupRx1);
+// rxtime. Schedule first receive.
+void Lmic::txDone() {
+  auto waitime = schedRx12(rxDelay, getRx1Parameter().datarate);
+  next_job = Job(&Lmic::setupRx1, waitime);
 }
 
 // ======================================== Join frames
@@ -572,9 +573,14 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   txend += OsDeltaTime::rnd_delay(rand, 255 >> datarate);
 
   PRINT_DEBUG(1, F("Next Join delay : %i s"), (txend - os_getTime()).to_s());
-  osjob.setCallbackRunnable(
-      succes ? &Lmic::runEngineUpdate // next step to be delayed
-             : &Lmic::onJoinFailed);  // one JOIN iteration done and failed
+
+  if (succes) {
+    // next step to be delayed
+    next_job = Job(&Lmic::runEngineUpdate);
+  } else {
+    // one JOIN iteration done and failed
+    next_job = Job(&Lmic::onJoinFailed);
+  }
 }
 
 bool Lmic::processJoinAccept() {
@@ -597,24 +603,25 @@ bool Lmic::processJoinAccept() {
     // unexpected frame
     return false;
   }
-  aes.encrypt(frame + 1, dlen - 1);
-  if (!aes.verifyMic0(frame, dlen)) {
+
+  aes.encrypt(frame.begin() + 1, dlen - 1);
+  if (!aes.verifyMic0(frame.cbegin(), dlen)) {
     PRINT_DEBUG(1, F("Join Accept BAD MIC"));
 
     // bad mic
     return false;
   }
 
-  devaddr = rlsbf4(frame + join_accept::offset::devAddr);
-  netid = rlsbf4(frame + join_accept::offset::netId) & 0xFFFFFF;
+  devaddr = rlsbf4(frame.cbegin() + join_accept::offset::devAddr);
+  netid = rlsbf4(frame.cbegin() + join_accept::offset::netId) & 0xFFFFFF;
 
   if (dlen > join_accept::lengths::total) {
     // some region just ignore cflist.
-    handleCFList(frame + join_accept::offset::cfList);
+    handleCFList(frame.cbegin() + join_accept::offset::cfList);
   }
 
   // already incremented when JOIN REQ got sent off
-  aes.sessKeys(devNonce - 1, frame + join_accept::offset::appNonce);
+  aes.sessKeys(devNonce - 1, frame.cbegin() + join_accept::offset::appNonce);
 
   ASSERT(opmode.test(OpState::JOINING));
 
@@ -645,7 +652,7 @@ void Lmic::processRxJacc() {
       // wait for RX2
       auto waitime =
           schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), rx2Parameter.datarate);
-      osjob.setTimedCallback(waitime, &Lmic::setupRx2);
+      next_job = Job(&Lmic::setupRx2, waitime);
     } else {
       // nothing in 1st/2nd DN slot
       txrxFlags.reset();
@@ -653,8 +660,6 @@ void Lmic::processRxJacc() {
     }
   }
 }
-
-void Lmic::jreqDone() { txDone(OsDeltaTime::from_sec(DELAY_JACC1)); }
 
 // ======================================== Data frames
 
@@ -711,7 +716,7 @@ void Lmic::processRx1DnData() {
     // if nothing receive, wait for RX2 before take actions
     auto waitime = schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
                              rx2Parameter.datarate);
-    osjob.setTimedCallback(waitime, &Lmic::setupRx2);
+    next_job = Job(&Lmic::setupRx2, waitime);
 
   } else {
     resetAdrCount();
@@ -750,7 +755,6 @@ void Lmic::resetAdrCount() {
   }
 }
 
-void Lmic::updataDone() { txDone(rxDelay); }
 
 uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
@@ -782,8 +786,9 @@ uint8_t *Lmic::add_opt_devs(uint8_t *pos) {
     // lorawan 1.0.2 §5.5. the margin is the SNR.
     // Convert to real SNR; rounding towards zero.
     const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
-    *(pos++) = static_cast<uint8_t>(
-        (0x3F & (snr <= -32 ? -32 : snr >= 31 ? 31 : snr)));
+    *(pos++) = static_cast<uint8_t>((0x3F & (snr <= -32  ? -32
+                                             : snr >= 31 ? 31
+                                                         : snr)));
     devsAns = false;
   }
   return pos;
@@ -821,7 +826,7 @@ void Lmic::buildDataFrame() {
 
   // Piggyback MAC options
   // Prioritize by importance
-  uint8_t *pos = frame + mac_payload::offsets::fopts;
+  uint8_t *pos = frame.begin() + mac_payload::offsets::fopts;
   pos = add_opt_dcap(pos);
   pos = add_opt_dn2p(pos);
   pos = add_opt_devs(pos);
@@ -829,13 +834,13 @@ void Lmic::buildDataFrame() {
   pos = add_opt_rxtiming(pos);
   pos = add_opt_snch(pos);
 
-  const uint8_t end = pos - frame;
+  const uint8_t end = pos - frame.cbegin();
 
   ASSERT(end <= mac_payload::offsets::fopts + 16);
 
   bool txdata = opmode.test(OpState::TXDATA);
   uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
-  if (flen > MAX_LEN_FRAME) {
+  if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
     txdata = false;
     flen = end + lengths::MIC;
@@ -845,14 +850,14 @@ void Lmic::buildDataFrame() {
   frame[mac_payload::offsets::fctrl] =
       (dnConf | (adrAckReq != LINK_CHECK_OFF ? FCT_ADREN : 0) |
        (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
-  wlsbf4(frame + mac_payload::offsets::devAddr, devaddr);
+  wlsbf4(frame.begin() + mac_payload::offsets::devAddr, devaddr);
 
   // if not a resend
   if (txCnt == 0) {
     seqnoUp++;
   }
   const uint32_t current_seq_no = seqnoUp - 1;
-  wlsbf2(frame + mac_payload::offsets::fcnt, current_seq_no);
+  wlsbf2(frame.begin() + mac_payload::offsets::fcnt, current_seq_no);
 
   // Clear pending DN confirmation
   dnConf = 0;
@@ -864,14 +869,14 @@ void Lmic::buildDataFrame() {
       if (txCnt == 0)
         txCnt = 1;
     }
-    uint8_t *buffer_pos = frame + end;
+    uint8_t *buffer_pos = frame.begin() + end;
 
     *(buffer_pos++) = pendTxPort;
-    std::copy(pendTxData, pendTxData + pendTxLen, buffer_pos);
+    std::copy(begin(pendTxData), begin(pendTxData) + pendTxLen, buffer_pos);
     aes.framePayloadEncryption(pendTxPort, devaddr, current_seq_no, PktDir::UP,
                                buffer_pos, pendTxLen);
   }
-  aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame, flen);
+  aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame.begin(), flen);
 
   dataLen = flen;
 
@@ -888,10 +893,10 @@ void Lmic::buildJoinRequest() {
   // Do not use pendTxData since we might have a pending
   // user level frame in there. Use RX holding area instead.
   frame[join_request::offset::MHDR] = mhdr::ftype_join_req | mhdr::major_v1;
-  artEuiCallBack(frame + join_request::offset::appEUI);
-  devEuiCallBack(frame + join_request::offset::devEUI);
-  wlsbf2(frame + join_request::offset::devNonce, devNonce);
-  aes.appendMic0(frame, join_request::lengths::totalWithMic);
+  artEuiCallBack(frame.begin() + join_request::offset::appEUI);
+  devEuiCallBack(frame.begin() + join_request::offset::devEUI);
+  wlsbf2(frame.begin() + join_request::offset::devNonce, devNonce);
+  aes.appendMic0(frame.begin(), join_request::lengths::totalWithMic);
 
   dataLen = join_request::lengths::totalWithMic;
   devNonce++;
@@ -915,12 +920,13 @@ bool Lmic::startJoining() {
         .set(OpState::JOINING);
     // Setup state
     txCnt = 0;
+    rxDelay = OsDeltaTime::from_sec(DELAY_JACC1);
 
     initJoinLoop();
 
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS
-    osjob.setCallbackRunnable(&Lmic::startJoiningCallBack);
+    next_job = Job(&Lmic::startJoiningCallBack);
     return true;
   }
   return false; // already joined
@@ -991,7 +997,7 @@ void Lmic::engineUpdate() {
     PRINT_DEBUG(1, F("Uplink delayed until %" PRIu32), txbeg.tick());
     // Cannot yet TX
     //  wait for the time to TX
-    osjob.setTimedCallback(txbeg - TX_RAMPUP, &Lmic::runEngineUpdate);
+    next_job = Job(&Lmic::runEngineUpdate, txbeg - TX_RAMPUP);
     txend = txbeg;
     return;
   }
@@ -1005,14 +1011,14 @@ void Lmic::engineUpdate() {
       // Imminent roll over - proactively reset MAC
       // Device has to react! NWK will not roll over and just stop sending.
       // Thus, we have N frames to detect a possible lock up.
-      osjob.setCallbackRunnable(&Lmic::runReset);
+      next_job = Job(&Lmic::runReset);
       return;
     }
     if ((txCnt == 0 && seqnoUp == 0xFFFFFFFF)) {
       // Roll over of up seq counter
       // Do not run RESET event callback from here!
       // App code might do some stuff after send unaware of RESET.
-      osjob.setCallbackRunnable(&Lmic::runReset);
+      next_job = Job(&Lmic::runReset);
       return;
     }
     buildDataFrame();
@@ -1031,8 +1037,8 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment, frame,
-           dataLen);
+  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment,
+           frame.cbegin(), dataLen);
   wait_end_tx();
 }
 
@@ -1041,14 +1047,14 @@ void Lmic::setAntennaPowerAdjustment(int8_t power) {
 }
 
 void Lmic::shutdown() {
-  osjob.clearCallback();
+  next_job = {};
   radio.rst();
   opmode.set(OpState::SHUTDOWN);
 }
 
 void Lmic::reset() {
   radio.rst();
-  osjob.clearCallback();
+  next_job = {};
   devaddr = 0;
   devNonce = rand.uint16();
   opmode.reset();
@@ -1071,7 +1077,7 @@ void Lmic::clrTxData() {
   pendTxLen = 0;
   if (opmode.test(OpState::JOINING)) // do not interfere with JOINING
     return;
-  osjob.clearCallback();
+  next_job = {};
   radio.rst();
   engineUpdate();
 }
@@ -1086,10 +1092,10 @@ void Lmic::setTxData() {
 //
 int8_t Lmic::setTxData2(uint8_t port, uint8_t *data, uint8_t dlen,
                         bool confirmed) {
-  if (dlen > MAX_LEN_PAYLOAD)
+  if (dlen > pendTxData.max_size())
     return -2;
   if (data)
-    std::copy(data, data + dlen, pendTxData);
+    std::copy(data, data + dlen, begin(pendTxData));
   pendTxConf = confirmed;
   pendTxPort = port;
   pendTxLen = dlen;
@@ -1211,7 +1217,7 @@ void Lmic::wait_end_rx() {
     }
   } else {
     // if radio has not finish come back later (loop).
-    osjob.setCallbackRunnable(&Lmic::wait_end_rx);
+    next_job = Job(&Lmic::wait_end_rx);
   }
 }
 
@@ -1223,16 +1229,10 @@ void Lmic::wait_end_tx() {
     radio.handle_end_tx();
 
     PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), txend.tick());
-
-    // if radio task ended, activate next job.
-    if (opmode.test(OpState::JOINING)) {
-      jreqDone();
-    } else {
-      updataDone();
-    }
+    txDone();
   } else {
     // if radio has not finish come back later (loop).
-    osjob.setCallbackRunnable(&Lmic::wait_end_tx);
+    next_job = Job(&Lmic::wait_end_tx);
   }
 }
 
@@ -1327,9 +1327,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
 #endif
 
-OsDeltaTime Lmic::run() {
-  return osjob.run(*this);
-}
+OsDeltaTime Lmic::run() { return next_job.run(*this); }
 
-Lmic::Lmic(Radio &aradio)
-    : radio(aradio), rand(aes) {}
+Lmic::Lmic(Radio &aradio) : radio(aradio), rand(aes) {}

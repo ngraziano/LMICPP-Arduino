@@ -98,8 +98,6 @@ constexpr uint8_t ftype_proprietary = 0x07 << ftype_offset;
 constexpr uint8_t major_mask = 0x03;
 constexpr uint8_t major_v1 = 0x00;
 
-
-
 } // namespace mhdr
 
 } // namespace lorawan

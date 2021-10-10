@@ -11,8 +11,8 @@
  *******************************************************************************/
 #include "../hal/print_debug.h"
 
-#include "lmic.us915.h"
 #include "bufferpack.h"
+#include "lmic.us915.h"
 #include "lmic_table.h"
 #include <algorithm>
 
@@ -42,37 +42,42 @@ CONST_TABLE(uint8_t, maxFrameLens)
 [] = {24, 66, 142, 255, 255, 255, 255, 255, 66, 142};
 
 namespace {
-constexpr uint8_t rps_DR0 =
-    rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR1 =
-    rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR2 =
-    rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR3 =
-    rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR4 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
+constexpr uint8_t rps_DR0 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR1 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR2 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR3 = rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR4 = rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5};
 
-constexpr uint8_t rps_DR8 =
-    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR9 =
-    rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR10 =
-    rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR11 =
-    rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR12 =
-    rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
-constexpr uint8_t rps_DR13 =
-    rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5, false}.rawValue();
+constexpr uint8_t rps_DR8 = rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR9 = rps_t{SF11, BandWidth::BW500, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR10 = rps_t{SF10, BandWidth::BW500, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR11 = rps_t{SF9, BandWidth::BW500, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR12 = rps_t{SF8, BandWidth::BW500, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR13 = rps_t{SF7, BandWidth::BW500, CodingRate::CR_4_5};
 
 } // namespace
 
+// clang-format off
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
-[] = {ILLEGAL_RPS, rps_DR0,     rps_DR1,     rps_DR2,    rps_DR3, rps_DR4,
-      ILLEGAL_RPS, ILLEGAL_RPS, ILLEGAL_RPS, rps_DR8,    rps_DR9, rps_DR10,
-      rps_DR11,    rps_DR12,    rps_DR13,    ILLEGAL_RPS};
-
+[] = {
+  ILLEGAL_RPS,
+  rps_DR0,     
+  rps_DR1,     
+  rps_DR2,    
+  rps_DR3, 
+  rps_DR4,
+  ILLEGAL_RPS,
+  ILLEGAL_RPS,
+  ILLEGAL_RPS, 
+  rps_DR8,    
+  rps_DR9, 
+  rps_DR10,
+  rps_DR11,    
+  rps_DR12,    
+  rps_DR13,    
+  ILLEGAL_RPS
+  };
+// clang-format on
 uint8_t LmicUs915::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
@@ -319,5 +324,4 @@ FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
   return {FREQ_DNW2, DR_DNW2};
 }
 
-LmicUs915::LmicUs915(Radio &aradio)
-    : Lmic(aradio) {}
+LmicUs915::LmicUs915(Radio &aradio) : Lmic(aradio) {}

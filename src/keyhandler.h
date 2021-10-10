@@ -1,16 +1,22 @@
 #ifndef _lorakeyhandler_h_
 #define _lorakeyhandler_h_
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#define PROGMEM
+#define memcpy_P memcpy
+#endif
+
+
 #include <lmic.h>
 
 constexpr uint8_t HexCharToInt(char const char1) {
 
-  return (char1 >= '0' && char1 <= '9')
-             ? char1 - '0'
-             : (char1 >= 'A' && char1 <= 'F')
-                   ? char1 - 'A' + 0x0A
-                   : (char1 >= 'a' && char1 <= 'f') ? char1 - 'a' + 0x0A : 0;
+  return (char1 >= '0' && char1 <= '9')   ? char1 - '0'
+         : (char1 >= 'A' && char1 <= 'F') ? char1 - 'A' + 0x0A
+         : (char1 >= 'a' && char1 <= 'f') ? char1 - 'a' + 0x0A
+                                          : 0;
 }
 
 constexpr uint8_t HexCharToInt(char const char1, char const char2) {
@@ -43,7 +49,7 @@ private:
 public:
   static AesKey getKey() {
     AesKey lmicKey;
-    memcpy_P(lmicKey.data, key, SIZE);
+    memcpy_P(lmicKey.data(), key, lmicKey.size());
     return lmicKey;
   }
 };

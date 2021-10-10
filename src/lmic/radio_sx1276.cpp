@@ -174,12 +174,12 @@ void RadioSx1276::opmodeLora() const { hal.write_reg(RegOpMode, OPMODE_LORA); }
 
 // configure LoRa modem (cfg1, cfg2)
 void RadioSx1276::configLoraModem(rps_t rps) {
-  auto const sf = rps.sf;
 
   auto const mc1 = bw_to_mc1(rps.getBw()) | cr_to_mc1(rps.getCr());
   // set ModemConfig1
   hal.write_reg(LORARegModemConfig1, mc1);
 
+  auto const sf = rps.sf;
   uint8_t mc2 = sf_to_mc2(sf);
   if (!rps.nocrc) {
     mc2 |= MC2_RX_PAYLOAD_CRCON;
@@ -297,12 +297,12 @@ void RadioSx1276::init() {
 }
 
 // get random seed from wideband noise rssi
-void RadioSx1276::init_random(uint8_t randbuf[16]) {
+void RadioSx1276::init_random(std::array<uint8_t, 16> &randbuf) {
   // seed 15-byte randomness via noise rssi
   rxrssi();
   while ((hal.read_reg(RegOpMode) & OPMODE_MASK) != OPMODE_RX)
     ; // continuous rx
-  for (uint8_t i = 1; i < 16; i++) {
+  for (uint8_t i = 1; i < randbuf.size(); i++) {
     for (uint8_t j = 0; j < 8; j++) {
       uint8_t b; // wait for two non-identical subsequent least-significant bits
       while ((b = hal.read_reg(LORARegRssiWideband) & 0x01) ==
@@ -323,7 +323,7 @@ uint8_t RadioSx1276::rssi() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
+uint8_t RadioSx1276::handle_end_rx(FrameBuffer &frame) {
 
   uint8_t const flags = hal.read_reg(LORARegIrqFlags);
   PRINT_DEBUG(2, F("irq: flags: 0x%x\n"), flags);
@@ -334,12 +334,12 @@ uint8_t RadioSx1276::handle_end_rx(uint8_t *const framePtr) {
     length = hal.read_reg(LORARegRxNbBytes);
 
     // for security clamp length of data
-    length = std::min(length, MAX_LEN_FRAME);
+    length = std::min(length, static_cast<uint8_t>(frame.max_size()));
 
     // set FIFO read address pointer
     hal.write_reg(LORARegFifoAddrPtr, hal.read_reg(LORARegFifoRxCurrentAddr));
     // now read the FIFO
-    hal.read_buffer(RegFifo, framePtr, length);
+    hal.read_buffer(RegFifo, frame.begin(), length);
 
     // read rx quality parameters
     // SNR [dB] * 4
@@ -499,4 +499,4 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
  */
 bool RadioSx1276::io_check() const { return hal.io_check(); }
 
-RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : Radio(pins) {}
+RadioSx1276::RadioSx1276(lmic_pinmap const &pins) : hal(pins) {}

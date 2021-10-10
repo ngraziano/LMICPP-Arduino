@@ -1,9 +1,10 @@
 #ifndef channel_list_h
 #define channel_list_h
 
+#include "bands.h"
 #include "bufferpack.h"
 #include "lorabase.h"
-#include "bands.h"
+#include <array>
 #include <stdint.h>
 
 struct ChannelDetail {
@@ -36,18 +37,16 @@ public:
 #endif
 };
 
-
-
 class ChannelList {
 public:
   // Channel map store a maximum of 16 channel
   // (in rp_2-1.0.1 all dynamic channel region have a minumum of 16 )
-  constexpr static const uint8_t LIMIT_CHANNELS = 16 ;
+  constexpr static const uint8_t LIMIT_CHANNELS = 16;
 
 private:
-  ChannelDetail channels[LIMIT_CHANNELS] = {};
+  std::array<ChannelDetail, LIMIT_CHANNELS> channels = {};
   uint16_t channelMap = 0;
-  Bands & bands;
+  Bands &bands;
 
   uint8_t getBand(uint8_t const channel) const {
     return bands.getBandForFrequency(getFrequency(channel));
@@ -65,7 +64,7 @@ public:
     }
   }
   void enableAll() {
-    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
+    for (uint8_t channel = 0; channel < channels.max_size(); channel++) {
       enable(channel);
     }
   }
@@ -82,7 +81,6 @@ public:
     channelMap |= 1 << channel;
   }
 
-
   void updateAvailabitility(uint8_t const channel, OsTime const txbeg,
                             OsDeltaTime const airtime) {
     // Update band specific duty cycle stats
@@ -94,7 +92,7 @@ public:
     return bands.getAvailability(band);
   };
 
-  constexpr uint32_t getFrequency(uint8_t const channel) const {
+  uint32_t getFrequency(uint8_t const channel) const {
     return channels[channel].getFrequency();
   };
 
@@ -105,9 +103,10 @@ public:
   };
 
   void saveStateWithoutTimeData(StoringAbtract &store) const {
-    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
-      channels[channel].saveState(store);
+    for (auto &&channel : channels) {
+      channel.saveState(store);
     }
+
     store.write(channelMap);
   };
 
@@ -117,8 +116,8 @@ public:
   };
 
   void loadStateWithoutTimeData(RetrieveAbtract &store) {
-    for (uint8_t channel = 0; channel < LIMIT_CHANNELS; channel++) {
-      channels[channel].loadState(store);
+    for (auto &&channel : channels) {
+      channel.loadState(store);
     }
     store.read(channelMap);
   };

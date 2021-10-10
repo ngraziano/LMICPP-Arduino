@@ -12,6 +12,11 @@
 
 #include <algorithm>
 
+#ifndef ARDUINO
+#define PROGMEM
+#define memcpy_P memcpy
+#endif
+
 namespace {
 
 enum RadioCommand : uint8_t {
@@ -62,7 +67,7 @@ enum RadioCommand : uint8_t {
 void wait_ready(HalIo const &hal) {
   // wait for busy pin to go low
   while (hal.io_check0()) {
-    yield();
+    hal.yield();
   }
 }
 
@@ -337,7 +342,7 @@ void RadioSx1262::init() {
 }
 
 // get random seed from wideband noise rssi
-void RadioSx1262::init_random(uint8_t randbuf[16]) {
+void RadioSx1262::init_random(std::array<uint8_t, 16> &randbuf) {
   PRINT_DEBUG(1, F("Init random"));
 
   init_config();
@@ -345,12 +350,13 @@ void RadioSx1262::init_random(uint8_t randbuf[16]) {
   hal_wait(OsDeltaTime::from_ms(100));
 
   Sx1262Register<4> random_register = {0x0819, {0x00}};
-  for (int i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < randbuf.size() / 4; i++) {
     read_register(hal, random_register);
     PRINT_DEBUG(2, F("Random %x %x %x %x "), random_register.data[0],
                 random_register.data[1], random_register.data[2],
                 random_register.data[3]);
-    std::copy(random_register.begin(), random_register.end(), randbuf + 4 * i);
+    std::copy(random_register.begin(), random_register.end(),
+              randbuf.begin() + 4 * i);
   }
   set_standby(false);
   set_sleep();
@@ -360,7 +366,7 @@ uint8_t RadioSx1262::rssi() const { return 0; }
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1262::handle_end_rx(uint8_t *const framePtr) {
+uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame) {
   uint16_t flags = get_irq_status();
 
   uint16_t const RxDone = 1 << 1;
@@ -369,12 +375,8 @@ uint8_t RadioSx1262::handle_end_rx(uint8_t *const framePtr) {
   uint8_t length = 0;
   if (flags & RxDone) {
     // read message length
-    length = read_frame(framePtr);
-    // read rx quality parameters
-    // SNR [dB] * 4
-    // last_packet_snr_reg =
-    // static_cast<int8_t>(hal.read_reg(LORARegPktSnrValue)); RSSI [dBm]  - 139
-    // last_packet_rssi_reg = hal.read_reg(LORARegPktRssiValue);
+    length = read_frame(frame);
+    read_packet_status();
   } else if (flags & Timeout) {
     // indicate timeout
     PRINT_DEBUG(1, F("RX timeout"));
@@ -469,7 +471,7 @@ RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
 RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
                          ImageCalibrationBand const calibration_band,
                          bool dio2_as_rf_switch_ctrl)
-    : Radio(pins),
+    : hal(pins),
       image_calibration_params(TABLE_GET_U2(
           CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))),
       DIO2_as_rf_switch_ctrl(dio2_as_rf_switch_ctrl) {}
@@ -558,7 +560,7 @@ void RadioSx1262::init_config() const {
   calibrate_all();
   set_standby(true);
 
-  if(DIO2_as_rf_switch_ctrl) {
+  if (DIO2_as_rf_switch_ctrl) {
     set_DIO2_as_rf_switch_ctrl();
   }
 
@@ -599,13 +601,14 @@ void RadioSx1262::write_frame(uint8_t const *framePtr,
   hal.endspi();
 }
 
-uint8_t RadioSx1262::read_frame(uint8_t *framePtr) const {
+uint8_t RadioSx1262::read_frame(FrameBuffer &frame) const {
   // read frame status
   Sx1262Command<2> frame_status = {RadioCommand::GetRxBufferStatus,
                                    {0x00, 0x00}};
   read_command(hal, frame_status);
 
-  uint8_t const len = std::min(frame_status.parameter[0], MAX_LEN_FRAME);
+  uint8_t const len = std::min(frame_status.parameter[0],
+                               static_cast<uint8_t>(frame.max_size()));
   uint8_t const offset = frame_status.parameter[1];
 
   hal.beginspi();
@@ -614,7 +617,7 @@ uint8_t RadioSx1262::read_frame(uint8_t *framePtr) const {
   hal.spi(offset);
   hal.spi(0x00);
 
-  std::generate_n(framePtr, len, [this]() { return hal.spi(0x00); });
+  std::generate_n(begin(frame), len, [this]() { return hal.spi(0x00); });
 
   hal.endspi();
   return len;
@@ -639,6 +642,13 @@ uint16_t RadioSx1262::get_irq_status() const {
   Sx1262Command<2> cmd = {RadioCommand::GetIrqStatus, {}};
   read_command(hal, cmd);
   return rmsbf2(cmd.parameter);
+}
+
+void RadioSx1262::read_packet_status() {
+  Sx1262Command<3> cmd = {RadioCommand::GetPacketStatus, {}};
+  read_command(hal, cmd);
+  last_packet_rssi_reg = 139 - cmd.parameter[0] / 2;
+  last_packet_snr_reg = static_cast<int8_t>(cmd.parameter[1]);
 }
 
 void RadioSx1262::clear_all_irq() const {

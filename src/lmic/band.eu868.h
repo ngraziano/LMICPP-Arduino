@@ -6,6 +6,7 @@
 #include "bands.h"
 #include "bufferpack.h"
 #include "osticks.h"
+#include <array>
 
 class BandsEu868 : public Bands {
 public:
@@ -25,7 +26,7 @@ public:
 #endif
 
 private:
-  OsTime avail[MAX_BAND];
+  std::array<OsTime,MAX_BAND> avail;
 };
 
 #endif

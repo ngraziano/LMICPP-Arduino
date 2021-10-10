@@ -1,19 +1,18 @@
 
 #ifndef __aes_h__
 #define __aes_h__
+#include "../lmic/bufferpack.h"
 #include "../lmic/config.h"
 #include "../lmic/lorabase.h"
-#include"aes_encrypt.h"
-#include "../lmic/bufferpack.h"
+#include "aes_encrypt.h"
 
 #include <stdint.h>
 
 // ======================================================================
 // AES support
 
-// void lmic_aes_encrypt(uint8_t *data, const uint8_t *key);
-
 constexpr uint8_t AES_BLCK_SIZE = 16;
+using AesBlock = std::array<uint8_t, AES_BLCK_SIZE>;
 
 class Aes {
 private:
@@ -23,10 +22,9 @@ private:
   // application session key
   AesKey appSKey;
 
-  static void micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len,
-                    uint8_t buf[AES_BLCK_SIZE]);
+  static AesBlock micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len);
   static void aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
-                       AesKey const &key, uint8_t result[AES_BLCK_SIZE]);
+                       AesKey const &key, AesBlock &result);
 
 public:
   /* Set device key
@@ -46,9 +44,8 @@ public:
   void appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t *pdu,
                  uint8_t len) const;
   void appendMic0(uint8_t *pdu, uint8_t len) const;
-  void saveState(StoringAbtract& buffer) const;
-  void loadState(RetrieveAbtract& store);
-
+  void saveState(StoringAbtract &buffer) const;
+  void loadState(RetrieveAbtract &store);
 };
 
 #endif // __aes_h__

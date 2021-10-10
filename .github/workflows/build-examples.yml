@@ -13,11 +13,14 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install platformio
+          platformio platform install native
           # Workaround.
           pip install "click!=8.0.2"
+      - name: Run unit test
+        run: platformio test -e native
       - name: Build simple exemple
-        run: platformio ci --lib="." --board=pro8MHzatmega328 --project-option="lib_deps=ArduinoSTL" examples/simple
+        run: platformio ci --lib="." --board=pro8MHzatmega328 --project-option="lib_deps=ciband/avr_stl" examples/simple
       - name: Build simple sx1262 exemple
-        run: platformio ci --lib="." --board=pro8MHzatmega328 --project-option="lib_deps=ArduinoSTL" examples/simple_sx1262
+        run: platformio ci --lib="." --board=pro8MHzatmega328 --project-option="lib_deps=ciband/avr_stl" examples/simple_sx1262
       - name: Build esp32 exemple
         run: platformio ci --lib="." --board=heltec_wifi_lora_32 examples/esp32

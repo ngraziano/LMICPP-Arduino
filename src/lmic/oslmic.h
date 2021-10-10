@@ -14,7 +14,6 @@
 #define _oslmic_h_
 
 #include "../hal/hal.h"
-#include "Arduino.h"
 #include "config.h"
 #include "osticks.h"
 #include <stdint.h>
@@ -45,7 +44,6 @@ OsTime os_getTime(void);
 
 #endif // !HAS_os_calls
 
-
 template <class T> class OsJobType final {
 public:
   using osjobcbTyped_t = void (T::*)();
@@ -55,24 +53,9 @@ private:
   OsTime deadline;
 
 public:
-  // clear scheduled job
-  void clearCallback() { funcTyped = nullptr; }
-
-  void setCallbackFuture(osjobcbTyped_t cb) { funcTyped = cb; };
-  void setCallbackRunnable(osjobcbTyped_t cb) {
-    setCallbackFuture(cb);
-    setRunnable();
-  };
-  void setRunnable() { setTimed(os_getTime()); }
-  void setTimedCallback(OsTime time, osjobcbTyped_t cb) {
-    setCallbackFuture(cb);
-    setTimed(time);
-  };
-  // schedule timed job
-  void setTimed(OsTime time) {
-    // fill-in job
-    deadline = time;
-  }
+  OsJobType() : OsJobType(nullptr, OsTime()){};
+  explicit OsJobType(osjobcbTyped_t cb) : OsJobType(cb, os_getTime()){};
+  explicit OsJobType(osjobcbTyped_t cb, OsTime time) : funcTyped(cb), deadline(time){};
 
   OsDeltaTime run(T &refClass) {
 

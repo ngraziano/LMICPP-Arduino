@@ -28,6 +28,8 @@ public:
   void write_buffer(uint8_t addr, uint8_t const *buf, uint8_t len) const;
   void read_buffer(uint8_t addr, uint8_t *buf, uint8_t len) const;
 
+  void yield() const;
+
   /**
    * drive radio NSS pin for start transfer.
    */
