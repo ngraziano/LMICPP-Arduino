@@ -661,8 +661,6 @@ void Lmic::processRxJacc() {
   }
 }
 
-void Lmic::jreqDone() { txDone(OsDeltaTime::from_sec(DELAY_JACC1)); }
-
 // ======================================== Data frames
 
 void Lmic::processRxDnData() {
@@ -757,7 +755,6 @@ void Lmic::resetAdrCount() {
   }
 }
 
-void Lmic::updataDone() { txDone(rxDelay); }
 
 uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
@@ -923,6 +920,7 @@ bool Lmic::startJoining() {
         .set(OpState::JOINING);
     // Setup state
     txCnt = 0;
+    rxDelay = OsDeltaTime::from_sec(DELAY_JACC1);
 
     initJoinLoop();
 
@@ -1231,13 +1229,7 @@ void Lmic::wait_end_tx() {
     radio.handle_end_tx();
 
     PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), txend.tick());
-
-    // if radio task ended, activate next job.
-    if (opmode.test(OpState::JOINING)) {
-      jreqDone();
-    } else {
-      updataDone();
-    }
+    txDone(rxDelay);
   } else {
     // if radio has not finish come back later (loop).
     next_job = Job(&Lmic::wait_end_tx);

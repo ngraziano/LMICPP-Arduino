@@ -240,12 +240,9 @@ private:
   bool processJoinAccept();
   void processRxJacc();
 
-  void jreqDone();
   void startJoiningCallBack();
 
   void buildJoinRequest();
-
-  void updataDone();
 
   void stateJustJoined();
 
