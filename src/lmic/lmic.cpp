@@ -529,9 +529,9 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
-// rxtime
-void Lmic::txDone(OsDeltaTime delay) {
-  auto waitime = schedRx12(delay, getRx1Parameter().datarate);
+// rxtime. Schedule first receive.
+void Lmic::txDone() {
+  auto waitime = schedRx12(rxDelay, getRx1Parameter().datarate);
   next_job = Job(&Lmic::setupRx1, waitime);
 }
 
@@ -1229,7 +1229,7 @@ void Lmic::wait_end_tx() {
     radio.handle_end_tx();
 
     PRINT_DEBUG(1, F("End TX  %" PRIu32 ""), txend.tick());
-    txDone(rxDelay);
+    txDone();
   } else {
     // if radio has not finish come back later (loop).
     next_job = Job(&Lmic::wait_end_tx);

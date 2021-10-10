@@ -230,7 +230,7 @@ private:
   void setupRx2();
   OsTime schedRx12(OsDeltaTime delay, dr_t dr);
 
-  void txDone(OsDeltaTime delay);
+  void txDone();
 
   void runReset();
   void runEngineUpdate();
