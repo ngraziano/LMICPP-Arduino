@@ -368,7 +368,7 @@ bool Lmic::decodeFrame() {
   } else if (txrxFlags.test(TxRxStatus::DNW2)) {
     PRINT_DEBUG(1, F("Decode Frame RX2"));
   } else {
-    PRINT_DEBUG(1, F("Decode Frame unk"));
+    PRINT_DEBUG(1, F("Decode Frame RXC"));
   }
 
   if (dataLen == 0) {
@@ -421,6 +421,11 @@ bool Lmic::decodeFrame() {
   // next number to be expected
   seqnoDn = seqno + 1;
 
+  if (olen > 0 && txrxFlags.test(TxRxStatus::DNWC)) {
+    PRINT_DEBUG(1, F("Mac command forbiden in class C RX"));
+    return false;
+  }
+
   // DN frame requested confirmation - provide ACK once with next UP frame
   dnConf = ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0;
   if (dnConf || (fct & FCT_MORE))
@@ -438,6 +443,11 @@ bool Lmic::decodeFrame() {
       aes.framePayloadEncryption(port, devaddr, seqno, PktDir::DOWN,
                                  frame.begin() + dataBeg, dataLen);
       txrxFlags.set(TxRxStatus::PORT);
+
+      if (port == 0 && txrxFlags.test(TxRxStatus::DNWC)) {
+        PRINT_DEBUG(1, F("Mac command forbiden in class C RX"));
+        return false;
+      }
 
       if (port == 0) {
         parseMacCommands(frame.cbegin() + dataBeg, dataLen);
@@ -495,6 +505,16 @@ void Lmic::setupRx2() {
   wait_end_rx();
 }
 
+void Lmic::setupRxC() {
+  if (!isClassCActive())
+    return;
+
+  txrxFlags.reset().set(TxRxStatus::DNWC);
+  dataLen = 0;
+  rps_t const rps = dndr2rps(rx2Parameter.datarate);
+  radio.rx(rx2Parameter.frequency, rps);
+}
+
 OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
 
@@ -533,6 +553,8 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
 void Lmic::txDone() {
   auto waitime = schedRx12(rxDelay, getRx1Parameter().datarate);
   next_job = Job(&Lmic::setupRx1, waitime);
+
+  setupRxC();
 }
 
 // ======================================== Join frames
@@ -669,6 +691,7 @@ void Lmic::processRxDnData() {
   } else {
     processRx2DnData();
   }
+  setupRxC();
 }
 
 void Lmic::processRx2DnData() {
@@ -754,7 +777,6 @@ void Lmic::resetAdrCount() {
     reportEvent(EventType::LINK_ALIVE);
   }
 }
-
 
 uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
@@ -1203,7 +1225,7 @@ void Lmic::wait_end_rx() {
   if (radio.io_check()) {
     const auto now = int_trigger_time();
 
-    dataLen = radio.handle_end_rx(frame);
+    dataLen = radio.handle_end_rx(frame, true);
 
     PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "),
                 (now - rxtime).to_us());
@@ -1218,6 +1240,17 @@ void Lmic::wait_end_rx() {
   } else {
     // if radio has not finish come back later (loop).
     next_job = Job(&Lmic::wait_end_rx);
+  }
+}
+
+void Lmic::wait_end_rx_c() {
+  if (radio.io_check()) {
+    dataLen = radio.handle_end_rx(frame, false);
+    // if radio task ended, activate job.
+    if (decodeFrame()) {
+      resetAdrCount();
+      reportEvent(EventType::RXC);
+    }
   }
 }
 
@@ -1327,6 +1360,15 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
 #endif
 
-OsDeltaTime Lmic::run() { return next_job.run(*this); }
+OsDeltaTime Lmic::run() {
+  auto delay = next_job.run(*this);
+
+  // if the RXC windows is open check if we receive data
+  if (txrxFlags.test(TxRxStatus::DNWC)) {
+    wait_end_rx_c();
+  }
+
+  return delay;
+}
 
 Lmic::Lmic(Radio &aradio) : radio(aradio), rand(aes) {}

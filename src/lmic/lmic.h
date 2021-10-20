@@ -45,6 +45,8 @@ enum class OpState : uint8_t {
   NEXTCHNL,
   // link was reported as dead
   LINKDEAD,
+  // device is in class C mode
+  CLASSC,
 };
 using OpStateValue = EnumFlagsValue<OpState>;
 
@@ -54,6 +56,8 @@ enum class TxRxStatus : uint8_t {
   DNW1,
   // received in 2dn DN slot
   DNW2,
+  // received in class C slot
+  DNWC,
   // set if a frame with a port was RXed,
   // LMIC.frame[LMIC.dataBeg-1] => port
   PORT,
@@ -75,6 +79,7 @@ enum class EventType : uint8_t {
   JOINED,
   JOIN_FAILED,
   TXCOMPLETE,
+  RXC,
   RESET,
   LINK_DEAD,
   LINK_ALIVE
@@ -153,7 +158,7 @@ private:
   // pending data length
   uint8_t pendTxLen = 0;
   // pending data ask for confirmation
-  bool pendTxConf =false;
+  bool pendTxConf = false;
   // pending data port
   uint8_t pendTxPort = 0;
   // pending data
@@ -183,9 +188,10 @@ private:
   // use bit 15 as flag, other as value for acq
   uint8_t ladrAns = 0;
   // device status answer pending, init after join
-  bool devsAns =false;
+  bool devsAns = false;
   // RX timing setup answer pending, init after join
-  bool rxTimingSetupAns =false;;
+  bool rxTimingSetupAns = false;
+  ;
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   // have to ACK duty cycle settings, init after join
   bool dutyCapAns = false;
@@ -201,7 +207,7 @@ private:
 
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // 0=no answer pend, 0x80+ACKs, init after join
-  uint8_t dn2Ans =0;
+  uint8_t dn2Ans = 0;
 #endif
 
   FrameBuffer frame;
@@ -216,7 +222,7 @@ private:
 
 protected:
   // 1 RX window DR offset
-  uint8_t rx1DrOffset =0;
+  uint8_t rx1DrOffset = 0;
 
   uint8_t txCnt = 0;
   LmicRand rand;
@@ -228,6 +234,7 @@ private:
   void processRx2DnData();
   void setupRx1();
   void setupRx2();
+  void setupRxC();
   OsTime schedRx12(OsDeltaTime delay, dr_t dr);
 
   void txDone();
@@ -321,6 +328,10 @@ public:
   void setDevEuiCallback(keyCallback_t callback) { devEuiCallBack = callback; };
   void setArtEuiCallback(keyCallback_t callback) { artEuiCallBack = callback; };
 
+  bool isClassCActive() const { return opmode.test(OpState::CLASSC); };
+  void activateClassC() { opmode.set(OpState::CLASSC); }
+  void deactivateClassC() { opmode.reset(OpState::CLASSC); }
+
 protected:
   virtual uint32_t getTxFrequency() const = 0;
   virtual int8_t getTxPower() const = 0;
@@ -374,12 +385,13 @@ protected:
 
   OsTime int_trigger_time() const;
   void wait_end_rx();
+  void wait_end_rx_c();
   void wait_end_tx();
 
 public:
   explicit Lmic(Radio &radio);
   void store_trigger();
-  OsDeltaTime run(); 
+  OsDeltaTime run();
 };
 
 // Construct a bit map of allowed datarates from drlo to drhi (both included).

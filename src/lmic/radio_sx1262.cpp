@@ -366,7 +366,7 @@ uint8_t RadioSx1262::rssi() const { return 0; }
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame) {
+uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame, bool goSleep) {
   uint16_t flags = get_irq_status();
 
   uint16_t const RxDone = 1 << 1;
@@ -386,7 +386,8 @@ uint8_t RadioSx1262::handle_end_rx(FrameBuffer &frame) {
   set_dio1_irq_params(0x00);
   clear_all_irq();
 
-  set_sleep();
+  if (goSleep)
+    set_sleep();
   return length;
 }
 
@@ -452,6 +453,24 @@ void RadioSx1262::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   set_rx();
 }
 
+void RadioSx1262::rx(uint32_t const freq, rps_t const rps) {
+  init_config();
+  set_rf_frequency(freq);
+  set_modulation_params_lora(rps);
+  set_packet_params_lora(rps, MAX_LEN_FRAME, true);
+  // enable antenna switch for RX
+  hal.pin_switch_antenna_tx(false);
+
+  uint16_t const RxDone = 1 << 1;
+  set_dio1_irq_params(RxDone);
+  clear_all_irq();
+
+  // ramp up
+  set_fs();
+  // now instruct the radio to receive
+  set_rx_continious();
+}
+
 /**
  * Check the IO pin.
  * Return true if the radio has finish it's operation
@@ -471,9 +490,8 @@ RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
 RadioSx1262::RadioSx1262(lmic_pinmap const &pins,
                          ImageCalibrationBand const calibration_band,
                          bool dio2_as_rf_switch_ctrl)
-    : hal(pins),
-      image_calibration_params(TABLE_GET_U2(
-          CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))),
+    : hal(pins), image_calibration_params(TABLE_GET_U2(
+                     CALIBRATION_CMD, static_cast<uint8_t>(calibration_band))),
       DIO2_as_rf_switch_ctrl(dio2_as_rf_switch_ctrl) {}
 
 void RadioSx1262::set_sleep() const {
