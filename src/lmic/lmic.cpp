@@ -1049,6 +1049,8 @@ void Lmic::engineUpdate() {
   opmode.reset(OpState::POLL);
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
+  
+  txrxFlags.reset();
 
   rps_t rps = updr2rps(datarate);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
