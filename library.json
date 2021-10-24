@@ -1,6 +1,6 @@
 {
   "name": "LMICPP-Arduino",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "keywords": "Lora",
   "description": "Modified Arduino port of the LMIC (LoraWAN-in-C, formerly LoraMAC-in-C) framework provided by IBM. Changed to C++ format.",
   "frameworks": ["arduino"],
