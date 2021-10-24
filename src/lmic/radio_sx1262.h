@@ -36,9 +36,10 @@ public:
   void tx(uint32_t freq, rps_t rps, int8_t txpow, uint8_t const *framePtr,
           uint8_t frameLength) final;
   void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) final;
+  void rx(uint32_t freq, rps_t rps) final;
 
   void init_random(std::array<uint8_t, 16> &randbuf) final;
-  uint8_t handle_end_rx(FrameBuffer &frame) final;
+  uint8_t handle_end_rx(FrameBuffer &frame, bool goSleep) final;
   void handle_end_tx() const final;
   bool io_check() const final;
 

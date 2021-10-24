@@ -261,7 +261,7 @@ void RadioSx1276::rxrssi() const {
   // set LNA gain
   hal.write_reg(RegLna, LNA_RX_GAIN);
 
-  clear_irq();
+  clear_and_disable_irq();
   // enable antenna switch for RX
   hal.pin_switch_antenna_tx(false);
   // now instruct the radio to receive
@@ -323,7 +323,7 @@ uint8_t RadioSx1276::rssi() const {
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioSx1276::handle_end_rx(FrameBuffer &frame) {
+uint8_t RadioSx1276::handle_end_rx(FrameBuffer &frame, bool goSleep) {
 
   uint8_t const flags = hal.read_reg(LORARegIrqFlags);
   PRINT_DEBUG(2, F("irq: flags: 0x%x\n"), flags);
@@ -350,21 +350,32 @@ uint8_t RadioSx1276::handle_end_rx(FrameBuffer &frame) {
     // indicate timeout
     PRINT_DEBUG(1, F("RX timeout"));
   }
-  clear_irq();
-  // go from stanby to sleep
-  opmode(OPMODE_SLEEP);
+
+  if (goSleep) {
+    clear_and_disable_irq();
+    // go from stanby to sleep
+    opmode(OPMODE_SLEEP);
+  } else {
+    PRINT_DEBUG(1, F("RX CONTINUE"));
+    clear_irq();
+  }
 
   // 0 in case of timeout.
   return length;
 }
 
 void RadioSx1276::handle_end_tx() const {
-  clear_irq();
+  clear_and_disable_irq();
   // go from stanby to sleep
   opmode(OPMODE_SLEEP);
 }
 
 void RadioSx1276::clear_irq() const {
+  // clear radio IRQ flags
+  hal.write_reg(LORARegIrqFlags, 0xFF);
+}
+
+void RadioSx1276::clear_and_disable_irq() const {
   // mask all radio IRQs
   hal.write_reg(LORARegIrqFlagsMask, 0xFF);
   // clear radio IRQ flags
@@ -491,6 +502,37 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
       freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
+}
+
+void RadioSx1276::rx(uint32_t const freq, rps_t const rps) {
+  // receive frame now (exactly at rxtime)
+  // select LoRa modem (from sleep mode)
+  opmodeLora();
+  ASSERT((hal.read_reg(RegOpMode) & OPMODE_LORA) != 0);
+  // enter standby mode (warm up))
+  opmode(OPMODE_STANDBY);
+  // don't use MAC settings at startup
+  // configure LoRa modem (cfg1, cfg2)
+  configLoraModem(rps);
+  // configure frequency
+  configChannel(freq);
+
+#if !defined(DISABLE_INVERT_IQ_ON_RX)
+  // use inverted I/Q signal (prevent mote-to-mote communication)
+  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
+#endif
+  write_list_of_reg(RESOLVE_TABLE(RX_INIT_CMD), NB_RX_INIT_CMD);
+
+  // enable antenna switch for RX
+  hal.pin_switch_antenna_tx(false);
+
+  // now instruct the radio to receive
+  // continous rx
+  opmode(OPMODE_RX);
+
+  PRINT_DEBUG(1, F("RXMODE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
+              freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
+  // the radio will stay in receive mode until not end
 }
 
 /**

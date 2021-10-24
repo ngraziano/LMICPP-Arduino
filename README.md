@@ -2,13 +2,13 @@
 
 * Based on LMIC librairy.
 * Modified to get C++ style.
-* Only class A device (no class B)
+* Only class A and C device (no class B)
 * Add some sleep of arduino board and ESP.
 * Add SX1262 chip
 
 ## Limitation
 
-This library try to comply with lorawan 1.0.x but do not implement all feature. For example FSK datarate is not implemented.
+This library try to comply with lorawan 1.0.3 but do not implement all feature. For example FSK datarate is not implemented.
 
 For a more complete Lorawan library based on lmic, please have a look to <https://github.com/mcci-catena/arduino-lmic>
 
@@ -31,6 +31,9 @@ Tested with HelTec
 
 * [esp32](examples/esp32/) Minimal example, send one value.
 * [esp32-deepsleep](examples/esp32-deepsleep/) Example, send one analog value with deepsleep using RTC and state save in RTC RAM.
+
+## RAK811 
+* [simple_rak811](examples/simple_rak811) Minimal example for RAK811
 
 ## Usage
 

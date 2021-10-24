@@ -27,7 +27,7 @@ uint8_t RadioFake::rssi() const { return 0; }
 
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
-uint8_t RadioFake::handle_end_rx(FrameBuffer &frame) {
+uint8_t RadioFake::handle_end_rx(FrameBuffer &frame, bool) {
   PRINT_DEBUG(1, F("Handle end rx"));
   uint8_t length =
       std::min(simulateReceiveSize, static_cast<uint8_t>(frame.max_size()));
@@ -93,6 +93,16 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
               freq, rxsyms, rps.sf + 6, bwForLog(rps), crForLog(rps));
 }
 
+void RadioFake::rx(uint32_t const freq, rps_t const rps) {
+  // now instruct the radio to receive
+  if (simulateReceiveSize > 0) {
+    endOfOperation = rxTime + Lmic::calcAirTime(rps, simulateReceiveSize);
+  }
+
+  PRINT_DEBUG(1, F("RXMODE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d"), freq,
+              rps.sf + 6, bwForLog(rps), crForLog(rps));
+}
+
 /**
  * Check the IO pin.
  * Return true if the radio has finish it's operation
@@ -107,4 +117,4 @@ void RadioFake::simulateRx(OsTime const timeOfReceive,
   std::copy(buffer, buffer + simulateReceiveSize, begin(simulateReceive));
 }
 
-RadioFake::RadioFake()  {}
+RadioFake::RadioFake() {}

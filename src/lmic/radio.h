@@ -28,9 +28,11 @@ public:
   virtual void tx(uint32_t freq, rps_t rps, int8_t txpow,
                   uint8_t const *framePtr, uint8_t frameLength) = 0;
   virtual void rx(uint32_t freq, rps_t rps, uint8_t rxsyms, OsTime rxtime) = 0;
+  // Rx continuous
+  virtual void rx(uint32_t freq, rps_t rps) = 0;
 
   virtual void init_random(std::array<uint8_t,16> &randbuf) = 0;
-  virtual uint8_t handle_end_rx(FrameBuffer &frame) = 0;
+  virtual uint8_t handle_end_rx(FrameBuffer &frame, bool goSleep) = 0;
   virtual void handle_end_tx() const = 0;
 
   virtual uint8_t rssi() const = 0;
