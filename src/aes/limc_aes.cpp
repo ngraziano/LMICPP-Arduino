@@ -79,7 +79,8 @@ void Aes::appendMic(const uint32_t devaddr, const uint32_t seqno,
  * len : total length (MIC included)
  */
 void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
-  AesBlock buf = {0};
+  AesBlock buf;
+  buf.fill(0);
   const uint8_t lenWithoutMic = len - lengths::MIC;
   aes_cmac(pdu, lenWithoutMic, false, AESDevKey, buf);
   // Copy MIC0 at the end
@@ -91,7 +92,8 @@ void Aes::appendMic0(uint8_t *const pdu, const uint8_t len) const {
  * len : total length (MIC included)
  */
 bool Aes::verifyMic0(const uint8_t *const pdu, const uint8_t len) const {
-  AesBlock buf = {0};
+  AesBlock buf;
+  buf.fill(0);
   const uint8_t lenWithoutMic = len - lengths::MIC;
   aes_cmac(pdu, lenWithoutMic, false, AESDevKey, buf);
   return std::equal(buf.begin(), buf.begin() + lengths::MIC,
@@ -202,8 +204,9 @@ void Aes::aes_cmac(const uint8_t *buf, uint8_t len, const bool prepend_aux,
       // Final block, xor with K1 or K2. K1 and K2 are calculated
       // by encrypting the all-zeroes block and then applying some
       // shifts and xor on that.
-      AesBlock final_key = {0};
-      // std::fill(final_key, final_key + AES_BLCK_SIZE, 0);
+      AesBlock final_key;
+      std::fill_n(final_key.begin(), final_key.size(), 0);
+
       block_encrypt(final_key, key);
 
       // Calculate K1
