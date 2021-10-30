@@ -1,0 +1,10 @@
+{
+    "terminal.integrated.env.windows": {
+         "PLATFORMIO_CALLER": "vscode"
+    },
+    "files.associations": {
+        "algorithm": "cpp",
+        "initializer_list": "cpp",
+        "sstream": "cpp"
+    }
+}
