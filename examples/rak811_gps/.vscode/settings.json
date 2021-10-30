@@ -5,6 +5,8 @@
     "files.associations": {
         "algorithm": "cpp",
         "initializer_list": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "memory": "cpp",
+        "new": "cpp"
     }
 }
