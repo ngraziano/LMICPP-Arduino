@@ -1,5 +1,5 @@
-#ifndef _hal_hal_io_h_
-#define _hal_hal_io_h_
+#ifndef hal_hal_io_h
+#define hal_hal_io_h
 #pragma once
 
 #include "../lmic/osticks.h"

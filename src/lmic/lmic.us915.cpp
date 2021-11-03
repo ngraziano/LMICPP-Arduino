@@ -153,12 +153,12 @@ bool LmicUs915::setupChannel(uint8_t, uint32_t, uint16_t) {
 
 void LmicUs915::disableChannel(uint8_t channel) {
   if (channel < 72)
-    channelMap[channel >> 4] &= ~(1 << (channel & 0xF));
+    channelMap[channel >> 4u] &= ~(1u << (channel & 0xFu));
 }
 
 void LmicUs915::enableChannel(uint8_t channel) {
   if (channel < 72)
-    channelMap[channel >> 4] |= (1 << (channel & 0xF));
+    channelMap[channel >> 4u] |= (1u << (channel & 0xFu));
 }
 
 void LmicUs915::enableSubBand(uint8_t band) {

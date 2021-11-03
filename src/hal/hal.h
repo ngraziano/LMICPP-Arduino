@@ -53,7 +53,7 @@ void hal_waitUntil(OsTime time);
 /*
  * wait this interval.
  */
-void hal_wait(OsDeltaTime time);
+void hal_wait(OsDeltaTime delta);
 
 /*
  * perform fatal failure action.

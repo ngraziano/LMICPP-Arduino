@@ -519,7 +519,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps) {
 
 #if !defined(DISABLE_INVERT_IQ_ON_RX)
   // use inverted I/Q signal (prevent mote-to-mote communication)
-  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1 << 6));
+  hal.write_reg(LORARegInvertIQ, hal.read_reg(LORARegInvertIQ) | (1u << 6));
 #endif
   write_list_of_reg(RESOLVE_TABLE(RX_INIT_CMD), NB_RX_INIT_CMD);
 

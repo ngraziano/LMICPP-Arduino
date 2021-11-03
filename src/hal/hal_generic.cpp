@@ -11,7 +11,7 @@
 
 #include "hal.h"
 #include "print_debug.h"
-#include <stdio.h>
+#include <cstdio>
 #include <sys/time.h>
 #include <unistd.h>
 

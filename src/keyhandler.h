@@ -1,5 +1,5 @@
-#ifndef _lorakeyhandler_h_
-#define _lorakeyhandler_h_
+#ifndef lorakeyhandler_h
+#define lorakeyhandler_h
 
 #ifdef ARDUINO
 #include <Arduino.h>

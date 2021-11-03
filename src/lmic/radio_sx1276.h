@@ -10,8 +10,8 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-#ifndef _radio_sx1276_h_
-#define _radio_sx1276_h_
+#ifndef lmic_radio_sx1276_h
+#define lmic_radio_sx1276_h
 
 #include "lorabase.h"
 #include "osticks.h"

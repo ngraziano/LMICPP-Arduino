@@ -6,3 +6,4 @@
 .vscode/launch.json
 .vscode/ipch
 /.pio
+examples/rak811_gps/src/lorakeys.h

@@ -78,8 +78,8 @@ void LmicDynamicChannel::mapChannels(uint8_t const chMaskCntl,
     return;
   }
 
-  for (uint8_t chnl = 0; chnl < channels.LIMIT_CHANNELS; chnl++) {
-    if ((chMask & (1 << chnl)) != 0) {
+  for (uint8_t chnl = 0; chnl < ChannelList::LIMIT_CHANNELS; chnl++) {
+    if ((chMask & (1u << chnl)) != 0) {
       channels.enable(chnl);
     } else {
       channels.disable(chnl);
@@ -111,7 +111,7 @@ OsTime LmicDynamicChannel::nextTx(OsTime const now) {
   // next channel or other (random)
   uint8_t nextChannel = txChnl + 1 + (rand.uint8() % 2);
 
-  for (uint8_t channelIndex = 0; channelIndex < channels.LIMIT_CHANNELS; channelIndex++) {
+  for (uint8_t channelIndex = 0; channelIndex < ChannelList::LIMIT_CHANNELS; channelIndex++) {
     if (nextChannel >= channels.LIMIT_CHANNELS) {
       nextChannel = 0;
     }
@@ -181,8 +181,9 @@ bool LmicDynamicChannel::nextJoinState() {
       failed = true;
       // and retry from highest datarate.
       datarate = MaxJoinDR;
-    } else
+    } else {
       datarate = decDR(datarate);
+    }
   }
 
   // Set minimal next join time

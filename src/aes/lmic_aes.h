@@ -44,7 +44,7 @@ public:
   void appendMic(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t *pdu,
                  uint8_t len) const;
   void appendMic0(uint8_t *pdu, uint8_t len) const;
-  void saveState(StoringAbtract &buffer) const;
+  void saveState(StoringAbtract &store) const;
   void loadState(RetrieveAbtract &store);
 };
 

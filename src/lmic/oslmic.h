@@ -10,8 +10,8 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-#ifndef _oslmic_h_
-#define _oslmic_h_
+#ifndef lmic_oslmic_h
+#define lmic_oslmic_h
 
 #include "../hal/hal.h"
 #include "config.h"

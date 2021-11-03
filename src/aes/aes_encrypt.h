@@ -1,9 +1,9 @@
 
-#ifndef __aes_tiny_h__
-#define __aes_tiny_h__
+#ifndef aes_aes_encrypt_h
+#define aes_aes_encrypt_h
 
 #include <array>
-#include <stdint.h>
+#include <cstdint>
 
 constexpr uint8_t key_size = 16;
 using AesKey = std::array<uint8_t, key_size>;

@@ -12,9 +12,9 @@
 
 #ifndef ARDUINO_ARCH_ESP32
 
+#include "../aes/lmic_aes.h"
 #include "lmicrand.h"
 #include "radio.h"
-#include "../aes/lmic_aes.h"
 
 LmicRand::LmicRand(Aes &anaes) : aes(anaes) {}
 
@@ -28,13 +28,15 @@ void LmicRand::init(Radio &radio) {
 uint8_t LmicRand::uint8() {
   if (index >= randbuf.size()) {
     // encrypt seed with any key
-    aes.encrypt(randbuf.begin(), randbuf.size()); 
+    aes.encrypt(randbuf.begin(), randbuf.size());
     index = 0;
   }
   return randbuf[index++];
 }
 
 //! Get random number (default impl for uint16_t).
-uint16_t LmicRand::uint16() { return ((uint16_t)((uint8() << 8U) | uint8())); }
+uint16_t LmicRand::uint16() {
+  return (static_cast<uint16_t>(uint8()) << 8U) | uint8();
+}
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef _print_debug_h_
-#define _print_debug_
+#ifndef hal_print_debug_h
+#define hal_print_debug_h
 
 #include "hal.h"
 #include "stdio.h"

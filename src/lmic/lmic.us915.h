@@ -10,8 +10,8 @@
  *    Nicolas Graziano - cpp style.
  *******************************************************************************/
 
-#ifndef _lmic_us915_h_
-#define _lmic_us915_h_
+#ifndef lmic_us915_h
+#define lmic_us915_h
 
 #include "lmic.h"
 
