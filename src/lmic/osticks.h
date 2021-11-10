@@ -15,8 +15,8 @@ class LmicRand;
 
 class OsDeltaTime {
 public:
-  constexpr explicit OsDeltaTime(int32_t init) : value(init){};
-  constexpr OsDeltaTime() : value(0){};
+  constexpr explicit OsDeltaTime(int32_t init) noexcept : value(init){};
+  constexpr OsDeltaTime() noexcept : value(0){};
 
   constexpr static OsDeltaTime from_us(int64_t us) {
     return OsDeltaTime(us * OSTICKS_PER_SEC / 1000000);

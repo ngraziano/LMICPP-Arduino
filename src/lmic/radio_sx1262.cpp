@@ -76,18 +76,18 @@ void print_status(uint8_t status) {
               (status >> 1) & 7);
 }
 
-template <int parameter_length> struct Sx1262Command {
+template <size_t parameter_length> struct Sx1262Command {
   RadioCommand command;
-  uint8_t parameter[parameter_length];
+  std::array<uint8_t,parameter_length> parameter;
 
-  uint8_t *begin() { return parameter; }
-  uint8_t *end() { return parameter + parameter_length; }
+  uint8_t *begin() { return parameter.begin(); }
+  uint8_t *end() { return parameter.end(); }
 
-  constexpr uint8_t const *begin() const { return parameter; }
-  constexpr uint8_t const *end() const { return parameter + parameter_length; }
+  constexpr uint8_t const *begin() const { return parameter.cbegin(); }
+  constexpr uint8_t const *end() const { return parameter.cend(); }
 };
 
-template <> struct Sx1262Command<0> { RadioCommand command; };
+template <> struct Sx1262Command<0u> { RadioCommand command; };
 
 void send_command(HalIo const &hal, RadioCommand cmd,
                   uint8_t const *begin_parameter,
@@ -103,7 +103,7 @@ void send_command(HalIo const &hal, RadioCommand cmd,
   hal.endspi();
 }
 
-template <int parameter_length>
+template <size_t parameter_length>
 void send_command(HalIo const &hal,
                   Sx1262Command<parameter_length> const &cmd) {
   send_command(hal, cmd.command, cmd.begin(), cmd.end());
@@ -133,12 +133,12 @@ void read_command(HalIo const &hal, RadioCommand cmd, uint8_t *begin_parameter,
   hal.endspi();
 }
 
-template <int parameter_length>
+template <size_t parameter_length>
 void read_command(HalIo const &hal, Sx1262Command<parameter_length> &cmd) {
   read_command(hal, cmd.command, cmd.begin(), cmd.end());
 }
 
-template <int data_length> struct Sx1262Register {
+template <size_t data_length> struct Sx1262Register {
   uint16_t const address;
   uint8_t data[data_length];
 
@@ -149,7 +149,7 @@ template <int data_length> struct Sx1262Register {
   uint8_t const *end() const { return data + data_length; }
 };
 
-template <int data_length>
+template <size_t data_length>
 void read_register(HalIo const &hal, Sx1262Register<data_length> &reg) {
   PRINT_DEBUG(2, F("Reg< %x"), reg.address);
 
@@ -168,7 +168,7 @@ void read_register(HalIo const &hal, Sx1262Register<data_length> &reg) {
   hal.endspi();
 }
 
-template <int data_length>
+template <size_t data_length>
 void write_register(HalIo const &hal, Sx1262Register<data_length> const &reg) {
   PRINT_DEBUG(2, F("Reg> %x"), reg.address);
 
@@ -217,12 +217,12 @@ CONST_TABLE(uint16_t, CALIBRATION_CMD)
     0x6B6F, 0x7581, 0xC1C5, 0xD7DB, 0xE1E9,
 };
 
-template <int length> struct Sx1262Command_P {
+template <size_t length> struct Sx1262Command_P {
   Sx1262Command<length> item;
   constexpr Sx1262Command_P(Sx1262Command<length> const &it) : item(it) {}
 };
 
-template <int length>
+template <size_t length>
 void send_command(HalIo const &hal, Sx1262Command_P<length> const &cmd_P) {
   Sx1262Command<length> cmd{RadioCommand::ResetStats, {}};
   memcpy_P(&cmd, &cmd_P.item, sizeof(cmd));
@@ -230,7 +230,7 @@ void send_command(HalIo const &hal, Sx1262Command_P<length> const &cmd_P) {
 }
 
 template <>
-void send_command<0>(HalIo const &hal, Sx1262Command_P<0> const &cmd_P) {
+void send_command<0u>(HalIo const &hal, Sx1262Command_P<0> const &cmd_P) {
   Sx1262Command<0> cmd{RadioCommand::ResetStats};
   memcpy_P(&cmd, &cmd_P.item, sizeof(cmd));
   send_command(hal, cmd);
@@ -533,7 +533,7 @@ void RadioSx1262::set_modulation_params_lora(rps_t const rps) const {
 void RadioSx1262::set_rf_frequency(uint32_t const freq) const {
   Sx1262Command<4> cmd{RadioCommand::SetRfFrequency, {0x00}};
   uint32_t const rf_freq = (((uint64_t)freq << 25) / 32000000);
-  wmsbf4(cmd.parameter, rf_freq);
+  wmsbf4(cmd.begin(), rf_freq);
   send_command(hal, cmd);
 }
 
@@ -653,13 +653,13 @@ uint8_t RadioSx1262::get_status() const {
 uint16_t RadioSx1262::get_device_errors() const {
   Sx1262Command<2> cmd = {RadioCommand::GetDeviceErrors, {}};
   read_command(hal, cmd);
-  return rmsbf2(cmd.parameter);
+  return rmsbf2(cmd.begin());
 }
 
 uint16_t RadioSx1262::get_irq_status() const {
   Sx1262Command<2> cmd = {RadioCommand::GetIrqStatus, {}};
   read_command(hal, cmd);
-  return rmsbf2(cmd.parameter);
+  return rmsbf2(cmd.begin());
 }
 
 void RadioSx1262::read_packet_status() {

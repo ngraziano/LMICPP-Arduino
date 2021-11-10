@@ -13,7 +13,7 @@
 #include "hal.h"
 #include "print_debug.h"
 #include <Arduino.h>
-#include <stdio.h>
+#include <cstdio>
 
 // -----------------------------------------------------------------------------
 // TIME

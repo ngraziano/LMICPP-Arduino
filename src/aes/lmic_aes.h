@@ -1,6 +1,6 @@
 
-#ifndef __aes_h__
-#define __aes_h__
+#ifndef aes_aes_h
+#define aes_aes_h
 #include "../lmic/bufferpack.h"
 #include "../lmic/config.h"
 #include "../lmic/lorabase.h"
