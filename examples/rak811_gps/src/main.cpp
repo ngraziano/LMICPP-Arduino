@@ -3,6 +3,7 @@
 #include <SPI.h>
 
 #include <array>
+#include <eeprom.h>
 #include <hal/hal_io.h>
 #include <hal/print_debug.h>
 #include <keyhandler.h>
@@ -21,6 +22,32 @@ HardwareSerial GpsSerial(GPS_UART);
 constexpr uint32_t TX_INTERVAL = 140;
 
 constexpr unsigned int BAUDRATE = 115200;
+
+constexpr uint32_t magic_constant = 0x5155;
+
+class EEPromStore : public StoringAbtract {
+private:
+  size_t current_postion = 0;
+
+protected:
+  void store(void const *val, size_t size) override {
+    for (size_t i = 0; i < size; i++) {
+      EEPROM.write(current_postion++, ((uint8_t *)val)[i]);
+    }
+  }
+};
+
+class EEPromRestore : public RetrieveAbtract {
+private:
+  size_t current_postion = 0;
+
+protected:
+  void retrieve(void *val, size_t size) override {
+    for (size_t i = 0; i < size; i++) {
+      ((uint8_t *)val)[i] = EEPROM.read(current_postion++);
+    }
+  }
+};
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -48,6 +75,16 @@ uint32_t nextSendEpoch;
 
 STM32RTC &rtc = STM32RTC::getInstance();
 
+void saveState() {
+  digitalWrite(LED2, LOW);
+  // save lmic state if we lost power
+  EEPromStore store;
+  uint32_t magic = magic_constant;
+  store.write(magic);
+  LMIC.saveStateWithoutTimeData(store);
+  digitalWrite(LED2, HIGH);
+}
+
 void onEvent(EventType ev) {
   switch (ev) {
   case EventType::JOINING:
@@ -59,6 +96,7 @@ void onEvent(EventType ev) {
     // disable ADR because it will be mobile.
     LMIC.setLinkCheckMode(false);
     LMIC.setDutyRate(12);
+    saveState();
     break;
   case EventType::TXCOMPLETE:
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
@@ -81,14 +119,19 @@ void onEvent(EventType ev) {
 
 constexpr uint32_t adcRefVoltage = 330; // cV
 constexpr uint32_t maxBatt = 415;       // cV
+constexpr uint32_t pauseBatt = 340;       // cV
 constexpr uint32_t minBatt = 320;       // cV
 constexpr uint32_t shutdownBatt = 310;  // cV
 
 constexpr uint32_t maxAdc = (1 << 10) - 1;
 
+uint32_t get_battery_voltage() {
+  return adcRefVoltage * analogRead(PA2) / maxAdc * 5 / 3;
+}
+
 void set_battery_level() {
 
-  uint32_t val = adcRefVoltage * analogRead(PA2) / maxAdc * 5 / 3;
+  uint32_t val = get_battery_voltage();
 
   PRINT_DEBUG(1, F("batt value %d0mv"), val);
 
@@ -248,6 +291,18 @@ void setup() {
   LMIC.setClockError(MAX_CLOCK_ERROR * 1 / 100);
   // reduce power
   // LMIC.setAntennaPowerAdjustment(-14);
+  // save lmic state if we lost power
+  EEPromRestore store;
+  uint32_t magic;
+  store.read(magic);
+  if (magic == magic_constant) {
+    digitalWrite(LED2, LOW);
+    PRINT_DEBUG(1, F("Read state from EEPROM"));
+
+    LMIC.loadStateWithoutTimeData(store);
+    digitalWrite(LED2, HIGH);
+    LMIC.setDrTx(5);
+  }
 
   // first send
   nextSendEpoch = rtc.getEpoch();
@@ -275,7 +330,23 @@ void goToSleep(uint32_t nb_sec_to_sleep) {
 
 void goToSleep(OsDeltaTime time_to_sleep) { goToSleep(time_to_sleep.to_s()); }
 
+constexpr uint32_t sleepTimeWhenBatterieIsLow = 60 * 5;
+
+void sleep_if_battery_too_low() {
+  if (get_battery_voltage() < pauseBatt) {
+    saveState();
+    // wait for battery to charge
+    while (get_battery_voltage() < pauseBatt + 10) {
+      PRINT_DEBUG(1, F("Battery too low"));
+      goToSleep(sleepTimeWhenBatterieIsLow);
+    }
+  }
+}
+
 void loop() {
+
+  sleep_if_battery_too_low();
+
   OsDeltaTime to_wait = LMIC.run();
   // OsDeltaTime to_wait = OsInfiniteDeltaTime;
 
