@@ -147,8 +147,7 @@ void CertificationProtocol::regionalDutyCycleCtrl(uint8_t const *data,
     return;
   }
   bool const regionalDutyCycle = data[0] == 1;
-  // TODO: implement regional duty-cycle desactivation
-  //  lmic.setRegionalDutyCycle(regionalDutyCycle);
+  lmic.setRegionalDutyCycleVerification(regionalDutyCycle);
 }
 
 constexpr std::array<OsDeltaTime, 11> periodicityTable = {

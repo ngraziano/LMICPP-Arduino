@@ -59,6 +59,9 @@ protected:
   bool nextJoinState() final;
   FrequencyAndRate defaultRX2Parameter() const override = 0;
 
+  void setRegionalDutyCycleVerification(bool enabled) final;
+
+
   const int8_t MaxEIRP;
   const dr_t MaxJoinDR;
   const dr_t MinJoinDR;

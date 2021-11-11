@@ -202,6 +202,10 @@ bool LmicDynamicChannel::nextJoinState() {
   return !failed;
 }
 
+void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
+  channels.setCheckDutyCycle(enabled);
+}
+
 #if defined(ENABLE_SAVE_RESTORE)
 void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
   Lmic::saveStateWithoutTimeData(store);

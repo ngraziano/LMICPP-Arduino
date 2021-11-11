@@ -36,6 +36,7 @@ public:
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
+  void setRegionalDutyCycleVerification(bool) final {};
 
 protected:
   uint32_t getTxFrequency() const final;

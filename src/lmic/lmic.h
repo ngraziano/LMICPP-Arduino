@@ -330,6 +330,9 @@ public:
   void activateClassC() { opmode.set(OpState::CLASSC); }
   void deactivateClassC() { opmode.reset(OpState::CLASSC); }
 
+  // Use in certification tests
+  virtual void setRegionalDutyCycleVerification(bool enabled) = 0;
+
 protected:
   uint32_t convFreq(const uint8_t *ptr) const;
   virtual uint32_t getTxFrequency() const = 0;
