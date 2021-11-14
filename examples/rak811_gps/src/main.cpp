@@ -23,7 +23,7 @@ constexpr uint32_t TX_INTERVAL = 140;
 
 constexpr unsigned int BAUDRATE = 115200;
 
-constexpr uint32_t magic_constant = 0x5155;
+constexpr uint32_t magic_constant = 0x5156;
 
 class EEPromStore : public StoringAbtract {
 private:
@@ -119,7 +119,7 @@ void onEvent(EventType ev) {
 
 constexpr uint32_t adcRefVoltage = 330; // cV
 constexpr uint32_t maxBatt = 415;       // cV
-constexpr uint32_t pauseBatt = 340;       // cV
+constexpr uint32_t pauseBatt = 360;       // cV
 constexpr uint32_t minBatt = 320;       // cV
 constexpr uint32_t shutdownBatt = 310;  // cV
 
