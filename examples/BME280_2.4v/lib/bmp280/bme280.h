@@ -73,11 +73,11 @@ public:
 private:
   const uint8_t i2c_address = BME280_ADDRESS1;
 
-  uint8_t read8(BME280Registers register) const;
-  void write8(BME280Registers register, uint8_t value) const;
-  uint16_t read16(BME280Registers register) const;
-  int16_t read16s(BME280Registers register) const;
-  void readBuffer(BME280Registers reg, uint8_t *buffer, uint8_t size) const;
+  uint8_t read8(BME280Registers bmeregister) const;
+  void write8(BME280Registers bmeregister, uint8_t value) const;
+  uint16_t read16(BME280Registers bmeregister) const;
+  int16_t read16s(BME280Registers bmeregister) const;
+  void readBuffer(BME280Registers bmeregister, uint8_t *buffer, uint8_t size) const;
 
   void readTrimmingParameters();
 

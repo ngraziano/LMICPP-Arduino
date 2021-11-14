@@ -13,7 +13,7 @@
 #include <Wire.h>
 #include <bme280.h>
 
-#define DEVICE_TEMP1
+#define DEVICE_TEMP2
 #include "lorakeys.h"
 #include "powersave.h"
 
@@ -162,12 +162,15 @@ void setup() {
     Serial.begin(BAUDRATE);
   }
 
+  PRINT_DEBUG(1, F("Starting."));
+
   Wire.begin();
   if (!bmp.begin()) {
     PRINT_DEBUG(1, F("BME Init Fail."));
     while (1)
       ;
   }
+
   PRINT_DEBUG(2, F("BME Init Sucess."));
 
   pciSetup(lmic_pins.dio[0]);
@@ -205,8 +208,8 @@ void loop() {
 
   OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
 
-  if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(10)) {
-    // we have more than 10 ms to do some work.
+  if (freeTimeBeforeNextCall > OsDeltaTime::from_ms(100)) {
+    // we have more than 100 ms to do some work.
     // the test must be adapted from the time spend in other task
     if (nextSend < os_getTime()) {
       if (LMIC.getOpMode().test(OpState::TXRXPEND)) {

@@ -68,10 +68,14 @@
         "activityBarBadge.background": "#606020",
         "activityBarBadge.foreground": "#e7e7e7",
         "statusBar.background": "#000000",
-        "statusBar.border": "#000000",
         "statusBar.foreground": "#e7e7e7",
         "statusBarItem.hoverBackground": "#1a1a1a",
-        "titleBar.border": "#000000"
+        "editorGroup.border": "#1a1a1a",
+        "panel.border": "#1a1a1a",
+        "sash.hoverBorder": "#1a1a1a",
+        "sideBar.border": "#1a1a1a",
+        "statusBarItem.remoteBackground": "#000000",
+        "statusBarItem.remoteForeground": "#e7e7e7"
     },
     "peacock.color": "#000000",
 }
