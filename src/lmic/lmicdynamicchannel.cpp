@@ -146,8 +146,7 @@ OsTime LmicDynamicChannel::nextTx(OsTime const now) {
 }
 
 uint32_t LmicDynamicChannel::getRx1Frequency() const {
-  // RX1 frequency is same as TX frequency
-  return getTxFrequency();
+  return channels.getFrequencyRX(txChnl);
 }
 
 dr_t LmicDynamicChannel::getRx1Dr() const {

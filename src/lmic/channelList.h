@@ -11,10 +11,12 @@ struct ChannelDetail {
 private:
   // three low bit of freq is used to store band.
   uint32_t frequency{};
+  uint32_t frequencyRX{};
   uint16_t drMap{};
 
 public:
   constexpr uint32_t getFrequency() const { return frequency; };
+  constexpr uint32_t getFrequencyRX() const { return frequencyRX; };
   constexpr uint16_t getDrMap() const { return drMap; };
   constexpr bool isConfigured() const { return drMap != 0; }
   constexpr bool isDrActive(dr_t datarate) const {
@@ -22,16 +24,18 @@ public:
   };
   constexpr ChannelDetail() = default;
   constexpr ChannelDetail(uint32_t aFrequency, uint16_t adrMap)
-      : frequency(aFrequency), drMap(adrMap){};
+      : frequency(aFrequency), frequencyRX(aFrequency), drMap(adrMap){};
 
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {
     store.write(frequency);
+    store.write(frequencyRX);
     store.write(drMap);
   };
 
   void loadState(RetrieveAbtract &store) {
     store.read(frequency);
+    store.read(frequencyRX);
     store.read(drMap);
   };
 #endif
@@ -94,6 +98,10 @@ public:
 
   uint32_t getFrequency(uint8_t const channel) const {
     return channels[channel].getFrequency();
+  };  
+  
+  uint32_t getFrequencyRX(uint8_t const channel) const {
+    return channels[channel].getFrequencyRX();
   };
 
 #if defined(ENABLE_SAVE_RESTORE)
