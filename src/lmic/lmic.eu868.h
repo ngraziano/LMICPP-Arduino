@@ -31,7 +31,6 @@ protected:
   uint8_t getRawRps(dr_t dr) const final;
   int8_t pow2dBm(uint8_t powerIndex) const final;
   OsDeltaTime dr2hsym(dr_t dr) const final;
-  uint32_t convFreq(const uint8_t *ptr) const final;
   bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;

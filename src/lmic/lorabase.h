@@ -117,7 +117,7 @@ enum {
   // device status req  : -
   MCMD_DEVS_REQ = 0x06,
   // set new channel    : u1:chidx, u3:freq, u1:DRrange
-  MCMD_SNCH_REQ = 0x07,
+  MCMD_NewChannel_REQ = 0x07,
   // Sets the timing of the of the reception slots  u1: [7-4]:RFU, [3-0]:del
   MCMD_RXTimingSetup_REQ = 0x08,
   //  set the maximum allowed dwell time

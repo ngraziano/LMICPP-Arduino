@@ -111,16 +111,24 @@ bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
   if (chidx >= channels.LIMIT_CHANNELS)
     return false;
 
+  if(chidx < 3 && drmap != 0) {
+    // channel 0, 1 and 2 are fixed
+    // drmap == 0 is only used internally to reset the channel
+    return false;
+  }
+  
+  if (newfreq == 0) {
+    channels.disable(chidx);
+    return true;
+  }
+
+  if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX) {
+    return false;
+  }
+
   channels.configure(chidx, newfreq,
                      drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap);
   return true;
-}
-
-uint32_t LmicEu868::convFreq(const uint8_t *ptr) const {
-  uint32_t newfreq = rlsbf3(ptr) * 100;
-  if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX)
-    newfreq = 0;
-  return newfreq;
 }
 
 FrequencyAndRate LmicEu868::defaultRX2Parameter() const {

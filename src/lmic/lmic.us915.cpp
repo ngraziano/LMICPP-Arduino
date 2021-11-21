@@ -126,13 +126,6 @@ void LmicUs915::initDefaultChannels() {
   channelMap[4] = 0x00FF;
 }
 
-uint32_t LmicUs915::convFreq(const uint8_t *ptr) const {
-  uint32_t newfreq = rlsbf3(ptr) * 100;
-  if (newfreq < US915_FREQ_MIN || newfreq > US915_FREQ_MAX)
-    newfreq = 0;
-  return newfreq;
-}
-
 void LmicUs915::handleCFList(const uint8_t *ptr) {
   // Check CFList type
   if (ptr[15] != 1) {

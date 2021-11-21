@@ -196,10 +196,8 @@ private:
   // have to ACK duty cycle settings, init after join
   bool dutyCapAns = false;
 #endif
-#if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init after join.
-  uint8_t snchAns = 0;
-#endif
+  uint8_t mcmdNewChannelAns = 0;
 
 private:
   // 2nd RX window (after up stream), init at reset
@@ -260,14 +258,14 @@ private:
   uint8_t *add_opt_devs(uint8_t *buffer_pos);
   uint8_t *add_opt_adr(uint8_t *buffer_pos);
   uint8_t *add_opt_rxtiming(uint8_t *buffer_pos);
-  uint8_t *add_opt_snch(uint8_t *buffer_pos);
+  uint8_t *add_opt_newchannel(uint8_t *buffer_pos);
 
   void buildDataFrame();
   void engineUpdate();
   void parse_ladr(const uint8_t *const opts);
   void parse_dn2p(const uint8_t *const opts);
   void parse_dcap(const uint8_t *const opts);
-  void parse_snch(const uint8_t *const opts);
+  void parse_newchannel(const uint8_t *const opts);
   void parse_rx_timing_setup(const uint8_t *const opts);
   void parseMacCommands(const uint8_t *opts, uint8_t olen);
   enum class SeqNoValidity : uint8_t {
@@ -333,6 +331,7 @@ public:
   void deactivateClassC() { opmode.reset(OpState::CLASSC); }
 
 protected:
+  uint32_t convFreq(const uint8_t *ptr) const;
   virtual uint32_t getTxFrequency() const = 0;
   virtual int8_t getTxPower() const = 0;
   virtual FrequencyAndRate getRx1Parameter() const = 0;
@@ -345,7 +344,7 @@ protected:
   virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
   virtual OsDeltaTime dr2hsym(dr_t dr) const = 0;
-  virtual uint32_t convFreq(const uint8_t *ptr) const = 0;
+
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 
   virtual void initDefaultChannels() = 0;

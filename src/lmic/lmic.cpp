@@ -153,9 +153,7 @@ void Lmic::stateJustJoined() {
   devsAns = false;
   rxTimingSetupAns = false;
   globalDutyRate = 0;
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-  snchAns = 0;
-#endif
+  mcmdNewChannelAns = 0;
 #if !defined(DISABLE_MCMD_DN2P_SET)
   dn2Ans = 0;
 #endif
@@ -245,16 +243,17 @@ void Lmic::parse_dcap(const uint8_t *const opts) {
 #endif // !DISABLE_MCMD_DCAP_REQ
 }
 
-void Lmic::parse_snch(const uint8_t *const opts) {
-#if !defined(DISABLE_MCMD_SNCH_REQ)
+uint32_t Lmic::convFreq(const uint8_t *ptr) const {
+  return rlsbf3(ptr) * 100;
+}
+
+void Lmic::parse_newchannel(const uint8_t *const opts) {
   const uint8_t chidx = opts[1];               // channel
   const uint32_t newfreq = convFreq(&opts[2]); // freq
   const uint8_t drs = opts[5];                 // datarate span
-  snchAns = 0x80;
-  if (newfreq != 0 &&
-      setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
-    snchAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
-#endif // !DISABLE_MCMD_SNCH_REQ
+  mcmdNewChannelAns = 0x80;
+  if (setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
+    mcmdNewChannelAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 }
 
 void Lmic::parse_rx_timing_setup(const uint8_t *const opts) {
@@ -303,8 +302,8 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
       continue;
     }
     // NewChannelReq LoRaWAN™ Specification §5.6
-    case MCMD_SNCH_REQ: {
-      parse_snch(opts + oidx);
+    case MCMD_NewChannel_REQ: {
+      parse_newchannel(opts + oidx);
       oidx += 6;
       continue;
     }
@@ -833,14 +832,12 @@ uint8_t *Lmic::add_opt_rxtiming(uint8_t *pos) {
   return pos;
 }
 
-uint8_t *Lmic::add_opt_snch(uint8_t *pos) {
-#if !defined(DISABLE_MCMD_SNCH_REQ)
-  if (snchAns) {
+uint8_t *Lmic::add_opt_newchannel(uint8_t *pos) {
+  if (mcmdNewChannelAns) {
     *(pos++) = MCMD_SNCH_ANS;
-    *(pos++) = snchAns & ~MCMD_SNCH_ANS_RFU;
-    snchAns = 0;
+    *(pos++) = mcmdNewChannelAns & ~MCMD_SNCH_ANS_RFU;
+    mcmdNewChannelAns = 0;
   }
-#endif // !DISABLE_MCMD_SNCH_REQ
   return pos;
 }
 
@@ -854,7 +851,7 @@ void Lmic::buildDataFrame() {
   pos = add_opt_devs(pos);
   pos = add_opt_adr(pos);
   pos = add_opt_rxtiming(pos);
-  pos = add_opt_snch(pos);
+  pos = add_opt_newchannel(pos);
 
   const uint8_t end = pos - frame.cbegin();
 
@@ -1304,10 +1301,8 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   store.write(dutyCapAns);
 #endif
-#if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init afet join.
-  store.write(snchAns);
-#endif
+  store.write(mcmdNewChannelAns);
   store.write(rx1DrOffset);
   store.write(rx2Parameter.datarate);
   store.write(rx2Parameter.frequency);
@@ -1347,10 +1342,8 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   store.read(dutyCapAns);
 #endif
-#if !defined(DISABLE_MCMD_SNCH_REQ)
   // answer set new channel, init afet join.
-  store.read(snchAns);
-#endif
+  store.read(mcmdNewChannelAns);
   store.read(rx1DrOffset);
   store.read(rx2Parameter.datarate);
   store.read(rx2Parameter.frequency);

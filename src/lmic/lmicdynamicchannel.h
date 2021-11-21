@@ -44,7 +44,6 @@ protected:
   int8_t pow2dBm(uint8_t powerIndex) const override =0;
   OsDeltaTime getDwn2SafetyZone() const final;
   OsDeltaTime dr2hsym(dr_t dr) const override =0;
-  uint32_t convFreq(const uint8_t *ptr) const override =0;
   bool validRx1DrOffset(uint8_t drOffset) const override =0;
 
   void initDefaultChannels() override;
