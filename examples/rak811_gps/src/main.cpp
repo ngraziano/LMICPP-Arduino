@@ -23,7 +23,8 @@ constexpr uint32_t TX_INTERVAL = 140;
 
 constexpr unsigned int BAUDRATE = 115200;
 
-constexpr uint32_t magic_constant = 0x5156;
+constexpr uint32_t magic_constant = 0x5157;
+uint32_t pauseBatt = 360; // cV
 
 class EEPromStore : public StoringAbtract {
 private:
@@ -108,6 +109,9 @@ void onEvent(EventType ev) {
       auto data = LMIC.getData();
       if (data) {
         uint8_t port = LMIC.getPort();
+        if (port == 11) {
+          pauseBatt = data[0] + data[1] * 256;
+        }
       }
     }
     break;
@@ -119,7 +123,6 @@ void onEvent(EventType ev) {
 
 constexpr uint32_t adcRefVoltage = 330; // cV
 constexpr uint32_t maxBatt = 415;       // cV
-constexpr uint32_t pauseBatt = 360;       // cV
 constexpr uint32_t minBatt = 320;       // cV
 constexpr uint32_t shutdownBatt = 310;  // cV
 
@@ -204,7 +207,7 @@ void do_send(OsDeltaTime to_wait) {
       (static_cast<int64_t>(longitude) + (180LL * coorfactor)) * 16777215LL /
       360LL / coorfactor;
 
-  std::array<uint8_t, 9> txBuffer;
+  std::array<uint8_t, 10> txBuffer;
   txBuffer[0] = (latitudeBinary >> 16) & 0xFF;
   txBuffer[1] = (latitudeBinary >> 8) & 0xFF;
   txBuffer[2] = latitudeBinary & 0xFF;
@@ -216,6 +219,7 @@ void do_send(OsDeltaTime to_wait) {
   txBuffer[6] = (altitude / 1000 >> 8) & 0xFF;
   txBuffer[7] = altitude / 1000 & 0xFF;
   txBuffer[8] = (hdop / 10) & 0xFF;
+  txBuffer[9] = get_battery_voltage() - 256;
 
   // Prepare upstream data transmission at the next possible time.
   LMIC.setTxData2(2, txBuffer.begin(), txBuffer.size(), false);
@@ -306,6 +310,11 @@ void setup() {
 
   // first send
   nextSendEpoch = rtc.getEpoch();
+
+  for (int i = 0; i < 20; i++) {
+    PRINT_DEBUG(1, F("Starting ."));
+    delay(1000);
+  }
 }
 
 void goToSleep(uint32_t nb_sec_to_sleep) {
@@ -334,10 +343,13 @@ constexpr uint32_t sleepTimeWhenBatterieIsLow = 60 * 5;
 
 void sleep_if_battery_too_low() {
   if (get_battery_voltage() < pauseBatt) {
+    PRINT_DEBUG(1, F("Battery too low : %d, save state"),
+                get_battery_voltage());
+
     saveState();
     // wait for battery to charge
     while (get_battery_voltage() < pauseBatt + 10) {
-      PRINT_DEBUG(1, F("Battery too low"));
+      PRINT_DEBUG(1, F("Battery too low : %d"), get_battery_voltage());
       goToSleep(sleepTimeWhenBatterieIsLow);
     }
   }
