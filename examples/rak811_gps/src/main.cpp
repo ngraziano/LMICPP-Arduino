@@ -24,7 +24,7 @@ constexpr uint32_t TX_INTERVAL = 140;
 constexpr unsigned int BAUDRATE = 115200;
 
 constexpr uint32_t magic_constant = 0x5157;
-uint32_t pauseBatt = 360; // cV
+uint32_t pauseBatt = 345; // centiVolt
 
 class EEPromStore : public StoringAbtract {
 private:
