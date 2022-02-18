@@ -20,7 +20,7 @@ void RadioFake::init_random(std::array<uint8_t, 16> &randbuf) {
   PRINT_DEBUG(1, F("Fake init with constant values"));
 
   uint8_t i = 0;
-  std::generate_n(begin(randbuf), end(randbuf), [&i]() { return i++; });
+  std::generate(begin(randbuf), end(randbuf), [&i]() { return i++; });
 }
 
 uint8_t RadioFake::rssi() const { return 0; }
