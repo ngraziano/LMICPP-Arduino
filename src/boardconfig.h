@@ -9,12 +9,13 @@
 
 
 #ifndef LMIC_HAL_IO
+// Same IO style for all boards
 #define LMIC_HAL_IO LMIC_ARDUINO
 #endif
 
 
-// ESP32 using Arduino
-#ifdef ARDUINO_ARCH_ESP32
+// ESP32 ans ESP8266 using Arduino : use gettimeofday
+#if defined(ARDUINO_ARCH_ESP32) || defined(ARDUINO_ARCH_ESP8266)
 #ifndef LMIC_HAL
 #define LMIC_HAL LMIC_ESP32
 #endif
@@ -27,7 +28,7 @@
 
 #endif
 
-// not arduino
+// not arduino just to compile
 #else
 #ifndef LMIC_HAL
 #define LMIC_HAL LMIC_GENERIC
