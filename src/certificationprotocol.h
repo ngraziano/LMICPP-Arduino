@@ -48,9 +48,9 @@ private:
   uint16_t rxAppCnt = 0;
   bool enableFPort224 = true;
   OsDeltaTime periodicity = OsDeltaTime(0);
-  VersionDetails fwVersion = {0, 0, 0, 0};
+  VersionDetails fwVersion = {};
   VersionDetails lrwanVersion = LORA_1_0_3;
-  VersionDetails lrwanRpVersion = {0, 0, 0, 0};
+  VersionDetails lrwanRpVersion = {};
 
   void handlePort224Message(Request req, const uint8_t *data, uint8_t size);
 

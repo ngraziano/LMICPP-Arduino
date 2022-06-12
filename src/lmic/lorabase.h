@@ -43,6 +43,7 @@ struct rps_t {
   explicit constexpr rps_t(uint8_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
         crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)){};
+    constexpr rps_t() : rps_t(0){};
 };
 
 constexpr uint8_t ILLEGAL_RPS = 0xFF;

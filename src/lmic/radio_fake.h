@@ -12,17 +12,30 @@
 #include <stdint.h>
 
 class RadioFake final : public Radio {
+public:
+  struct Packet {
+    // frequency is zero if not a valid packet
+    uint32_t freq;
+    rps_t rps;
+    std::array<uint8_t, 64> data;
+    uint8_t length;
+    // end of send time, or start of receive time
+    OsTime time;
+    bool is_valid() const { return freq != 0; }
+  };
+
 private:
-  std::array<uint8_t, 64> simulateReceive;
-  uint8_t simulateReceiveSize = 0;
-  OsTime rxTime;
+  Packet simulateReceive;
+  bool isReceived = false;
 
   OsTime endOfOperation;
+  Packet lastSend;
 
 public:
   explicit RadioFake();
 
-  void simulateRx(OsTime timeofreceive, uint8_t const *buffer, uint8_t size);
+  void simulateRx(Packet const &packet);
+  Packet popLastSend();
 
   void init() final;
   void rst() const final;

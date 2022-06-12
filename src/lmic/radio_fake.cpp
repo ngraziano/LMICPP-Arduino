@@ -28,13 +28,17 @@ uint8_t RadioFake::rssi() const { return 0; }
 // called by hal ext IRQ handler
 // (radio goes to stanby mode after tx/rx operations)
 uint8_t RadioFake::handle_end_rx(FrameBuffer &frame, bool) {
+  if (!isReceived) {
+    PRINT_DEBUG(1, F("Handle end rx without message"));
+    return 0;
+  }
   PRINT_DEBUG(1, F("Handle end rx"));
   uint8_t length =
-      std::min(simulateReceiveSize, static_cast<uint8_t>(frame.max_size()));
+      std::min(simulateReceive.length, static_cast<uint8_t>(frame.max_size()));
   // max frame size 64
-  std::copy(begin(simulateReceive), begin(simulateReceive) + length,
+  std::copy(begin(simulateReceive.data), begin(simulateReceive.data) + length,
             begin(frame));
-  simulateReceiveSize = 0;
+  simulateReceive.length = 0;
   return length;
 }
 
@@ -70,6 +74,12 @@ void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                 "\"pow\":%d, \"data\":\"%s\" }"),
               endOfOperation, freq, frameLength, rps.sf + 6, bwForLog(rps),
               crForLog(rps), txpow, buffer);
+  lastSend.freq = freq;
+  lastSend.rps = rps;
+  lastSend.length = frameLength;
+  lastSend.time = endOfOperation;
+
+  std::copy(framePtr, framePtr + frameLength, begin(lastSend.data));
 }
 
 void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
@@ -81,11 +91,21 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                 rxtime, (os_getTime() - rxtime).to_ms());
   }
   hal_waitUntil(rxtime);
-  if (simulateReceiveSize > 0) {
-    endOfOperation = rxTime + Lmic::calcAirTime(rps, simulateReceiveSize);
-
+  auto windows_end = hal_ticks() + Lmic::calcAirTime(rps, rxsyms);
+  // simulate timing is good ?
+  if (simulateReceive.length > 0 && simulateReceive.time >= os_getTime() &&
+      simulateReceive.time < windows_end) {
+    endOfOperation = simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
+    isReceived = true;
   } else {
-    endOfOperation = hal_ticks() + Lmic::calcAirTime(rps, rxsyms);
+    if (simulateReceive.length > 0) {
+      PRINT_DEBUG(1,
+                  F("RX WANTED AT :  %" PRIu32 ", current windows %" PRIu32
+                    " to %" PRIu32 " "),
+                  simulateReceive.time, rxtime, windows_end);
+    }
+    endOfOperation = windows_end;
+    isReceived = false;
   }
 
   PRINT_DEBUG(1,
@@ -95,8 +115,9 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
 
 void RadioFake::rx(uint32_t const freq, rps_t const rps) {
   // now instruct the radio to receive
-  if (simulateReceiveSize > 0) {
-    endOfOperation = rxTime + Lmic::calcAirTime(rps, simulateReceiveSize);
+  if (simulateReceive.length > 0 && simulateReceive.time > os_getTime()) {
+    endOfOperation = simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
+    isReceived = true;
   }
 
   PRINT_DEBUG(1, F("RXMODE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d"), freq,
@@ -109,12 +130,14 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps) {
  */
 bool RadioFake::io_check() const { return (endOfOperation < hal_ticks()); }
 
-void RadioFake::simulateRx(OsTime const timeOfReceive,
-                           uint8_t const *const buffer, uint8_t const size) {
-  rxTime = timeOfReceive;
-  simulateReceiveSize =
-      std::min(size, static_cast<uint8_t>(simulateReceive.max_size()));
-  std::copy(buffer, buffer + simulateReceiveSize, begin(simulateReceive));
+void RadioFake::simulateRx(Packet const &packet) {
+  simulateReceive = packet;
+}
+
+RadioFake::Packet RadioFake::popLastSend() {
+  auto packet = lastSend;
+  lastSend = {};
+  return packet;
 }
 
 RadioFake::RadioFake() {}

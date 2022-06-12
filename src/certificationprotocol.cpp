@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <array>
 
-CertificationProtocol::CertificationProtocol(Lmic &almic, VersionDetails const &fimwareVersion,
-                        VersionDetails const &lorawanVersion,
-                        VersionDetails const &lorawanRpVersion) : lmic(almic),
-                                                                fwVersion(fimwareVersion),
-                                                                lrwanVersion(lorawanVersion),
-                                                                lrwanRpVersion(lorawanRpVersion) {}
+CertificationProtocol::CertificationProtocol(
+    Lmic &almic, VersionDetails const &fimwareVersion,
+    VersionDetails const &lorawanVersion,
+    VersionDetails const &lorawanRpVersion)
+    : lmic(almic), fwVersion(fimwareVersion), lrwanVersion(lorawanVersion),
+      lrwanRpVersion(lorawanRpVersion) {}
 
 // return false if message is not handled
 bool CertificationProtocol::handle(EventType ev) {
