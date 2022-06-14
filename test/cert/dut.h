@@ -1,7 +1,7 @@
 #ifndef test_cert_dut_h
 #define test_cert_dut_h
 
-#include "LMIC.h"
+#include "lmic.h"
 #include "lmic/radio_fake.h"
 
 namespace dut {
