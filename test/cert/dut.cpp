@@ -27,6 +27,12 @@ void on_event(EventType evt) { cert.handle(evt); };
 bool should_send_data() {
   return !LMIC.getOpMode().test(OpState::TXRXPEND) && nextSend < os_getTime();
 }
+
+OsDeltaTime interval_to_send() {
+  return cert.getPeriodicity() == OsDeltaTime(0) ? OsDeltaTime::from_sec(5)
+                                                 : cert.getPeriodicity();
+}
+
 } // namespace
 
 namespace dut {
@@ -43,11 +49,17 @@ void reset() {
 OsDeltaTime loop() {
   if (should_send_data()) {
     uint8_t val = 1;
-
+    nextSend = os_getTime() + interval_to_send();
     // send fake data
     LMIC.setTxData2(1, &val, 1, false);
   }
-  OsDeltaTime freeTimeBeforeNextCall = LMIC.run();
+  auto freeTimeBeforeNextCall = LMIC.run();
+  auto timeToNextPacket = nextSend - os_getTime();
+
+  if (timeToNextPacket < freeTimeBeforeNextCall &&
+      timeToNextPacket > OsDeltaTime(0)) {
+    return timeToNextPacket;
+  }
   return freeTimeBeforeNextCall;
 }
 

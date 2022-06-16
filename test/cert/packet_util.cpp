@@ -28,7 +28,7 @@ Aes get_Aes() {
 uint32_t getFCntUpPacket(RadioFake::Packet const &packet,
                          TestServerState &state) {
   uint32_t fCntUpPacket = rlsbf2(packet.data.cbegin() + 6);
-  fCntUpPacket += state.fCntUp && 0xFFFF0000;
+  fCntUpPacket += state.fCntUp & 0xFFFF0000;
   if (fCntUpPacket < state.fCntUp)
     fCntUpPacket += 0x10000;
   return fCntUpPacket;
@@ -66,6 +66,10 @@ bool is_confirmed_uplink(RadioFake::Packet const &packet) {
   return packet.data[0] == 0x80;
 }
 
+bool is_adr(RadioFake::Packet const &packet) {
+  return packet.data[1 + 4] & 0x80;
+}
+
 // Join accept packet :
 // MHDR {JoinNonce NetID DevAddr DLSettings RxDelay [CFList] MIC}
 // {} is aes128_decrypt with the app key
@@ -73,8 +77,8 @@ RadioFake::Packet make_join_response(RadioFake::Packet const packet,
                                      TestServerState &state) {
   // reinit the state
   state.aes = get_Aes();
-  state.fCntUp = 0;
-  state.fCntDown = 0;
+  state.fCntUp = 0xFFFFFFFF;
+  state.fCntDown = 0xFFFFFFFF;
 
   RadioFake::Packet response;
   response.length = 17;
@@ -84,10 +88,10 @@ RadioFake::Packet make_join_response(RadioFake::Packet const packet,
   response.data[2] = state.joinNonce >> 8;
   response.data[3] = state.joinNonce >> 16;
   std::copy(NETID.begin(), NETID.end(), response.data.begin() + 4);
-  response.data[7] = DEVADDR;
-  response.data[8] = DEVADDR >> 8;
-  response.data[9] = DEVADDR >> 16;
-  response.data[10] = DEVADDR >> 24;
+  response.data[7] = DEVADDR & 0xFF;
+  response.data[8] = (DEVADDR >> 8) & 0xFF;
+  response.data[9] = (DEVADDR >> 16) & 0xFF;
+  response.data[10] = (DEVADDR >> 24) & 0xFF;
 
   // Dlsettings
   response.data[11] = 0b00000000;
@@ -111,16 +115,19 @@ void read_join_key(uint16_t devNonce, TestServerState &state) {
 bool check_is_next_packet(RadioFake::Packet const &packet,
                           TestServerState &state) {
   const uint32_t addr = rlsbf4(packet.data.cbegin() + 1);
+
   if (addr != DEVADDR)
     return false;
 
+  state.fCntUp++;
   // recover 32bit of fcntUp
   uint32_t fCntUpPacket = getFCntUpPacket(packet, state);
 
-  if (fCntUpPacket < state.fCntUp)
+  if (fCntUpPacket < state.fCntUp) {
     return false;
-  state.fCntUp = fCntUpPacket + 1;
+  }
 
+  state.fCntUp = fCntUpPacket;
   return state.aes.verifyMic(DEVADDR, fCntUpPacket, PktDir::UP,
                              packet.data.data(), packet.length);
 }
@@ -129,6 +136,7 @@ RadioFake::Packet make_data_response(uint8_t port,
                                      std::vector<uint8_t> const &data,
                                      bool acknowledged,
                                      TestServerState &state) {
+  state.fCntDown++;
   RadioFake::Packet response;
   response.data[0] = 0b01100000;
   wlsbf4(response.data.begin() + 1, DEVADDR);
@@ -143,6 +151,5 @@ RadioFake::Packet make_data_response(uint8_t port,
   state.aes.appendMic(DEVADDR, state.fCntDown, PktDir::DOWN,
                       response.data.begin(), response.length);
   printpacket(response);
-  state.fCntDown++;
   return response;
 }

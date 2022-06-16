@@ -44,7 +44,7 @@ void sp1_intial_join() {
   TEST_ASSERT(firstPacket.is_valid());
   TEST_ASSERT(is_data(firstPacket));
   TEST_ASSERT(check_is_next_packet(firstPacket, server_state));
-  TEST_ASSERT(server_state.fCntUp == 0 + 1 || server_state.fCntUp == 1 + 1);
+  TEST_ASSERT(server_state.fCntUp == 0  || server_state.fCntUp == 1 );
 
   auto firstResponse =
       make_data_response(224, std::vector<uint8_t>{0x01},
@@ -65,11 +65,13 @@ void sp1_intial_join() {
   joinResponse2.time = nextJoin.time + JOIN_ACCEPT_DELAY1;
   dut::send_data(joinResponse2);
 
+  // Step 4: send  DUT sends Confirmed or Unconfirmed frame
   auto const secondPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
   TEST_ASSERT(secondPacket.is_valid());
   TEST_ASSERT(is_data(secondPacket));
   TEST_ASSERT(check_is_next_packet(secondPacket, server_state));
-  TEST_ASSERT(server_state.fCntUp == 0 + 1 || server_state.fCntUp == 1 + 1);
+  TEST_ASSERT(server_state.fCntUp == 0 || server_state.fCntUp == 1);
+  auto m = server_state.fCntUp;
 
   auto secondResponse =
       make_data_response(224, std::vector<uint8_t>{0x06, 0x01},
@@ -77,8 +79,107 @@ void sp1_intial_join() {
   secondResponse.time = secondPacket.time + RECEIVE_DELAY2;
   dut::send_data(secondResponse);
 
-  auto const nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(6));
+  // Step 5: DUT sends Confirmed or Unconfirmed frame
+  // FCntUp = m + 1
+  // FPort = any allowed port except 224
+  auto nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
   TEST_ASSERT(nextPacket.is_valid());
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(server_state.fCntUp == m + 1);
+  // TEST_ASSERT(get_port(message) != 224);
+
+  // If DUT sent a Confirmed frame, then 
+  // The TCL sends Unconfirmed frame
+  // Else, this step must be skipped
+  if (is_confirmed_uplink(nextPacket)) {
+    auto nextResponse =
+        make_data_response(224, std::vector<uint8_t>{0x07, 0x01},
+                           is_confirmed_uplink(nextPacket), server_state);
+    secondResponse.time = secondPacket.time + RECEIVE_DELAY2;
+    dut::send_data(secondResponse);
+  }
+
+  // Step 6:DUT sends Unconfirmed frame
+  // FCntUp = m + 2
+  nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
+  TEST_ASSERT(nextPacket.is_valid());
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(!is_confirmed_uplink(nextPacket));
+  TEST_ASSERT(server_state.fCntUp == m + 2);
+  
+  // if FCtrl ADR Bit = false, then
+  // The TCL sends Unconfirmed frame 
+  // Else, this step is skipped
+  if(!is_adr(nextPacket))
+  {
+    auto nextResponse =
+        make_data_response(224, std::vector<uint8_t>{0x04, 0x01},
+                           false, server_state);
+    secondResponse.time = secondPacket.time + RECEIVE_DELAY2;
+    dut::send_data(secondResponse);
+  }
+
+  // Step 7: DUT sends Unconfirmed frame
+  // FCntUp = m + 3
+  // FCtrl ADR bit = true
+  nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
+  TEST_ASSERT(nextPacket.is_valid());
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(!is_confirmed_uplink(nextPacket));
+  TEST_ASSERT(server_state.fCntUp == m + 3);
+  TEST_ASSERT(is_adr(nextPacket));
+
+  // The TCL sends Unconfirmed frame
+  // MAC-CMD LinkADRReq
+  // DataRate = Max125kHzDR,
+  // Payload = [0x]03XXXXXXXX
+  // ChMaskCntl:
+  //  DC = 0,
+  //  FC = 6 
+  // ChMask:
+  //  DC - Enable only default channels 
+  //  FC = [0x]00FF
+
+  /*
+  auto nextResponse =
+      make_data_response(224, std::vector<uint8_t>{0x03, 0x01},
+                         false, server_state);
+  secondResponse.time = secondPacket.time + RECEIVE_DELAY2;
+  dut::send_data(secondResponse);
+  */
+
+
+  // Step 8 : DUT sends Unconfirmed frame in 5 seconds
+  // FCntUp = m + 4
+  // AC-CMD LinkADRAns Payload = [0x]0307
+  nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
+  TEST_ASSERT(nextPacket.is_valid());
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(!is_confirmed_uplink(nextPacket));
+  TEST_ASSERT(server_state.fCntUp == m + 4);
+  
+  // The TCL sends Unconfirmed frame 
+  // CP-CMD DutVersionsReq
+  // FPort = 224
+  // Payload = [0x]7F
+  auto nextResponse =
+      make_data_response(224, std::vector<uint8_t>{0x7F},
+                         false, server_state);
+  secondResponse.time = secondPacket.time + RECEIVE_DELAY2;
+  dut::send_data(secondResponse);
+
+  // Step 9: DUT sends Unconfirmed frame
+  // FCntUp = m + 5
+  // CP-CMD DutVersionsAns
+  // FPort = 224
+  // Payload = [0x]7FXXXXXXXXXXXXXXXXXX
+
+  nextPacket = dut::wait_for_data(OsDeltaTime::from_sec(60));
+  TEST_ASSERT(nextPacket.is_valid());
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(!is_confirmed_uplink(nextPacket));
+  TEST_ASSERT(server_state.fCntUp == m + 5);
+
 }
 
 void tearDown(void) {
