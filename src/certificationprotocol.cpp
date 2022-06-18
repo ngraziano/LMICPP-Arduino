@@ -151,12 +151,12 @@ void CertificationProtocol::regionalDutyCycleCtrl(uint8_t const *data,
 }
 
 constexpr std::array<OsDeltaTime, 11> periodicityTable = {
-    OsDeltaTime::from_ms(0),   OsDeltaTime::from_ms(5),
-    OsDeltaTime::from_ms(10),  OsDeltaTime::from_ms(20),
-    OsDeltaTime::from_ms(30),  OsDeltaTime::from_ms(40),
-    OsDeltaTime::from_ms(50),  OsDeltaTime::from_ms(60),
-    OsDeltaTime::from_ms(120), OsDeltaTime::from_ms(240),
-    OsDeltaTime::from_ms(480)};
+    OsDeltaTime::from_sec(0),   OsDeltaTime::from_sec(5),
+    OsDeltaTime::from_sec(10),  OsDeltaTime::from_sec(20),
+    OsDeltaTime::from_sec(30),  OsDeltaTime::from_sec(40),
+    OsDeltaTime::from_sec(50),  OsDeltaTime::from_sec(60),
+    OsDeltaTime::from_sec(120), OsDeltaTime::from_sec(240),
+    OsDeltaTime::from_sec(480)};
 
 void CertificationProtocol::txPeriodicityChange(uint8_t const *data,
                                                 uint8_t size) {
@@ -276,10 +276,11 @@ void CertificationProtocol::sendDutVersions() {
   // encoded as Major.Minor.Patch.Revision: 1 octet for Major, 1 octet for
   // Minor, 1 octet for Patch and 1 octet for Revision.
 
-  std::array<uint8_t, 12> data;
-  std::copy(fwVersion.begin(), fwVersion.end(), data.begin());
-  std::copy(lrwanVersion.begin(), lrwanVersion.end(), data.begin() + 4);
-  std::copy(lrwanRpVersion.begin(), lrwanRpVersion.end(), data.begin() + 8);
+  std::array<uint8_t, 13> data;
+  data[0] = static_cast<uint8_t>(Response::DutVersions);
+  std::copy(fwVersion.begin(), fwVersion.end(), data.begin() + 1);
+  std::copy(lrwanVersion.begin(), lrwanVersion.end(), data.begin() + 5);
+  std::copy(lrwanRpVersion.begin(), lrwanRpVersion.end(), data.begin() + 9);
 
   lmic.setTxData2(certificationProtocolPort, data.begin(), data.size(),
                   nextFrameIsConfirmed);

@@ -22,15 +22,16 @@ constexpr char const devEui[] = "0000000000000002";
 // Application key in string format.
 constexpr char const appKey[] = "00000000000000010000000000000002";
 
-void on_event(EventType evt) { cert.handle(evt); };
-
-bool should_send_data() {
-  return !LMIC.getOpMode().test(OpState::TXRXPEND) && nextSend < os_getTime();
+OsDeltaTime interval_to_send() {
+  return cert.getPeriodicity() == OsDeltaTime(0) ? OsDeltaTime::from_sec(30)
+                                                 : cert.getPeriodicity();
 }
 
-OsDeltaTime interval_to_send() {
-  return cert.getPeriodicity() == OsDeltaTime(0) ? OsDeltaTime::from_sec(5)
-                                                 : cert.getPeriodicity();
+void on_event(EventType evt) { cert.handle(evt); }
+
+bool should_send_data() {
+  return !LMIC.getOpMode().test(OpState::TXRXPEND) &&
+         !LMIC.getOpMode().test(OpState::TXDATA) && nextSend < os_getTime();
 }
 
 } // namespace
@@ -49,9 +50,11 @@ void reset() {
 OsDeltaTime loop() {
   if (should_send_data()) {
     uint8_t val = 1;
-    nextSend = os_getTime() + interval_to_send();
     // send fake data
-    LMIC.setTxData2(1, &val, 1, false);
+    PRINT_DEBUG(1, F("Send Fake DATA"));
+
+    LMIC.setTxData2(1, &val, 1, cert.isNextFrameConfirmed());
+    nextSend = os_getTime() + interval_to_send();
   }
   auto freeTimeBeforeNextCall = LMIC.run();
   auto timeToNextPacket = nextSend - os_getTime();

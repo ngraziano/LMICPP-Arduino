@@ -73,8 +73,7 @@ bool is_adr(RadioFake::Packet const &packet) {
 // Join accept packet :
 // MHDR {JoinNonce NetID DevAddr DLSettings RxDelay [CFList] MIC}
 // {} is aes128_decrypt with the app key
-RadioFake::Packet make_join_response(RadioFake::Packet const packet,
-                                     TestServerState &state) {
+RadioFake::Packet make_join_response(TestServerState &state) {
   // reinit the state
   state.aes = get_Aes();
   state.fCntUp = 0xFFFFFFFF;
@@ -140,6 +139,7 @@ RadioFake::Packet make_data_response(uint8_t port,
   RadioFake::Packet response;
   response.data[0] = 0b01100000;
   wlsbf4(response.data.begin() + 1, DEVADDR);
+  // FCtrl
   response.data[5] = 0b00000000 & (acknowledged ? 0b00100000 : 0);
   wlsbf2(response.data.begin() + 6, state.fCntDown);
   response.data[8] = port;
@@ -152,4 +152,44 @@ RadioFake::Packet make_data_response(uint8_t port,
                       response.data.begin(), response.length);
   printpacket(response);
   return response;
+}
+
+uint8_t get_opts_len(RadioFake::Packet const &packet) {
+  return packet.data[5] & 0x0F;
+}
+
+std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet) {
+  std::vector<uint8_t> values;
+  // read length from FHDR
+  uint8_t fOptsLen = get_opts_len(packet);
+  for (uint8_t i = 8; i < packet.length && i < 8 + fOptsLen; i++) {
+    values.push_back(packet.data[i]);
+  }
+  return values;
+}
+
+std::vector<uint8_t> get_payload(RadioFake::Packet const &packet,
+                                 TestServerState const &state) {
+  // read length from FHDR
+  uint8_t fOptsLen = get_opts_len(packet);
+
+  if (packet.length - 4 <= 8 + fOptsLen + 1)
+    return std::vector<uint8_t>();
+  auto temp = packet.data;
+  state.aes.framePayloadEncryption(get_port(packet), DEVADDR, state.fCntUp,
+                                   PktDir::UP, temp.begin() + 8 + fOptsLen + 1,
+                                   packet.length - 8 - fOptsLen - 1 - 4);
+  std::vector<uint8_t> values;
+  for (uint8_t i = 8 + fOptsLen + 1; i < packet.length - 4; i++) {
+    values.push_back(temp[i]);
+  }
+  return values;
+}
+
+uint8_t get_port(RadioFake::Packet const &packet) {
+  auto position = 8 + get_opts_len(packet);
+  if (position >= packet.length - 4) {
+    return 0;
+  }
+  return packet.data[position];
 }
