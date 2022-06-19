@@ -4,24 +4,6 @@
 #include "dut.h"
 #include"activation_pretest.h"
 
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY1 =
-    OsDeltaTime::from_sec(5)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
-
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY2 =
-    OsDeltaTime::from_sec(6)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
-
-// constexpr OsDeltaTime RECEIVE_DELAY1;
-constexpr OsDeltaTime RECEIVE_DELAY2 =
-    OsDeltaTime::from_sec(2)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
 
 
 void sp1_intial_join(TestServerState &server_state) {
@@ -54,8 +36,11 @@ void sp1_intial_join(TestServerState &server_state) {
   TEST_ASSERT(nextJoin.is_valid());
   TEST_ASSERT(is_join_request(nextJoin));
   auto devNonce2 = get_dev_nonce(nextJoin);
+  // In lorawn version 1.0.4 the devNonce must increase
+  // In lorawan version 1.0.3 the devNonce only must be different from the first
   // The devNonce must be greater than the previous one.
-  TEST_ASSERT(devNonce2 > devNonce);
+  // TEST_ASSERT(devNonce2 > devNonce);
+  TEST_ASSERT_NOT_EQUAL_UINT16(devNonce, devNonce2);
 
   auto joinResponse2 = make_join_response(server_state);
   read_join_key(devNonce2, server_state);
