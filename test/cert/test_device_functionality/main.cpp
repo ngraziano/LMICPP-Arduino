@@ -210,7 +210,8 @@ void test_message_integrity_code() {
     // FPort = 224
     // Payload = [0x]08 (Various)
     // MIC Invalid
-    auto echoSize = i == 1 ? 12 : i == 2 ? 45 : i == 3 ? 100 : i == 4 ? 200 : 0;
+    // TODO increase the size of the echoFrame
+    auto echoSize = i == 1 ? 12 : i == 2 ? 45 : i == 3 ? 50 : i == 4 ? 20 : 0;
     echoFrame = std::vector<uint8_t>{0x08};
     for (int j = 0; j < echoSize; j++) {
       echoFrame.push_back((j * 7) % 255);
