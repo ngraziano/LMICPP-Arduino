@@ -70,6 +70,10 @@ bool is_adr(RadioFake::Packet const &packet) {
   return packet.data[1 + 4] & 0x80;
 }
 
+bool is_ack_set(RadioFake::Packet const &packet) {
+  return packet.data[1 + 4] & 0x20;
+}
+
 // Join accept packet :
 // MHDR {JoinNonce NetID DevAddr DLSettings RxDelay [CFList] MIC}
 // {} is aes128_decrypt with the app key
@@ -134,10 +138,11 @@ bool check_is_next_packet(RadioFake::Packet const &packet,
 RadioFake::Packet make_data_response(uint8_t port,
                                      std::vector<uint8_t> const &data,
                                      bool acknowledged,
-                                     TestServerState &state) {
+                                     TestServerState &state,
+                                     bool confirmed) {
   state.fCntDown++;
   RadioFake::Packet response;
-  response.data[0] = 0b01100000;
+  response.data[0] = confirmed ?  0b10100000 : 0b01100000 ;
   wlsbf4(response.data.begin() + 1, DEVADDR);
   // FCtrl
   response.data[5] = 0b00000000 | (acknowledged ? 0b00100000 : 0);

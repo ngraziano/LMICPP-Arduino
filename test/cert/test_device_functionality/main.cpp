@@ -514,7 +514,164 @@ void test_confirmed_uplink() {
   TEST_ASSERT(is_data(nextMessage));
   TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
   TEST_ASSERT_GREATER_OR_EQUAL_UINT32(n + 7, server_state.fCntUp);
+}
 
+void test_confirmed_downlink() {
+  // Step 1
+  // DUT sends Unconfirmed frame
+  // FCntUp = n
+  auto nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  auto n = server_state.fCntUp;
+
+  // The TCL sends Unconfirmed frames
+  // CP-CMD RxAppCntReq
+  // FPort = 224
+  // Payload = [0x]09
+  auto nextResponse =
+      make_data_response(224, std::vector<uint8_t>{0x09}, false, server_state);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 2
+  // DUT sends Unconfirmed frame
+  // FCntUp = n + 1
+  //  CP-CMD RxAppCntAns
+  // FPort = 224
+  // Payload = [0x]09XXXX
+  //  RxAppCnt = x
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 1, server_state.fCntUp);
+  auto payload = get_payload(nextMessage, server_state);
+  TEST_ASSERT_EQUAL_UINT8(0x09, payload[0]);
+  TEST_ASSERT_EQUAL_UINT(3, payload.size());
+  auto rxAppCnt = (payload[2] << 8) | payload[1];
+
+  // The TCL send Confirmed frame
+  // FCntDown = m
+  // CP-CMD TxFramesCtrlReq
+  // FPort 224
+  // Frame type = Confirmed
+  // Payload [0x]0702
+  nextResponse = make_data_response(224, std::vector<uint8_t>{0x07, 0x02}, true,
+                                    server_state, true);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 3
+  // DUT sends Confirmed frame
+  // FCntUp = n + 2
+  // ACK Bit = True
+  // Note: The DUT may split this frame into first an empty Unconfirmed frame
+  // with ACK, followed by a Confirmed frame.This must be accepted as well.
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_TRUE(is_ack_set(nextMessage));
+  TEST_ASSERT_TRUE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 2, server_state.fCntUp);
+
+  // The TCL sends Confirmed frame
+  // FCntDown = m + 1
+  // Acknowledge
+  // CP-CMD TxFramesCtrlReq
+  // FPort 224
+  // Frame type = Unconfirmed
+  // Payload [0x]0701
+  nextResponse = make_data_response(224, std::vector<uint8_t>{0x07, 0x01}, true,
+                                    server_state, true);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 4
+  // DUT sends Unconfirmed frame
+  // FCntUp = n + 3
+  // ACK Bit = True
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_TRUE(is_ack_set(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 3, server_state.fCntUp);
+
+  // The TCL sends Confirmed frame
+  // FCntDown = m + 2
+  // CP-CMD TxFramesCtrlReq
+  // FPort 224
+  // Frame type = No change
+  // Payload [0x]0700
+  nextResponse = make_data_response(224, std::vector<uint8_t>{0x07, 0x00},
+                                    false, server_state, true);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 5
+  // DUT sends Unconfirmed frame
+  // FCntUp = n + 4
+  // ACK Bit = True
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_TRUE(is_ack_set(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 4, server_state.fCntUp);
+
+  // The TCL sends Confirmed frame
+  // FCntDown = m + 2
+  // CP-CMD TxFramesCtrlReq
+  // FPort 224
+  // Frame type = No change
+  // Payload [0x]0700
+  server_state.fCntDown--;
+  nextResponse = make_data_response(224, std::vector<uint8_t>{0x07, 0x00},
+                                    false, server_state, true);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 6
+  // DUT sends Unconfirmed frame
+  // FCntUp = n + 5
+  // No acknowledgement is sent
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_FALSE(is_ack_set(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 5, server_state.fCntUp);
+
+  // The TCL sends Unconfirmed frames
+  // FCntDown = m + 3
+  // CP-CMD RxAppCntReq
+  // FPort = 224
+  // Payload = [0x]09
+  nextResponse = make_data_response(224, std::vector<uint8_t>{0x09}, false,
+                                    server_state, false);
+  nextResponse.time = nextMessage.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 7
+  // DUT sends Unconfirmed frame
+  // FCntUp = n + 6
+  // CP-CMD RxAppCntAns
+  // FPort = 224
+  // Payload = [0x]09XXXX
+  // RxAppCnt = x + 4
+  nextMessage = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextMessage, server_state));
+  TEST_ASSERT(is_data(nextMessage));
+  TEST_ASSERT_FALSE(is_ack_set(nextMessage));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextMessage));
+  TEST_ASSERT_EQUAL_UINT32(n + 6, server_state.fCntUp);
+  payload = get_payload(nextMessage, server_state);
+  TEST_ASSERT_EQUAL_UINT8(0x09, payload[0]);
+  TEST_ASSERT_EQUAL_UINT(3, payload.size());
+  auto newRxAppCnt = (payload[2] << 8) | payload[1];
+  TEST_ASSERT_EQUAL_UINT(rxAppCnt + 4, newRxAppCnt);
 }
 
 void tearDown(void) {
@@ -527,6 +684,7 @@ void runUnityTests(void) {
   RUN_TEST(test_message_integrity_code);
   RUN_TEST(test_downling_sequence_number);
   RUN_TEST(test_confirmed_uplink);
+  RUN_TEST(test_confirmed_downlink);
 
   UNITY_END();
 }
