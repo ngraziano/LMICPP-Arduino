@@ -46,6 +46,7 @@ std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet);
 
 RadioFake::Packet make_join_response(TestServerState &state);
 RadioFake::Packet make_data_response(uint8_t port, std::vector<uint8_t> const & data,bool acknowledged, TestServerState &state);
+RadioFake::Packet make_empty_response(bool acknowledged, TestServerState &state);
 void read_join_key(uint16_t devNonce, TestServerState &state);
 bool check_is_next_packet(RadioFake::Packet const &packet, TestServerState &state);
 std::vector<uint8_t> get_payload(RadioFake::Packet const &packet, TestServerState  const &state);

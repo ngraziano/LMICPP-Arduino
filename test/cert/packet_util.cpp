@@ -140,7 +140,7 @@ RadioFake::Packet make_data_response(uint8_t port,
   response.data[0] = 0b01100000;
   wlsbf4(response.data.begin() + 1, DEVADDR);
   // FCtrl
-  response.data[5] = 0b00000000 & (acknowledged ? 0b00100000 : 0);
+  response.data[5] = 0b00000000 | (acknowledged ? 0b00100000 : 0);
   wlsbf2(response.data.begin() + 6, state.fCntDown);
   response.data[8] = port;
   std::copy(data.begin(), data.end(), 9 + response.data.begin());
@@ -148,6 +148,21 @@ RadioFake::Packet make_data_response(uint8_t port,
   state.aes.framePayloadEncryption(port, DEVADDR, state.fCntDown, PktDir::DOWN,
                                    response.data.begin() + 8 + 1, data.size());
 
+  state.aes.appendMic(DEVADDR, state.fCntDown, PktDir::DOWN,
+                      response.data.begin(), response.length);
+  printpacket(response);
+  return response;
+}
+
+RadioFake::Packet make_empty_response(bool acknowledged, TestServerState &state) {
+  state.fCntDown++;
+  RadioFake::Packet response;
+  response.data[0] = 0b01100000;
+  wlsbf4(response.data.begin() + 1, DEVADDR);
+  // FCtrl
+  response.data[5] = 0b00000000 | (acknowledged ? 0b00100000 : 0);
+  wlsbf2(response.data.begin() + 6, state.fCntDown);
+  response.length = 8 + 4;
   state.aes.appendMic(DEVADDR, state.fCntDown, PktDir::DOWN,
                       response.data.begin(), response.length);
   printpacket(response);
