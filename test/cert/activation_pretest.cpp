@@ -39,8 +39,8 @@ void sp1_intial_join(TestServerState &server_state) {
   // In lorawn version 1.0.4 the devNonce must increase
   // In lorawan version 1.0.3 the devNonce only must be different from the first
   // The devNonce must be greater than the previous one.
-  // TEST_ASSERT(devNonce2 > devNonce);
-  TEST_ASSERT_NOT_EQUAL_UINT16(devNonce, devNonce2);
+  TEST_ASSERT(devNonce2 > devNonce);
+  // TEST_ASSERT_NOT_EQUAL_UINT16(devNonce, devNonce2);
 
   auto joinResponse2 = make_join_response(server_state);
   read_join_key(devNonce2, server_state);

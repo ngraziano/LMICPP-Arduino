@@ -874,8 +874,9 @@ void Lmic::buildDataFrame() {
        (adrAckReq >= 0 ? FCT_ADRARQ : 0) | (end - mac_payload::offsets::fopts));
   wlsbf4(frame.begin() + mac_payload::offsets::devAddr, devaddr);
 
-  // if not a resend
-  if (txCnt == 0) {
+  // in lorawan version 1.0.4 in case of resend
+  // the frame counter is increased.
+  if (txCnt == 0 || lorawan_v104) {
     seqnoUp++;
   }
   const uint32_t current_seq_no = seqnoUp - 1;
@@ -1080,7 +1081,11 @@ void Lmic::reset() {
   radio.rst();
   next_job = {};
   devaddr = 0;
-  devNonce = rand.uint16();
+  if(!lorawan_v104) {
+    // before v1.04, the sequence number was reset to a random value.
+    // v1.04+ increment the devNonce and it must be saved.
+    devNonce = rand.uint16();
+  }
   opmode.reset();
   rx1DrOffset = 0;
   // we need this for 2nd DN window of join accept
