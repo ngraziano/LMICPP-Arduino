@@ -470,8 +470,11 @@ bool Lmic::decodeFrame() {
     // suspirious hack
   }
 
-  if (txCnt != 0) // we requested an ACK
+  // we requested an ACK
+  if (txCnt != 0) {
     txrxFlags.set(ackup ? TxRxStatus::ACK : TxRxStatus::NACK);
+    txCnt = 0;
+  }
 
 #if !defined(DISABLE_MCMD_DN2P_SET)
   // stop sending RXParamSetupAns when receive dowlink message
