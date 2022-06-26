@@ -260,11 +260,112 @@ void test_new_channel_req()
   TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
   newChannelAns = get_mac_command_values(nextPacket, server_state);
   TEST_ASSERT_EQUAL_UINT(2 * y, newChannelAns.size());
-  for (int i = 0; i < y; i++)
+  for (uint8_t i = 0; i < y; i++)
   {
     TEST_ASSERT_EQUAL_UINT8(0x07, newChannelAns[2 * i]);
     TEST_ASSERT_EQUAL_UINT8(0x03, newChannelAns[2 * i + 1]);
   }
+
+  // TODO Continue with the test
+}
+
+void test_RX_timing_setup_req()
+{
+  // Step 1
+  // DUT sends Unconfirmed frame
+  // FCntUp = y
+  auto nextPacket = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(is_data(nextPacket));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
+  auto y = server_state.fCntUp;
+
+  // The TCL sends Unconfirmed frame
+  // MAC-CMD
+  // RxTimingSetupReq
+  // Payload = [0x]08XX
+  // Delay (i) = [3-14]
+  uint8_t newDelay = 7;
+  auto nextResponse = make_data_response(
+      0, std::vector<uint8_t>{0x08, newDelay}, false, server_state);
+  nextResponse.time = nextPacket.time + RECEIVE_DELAY2;
+  dut::send_data(nextResponse);
+
+  // Step 2
+  for (uint8_t i = 0; i < 3; i++)
+  {
+    // DUT sends Unconfirmed frame
+    // Repeat up to 3 times until a downlink is received confirming the receipt of the RxTimingSetupAns
+    // FCntUp >= y + n
+    // MAC-CMD
+    // RxTimingSetupAns
+    // Payload = [0x]08
+    nextPacket = dut::wait_for_data(defaultWaitTime);
+    TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+    TEST_ASSERT(is_data(nextPacket));
+    TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
+    auto macResponse = get_mac_command_values(nextPacket, server_state);
+    TEST_ASSERT_EQUAL_UINT(1, macResponse.size());
+    TEST_ASSERT_EQUAL_UINT8(0x08, macResponse[0]);
+    TEST_ASSERT_GREATER_OR_EQUAL(y + i, server_state.fCntUp);
+  }
+
+  // Step 3
+  // DUT sends Unconfirmed frame
+  // MAC-CMD
+  // RxTimingSetupAns
+  // Payload = [0x]08
+  nextPacket = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(is_data(nextPacket));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
+  auto macResponse = get_mac_command_values(nextPacket, server_state);
+  TEST_ASSERT_EQUAL_UINT(1, macResponse.size());
+  TEST_ASSERT_EQUAL_UINT8(0x08, macResponse[0]);
+
+  // The TCL sends Unconfirmed frame on RX1 window
+  // CP-CMD EchoPayloadReq
+  // FPort = 224
+  // Payload = [0x]08010203
+  // TXDelay = (i) seconds
+  nextResponse = make_data_response(
+      224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay) + OsDeltaTime::from_ms(55);
+  dut::send_data(nextResponse);
+
+  // Step 4
+  // DUT sends Unconfirmed frame
+  // CP-CMD EchoPayloadAns
+  // FPort = 224
+  // Payload = [0x]08020304
+  nextPacket = dut::wait_for_data(defaultWaitTime);
+  TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
+  TEST_ASSERT(is_data(nextPacket));
+  TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
+  TEST_ASSERT_EQUAL_UINT8(224, get_port(nextPacket));
+  auto payload = get_payload(nextPacket, server_state);
+  TEST_ASSERT_EQUAL_UINT8(0x08, payload[0]);
+  TEST_ASSERT_EQUAL_UINT8(0x02, payload[1]);
+  TEST_ASSERT_EQUAL_UINT8(0x03, payload[2]);
+  TEST_ASSERT_EQUAL_UINT8(0x04, payload[3]);
+  macResponse = get_mac_command_values(nextPacket, server_state);
+  TEST_ASSERT_EQUAL_UINT(0, macResponse.size());
+
+  // The TCL sends Unconfirmed frame on RX2 window
+  // CP-CMD EchoPayloadReq
+  // FPort = 224
+  // Payload = [0x]08121314
+  // TXDelay = (i + 1) seconds
+  nextResponse = make_data_response(
+      224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) + OsDeltaTime::from_ms(55);
+  dut::send_data(nextResponse);
+
+  // Step 5
+  // DUT sends Unconfirmed frame
+  // CP-CMD EchoPayloadAns
+  // FPort = 224
+  // Payload = [0x]08131415
 }
 
 void tearDown(void)
@@ -277,7 +378,7 @@ void runUnityTests(void)
   UNITY_BEGIN();
   RUN_TEST(test_dev_status_req);
   RUN_TEST(test_new_channel_req);
-
+  RUN_TEST(test_RX_timing_setup_req);
   UNITY_END();
 }
 
