@@ -854,7 +854,7 @@ void Lmic::buildDataFrame() {
 
   dataLen = flen;
 
-    PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
+  PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
 }
 
 // ================================================================================
@@ -1242,6 +1242,8 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(rxsyms);
 
   store.write(globalDutyRate);
+  store.write(pendTxFOptsLen);
+  store.write(pendTxFOpts);
 
   store.write(netid);
   store.write(opmode);
@@ -1272,6 +1274,8 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(rxsyms);
 
   store.read(globalDutyRate);
+  store.read(pendTxFOptsLen);
+  store.read(pendTxFOpts);
 
   store.read(netid);
   store.read(opmode);
