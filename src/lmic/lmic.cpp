@@ -149,22 +149,14 @@ void Lmic::stateJustJoined() {
   seqnoDn = 0;
   seqnoUp = 0;
   dnConf = 0;
-  ladrAns = 0;
-  devsAns = false;
-  rxTimingSetupAns = false;
   globalDutyRate = 0;
-  mcmdNewChannelAns = 0;
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  dn2Ans = 0;
-#endif
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-  dutyCapAns = false;
-#endif
+  pendTxFOptsLen = 0;
   upRepeat = 0;
   adrAckReq = LINK_CHECK_INIT;
 }
 
-void Lmic::parse_ladr(const uint8_t *const opts) {
+void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
+                      uint8_t &responseLenght) {
   // FIXME multiple LinkAdrReq not handled properly in continous block
   // must be handle atomic.
   const uint8_t p1 = opts[1];               // txpow + DR
@@ -176,8 +168,8 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
   const uint8_t nbTrans = opts[4] & MCMD_LADR_REPEAT_MASK;
 
   // Include an answer into next frame up
-  ladrAns =
-      0x80 | MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
+  uint8_t ladrAns =
+      MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
   if (!validMapChannels(chMaskCntl, chMask)) {
     PRINT_DEBUG(1, F("ADR REQ Invalid map channel maskCtnl=%i, mask=%i"),
                 chMaskCntl, chMask);
@@ -196,7 +188,7 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     ladrAns &= ~MCMD_LADR_ANS_POWACK;
   }
 
-  if ((ladrAns & 0x7F) ==
+  if (ladrAns ==
       (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
     // Nothing went wrong - use settings
     upRepeat = nbTrans;
@@ -205,14 +197,18 @@ void Lmic::parse_ladr(const uint8_t *const opts) {
     adrTxPow = newPower;
     setDrTx(dr);
   }
+
+  response[responseLenght++] = MCMD_LADR_ANS;
+  response[responseLenght++] = ladrAns & ~MCMD_LADR_ANS_RFU;
 }
 
-void Lmic::parse_dn2p(const uint8_t *const opts) {
+void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
+                      uint8_t &responseLenght) {
 #if !defined(DISABLE_MCMD_DN2P_SET)
   const dr_t dr = (dr_t)(opts[1] & 0x0F);
   const uint8_t newRx1DrOffset = ((opts[1] & 0x70) >> 4);
   const uint32_t newfreq = convFreq(&opts[2]);
-  dn2Ans = 0x80; // answer pending
+  uint8_t dn2Ans = 0x0; // answer pending
   if (validRx1DrOffset(newRx1DrOffset))
     dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
   if (validDR(dr))
@@ -220,12 +216,17 @@ void Lmic::parse_dn2p(const uint8_t *const opts) {
   if (newfreq != 0)
     dn2Ans |= MCMD_DN2P_ANS_CHACK;
   // Only take parameter into account if all parameter are ok.
-  if (dn2Ans == (0x80 | MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
+  if (dn2Ans == (MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
                  MCMD_DN2P_ANS_CHACK)) {
     rx2Parameter.datarate = dr;
     rx2Parameter.frequency = newfreq;
     rx1DrOffset = newRx1DrOffset;
   }
+
+  // RXParamSetupAns LoRaWAN™ Specification §5.4
+  response[responseLenght++] = MCMD_DN2P_ANS;
+  response[responseLenght++] = dn2Ans & ~MCMD_DN2P_ANS_RFU;
+
 #endif // !DISABLE_MCMD_DN2P_SET
 }
 
@@ -234,37 +235,44 @@ void Lmic::setDutyRate(uint8_t rate) {
   globalDutyAvail = os_getTime();
 }
 
-void Lmic::parse_dcap(const uint8_t *const opts) {
+void Lmic::parse_dcap(const uint8_t *const opts, uint8_t *response,
+                      uint8_t &responseLenght) {
 #if !defined(DISABLE_MCMD_DCAP_REQ)
   const uint8_t cap = opts[1];
   globalDutyRate = cap & 0xF;
   globalDutyAvail = os_getTime();
-  dutyCapAns = true;
+  response[responseLenght++] = MCMD_DCAP_ANS;
+
 #endif // !DISABLE_MCMD_DCAP_REQ
 }
 
-uint32_t Lmic::convFreq(const uint8_t *ptr) const {
-  return rlsbf3(ptr) * 100;
-}
+uint32_t Lmic::convFreq(const uint8_t *ptr) const { return rlsbf3(ptr) * 100; }
 
-void Lmic::parse_newchannel(const uint8_t *const opts) {
+void Lmic::parse_newchannel(const uint8_t *const opts, uint8_t *response,
+                            uint8_t &responseLenght) {
   const uint8_t chidx = opts[1];               // channel
   const uint32_t newfreq = convFreq(&opts[2]); // freq
   const uint8_t drs = opts[5];                 // datarate span
-  mcmdNewChannelAns = 0x80;
+  uint8_t mcmdNewChannelAns = 0x00;
   if (setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
     mcmdNewChannelAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
+
+  response[responseLenght++] = MCMD_SNCH_ANS;
+  response[responseLenght++] = mcmdNewChannelAns & ~MCMD_SNCH_ANS_RFU;
 }
 
-void Lmic::parse_rx_timing_setup(const uint8_t *const opts) {
+void Lmic::parse_rx_timing_setup(const uint8_t *const opts, uint8_t *response,
+                                 uint8_t &responseLenght) {
   uint8_t newDelay = opts[1] & 0x0F;
   if (newDelay == 0)
     newDelay = 1;
   rxDelay = OsDeltaTime::from_sec(newDelay);
-  rxTimingSetupAns = true;
+  response[responseLenght++] = MCMD_RXTimingSetup_ANS;
+  // rxTimingSetupAns reset when downlink packet receive
 }
 
-void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
+void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen,
+                            uint8_t *response, uint8_t &responseLenght) {
   uint8_t oidx = 0;
   while (oidx < olen) {
     PRINT_DEBUG(1, F("Parse Mac command %d"), opts[oidx]);
@@ -278,38 +286,47 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen) {
     }
     // LinkADRReq LoRaWAN™ Specification §5.2
     case MCMD_LADR_REQ: {
-      parse_ladr(opts + oidx);
+      parse_ladr(opts + oidx, response, responseLenght);
       oidx += 5;
       continue;
     }
     // DevStatusReq LoRaWAN™ Specification §5.5
     case MCMD_DEVS_REQ: {
       txrxFlags.set(TxRxStatus::NEED_BATTERY_LEVEL);
-      devsAns = true;
+      // DevStatusAns LoRaWAN™ Specification §5.5
+      response[responseLenght++] = MCMD_DEVS_ANS;
+      response[responseLenght++] = battery_level;
+      // lorawan 1.0.2 §5.5. the margin is the SNR.
+      // Convert to real SNR; rounding towards zero.
+      const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
+      response[responseLenght++] =
+          static_cast<uint8_t>((0x3F & (snr <= -32  ? -32
+                                        : snr >= 31 ? 31
+                                                    : snr)));
       oidx += 1;
       continue;
     }
     // RXParamSetupReq LoRaWAN™ Specification §5.4
     case MCMD_DN2P_SET: {
-      parse_dn2p(opts + oidx);
+      parse_dn2p(opts + oidx, response, responseLenght);
       oidx += 5;
       continue;
     }
     // DutyCycleReq LoRaWAN™ Specification §5.3
     case MCMD_DCAP_REQ: {
-      parse_dcap(opts + oidx);
+      parse_dcap(opts + oidx, response, responseLenght);
       oidx += 2;
       continue;
     }
     // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_NewChannel_REQ: {
-      parse_newchannel(opts + oidx);
+      parse_newchannel(opts + oidx, response, responseLenght);
       oidx += 6;
       continue;
     }
     // RXTimingSetupReq LoRaWAN™ Specification §5.7
     case MCMD_RXTimingSetup_REQ: {
-      parse_rx_timing_setup(opts + oidx);
+      parse_rx_timing_setup(opts + oidx, response, responseLenght);
       oidx += 2;
       continue;
     }
@@ -425,12 +442,16 @@ bool Lmic::decodeFrame() {
     return false;
   }
 
+  // remove sticky FOpts response because we receive a frame.
+  pendTxFOptsLen = 0;
+
   // DN frame requested confirmation - provide ACK once with next UP frame
   dnConf = ftype == mhdr::ftype_data_conf_down ? FCT_ACK : 0;
   if (dnConf || (fct & FCT_MORE))
     opmode.set(OpState::POLL);
 
-  parseMacCommands(frame.cbegin() + mac_payload::offsets::fopts, olen);
+  parseMacCommands(frame.cbegin() + mac_payload::offsets::fopts, olen,
+                   pendTxFOpts.begin(), pendTxFOptsLen);
 
   if (!replayConf) {
     // Handle payload only if not a replay
@@ -448,8 +469,13 @@ bool Lmic::decodeFrame() {
         return false;
       }
 
-      if (port == 0) {
-        parseMacCommands(frame.cbegin() + dataBeg, dataLen);
+      if (olen == 0 && port == 0) {
+        // trash current response and replace with response to MAC command
+        pendTxLen = 0;
+        pendTxPort = 0;
+        parseMacCommands(frame.cbegin() + dataBeg, dataLen, pendTxData.begin(),
+                         pendTxLen);
+        setTxData();
       }
     } else {
       txrxFlags.set(TxRxStatus::NOPORT);
@@ -475,13 +501,6 @@ bool Lmic::decodeFrame() {
     txrxFlags.set(ackup ? TxRxStatus::ACK : TxRxStatus::NACK);
     txCnt = 0;
   }
-
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  // stop sending RXParamSetupAns when receive dowlink message
-  dn2Ans = 0;
-#endif
-  // stop sending rxTimingSetupAns when receive dowlink message
-  rxTimingSetupAns = false;
 
   PRINT_DEBUG(1, F("Received downlink, port=%d, ack=%d"), getPort(), ackup);
   return true;
@@ -717,7 +736,7 @@ void Lmic::processRx2DnData() {
         setDrTx(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)));
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
-        opmode.reset(OpState::TXRXPEND);
+        opmode.set(OpState::TXDATA).reset(OpState::TXRXPEND);
         engineUpdate();
         return;
       }
@@ -780,81 +799,13 @@ void Lmic::resetAdrCount() {
   }
 }
 
-uint8_t *Lmic::add_opt_dcap(uint8_t *pos) {
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-  if (dutyCapAns) {
-    *(pos++) = MCMD_DCAP_ANS;
-    dutyCapAns = false;
-  }
-#endif // !DISABLE_MCMD_DCAP_REQ
-  return pos;
-}
-
-uint8_t *Lmic::add_opt_dn2p(uint8_t *pos) {
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  // RXParamSetupAns LoRaWAN™ Specification §5.4
-  if (dn2Ans) {
-    *(pos++) = MCMD_DN2P_ANS;
-    *(pos++) = dn2Ans & ~MCMD_DN2P_ANS_RFU;
-    // dn2Ans reset when downlink packet receive
-  }
-#endif // !DISABLE_MCMD_DN2P_SET
-  return pos;
-}
-
-uint8_t *Lmic::add_opt_devs(uint8_t *pos) {
-  // DevStatusAns LoRaWAN™ Specification §5.5
-  if (devsAns) { // answer to device status
-    *(pos++) = MCMD_DEVS_ANS;
-    *(pos++) = battery_level;
-    // lorawan 1.0.2 §5.5. the margin is the SNR.
-    // Convert to real SNR; rounding towards zero.
-    const int8_t snr = (radio.get_last_packet_snr_x4() + 2) / 4;
-    *(pos++) = static_cast<uint8_t>((0x3F & (snr <= -32  ? -32
-                                             : snr >= 31 ? 31
-                                                         : snr)));
-    devsAns = false;
-  }
-  return pos;
-}
-
-uint8_t *Lmic::add_opt_adr(uint8_t *pos) {
-  if (ladrAns) { // answer to ADR change
-    *(pos++) = MCMD_LADR_ANS;
-    *(pos++) = ladrAns & ~MCMD_LADR_ANS_RFU;
-    ladrAns = 0;
-  }
-  return pos;
-}
-
-uint8_t *Lmic::add_opt_rxtiming(uint8_t *pos) {
-  if (rxTimingSetupAns) {
-    *(pos++) = MCMD_RXTimingSetup_ANS;
-    // rxTimingSetupAns reset when downlink packet receive
-  }
-  return pos;
-}
-
-uint8_t *Lmic::add_opt_newchannel(uint8_t *pos) {
-  if (mcmdNewChannelAns) {
-    *(pos++) = MCMD_SNCH_ANS;
-    *(pos++) = mcmdNewChannelAns & ~MCMD_SNCH_ANS_RFU;
-    mcmdNewChannelAns = 0;
-  }
-  return pos;
-}
-
 void Lmic::buildDataFrame() {
 
   // Piggyback MAC options
   // Prioritize by importance
   uint8_t *pos = frame.begin() + mac_payload::offsets::fopts;
-  pos = add_opt_dcap(pos);
-  pos = add_opt_dn2p(pos);
-  pos = add_opt_devs(pos);
-  pos = add_opt_adr(pos);
-  pos = add_opt_rxtiming(pos);
-  pos = add_opt_newchannel(pos);
+  std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pos);
+  pos += pendTxFOptsLen;
 
   const uint8_t end = pos - frame.cbegin();
 
@@ -903,7 +854,7 @@ void Lmic::buildDataFrame() {
 
   dataLen = flen;
 
-  PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
+    PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
 }
 
 // ================================================================================
@@ -956,7 +907,7 @@ bool Lmic::startJoining() {
 }
 
 void Lmic::processDnData() {
-  opmode.reset(OpState::TXDATA).reset(OpState::TXRXPEND);
+  opmode.reset(OpState::TXRXPEND);
 
   if ((txrxFlags.test(TxRxStatus::DNW1) || txrxFlags.test(TxRxStatus::DNW2)) &&
       opmode.test(OpState::LINKDEAD)) {
@@ -1048,9 +999,10 @@ void Lmic::engineUpdate() {
   }
 
   opmode.reset(OpState::POLL);
+  opmode.reset(OpState::TXDATA);
   opmode.set(OpState::TXRXPEND);
   opmode.set(OpState::NEXTCHNL);
-  
+
   txrxFlags.reset();
 
   rps_t rps = updr2rps(datarate);
@@ -1081,7 +1033,7 @@ void Lmic::reset() {
   radio.rst();
   next_job = {};
   devaddr = 0;
-  if(!lorawan_v104) {
+  if (!lorawan_v104) {
     // before v1.04, the sequence number was reset to a random value.
     // v1.04+ increment the devNonce and it must be saved.
     devNonce = rand.uint16();
@@ -1303,20 +1255,9 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(ladrAns);
-  store.write(devsAns);
-  store.write(rxTimingSetupAns);
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-  store.write(dutyCapAns);
-#endif
-  // answer set new channel, init afet join.
-  store.write(mcmdNewChannelAns);
   store.write(rx1DrOffset);
   store.write(rx2Parameter.datarate);
   store.write(rx2Parameter.frequency);
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  store.write(dn2Ans);
-#endif
   aes.saveState(store);
 }
 
@@ -1344,20 +1285,9 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(ladrAns);
-  store.read(devsAns);
-  store.read(rxTimingSetupAns);
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-  store.read(dutyCapAns);
-#endif
-  // answer set new channel, init afet join.
-  store.read(mcmdNewChannelAns);
   store.read(rx1DrOffset);
   store.read(rx2Parameter.datarate);
   store.read(rx2Parameter.frequency);
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  store.read(dn2Ans);
-#endif
   aes.loadState(store);
 }
 

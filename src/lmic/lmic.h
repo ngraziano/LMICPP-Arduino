@@ -164,6 +164,11 @@ private:
   // pending data
   std::array<uint8_t, MAX_LEN_PAYLOAD> pendTxData;
 
+  // pending Fopts lens
+  uint8_t pendTxFOptsLen = 0;
+  // pending Fopts
+  std::array<uint8_t, MAX_LEN_FOPTS> pendTxFOpts;
+
   // last generated nonce
   // set at random value at reset.
   uint16_t devNonce = 0;
@@ -184,29 +189,9 @@ private:
   // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
 
-  // link adr adapt answer pending, init after join
-  // use bit 15 as flag, other as value for acq
-  uint8_t ladrAns = 0;
-  // device status answer pending, init after join
-  bool devsAns = false;
-  // RX timing setup answer pending, init after join
-  bool rxTimingSetupAns = false;
-  ;
-#if !defined(DISABLE_MCMD_DCAP_REQ)
-  // have to ACK duty cycle settings, init after join
-  bool dutyCapAns = false;
-#endif
-  // answer set new channel, init after join.
-  uint8_t mcmdNewChannelAns = 0;
-
 private:
   // 2nd RX window (after up stream), init at reset
   FrequencyAndRate rx2Parameter;
-
-#if !defined(DISABLE_MCMD_DN2P_SET)
-  // 0=no answer pend, 0x80+ACKs, init after join
-  uint8_t dn2Ans = 0;
-#endif
 
   FrameBuffer frame;
   // transaction flags (TX-RX combo)
@@ -253,21 +238,20 @@ private:
 
   void reportEvent(EventType ev);
 
-  uint8_t *add_opt_dcap(uint8_t *buffer_pos);
-  uint8_t *add_opt_dn2p(uint8_t *buffer_pos);
-  uint8_t *add_opt_devs(uint8_t *buffer_pos);
-  uint8_t *add_opt_adr(uint8_t *buffer_pos);
-  uint8_t *add_opt_rxtiming(uint8_t *buffer_pos);
-  uint8_t *add_opt_newchannel(uint8_t *buffer_pos);
-
   void buildDataFrame();
   void engineUpdate();
-  void parse_ladr(const uint8_t *const opts);
-  void parse_dn2p(const uint8_t *const opts);
-  void parse_dcap(const uint8_t *const opts);
-  void parse_newchannel(const uint8_t *const opts);
-  void parse_rx_timing_setup(const uint8_t *const opts);
-  void parseMacCommands(const uint8_t *opts, uint8_t olen);
+  void parse_ladr(const uint8_t *const opts, uint8_t *response,
+                  uint8_t &responseLenght);
+  void parse_dn2p(const uint8_t *const opts, uint8_t *response,
+                  uint8_t &responseLenght);
+  void parse_dcap(const uint8_t *const opts, uint8_t *response,
+                  uint8_t &responseLenght);
+  void parse_newchannel(const uint8_t *const opts, uint8_t *response,
+                        uint8_t &responseLenght);
+  void parse_rx_timing_setup(const uint8_t *const opts, uint8_t *response,
+                             uint8_t &responseLenght);
+  void parseMacCommands(const uint8_t *opts, uint8_t olen, uint8_t *response,
+                        uint8_t &responseLenght);
   enum class SeqNoValidity : uint8_t {
     invalid,
     previous,
