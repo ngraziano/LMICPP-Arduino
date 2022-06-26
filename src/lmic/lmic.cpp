@@ -344,6 +344,49 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen,
   }
 }
 
+// Copy all the mac command that must be keeped until the next downlink.
+void Lmic::keep_sticky_mac_response(const uint8_t *const source,
+                                    uint8_t sourceLen) {
+  pendTxFOptsLen = 0;
+  for (uint8_t i = 0; i < sourceLen; i++) {
+    switch (source[i]) {
+    case MCMD_LCHK_REQ:
+      break;
+    case MCMD_LADR_ANS:
+      i += 1;
+      break;
+    case MCMD_DCAP_ANS:
+      break;
+    case MCMD_DN2P_ANS:
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      i += 1;
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      break;
+    case MCMD_DEVS_ANS:
+      i += 2;
+      break;
+    case MCMD_SNCH_ANS:
+      i += 1;
+      break;
+    case MCMD_RXTimingSetup_ANS:
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      break;
+    case MCMD_TxParamSetup_ANS:
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      break;
+    case MCMD_DlChannel_ANS:
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      i += 1;
+      pendTxFOpts[pendTxFOptsLen++] = source[i];
+      break;
+    case MCMD_DeviceTime_REQ:
+      break;
+    default:
+      break;
+    }
+  }
+}
+
 uint32_t Lmic::read_seqno(uint8_t const *const buffer) const {
   const uint32_t seqno = rlsbf2(buffer);
   // reconstruct 32 bit value.
@@ -801,17 +844,23 @@ void Lmic::resetAdrCount() {
 
 void Lmic::buildDataFrame() {
 
-  // Piggyback MAC options
-  // Prioritize by importance
   uint8_t *pos = frame.begin() + mac_payload::offsets::fopts;
-  std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pos);
-  pos += pendTxFOptsLen;
+  bool txdata = opmode.test(OpState::TXDATA);
+
+  if (!txdata || pendTxPort != 0) {
+    // Piggyback MAC options
+    std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pos);
+    pos += pendTxFOptsLen;
+  } else if(pendTxLen + pendTxFOptsLen < pendTxData.size()) {
+    // add to current tx frame (it's already mac commands)
+    std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pendTxData.begin());
+    pendTxLen+=pendTxFOptsLen;
+  }
 
   const uint8_t end = pos - frame.cbegin();
 
   ASSERT(end <= mac_payload::offsets::fopts + 16);
 
-  bool txdata = opmode.test(OpState::TXDATA);
   uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
   if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
@@ -853,6 +902,14 @@ void Lmic::buildDataFrame() {
   aes.appendMic(devaddr, current_seq_no, PktDir::UP, frame.begin(), flen);
 
   dataLen = flen;
+
+  if (txCnt == 0) {
+    if (txdata && pendTxPort == 0) {
+      keep_sticky_mac_response(pendTxData.begin(), pendTxLen);
+    } else {
+      keep_sticky_mac_response(pendTxFOpts.begin(), pendTxFOptsLen);
+    }
+  }
 
   PRINT_DEBUG(1, F("Build pkt # %" PRIu32), current_seq_no);
 }

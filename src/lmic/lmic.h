@@ -265,6 +265,8 @@ private:
   void txDelay(OsTime reftime, uint8_t secSpan);
   void resetAdrCount();
   void incrementAdrCount();
+  void keep_sticky_mac_response(const uint8_t *const source, uint8_t sourceLen);
+
 
 public:
   void setBatteryLevel(uint8_t level);
