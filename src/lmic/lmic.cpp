@@ -279,6 +279,10 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen,
     switch (opts[oidx]) {
     // LinkCheckReq LoRaWAN™ Specification §5.1
     case MCMD_LCHK_ANS: {
+      if (olen < oidx + 3) {
+        PRINT_DEBUG(2, F("LINKCHECKANS: invalid length"));
+        break;
+      }
       // int gwmargin = opts[oidx+1];
       // int ngws = opts[oidx+2];
       oidx += 3;
@@ -286,12 +290,17 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen,
     }
     // LinkADRReq LoRaWAN™ Specification §5.2
     case MCMD_LADR_REQ: {
+      if (olen < oidx + 5) {
+        PRINT_DEBUG(2, F("ADR REQ Invalid length"));
+        break;
+      }
       parse_ladr(opts + oidx, response, responseLenght);
       oidx += 5;
       continue;
     }
     // DevStatusReq LoRaWAN™ Specification §5.5
     case MCMD_DEVS_REQ: {
+      // data size 0
       txrxFlags.set(TxRxStatus::NEED_BATTERY_LEVEL);
       // DevStatusAns LoRaWAN™ Specification §5.5
       response[responseLenght++] = MCMD_DEVS_ANS;
@@ -308,29 +317,49 @@ void Lmic::parseMacCommands(const uint8_t *const opts, uint8_t const olen,
     }
     // RXParamSetupReq LoRaWAN™ Specification §5.4
     case MCMD_DN2P_SET: {
+      if (olen < oidx + 5) {
+        PRINT_DEBUG(2, F("RXPARAMSETREQ Invalid length"));
+        break;
+      }
       parse_dn2p(opts + oidx, response, responseLenght);
       oidx += 5;
       continue;
     }
     // DutyCycleReq LoRaWAN™ Specification §5.3
     case MCMD_DCAP_REQ: {
+      if (olen < oidx + 2) {
+        PRINT_DEBUG(2, F("DutyCycleReq Invalid length"));
+        break;
+      }
       parse_dcap(opts + oidx, response, responseLenght);
       oidx += 2;
       continue;
     }
     // NewChannelReq LoRaWAN™ Specification §5.6
     case MCMD_NewChannel_REQ: {
+      if (olen < oidx + 6) {
+        PRINT_DEBUG(2, F("NewChannelReq Invalid length"));
+        break;
+      }
       parse_newchannel(opts + oidx, response, responseLenght);
       oidx += 6;
       continue;
     }
     // RXTimingSetupReq LoRaWAN™ Specification §5.7
     case MCMD_RXTimingSetup_REQ: {
+      if (olen < oidx + 2) {
+        PRINT_DEBUG(2, F("RXTimingSetupReq Invalid length"));
+        break;
+      }
       parse_rx_timing_setup(opts + oidx, response, responseLenght);
       oidx += 2;
       continue;
     }
     case MCMD_TxParamSetup_REQ: {
+      if (olen < oidx + 2) {
+        PRINT_DEBUG(2, F("TxParamSetupReq Invalid length"));
+        break;
+      }
       // NOT IMPLEMENTED / NOT NEED IN EU868
       oidx += 2;
       continue;
@@ -851,10 +880,11 @@ void Lmic::buildDataFrame() {
     // Piggyback MAC options
     std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pos);
     pos += pendTxFOptsLen;
-  } else if(pendTxLen + pendTxFOptsLen < pendTxData.size()) {
+  } else if (pendTxLen + pendTxFOptsLen < pendTxData.size()) {
     // add to current tx frame (it's already mac commands)
-    std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen, pendTxData.begin());
-    pendTxLen+=pendTxFOptsLen;
+    std::copy(pendTxFOpts.begin(), pendTxFOpts.begin() + pendTxFOptsLen,
+              pendTxData.begin());
+    pendTxLen += pendTxFOptsLen;
   }
 
   const uint8_t end = pos - frame.cbegin();
