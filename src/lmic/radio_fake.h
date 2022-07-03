@@ -17,7 +17,7 @@ public:
     // frequency is zero if not a valid packet
     uint32_t freq;
     rps_t rps;
-    std::array<uint8_t, 64> data;
+    std::array<uint8_t, MAX_LEN_FRAME> data;
     uint8_t length;
     // end of send time, or start of receive time
     OsTime time;
