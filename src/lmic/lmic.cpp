@@ -416,6 +416,13 @@ void Lmic::keep_sticky_mac_response(const uint8_t *const source,
   }
 }
 
+void Lmic::askLinkCheck() {
+  if(pendTxFOptsLen < pendTxFOpts.size()) {
+    PRINT_DEBUG(2, F("Adding LINKCHECKREQ"));
+    pendTxFOpts[pendTxFOptsLen++] = MCMD_LCHK_REQ;
+  }
+}
+
 uint32_t Lmic::read_seqno(uint8_t const *const buffer) const {
   const uint32_t seqno = rlsbf2(buffer);
   // reconstruct 32 bit value.

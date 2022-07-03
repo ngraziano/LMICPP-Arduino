@@ -164,9 +164,16 @@ RadioFake::Packet make_data_response(uint8_t port,
   // FCtrl
   uint8_t fOptsLen = std::min(fOpts.size(), 15u) & 0xFF;
   response.data[5] = fOptsLen | (acknowledged ? 0b00100000 : 0);
-  wlsbf2(response.data.begin() + 6 + fOptsLen, state.fCntDown);
+  // FCnt
+  wlsbf2(response.data.begin() + 6, state.fCntDown);
+  // FOpts
+  std::copy(fOpts.begin(), fOpts.begin() + fOptsLen, response.data.begin() + 8);
+  // Port
   response.data[8 + fOptsLen] = port;
+  // Data
   std::copy(data.begin(), data.end(), 9 + fOptsLen + response.data.begin());
+
+  
   response.length = 8 + 1 + fOptsLen + data.size() + 4;
   state.aes.framePayloadEncryption(port, DEVADDR, state.fCntDown, PktDir::DOWN,
                                    response.data.begin() + 8 + 1 + fOptsLen, data.size());

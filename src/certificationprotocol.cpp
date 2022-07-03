@@ -230,7 +230,7 @@ void CertificationProtocol::sendLinkCheck() {
   // the LinkCheckReq command has no payload.
   // Instructs the DUT to send a LinkCheckReq MAC command.
 
-  // TODO: implement link check
+  lmic.askLinkCheck();
 }
 
 void CertificationProtocol::sendDeviceTimeReques() {

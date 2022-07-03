@@ -280,7 +280,7 @@ public:
   void setLinkCheckMode(bool enabled);
   void setSession(uint32_t netid, devaddr_t devaddr, AesKey const &nwkSKey,
                   AesKey const &artKey);
-
+  void askLinkCheck();
   /**
    * Adjust output power by this amount (for antenna gain)
    */
