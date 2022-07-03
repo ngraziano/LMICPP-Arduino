@@ -20,7 +20,11 @@ void test_new_channel_req();
 void test_RX_timing_setup_req();
 void test_TX_param_setup_req();
 
+
 // §2.5.13
 void test_incorrect_mac_command();
+// §2.5.14
+void test_multiple_mac_commands_prioritization();
+
 
 #endif // cert_test_mac_command_common_h

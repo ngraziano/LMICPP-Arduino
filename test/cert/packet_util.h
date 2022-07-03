@@ -46,7 +46,8 @@ RadioFake::Packet make_join_response(TestServerState &state);
 RadioFake::Packet make_data_response(uint8_t port,
                                      std::vector<uint8_t> const &data,
                                      bool acknowledged, TestServerState &state,
-                                     bool confirmed = false);
+                                     bool confirmed = false,
+                                     std::vector<uint8_t> const &fOpts = {});
 RadioFake::Packet make_empty_response(bool acknowledged,
                                       TestServerState &state);
 void read_join_key(uint16_t devNonce, TestServerState &state);

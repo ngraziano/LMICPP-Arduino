@@ -2,6 +2,7 @@
 #include "packet_util.h"
 
 #include "aesdecrypt.h"
+#include <algorithm>
 
 constexpr std::array<uint8_t, 16> APPK_KEY = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
@@ -153,20 +154,22 @@ RadioFake::Packet make_data_response(uint8_t port,
                                      std::vector<uint8_t> const &data,
                                      bool acknowledged,
                                      TestServerState &state,
-                                     bool confirmed)
+                                     bool confirmed,
+                                     std::vector<uint8_t> const &fOpts)
 {
   state.fCntDown++;
   RadioFake::Packet response;
   response.data[0] = confirmed ? 0b10100000 : 0b01100000;
   wlsbf4(response.data.begin() + 1, DEVADDR);
   // FCtrl
-  response.data[5] = 0b00000000 | (acknowledged ? 0b00100000 : 0);
-  wlsbf2(response.data.begin() + 6, state.fCntDown);
-  response.data[8] = port;
-  std::copy(data.begin(), data.end(), 9 + response.data.begin());
-  response.length = 8 + 1 + data.size() + 4;
+  uint8_t fOptsLen = std::min(fOpts.size(), 15u) & 0xFF;
+  response.data[5] = fOptsLen | (acknowledged ? 0b00100000 : 0);
+  wlsbf2(response.data.begin() + 6 + fOptsLen, state.fCntDown);
+  response.data[8 + fOptsLen] = port;
+  std::copy(data.begin(), data.end(), 9 + fOptsLen + response.data.begin());
+  response.length = 8 + 1 + fOptsLen + data.size() + 4;
   state.aes.framePayloadEncryption(port, DEVADDR, state.fCntDown, PktDir::DOWN,
-                                   response.data.begin() + 8 + 1, data.size());
+                                   response.data.begin() + 8 + 1 + fOptsLen, data.size());
 
   state.aes.appendMic(DEVADDR, state.fCntDown, PktDir::DOWN,
                       response.data.begin(), response.length);

@@ -21,6 +21,7 @@ void runUnityTests(void)
   RUN_TEST(test_RX_timing_setup_req);
   RUN_TEST(test_TX_param_setup_req);
   RUN_TEST(test_incorrect_mac_command);
+  RUN_TEST(test_multiple_mac_commands_prioritization);
   UNITY_END();
 }
 
