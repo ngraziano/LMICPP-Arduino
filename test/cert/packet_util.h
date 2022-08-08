@@ -6,32 +6,31 @@
 
 #include <vector>
 
-struct TestServerState
-{
-    Aes aes;
-    uint8_t joinNonce = 0;
-    uint32_t fCntUp = 0;
-    uint32_t fCntDown = 0;
+struct TestServerState {
+  Aes aes;
+  uint8_t joinNonce = 0;
+  uint32_t fCntUp = 0;
+  uint32_t fCntDown = 0;
 };
 
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY1 =
-    OsDeltaTime::from_sec(5)
+constexpr OsDeltaTime JOIN_ACCEPT_DELAY1 = OsDeltaTime::from_sec(5)
     // This delay is abnormal, but it is the only way to make the test pass.
     // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
+    //   + OsDeltaTime::from_ms(55)
+    ;
 
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY2 =
-    OsDeltaTime::from_sec(6)
+constexpr OsDeltaTime JOIN_ACCEPT_DELAY2 = OsDeltaTime::from_sec(6)
     // This delay is abnormal, but it is the only way to make the test pass.
     // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
+    //   + OsDeltaTime::from_ms(55)
+    ;
 
 // constexpr OsDeltaTime RECEIVE_DELAY1;
-constexpr OsDeltaTime RECEIVE_DELAY2 =
-    OsDeltaTime::from_sec(2)
+constexpr OsDeltaTime RECEIVE_DELAY2 = OsDeltaTime::from_sec(2)
     // This delay is abnormal, but it is the only way to make the test pass.
     // the calculation must be checked.
-    + OsDeltaTime::from_ms(55);
+    //   + OsDeltaTime::from_ms(55)
+    ;
 
 void printpacket(RadioFake::Packet const &packet);
 bool is_join_request(RadioFake::Packet const &packet);
@@ -53,7 +52,8 @@ RadioFake::Packet make_empty_response(bool acknowledged,
 void read_join_key(uint16_t devNonce, TestServerState &state);
 bool check_is_next_packet(RadioFake::Packet const &packet,
                           TestServerState &state);
-std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet, TestServerState const &state);
+std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet,
+                                            TestServerState const &state);
 
 std::vector<uint8_t> get_payload(RadioFake::Packet const &packet,
                                  TestServerState const &state);

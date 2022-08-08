@@ -1,19 +1,19 @@
 #include <unity.h>
 #include <vector>
 
+#include "../activation_pretest.h"
 #include "../dut.h"
 #include "../packet_util.h"
-#include "../activation_pretest.h"
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
 
 TestServerState server_state;
 
 void setUp(void) { dut::reset(); }
 
-
-void initial_join() {
-  sp1_intial_join(server_state);
-} 
+void initial_join() { sp1_intial_join(server_state); }
 
 void tearDown(void) {
   // clean stuff up here
@@ -24,8 +24,6 @@ void runUnityTests(void) {
   RUN_TEST(initial_join);
   UNITY_END();
 }
-
-int main() { runUnityTests(); }
 
 #ifdef ARDUINO
 void setup() {
@@ -39,4 +37,9 @@ void loop() {
   sleep_mode();
 #endif
 }
+
+#else
+
+int main() { runUnityTests(); }
+
 #endif

@@ -3,7 +3,7 @@
 
 #include <array>
 
-void aes128_decrypt(std::array<uint8_t, 16> const &key, uint8_t *data, uint8_t len);
-
+void aes128_decrypt(std::array<uint8_t, 16> const &key, uint8_t *data,
+                    uint8_t len);
 
 #endif

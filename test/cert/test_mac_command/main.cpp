@@ -1,20 +1,19 @@
 #include "common.h"
 
-void setUp(void)
-{
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+
+void setUp(void) {
   dut::reset();
   sp1_intial_join(server_state);
 }
 
-
-
-void tearDown(void)
-{
+void tearDown(void) {
   // clean stuff up here
 }
 
-void runUnityTests(void)
-{
+void runUnityTests(void) {
   UNITY_BEGIN();
   RUN_TEST(test_dev_status_req);
   RUN_TEST(test_new_channel_req);
@@ -25,20 +24,19 @@ void runUnityTests(void)
   UNITY_END();
 }
 
-int main() { runUnityTests(); }
-
 #ifdef ARDUINO
-void setup()
-{
+void setup() {
   delay(2000);
   runUnityTests();
 }
 
-void loop()
-{
+void loop() {
 #if defined(set_sleep_mode) && defined(sleep_mode)
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_mode();
 #endif
 }
+
+#else
+int main() { runUnityTests(); }
 #endif

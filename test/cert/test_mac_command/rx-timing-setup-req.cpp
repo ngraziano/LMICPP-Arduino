@@ -1,7 +1,6 @@
 #include "common.h"
 
-void test_RX_timing_setup_req()
-{
+void test_RX_timing_setup_req() {
   // Step 1
   // DUT sends Unconfirmed frame
   // FCntUp = y
@@ -23,14 +22,11 @@ void test_RX_timing_setup_req()
   dut::send_data(nextResponse);
 
   // Step 2
-  for (uint8_t i = 0; i < 3; i++)
-  {
+  for (uint8_t i = 0; i < 3; i++) {
     // DUT sends Unconfirmed frame
-    // Repeat up to 3 times until a downlink is received confirming the receipt of the RxTimingSetupAns
-    // FCntUp >= y + n
-    // MAC-CMD
-    // RxTimingSetupAns
-    // Payload = [0x]08
+    // Repeat up to 3 times until a downlink is received confirming the receipt
+    // of the RxTimingSetupAns FCntUp >= y + n MAC-CMD RxTimingSetupAns Payload
+    // = [0x]08
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
@@ -61,7 +57,8 @@ void test_RX_timing_setup_req()
   // TXDelay = (i) seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay) + OsDeltaTime::from_ms(55);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay) +
+                      OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 4
@@ -89,7 +86,8 @@ void test_RX_timing_setup_req()
   // TXDelay = (i + 1) seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) + OsDeltaTime::from_ms(55);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) +
+                      OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 5
@@ -112,19 +110,17 @@ void test_RX_timing_setup_req()
   //  MAC-CMD RxTimingSetupReq
   // Payload = [0x]08XX
   // Delay = 2
-  nextResponse = make_data_response(
-      0, std::vector<uint8_t>{0x08, 2}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) + OsDeltaTime::from_ms(55);
+  nextResponse =
+      make_data_response(0, std::vector<uint8_t>{0x08, 2}, false, server_state);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) +
+                      OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 6
   // DUT sends Unconfirmed frame
-  // Repeat up to 3 times until a downlink is received confirming the receipt of the RxTimingSetupAns
-  // MAC-CMD
-  // RxTimingSetupAns
-  // Payload = [0x]08
-  for (uint8_t i = 0; i < 3; i++)
-  {
+  // Repeat up to 3 times until a downlink is received confirming the receipt of
+  // the RxTimingSetupAns MAC-CMD RxTimingSetupAns Payload = [0x]08
+  for (uint8_t i = 0; i < 3; i++) {
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
@@ -155,7 +151,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 2 sec
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 8
@@ -183,7 +180,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 3 seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 9
@@ -206,19 +204,17 @@ void test_RX_timing_setup_req()
   // MAC-CMD RxTimingSetupReq
   // Payload = [0x]08XX
   // Delay = 15
-  nextResponse = make_data_response(
-      0, std::vector<uint8_t>{0x08, 15}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
+  nextResponse = make_data_response(0, std::vector<uint8_t>{0x08, 15}, false,
+                                    server_state);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 10
   // DUT sends Unconfirmed frame
-  // Repeat up to 3 times until a downlink  is received confirming the receipt of the RxTimingSetupAns
-  // MAC-CMD
-  // RxTimingSetupAns
-  // Payload = [0x]08
-  for (uint8_t i = 0; i < 3; i++)
-  {
+  // Repeat up to 3 times until a downlink  is received confirming the receipt
+  // of the RxTimingSetupAns MAC-CMD RxTimingSetupAns Payload = [0x]08
+  for (uint8_t i = 0; i < 3; i++) {
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
@@ -248,7 +244,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 15 sec
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(15) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(15) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 12
@@ -274,7 +271,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 16 seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 13
@@ -298,19 +296,17 @@ void test_RX_timing_setup_req()
   // RxTimingSetupReq
   // Payload = [0x]08XX
   // Delay = 0
-  nextResponse = make_data_response(
-      0, std::vector<uint8_t>{0x08, 0}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
+  nextResponse =
+      make_data_response(0, std::vector<uint8_t>{0x08, 0}, false, server_state);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 14
   // DUT sends Unconfirmed frame
-  // Repeat up to 3 times until a downlink is received confirming the receipt of the RxTimingSetupAns
-  // MAC-CMD
-  // RxTimingSetupAns
-  // Payload = [0x]08
-  for (uint8_t i = 0; i < 3; i++)
-  {
+  // Repeat up to 3 times until a downlink is received confirming the receipt of
+  // the RxTimingSetupAns MAC-CMD RxTimingSetupAns Payload = [0x]08
+  for (uint8_t i = 0; i < 3; i++) {
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
@@ -340,7 +336,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 1 sec
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(1) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(1) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 16
@@ -366,7 +363,8 @@ void test_RX_timing_setup_req()
   // TXDelay = 2 seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
+  nextResponse.time =
+      nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
   dut::send_data(nextResponse);
 
   // Step 18

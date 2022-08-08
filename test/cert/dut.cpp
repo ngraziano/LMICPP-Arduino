@@ -76,9 +76,10 @@ RadioFake::Packet wait_for_data(OsTime timeout) {
     auto toWait = loop();
     packet = radio.popLastSend();
     if (!packet.is_valid() && toWait != OsInfiniteDeltaTime) {
-      auto wait = OsDeltaTime(toWait.tick() / 2 + 1);
-      if (toWait.to_ms() > 100) {
-        wait = toWait + OsDeltaTime::from_ms(-90);
+      auto wait = std::max(OsDeltaTime(toWait.tick() - 2), OsDeltaTime(1));
+
+      if (toWait.to_ms() > 10) {
+        wait = toWait + OsDeltaTime::from_ms(-8);
         PRINT_DEBUG(1, F("Skip %d ms (speedup clock)"), wait.to_ms());
       }
       hal_add_time_in_sleep(wait);

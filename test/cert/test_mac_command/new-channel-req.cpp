@@ -4,11 +4,10 @@ constexpr std::array<int, 3> DEFAULT_CHANNEL_FREQUENCY = {868100000, 868300000,
                                                           868500000};
 
 constexpr std::array<int, 13> TEST_VALID_FREQ = {
-    868200000, 868400000, 868600000, 868700000, 868900000, 869100000, 869300000,
-    869500000, 869700000, 869900000, 863300000, 863500000};
+    868200000, 868400000, 868600000, 868700000, 868900000, 869100000,
+    869300000, 869500000, 869700000, 869900000, 863300000, 863500000};
 
-void test_new_channel_req()
-{
+void test_new_channel_req() {
   // Step 1
   // DUT sends Unconfirmed frame
   auto nextPacket = dut::wait_for_data(defaultWaitTime);
@@ -31,8 +30,7 @@ void test_new_channel_req()
   nextResponse.time = nextPacket.time + RECEIVE_DELAY2;
   dut::send_data(nextResponse);
 
-  for (uint8_t i = 1; i < DEFAULT_CHANNEL_FREQUENCY.size(); i++)
-  {
+  for (uint8_t i = 1; i < DEFAULT_CHANNEL_FREQUENCY.size(); i++) {
     // Step 2
     // DUT sends Unconfirmed frame
     // MAC-CMD NewChannelAns
@@ -112,13 +110,11 @@ void test_new_channel_req()
   // The new channel configured must be used at least once
   auto newChannelIsUsed = false;
   for (unsigned int i = 0; i < 5 * (DEFAULT_CHANNEL_FREQUENCY.size() + 1);
-       i++)
-  {
+       i++) {
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
-    if (nextPacket.freq == TEST_VALID_FREQ[0])
-    {
+    if (nextPacket.freq == TEST_VALID_FREQ[0]) {
       newChannelIsUsed = true;
       break;
     }
@@ -160,8 +156,7 @@ void test_new_channel_req()
   // Wait for 5 * number of channels configured uplink packets, to confirm
   // that the removed channel is not used.
   // The channel removed must not be used
-  for (unsigned int i = 0; i < 5 * (DEFAULT_CHANNEL_FREQUENCY.size()); i++)
-  {
+  for (unsigned int i = 0; i < 5 * (DEFAULT_CHANNEL_FREQUENCY.size()); i++) {
     nextPacket = dut::wait_for_data(defaultWaitTime);
     TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
     TEST_ASSERT(is_data(nextPacket));
@@ -186,8 +181,7 @@ void test_new_channel_req()
   // Note1: This downlink may be split into multiple downlinks so that the
   // maximum FRMPayload is not exceeded
   std::vector<uint8_t> newChannelReq;
-  for (int i = DEFAULT_CHANNEL_FREQUENCY.size(); i < 9; i++)
-  {
+  for (int i = DEFAULT_CHANNEL_FREQUENCY.size(); i < 9; i++) {
     newChannelReq.push_back(0x07);
     newChannelReq.push_back(i);
     newChannelReq.push_back(TEST_VALID_FREQ[i - 3] / 100 & 0xFF);
@@ -195,8 +189,7 @@ void test_new_channel_req()
     newChannelReq.push_back(TEST_VALID_FREQ[i - 3] / 100 >> 16 & 0xFF);
     newChannelReq.push_back(0x50);
   }
-  nextResponse = make_data_response(
-      0, newChannelReq, false, server_state);
+  nextResponse = make_data_response(0, newChannelReq, false, server_state);
   nextResponse.time = nextPacket.time + RECEIVE_DELAY2;
   dut::send_data(nextResponse);
 
@@ -206,7 +199,8 @@ void test_new_channel_req()
   // MAC-CMD NewChannelAns
   // Payload =  [0x]0703[0x]0703[0x]0703...[Repeat [0x]0703 "Y" times]
   // where Y is the number of channels configured
-  // Note: This uplink may be split into multiple uplinks so that the maximum FRMPayload is not exceeded
+  // Note: This uplink may be split into multiple uplinks so that the maximum
+  // FRMPayload is not exceeded
   auto y = 9 - DEFAULT_CHANNEL_FREQUENCY.size();
   nextPacket = dut::wait_for_data(defaultWaitTime);
   TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
@@ -214,8 +208,7 @@ void test_new_channel_req()
   TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
   newChannelAns = get_mac_command_values(nextPacket, server_state);
   TEST_ASSERT_EQUAL_UINT(2 * y, newChannelAns.size());
-  for (uint8_t i = 0; i < y; i++)
-  {
+  for (uint8_t i = 0; i < y; i++) {
     TEST_ASSERT_EQUAL_UINT8(0x07, newChannelAns[2 * i]);
     TEST_ASSERT_EQUAL_UINT8(0x03, newChannelAns[2 * i + 1]);
   }

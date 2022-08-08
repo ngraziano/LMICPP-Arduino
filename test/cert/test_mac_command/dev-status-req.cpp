@@ -1,7 +1,6 @@
 #include "common.h"
 
-void test_dev_status_req()
-{
+void test_dev_status_req() {
   // Step 1
   // DUT sends Unconfirmed frame
   auto nextPacket = dut::wait_for_data(defaultWaitTime);
@@ -30,4 +29,3 @@ void test_dev_status_req()
   TEST_ASSERT_EQUAL_UINT(3, devStatusAns.size());
   TEST_ASSERT_EQUAL_UINT8(0x06, devStatusAns[0]);
 }
-

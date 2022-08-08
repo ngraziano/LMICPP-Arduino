@@ -18,8 +18,7 @@ constexpr uint32_t DEVADDR = 0x01010102;
 
 constexpr std::array<uint8_t, 3> NETID = {0x01, 0x01, 0x01};
 
-Aes get_Aes()
-{
+Aes get_Aes() {
   Aes aes;
   aes.setDevKey(APPK_KEY);
   aes.setNetworkSessionKey(APPK_KEY);
@@ -28,8 +27,7 @@ Aes get_Aes()
 }
 
 uint32_t getFCntUpPacket(RadioFake::Packet const &packet,
-                         TestServerState &state)
-{
+                         TestServerState &state) {
   uint32_t fCntUpPacket = rlsbf2(packet.data.cbegin() + 6);
   fCntUpPacket += state.fCntUp & 0xFFFF0000;
   if (fCntUpPacket < state.fCntUp)
@@ -37,11 +35,9 @@ uint32_t getFCntUpPacket(RadioFake::Packet const &packet,
   return fCntUpPacket;
 }
 
-void printpacket(RadioFake::Packet const &packet)
-{
+void printpacket(RadioFake::Packet const &packet) {
   printf("PACKET: ");
-  for (uint8_t i = 0; i < packet.length; i++)
-  {
+  for (uint8_t i = 0; i < packet.length; i++) {
     printf("%02x ", packet.data[i]);
   }
   printf("\n");
@@ -50,8 +46,7 @@ void printpacket(RadioFake::Packet const &packet)
 // Join packet :
 // MHDR  JoinEUI  DevEUI  DevNonce MIC
 // 00 0100000000000000 0200000000000000 CB7A BEBC1902
-bool is_join_request(RadioFake::Packet const &packet)
-{
+bool is_join_request(RadioFake::Packet const &packet) {
   return packet.data[0] == 0x00 && packet.length == 1 + 8 + 8 + 2 + 4 &&
          std::equal(packet.data.begin() + 1, packet.data.begin() + 9,
                     JOIN_EUI.begin()) &&
@@ -60,36 +55,30 @@ bool is_join_request(RadioFake::Packet const &packet)
          get_Aes().verifyMic0(packet.data.data(), packet.length);
 }
 
-uint16_t get_dev_nonce(RadioFake::Packet const &packet)
-{
+uint16_t get_dev_nonce(RadioFake::Packet const &packet) {
   return packet.data[17] | (packet.data[18] << 8);
 }
 
-bool is_data(RadioFake::Packet const &packet)
-{
+bool is_data(RadioFake::Packet const &packet) {
   return packet.data[0] == 0x40 || packet.data[0] == 0x80;
 }
 
-bool is_confirmed_uplink(RadioFake::Packet const &packet)
-{
+bool is_confirmed_uplink(RadioFake::Packet const &packet) {
   return packet.data[0] == 0x80;
 }
 
-bool is_adr(RadioFake::Packet const &packet)
-{
+bool is_adr(RadioFake::Packet const &packet) {
   return packet.data[1 + 4] & 0x80;
 }
 
-bool is_ack_set(RadioFake::Packet const &packet)
-{
+bool is_ack_set(RadioFake::Packet const &packet) {
   return packet.data[1 + 4] & 0x20;
 }
 
 // Join accept packet :
 // MHDR {JoinNonce NetID DevAddr DLSettings RxDelay [CFList] MIC}
 // {} is aes128_decrypt with the app key
-RadioFake::Packet make_join_response(TestServerState &state)
-{
+RadioFake::Packet make_join_response(TestServerState &state) {
   // reinit the state
   state.aes = get_Aes();
   state.fCntUp = 0xFFFFFFFF;
@@ -118,8 +107,7 @@ RadioFake::Packet make_join_response(TestServerState &state)
   return response;
 }
 
-void read_join_key(uint16_t devNonce, TestServerState &state)
-{
+void read_join_key(uint16_t devNonce, TestServerState &state) {
   std::array<uint8_t, 6> data;
   data[0] = state.joinNonce;
   data[1] = state.joinNonce >> 8;
@@ -129,8 +117,7 @@ void read_join_key(uint16_t devNonce, TestServerState &state)
 }
 
 bool check_is_next_packet(RadioFake::Packet const &packet,
-                          TestServerState &state)
-{
+                          TestServerState &state) {
   const uint32_t addr = rlsbf4(packet.data.cbegin() + 1);
 
   if (addr != DEVADDR)
@@ -140,8 +127,7 @@ bool check_is_next_packet(RadioFake::Packet const &packet,
   // recover 32bit of fcntUp
   uint32_t fCntUpPacket = getFCntUpPacket(packet, state);
 
-  if (fCntUpPacket < state.fCntUp)
-  {
+  if (fCntUpPacket < state.fCntUp) {
     return false;
   }
 
@@ -152,11 +138,9 @@ bool check_is_next_packet(RadioFake::Packet const &packet,
 
 RadioFake::Packet make_data_response(uint8_t port,
                                      std::vector<uint8_t> const &data,
-                                     bool acknowledged,
-                                     TestServerState &state,
+                                     bool acknowledged, TestServerState &state,
                                      bool confirmed,
-                                     std::vector<uint8_t> const &fOpts)
-{
+                                     std::vector<uint8_t> const &fOpts) {
   state.fCntDown++;
   RadioFake::Packet response;
   response.data[0] = confirmed ? 0b10100000 : 0b01100000;
@@ -174,10 +158,10 @@ RadioFake::Packet make_data_response(uint8_t port,
   // Data
   std::copy(data.begin(), data.end(), 9 + fOptsLen + response.data.begin());
 
-
   response.length = 8 + 1 + fOptsLen + data.size() + 4;
   state.aes.framePayloadEncryption(port, DEVADDR, state.fCntDown, PktDir::DOWN,
-                                   response.data.begin() + 8 + 1 + fOptsLen, data.size());
+                                   response.data.begin() + 8 + 1 + fOptsLen,
+                                   data.size());
 
   state.aes.appendMic(DEVADDR, state.fCntDown, PktDir::DOWN,
                       response.data.begin(), response.length);
@@ -185,8 +169,8 @@ RadioFake::Packet make_data_response(uint8_t port,
   return response;
 }
 
-RadioFake::Packet make_empty_response(bool acknowledged, TestServerState &state)
-{
+RadioFake::Packet make_empty_response(bool acknowledged,
+                                      TestServerState &state) {
   state.fCntDown++;
   RadioFake::Packet response;
   response.data[0] = 0b01100000;
@@ -201,41 +185,32 @@ RadioFake::Packet make_empty_response(bool acknowledged, TestServerState &state)
   return response;
 }
 
-uint8_t get_opts_len(RadioFake::Packet const &packet)
-{
+uint8_t get_opts_len(RadioFake::Packet const &packet) {
   return packet.data[5] & 0x0F;
 }
 
-std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet, TestServerState const &state)
-{
+std::vector<uint8_t> get_mac_command_values(RadioFake::Packet const &packet,
+                                            TestServerState const &state) {
 
   // read length from FHDR
   uint8_t fOptsLen = get_opts_len(packet);
-  if (fOptsLen > 0)
-  {
+  if (fOptsLen > 0) {
     std::vector<uint8_t> values;
-    for (uint8_t i = 8; i < packet.length && i < 8 + fOptsLen; i++)
-    {
+    for (uint8_t i = 8; i < packet.length && i < 8 + fOptsLen; i++) {
       values.push_back(packet.data[i]);
     }
     return values;
-  }
-  else
-  {
-    if (get_port(packet) == 0)
-    {
+  } else {
+    if (get_port(packet) == 0) {
       return get_payload(packet, state);
-    }
-    else
-    {
+    } else {
       return std::vector<uint8_t>();
     }
   }
 }
 
 std::vector<uint8_t> get_payload(RadioFake::Packet const &packet,
-                                 TestServerState const &state)
-{
+                                 TestServerState const &state) {
   // read length from FHDR
   uint8_t fOptsLen = get_opts_len(packet);
 
@@ -246,18 +221,15 @@ std::vector<uint8_t> get_payload(RadioFake::Packet const &packet,
                                    PktDir::UP, temp.begin() + 8 + fOptsLen + 1,
                                    packet.length - 8 - fOptsLen - 1 - 4);
   std::vector<uint8_t> values;
-  for (uint8_t i = 8 + fOptsLen + 1; i < packet.length - 4; i++)
-  {
+  for (uint8_t i = 8 + fOptsLen + 1; i < packet.length - 4; i++) {
     values.push_back(temp[i]);
   }
   return values;
 }
 
-uint8_t get_port(RadioFake::Packet const &packet)
-{
+uint8_t get_port(RadioFake::Packet const &packet) {
   auto position = 8 + get_opts_len(packet);
-  if (position >= packet.length - 4)
-  {
+  if (position >= packet.length - 4) {
     return 0;
   }
   return packet.data[position];

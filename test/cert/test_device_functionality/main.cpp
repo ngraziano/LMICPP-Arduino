@@ -5,6 +5,10 @@
 #include "../dut.h"
 #include "../packet_util.h"
 
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
+
 TestServerState server_state;
 
 constexpr OsDeltaTime defaultWaitTime = OsDeltaTime::from_sec(60);
@@ -689,8 +693,6 @@ void runUnityTests(void) {
   UNITY_END();
 }
 
-int main() { runUnityTests(); }
-
 #ifdef ARDUINO
 void setup() {
   delay(2000);
@@ -703,4 +705,7 @@ void loop() {
   sleep_mode();
 #endif
 }
+
+#else
+int main() { runUnityTests(); }
 #endif
