@@ -82,20 +82,41 @@ void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   std::copy(framePtr, framePtr + frameLength, begin(lastSend.data));
 }
 
+OsDeltaTime timeByChar(rps_t rps) {
+  // Tsymb = 2^SF / BW
+  // SF = 6 + rps.sf
+  // BW =  125000 * 2^rps.bwRaw
+
+  // return OsDeltaTime::from_sec(
+  //    (1 << (6 + rps.sf)) / ( 125000 * (1 << rps.bwRaw)));
+
+  return OsDeltaTime::from_us(256 * (1 << (1 + rps.sf - rps.bwRaw)));
+}
+
+
+OsTime minTimeToReceive(rps_t const rps, OsTime const now) {
+  // The radio can can miss 3 syncrhonisation symbols
+  return now - 3 * timeByChar(rps);
+}
+
 void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
                    OsTime const rxtime) {
   // now instruct the radio to receive
   // busy wait until exact rx time
-  if (rxtime < os_getTime()) {
+  auto now = os_getTime();
+  if (rxtime < now) {
     PRINT_DEBUG(1, F("RX LATE :  %" PRIu32 " WANTED, late %" PRIi32 " ms"),
                 rxtime, (os_getTime() - rxtime).to_ms());
   }
   hal_waitUntil(rxtime);
   auto windows_end = hal_ticks() + Lmic::calcAirTime(rps, rxsyms);
   // simulate timing is good ?
-  if (simulateReceive.length > 0 && simulateReceive.time >= os_getTime() &&
+
+  if (simulateReceive.length > 0 &&
+      simulateReceive.time >= minTimeToReceive(rps, now) &&
       simulateReceive.time < windows_end) {
-    endOfOperation = simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
+    endOfOperation =
+        simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
     isReceived = true;
   } else {
     if (simulateReceive.length > 0) {
@@ -116,7 +137,8 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
 void RadioFake::rx(uint32_t const freq, rps_t const rps) {
   // now instruct the radio to receive
   if (simulateReceive.length > 0 && simulateReceive.time > os_getTime()) {
-    endOfOperation = simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
+    endOfOperation =
+        simulateReceive.time + Lmic::calcAirTime(rps, simulateReceive.length);
     isReceived = true;
   }
 
@@ -130,9 +152,7 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps) {
  */
 bool RadioFake::io_check() const { return (endOfOperation < hal_ticks()); }
 
-void RadioFake::simulateRx(Packet const &packet) {
-  simulateReceive = packet;
-}
+void RadioFake::simulateRx(Packet const &packet) { simulateReceive = packet; }
 
 RadioFake::Packet RadioFake::popLastSend() {
   auto packet = lastSend;

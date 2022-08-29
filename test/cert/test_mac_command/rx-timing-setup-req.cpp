@@ -57,8 +57,7 @@ void test_RX_timing_setup_req() {
   // TXDelay = (i) seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay) +
-                      OsDeltaTime::from_ms(55);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay);
   dut::send_data(nextResponse);
 
   // Step 4
@@ -86,8 +85,7 @@ void test_RX_timing_setup_req() {
   // TXDelay = (i + 1) seconds
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) +
-                      OsDeltaTime::from_ms(55);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1);
   dut::send_data(nextResponse);
 
   // Step 5
@@ -112,8 +110,7 @@ void test_RX_timing_setup_req() {
   // Delay = 2
   nextResponse =
       make_data_response(0, std::vector<uint8_t>{0x08, 2}, false, server_state);
-  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1) +
-                      OsDeltaTime::from_ms(55);
+  nextResponse.time = nextPacket.time + OsDeltaTime::from_sec(newDelay + 1);
   dut::send_data(nextResponse);
 
   // Step 6
@@ -152,7 +149,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(2);
   dut::send_data(nextResponse);
 
   // Step 8
@@ -181,7 +178,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(3);
   dut::send_data(nextResponse);
 
   // Step 9
@@ -207,7 +204,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(0, std::vector<uint8_t>{0x08, 15}, false,
                                     server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(3) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(3);
   dut::send_data(nextResponse);
 
   // Step 10
@@ -245,7 +242,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(15) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(15);
   dut::send_data(nextResponse);
 
   // Step 12
@@ -272,7 +269,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(16);
   dut::send_data(nextResponse);
 
   // Step 13
@@ -299,7 +296,7 @@ void test_RX_timing_setup_req() {
   nextResponse =
       make_data_response(0, std::vector<uint8_t>{0x08, 0}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(16);
   dut::send_data(nextResponse);
 
   // Step 14
@@ -337,7 +334,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x01, 0x02, 0x03}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(1) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(1);
   dut::send_data(nextResponse);
 
   // Step 16
@@ -364,7 +361,7 @@ void test_RX_timing_setup_req() {
   nextResponse = make_data_response(
       224, std::vector<uint8_t>{0x08, 0x12, 0x13, 0x14}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(2) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(2);
   dut::send_data(nextResponse);
 
   // Step 18

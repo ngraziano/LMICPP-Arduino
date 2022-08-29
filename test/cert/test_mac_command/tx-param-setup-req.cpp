@@ -19,7 +19,7 @@ void test_TX_param_setup_req() {
   auto nextResponse =
       make_data_response(0, std::vector<uint8_t>{0x09, 0}, false, server_state);
   nextResponse.time =
-      nextPacket.time + OsDeltaTime::from_sec(16) + OsDeltaTime::from_ms(55);
+      nextPacket.time + OsDeltaTime::from_sec(16);
   dut::send_data(nextResponse);
 
   // Step 2

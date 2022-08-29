@@ -139,7 +139,6 @@ void sp1_intial_join(TestServerState &server_state) {
   TEST_ASSERT(get_mac_command_values(nextPacket, server_state) ==
               (std::vector<uint8_t>{0x03, 0x07}));
 
-  printf("Intervale PACKET %d\n", (nextPacket.time - lastTimeOfPacket).to_ms());
   lastTimeOfPacket = nextPacket.time;
 
   // The TCL sends Unconfirmed frame
@@ -162,7 +161,6 @@ void sp1_intial_join(TestServerState &server_state) {
   TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
   TEST_ASSERT(!is_confirmed_uplink(nextPacket));
   TEST_ASSERT(server_state.fCntUp == m + 5);
-  printf("Intervale PACKET %d\n", (nextPacket.time - lastTimeOfPacket).to_ms());
   lastTimeOfPacket = nextPacket.time;
 
   TEST_ASSERT_EQUAL_UINT8(224, get_port(nextPacket));

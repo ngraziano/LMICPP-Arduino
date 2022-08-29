@@ -13,24 +13,12 @@ struct TestServerState {
   uint32_t fCntDown = 0;
 };
 
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY1 = OsDeltaTime::from_sec(5)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    //   + OsDeltaTime::from_ms(55)
-    ;
+constexpr OsDeltaTime JOIN_ACCEPT_DELAY1 = OsDeltaTime::from_sec(5);
 
-constexpr OsDeltaTime JOIN_ACCEPT_DELAY2 = OsDeltaTime::from_sec(6)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    //   + OsDeltaTime::from_ms(55)
-    ;
+constexpr OsDeltaTime JOIN_ACCEPT_DELAY2 = OsDeltaTime::from_sec(6);
 
 // constexpr OsDeltaTime RECEIVE_DELAY1;
-constexpr OsDeltaTime RECEIVE_DELAY2 = OsDeltaTime::from_sec(2)
-    // This delay is abnormal, but it is the only way to make the test pass.
-    // the calculation must be checked.
-    //   + OsDeltaTime::from_ms(55)
-    ;
+constexpr OsDeltaTime RECEIVE_DELAY2 = OsDeltaTime::from_sec(2);
 
 void printpacket(RadioFake::Packet const &packet);
 bool is_join_request(RadioFake::Packet const &packet);
