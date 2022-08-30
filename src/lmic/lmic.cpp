@@ -25,11 +25,6 @@ using namespace lorawan;
 constexpr uint8_t MINRX_SYMS = 5;
 constexpr uint8_t PAMBL_SYMS = 8;
 
-// END OS - default implementations for certain OS suport functions
-// ================================================================================
-
-// ================================================================================
-// BEG LORA
 
 static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
     // TODO check where this value come from.
@@ -100,9 +95,6 @@ OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   PRINT_DEBUG(1, F("Time on air : %i ms"), val.to_ms());
   return val;
 }
-
-// END LORA
-// ================================================================================
 
 // Adjust DR for TX retries
 //  - indexed by retry count
