@@ -91,30 +91,6 @@ int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
 
 OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
-// Table below defines the size of one symbol as
-//   symtime = 256us * 2^T(sf,bw)
-// 256us is called one symunit.
-//                 SF:
-//      BW:      |__7___8___9__10__11__12
-//      125kHz   |  2   3   4   5   6   7
-//      250kHz   |  1   2   3   4   5   6
-//      500kHz   |  0   1   2   3   4   5
-//
-// Times for half symbol per DR
-// Per DR table to minimize rounding errors
-static CONST_TABLE(int32_t, DR2HSYM)[] = {
-    OsDeltaTime::from_us_round(128 << 5).tick(), // DR_SF10   DR_SF12CR
-    OsDeltaTime::from_us_round(128 << 4).tick(), // DR_SF9    DR_SF11CR
-    OsDeltaTime::from_us_round(128 << 3).tick(), // DR_SF8    DR_SF10CR
-    OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7    DR_SF9CR
-    OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF8C   DR_SF8CR
-    OsDeltaTime::from_us_round(128 << 0).tick()  // ------    DR_SF7CR
-};
-
-// map DR_SFnCR -> 0-6
-OsDeltaTime LmicUs915::dr2hsym(dr_t dr) const {
-  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, dr & 7));
-}
 
 bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
   return drOffset < 4;

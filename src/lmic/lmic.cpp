@@ -627,6 +627,12 @@ void Lmic::setupRxC() {
   radio.rx(rx2Parameter.frequency, rps);
 }
 
+
+OsDeltaTime Lmic::dr2hsym(dr_t dr) const {
+  rps_t rps = updr2rps(dr);
+  return OsDeltaTime(timeBySymbol(rps).tick() / 2);
+}
+
 OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
 

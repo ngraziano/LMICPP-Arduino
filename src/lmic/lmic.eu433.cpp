@@ -47,29 +47,6 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
 // normaly 12.5
 constexpr int8_t MaxEIRPValue = 12;
 
-// Table below defines the size of one symbol as
-//   symtime = 256us * 2^T(sf,bw)
-// 256us is called one symunit.
-//                 SF:
-//      BW:      |__7___8___9__10__11__12
-//      125kHz   |  2   3   4   5   6   7
-//      250kHz   |  1   2   3   4   5   6
-//      500kHz   |  0   1   2   3   4   5
-//
-// Times for half symbol per DR
-// Per DR table to minimize rounding errors
-CONST_TABLE(int32_t, DR2HSYM)
-[] = {
-    OsDeltaTime::from_us_round(128 << 7).tick(), // DR_SF12
-    OsDeltaTime::from_us_round(128 << 6).tick(), // DR_SF11
-    OsDeltaTime::from_us_round(128 << 5).tick(), // DR_SF10
-    OsDeltaTime::from_us_round(128 << 4).tick(), // DR_SF9
-    OsDeltaTime::from_us_round(128 << 3).tick(), // DR_SF8
-    OsDeltaTime::from_us_round(128 << 2).tick(), // DR_SF7
-    OsDeltaTime::from_us_round(128 << 1).tick(), // DR_SF7B
-    OsDeltaTime::from_us_round(80).tick() // FSK -- not used (time for 1/2 byte)
-};
-
 } // namespace
 
 uint8_t LmicEu433::getRawRps(dr_t const dr) const {
@@ -82,10 +59,6 @@ int8_t LmicEu433::pow2dBm(uint8_t const powerIndex) const {
   }
 
   return MaxEIRP - 2 * powerIndex;
-}
-
-OsDeltaTime LmicEu433::dr2hsym(dr_t const dr) const {
-  return OsDeltaTime(TABLE_GET_S4(DR2HSYM, dr));
 }
 
 bool LmicEu433::validRx1DrOffset(uint8_t const drOffset) const {

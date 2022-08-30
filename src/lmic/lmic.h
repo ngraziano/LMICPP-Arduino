@@ -333,7 +333,7 @@ protected:
    */
   virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
-  virtual OsDeltaTime dr2hsym(dr_t dr) const = 0;
+  
 
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 
@@ -359,6 +359,7 @@ protected:
   virtual void loadStateWithoutTimeData(RetrieveAbtract &strore);
 #endif
 
+  OsDeltaTime dr2hsym(dr_t dr) const;
   rps_t updr2rps(dr_t dr) const;
   rps_t dndr2rps(dr_t dr) const;
   bool isFasterDR(dr_t dr1, dr_t dr2) const;
