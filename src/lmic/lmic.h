@@ -110,6 +110,7 @@ struct FrequencyAndRate {
 
 class Lmic {
 public:
+  static OsDeltaTime timeBySymbol(rps_t rps);
   static OsDeltaTime calcAirTime(rps_t rps, uint8_t plen);
 
 private:

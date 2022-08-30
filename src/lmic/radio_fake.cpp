@@ -82,21 +82,11 @@ void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
   std::copy(framePtr, framePtr + frameLength, begin(lastSend.data));
 }
 
-OsDeltaTime timeByChar(rps_t rps) {
-  // Tsymb = 2^SF / BW
-  // SF = 6 + rps.sf
-  // BW =  125000 * 2^rps.bwRaw
-
-  // return OsDeltaTime::from_sec(
-  //    (1 << (6 + rps.sf)) / ( 125000 * (1 << rps.bwRaw)));
-
-  return OsDeltaTime::from_us(256 * (1 << (1 + rps.sf - rps.bwRaw)));
-}
 
 
 OsTime minTimeToReceive(rps_t const rps, OsTime const now) {
   // The radio can can miss 3 syncrhonisation symbols
-  return now - 3 * timeByChar(rps);
+  return now - 3 * Lmic::timeBySymbol(rps);
 }
 
 void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,

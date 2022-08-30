@@ -48,6 +48,18 @@ int16_t getSensitivity(rps_t rps) {
   return -141 + TABLE_GET_U1_TWODIM(SENSITIVITY, rps.sf, rps.bwRaw);
 }
 
+OsDeltaTime Lmic::timeBySymbol(rps_t rps) {
+  // Tsymb = 2^SF / BW
+  // SF = 6 + rps.sf
+  // BW =  125000 * 2^rps.bwRaw
+
+  // return OsDeltaTime::from_sec(
+  //    (1 << (6 + rps.sf)) / ( 125000 * (1 << rps.bwRaw)));
+
+  return OsDeltaTime::from_us(256 * (1 << (1 + rps.sf - rps.bwRaw)));
+}
+
+
 OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   // BW 0,1,2 = 125,250,500kHz
   const uint8_t bw = rps.bwRaw;
