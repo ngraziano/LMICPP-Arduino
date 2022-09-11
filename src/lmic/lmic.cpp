@@ -208,7 +208,6 @@ void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
 
 void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
                       uint8_t &responseLenght) {
-#if !defined(DISABLE_MCMD_DN2P_SET)
   const dr_t dr = (dr_t)(opts[1] & 0x0F);
   const uint8_t newRx1DrOffset = ((opts[1] & 0x70) >> 4);
   const uint32_t newfreq = convFreq(&opts[2]);
@@ -231,7 +230,6 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
   response[responseLenght++] = MCMD_DN2P_ANS;
   response[responseLenght++] = dn2Ans & ~MCMD_DN2P_ANS_RFU;
 
-#endif // !DISABLE_MCMD_DN2P_SET
 }
 
 void Lmic::setDutyRate(uint8_t rate) {
@@ -241,13 +239,11 @@ void Lmic::setDutyRate(uint8_t rate) {
 
 void Lmic::parse_dcap(const uint8_t *const opts, uint8_t *response,
                       uint8_t &responseLenght) {
-#if !defined(DISABLE_MCMD_DCAP_REQ)
   const uint8_t cap = opts[1];
   globalDutyRate = cap & 0xF;
   globalDutyAvail = os_getTime();
   response[responseLenght++] = MCMD_DCAP_ANS;
 
-#endif // !DISABLE_MCMD_DCAP_REQ
 }
 
 uint32_t Lmic::convFreq(const uint8_t *ptr) const { return rlsbf3(ptr) * 100; }

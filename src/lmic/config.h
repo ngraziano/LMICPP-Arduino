@@ -5,7 +5,12 @@
 // gcc commandline. Since Arduino does not allow easily modifying the
 // compiler commandline, use this file instead.
 
+#ifdef LMIC_104_EXPERIMENTAL
 constexpr bool lorawan_v104 = true;
+#else
+constexpr bool lorawan_v104 = false;
+#endif
+
 
 // 16 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
@@ -36,10 +41,6 @@ constexpr int debugLevel = 1;
 // halt execution.
 // #define LMIC_FAILURE_TO Serial
 
-// Uncomment these to disable the corresponding MAC commands.
-// Class A
-//#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
-//#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice
