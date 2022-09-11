@@ -11,7 +11,6 @@ constexpr bool lorawan_v104 = true;
 constexpr bool lorawan_v104 = false;
 #endif
 
-
 // 16 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
 #define US_PER_OSTICK_EXPONENT 4
@@ -30,6 +29,18 @@ constexpr int debugLevel = LMIC_DEBUG_LEVEL;
 constexpr int debugLevel = 1;
 #endif
 
+// Define time to prepare radio for RX in ms
+// depend on MCU
+#ifndef LMIC_RX_RAMPUP_MS
+#define LMIC_RX_RAMPUP_MS 40000
+#endif
+
+// Define time to prepare radio for TX in ms
+// depend on MCU
+#ifndef LMIC_TX_RAMPUP_MS
+#define LMIC_TX_RAMPUP_MS 2000
+#endif
+
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object).
 #ifndef LMIC_PRINTF_TO
@@ -40,7 +51,6 @@ constexpr int debugLevel = 1;
 // any other Print object). If this is unset, any failures just silently
 // halt execution.
 // #define LMIC_FAILURE_TO Serial
-
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice

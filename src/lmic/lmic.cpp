@@ -651,7 +651,7 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
   rxtime = txend + (delay + (PAMBL_SYMS - rxsyms) * hsym);
   PRINT_DEBUG(1, F("Rx delay : %i ms"), (rxtime - txend).to_ms());
 
-  return (rxtime - RX_RAMPUP);
+  return (rxtime - rxRampUp);
 }
 
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
@@ -1070,11 +1070,11 @@ void Lmic::engineUpdate() {
   }
 
   // Earliest possible time vs overhead to setup radio
-  if (txbeg >= (now + TX_RAMPUP)) {
+  if (txbeg >= (now + txRampUp)) {
     PRINT_DEBUG(1, F("Uplink delayed until %" PRIu32), txbeg.tick());
     // Cannot yet TX
     //  wait for the time to TX
-    next_job = Job(&Lmic::runEngineUpdate, txbeg - TX_RAMPUP);
+    next_job = Job(&Lmic::runEngineUpdate, txbeg - txRampUp);
     txend = txbeg;
     return;
   }
