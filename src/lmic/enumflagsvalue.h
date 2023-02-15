@@ -7,8 +7,8 @@ template <typename T> class EnumFlagsValue final {
 public:
   uint8_t value;
 
-  EnumFlagsValue &set(T bit) {
-    value |= (1 << static_cast<uint8_t>(bit));
+  EnumFlagsValue &set(T const bit) {
+    value |= static_cast<uint8_t>(1 << static_cast<uint8_t>(bit));
     return *this;
   };
 
@@ -18,7 +18,7 @@ public:
   };
 
   EnumFlagsValue &reset(T bit) {
-    value &= ~(1 << static_cast<uint8_t>(bit));
+    value &= ~static_cast<uint8_t>(1 << static_cast<uint8_t>(bit));
     return *this;
   };
 
