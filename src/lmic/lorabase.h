@@ -50,7 +50,8 @@ constexpr uint8_t ILLEGAL_RPS = 0xFF;
 
 // Global maximum frame length
 constexpr uint8_t STD_PREAMBLE_LEN = 8;
-constexpr uint8_t MAX_LEN_FRAME = 64;
+
+constexpr uint8_t MAX_LEN_FRAME = LMIC_MAX_BUFFER_LENGTH;
 constexpr uint8_t MAX_LEN_FOPTS = 15;
 constexpr uint8_t DELAY_JACC1 = 5;   // in secs
 constexpr uint8_t DELAY_DNW1 = 1;    // in secs down window #1

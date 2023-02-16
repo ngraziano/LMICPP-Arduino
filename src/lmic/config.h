@@ -47,6 +47,10 @@ constexpr int debugLevel = 1;
 #define LMIC_PRINTF_TO Serial
 #endif
 
+#ifndef LMIC_MAX_BUFFER_LENGTH
+#define LMIC_MAX_BUFFER_LENGTH 64
+#endif
+
 // Any runtime assertion failures are printed to this serial port (or
 // any other Print object). If this is unset, any failures just silently
 // halt execution.

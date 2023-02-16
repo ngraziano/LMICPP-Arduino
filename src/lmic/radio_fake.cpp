@@ -61,7 +61,7 @@ uint16_t bwForLog(rps_t const rps) {
 void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
                    uint8_t const *const framePtr, uint8_t const frameLength) {
   endOfOperation = hal_ticks() + Lmic::calcAirTime(rps, frameLength);
-  char buffer[64 * 2];
+  char buffer[MAX_LEN_FRAME * 2];
   char *pos = buffer;
   std::for_each(framePtr, framePtr + frameLength, [&pos](uint8_t const elem) {
     // *pos= elem;

@@ -89,10 +89,9 @@ void test_aes_encryption() {
     // The TCL sends Unconfirmed frames
     // CP-CMD EchoPayloadReq (repeat i times- where i = 1 to 3)
     // FPort = 224
-    // Payload = [0x]08 (Various)
-    // This library do not handle message greater than 64 bytes in total
-    // so we can't test the 255 byte message
-    auto echoSize = i == 1 ? 12 : i == 2 ? 45 : 50;
+    // Payload = [0x]08 (Various)   
+    // 14 : MHDR(1) + FHDR(7) + FPort(1) + CPCMD(1) + MIC(4)
+    auto echoSize = i == 1 ? 12 : i == 2 ? 20 : MAX_LEN_FRAME - 14;
     echoFrame = std::vector<uint8_t>{0x08};
     for (int j = 0; j < echoSize; j++) {
       echoFrame.push_back((j * 7) % 255);
@@ -215,7 +214,7 @@ void test_message_integrity_code() {
     // Payload = [0x]08 (Various)
     // MIC Invalid
     // TODO increase the size of the echoFrame
-    auto echoSize = i == 1 ? 12 : i == 2 ? 45 : i == 3 ? 50 : i == 4 ? 20 : 0;
+    auto echoSize = i == 1 ? 12 : i == 2 ? 16 : i == 3 ? 20 : i == 4 ? MAX_LEN_FRAME - 14 : 0;
     echoFrame = std::vector<uint8_t>{0x08};
     for (int j = 0; j < echoSize; j++) {
       echoFrame.push_back((j * 7) % 255);
