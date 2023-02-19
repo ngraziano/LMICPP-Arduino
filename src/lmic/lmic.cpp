@@ -25,7 +25,6 @@ using namespace lorawan;
 constexpr uint8_t MINRX_SYMS = 5;
 constexpr uint8_t PAMBL_SYMS = 8;
 
-
 static CONST_TABLE(uint8_t, SENSITIVITY)[7][3] = {
     // TODO check where this value come from.
     // ------------bw----------
@@ -53,7 +52,6 @@ OsDeltaTime Lmic::timeBySymbol(rps_t rps) {
 
   return OsDeltaTime::from_us(256 * (1 << (1 + rps.sf - rps.bwRaw)));
 }
-
 
 OsDeltaTime Lmic::calcAirTime(rps_t rps, uint8_t plen) {
   // BW 0,1,2 = 125,250,500kHz
@@ -229,7 +227,6 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
   // RXParamSetupAns LoRaWAN™ Specification §5.4
   response[responseLenght++] = MCMD_DN2P_ANS;
   response[responseLenght++] = dn2Ans & ~MCMD_DN2P_ANS_RFU;
-
 }
 
 void Lmic::setDutyRate(uint8_t rate) {
@@ -243,7 +240,6 @@ void Lmic::parse_dcap(const uint8_t *const opts, uint8_t *response,
   globalDutyRate = cap & 0xF;
   globalDutyAvail = os_getTime();
   response[responseLenght++] = MCMD_DCAP_ANS;
-
 }
 
 uint32_t Lmic::convFreq(const uint8_t *ptr) const { return rlsbf3(ptr) * 100; }
@@ -417,7 +413,7 @@ void Lmic::keep_sticky_mac_response(const uint8_t *const source,
 }
 
 void Lmic::askLinkCheck() {
-  if(pendTxFOptsLen < pendTxFOpts.size()) {
+  if (pendTxFOptsLen < pendTxFOpts.size()) {
     PRINT_DEBUG(2, F("Adding LINKCHECKREQ"));
     pendTxFOpts[pendTxFOptsLen++] = MCMD_LCHK_REQ;
   }
@@ -614,7 +610,6 @@ void Lmic::setupRxC() {
   rps_t const rps = dndr2rps(rx2Parameter.datarate);
   radio.rx(rx2Parameter.frequency, rps);
 }
-
 
 OsDeltaTime Lmic::dr2hsym(dr_t dr) const {
   rps_t rps = updr2rps(dr);
@@ -907,8 +902,8 @@ void Lmic::buildDataFrame() {
   uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
   if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
-  PRINT_DEBUG(1, F("buildDataFrame: frame too big %i > %i"), flen,
-              frame.max_size());
+    PRINT_DEBUG(1, F("buildDataFrame: frame too big %i > %i"), flen,
+                frame.max_size());
 
     txdata = false;
     flen = end + lengths::MIC;
