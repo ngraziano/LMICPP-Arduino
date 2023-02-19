@@ -197,7 +197,7 @@ int8_t LmicUs915::getTxPower() const {
     return 30;
   }
   return 26;
-};
+}
 
 void LmicUs915::updateTxTimes(OsDeltaTime) {}
 

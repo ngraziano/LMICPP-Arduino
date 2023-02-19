@@ -94,7 +94,7 @@ uint32_t LmicDynamicChannel::getTxFrequency() const {
 int8_t LmicDynamicChannel::getTxPower() const {
   // limit power to value ask in adr (at init MaxEIRP)
   return adrTxPow;
-};
+}
 
 void LmicDynamicChannel::updateTxTimes(OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, os_getTime(), airtime);
