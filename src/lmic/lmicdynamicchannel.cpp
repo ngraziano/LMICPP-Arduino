@@ -94,7 +94,7 @@ uint32_t LmicDynamicChannel::getTxFrequency() const {
 int8_t LmicDynamicChannel::getTxPower() const {
   // limit power to value ask in adr (at init MaxEIRP)
   return adrTxPow;
-};
+}
 
 void LmicDynamicChannel::updateTxTimes(OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, os_getTime(), airtime);
@@ -200,6 +200,10 @@ bool LmicDynamicChannel::nextJoinState() {
 
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;
+}
+
+void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
+  channels.setCheckDutyCycle(enabled);
 }
 
 #if defined(ENABLE_SAVE_RESTORE)

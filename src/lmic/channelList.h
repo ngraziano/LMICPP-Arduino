@@ -51,6 +51,7 @@ private:
   std::array<ChannelDetail, LIMIT_CHANNELS> channels = {};
   uint16_t channelMap = 0;
   Bands &bands;
+  bool checkDutyCycle = true;
 
   uint8_t getBand(uint8_t const channel) const {
     return bands.getBandForFrequency(getFrequency(channel));
@@ -92,6 +93,9 @@ public:
   }
 
   OsTime getAvailability(uint8_t const channel) const {
+    if(!checkDutyCycle) {
+      return hal_ticks();
+    }
     auto band = getBand(channel);
     return bands.getAvailability(band);
   };
@@ -103,6 +107,10 @@ public:
   uint32_t getFrequencyRX(uint8_t const channel) const {
     return channels[channel].getFrequencyRX();
   };
+
+  void setCheckDutyCycle(bool check) {
+    checkDutyCycle = check;
+  }
 
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {

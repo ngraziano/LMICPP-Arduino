@@ -54,6 +54,16 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "utility": "cpp",
-        "array": "cpp"
+        "array": "cpp",
+        "random": "cpp",
+        "*.tcc": "cpp",
+        "cinttypes": "cpp",
+        "clocale": "cpp",
+        "cstdarg": "cpp",
+        "cstdint": "cpp",
+        "unordered_map": "cpp",
+        "system_error": "cpp",
+        "tuple": "cpp",
+        "fstream": "cpp"
     },
 }

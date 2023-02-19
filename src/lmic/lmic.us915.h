@@ -36,6 +36,7 @@ public:
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
+  void setRegionalDutyCycleVerification(bool) final {};
 
 protected:
   uint32_t getTxFrequency() const final;
@@ -45,7 +46,6 @@ protected:
 
   int8_t pow2dBm(uint8_t powerIndex) const final;
   OsDeltaTime getDwn2SafetyZone() const final;
-  OsDeltaTime dr2hsym(dr_t dr) const final;
   bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;

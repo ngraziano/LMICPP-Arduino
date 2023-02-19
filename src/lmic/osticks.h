@@ -69,6 +69,10 @@ constexpr bool operator==(OsDeltaTime const &a, OsDeltaTime const &b) {
   return a.tick() == b.tick();
 }
 
+constexpr bool operator!=(OsDeltaTime const &a, OsDeltaTime const &b) {
+  return !(a == b);
+}
+
 constexpr OsDeltaTime operator+(OsDeltaTime const &a, OsDeltaTime const &b) {
   return OsDeltaTime(a.tick() + b.tick());
 }

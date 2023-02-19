@@ -43,13 +43,16 @@ struct rps_t {
   explicit constexpr rps_t(uint8_t rawValue)
       : sf(rawValue & 0x07), bwRaw((rawValue >> 3) & 0x03),
         crRaw((rawValue >> 5) & 0x03), nocrc(rawValue & (1 << 7)){};
+  constexpr rps_t() : rps_t(0){};
 };
 
 constexpr uint8_t ILLEGAL_RPS = 0xFF;
 
 // Global maximum frame length
 constexpr uint8_t STD_PREAMBLE_LEN = 8;
-constexpr uint8_t MAX_LEN_FRAME = 64;
+
+constexpr uint8_t MAX_LEN_FRAME = LMIC_MAX_BUFFER_LENGTH;
+constexpr uint8_t MAX_LEN_FOPTS = 15;
 constexpr uint8_t DELAY_JACC1 = 5;   // in secs
 constexpr uint8_t DELAY_DNW1 = 1;    // in secs down window #1
 constexpr uint8_t DELAY_EXTDNW2 = 1; // in secs
@@ -96,11 +99,16 @@ enum {
   MCMD_SNCH_ANS = 0x07,
   // Ack to new RX 1 timing.
   MCMD_RXTimingSetup_ANS = 0x08,
+  MCMD_TxParamSetup_ANS = 0x09,
+  MCMD_DlChannel_ANS = 0x0A,
+  // Device time req
+  MCMD_DeviceTime_REQ = 0x0D,
   // Class B
   MCMD_PING_IND =
       0x10, // -  pingability indic  : u1: 7=RFU, 6-4:interval, 3-0:datarate
   MCMD_PING_ANS = 0x11, // -  ack ping freq      : u1: 7-1:RFU, 0:freq ok
   MCMD_BCNI_REQ = 0x12, // -  next beacon start  : -
+
 };
 
 // MAC downlink commands

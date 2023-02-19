@@ -15,6 +15,15 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+namespace {
+OsDeltaTime time_in_sleep{0};
+} // namespace
+
+void hal_add_time_in_sleep(OsDeltaTime nb_tick) {
+  time_in_sleep += nb_tick;
+  hal_ticks();
+}
+
 // -----------------------------------------------------------------------------
 // TIME
 
@@ -22,7 +31,8 @@ OsTime hal_ticks() {
   timeval val;
   gettimeofday(&val, nullptr);
   return OsTime((val.tv_sec * OSTICKS_PER_SEC) +
-                (val.tv_usec >> US_PER_OSTICK_EXPONENT));
+                (val.tv_usec >> US_PER_OSTICK_EXPONENT)) +
+         time_in_sleep;
 }
 
 void hal_waitUntil(OsTime time) {
@@ -30,7 +40,12 @@ void hal_waitUntil(OsTime time) {
   hal_wait(delta);
 }
 
-void hal_wait(OsDeltaTime delta) { usleep(delta.to_us()); }
+void hal_wait(OsDeltaTime delta) {
+  auto us = delta.to_us();
+  if (us > 0) {
+    usleep(us);
+  }
+}
 
 DisableIRQsGard::DisableIRQsGard() {}
 DisableIRQsGard::~DisableIRQsGard() {}

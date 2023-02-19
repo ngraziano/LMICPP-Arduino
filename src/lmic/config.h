@@ -5,6 +5,12 @@
 // gcc commandline. Since Arduino does not allow easily modifying the
 // compiler commandline, use this file instead.
 
+#ifdef LMIC_104_EXPERIMENTAL
+constexpr bool lorawan_v104 = true;
+#else
+constexpr bool lorawan_v104 = false;
+#endif
+
 // 16 μs per tick
 // LMIC requires ticks to be 15.5μs - 100 μs long
 #define US_PER_OSTICK_EXPONENT 4
@@ -23,21 +29,32 @@ constexpr int debugLevel = LMIC_DEBUG_LEVEL;
 constexpr int debugLevel = 1;
 #endif
 
+// Define time to prepare radio for RX in ms
+// depend on MCU
+#ifndef LMIC_RX_RAMPUP_MS
+#define LMIC_RX_RAMPUP_MS 40000
+#endif
+
+// Define time to prepare radio for TX in ms
+// depend on MCU
+#ifndef LMIC_TX_RAMPUP_MS
+#define LMIC_TX_RAMPUP_MS 2000
+#endif
+
 // Enable this to allow using printf() to print to the given serial port
 // (or any other Print object).
 #ifndef LMIC_PRINTF_TO
 #define LMIC_PRINTF_TO Serial
 #endif
 
+#ifndef LMIC_MAX_BUFFER_LENGTH
+#define LMIC_MAX_BUFFER_LENGTH 64
+#endif
+
 // Any runtime assertion failures are printed to this serial port (or
 // any other Print object). If this is unset, any failures just silently
 // halt execution.
 // #define LMIC_FAILURE_TO Serial
-
-// Uncomment these to disable the corresponding MAC commands.
-// Class A
-//#define DISABLE_MCMD_DCAP_REQ // duty cycle cap
-//#define DISABLE_MCMD_DN2P_SET // 2nd DN window param
 
 // In LoRaWAN, a gateway applies I/Q inversion on TX, and nodes do the
 // same on RX. This ensures that gateways can talk to nodes and vice

@@ -3,7 +3,7 @@
 #include "bufferpack.h"
 #include "oslmic.h"
 
-BandSingle::BandSingle(uint16_t duty) : dutyCycle{duty} {};
+BandSingle::BandSingle(uint16_t duty) : dutyCycle{duty} {}
 
 void BandSingle::init() { avail = os_getTime(); }
 
