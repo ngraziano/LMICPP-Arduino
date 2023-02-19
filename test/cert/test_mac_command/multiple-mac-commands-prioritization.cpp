@@ -70,19 +70,16 @@ void test_multiple_mac_commands_prioritization() {
   TEST_ASSERT(is_data(nextPacket));
   TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
 
-  /*
-  ********* LMITATION TO 64 BYTES PREVENT TO TEST THE FOLLOWING STEPS **********
 
   // TCL also sends Unconfirmed frame
   // MAC-CMD1 DevStatusReq
   // MAC-CMD2 RxParamSetupReq
   // Repeat the MAC-CMD DevStatusReq until the MAC command uplink response
-  buffer would be full for MinDR, refer [2]
+  // buffer would be full for MinDR, refer [2]
   // MAC-CMDX LinkADRReq  (with DataRate = MinDR)
   // For example: For EU863-870, the Max payload size is 51 bytes for MinDR.
-  Hence repeat the DevStatusReq
-  // command 15 times to ensure the MAC command response buffer is greater than
-  51 bytes.
+  // Hence repeat the DevStatusReq command 15 times to ensure the MAC command
+  // response buffer is greater than 51 bytes.
   // Payload = [0x]06[0x]05XXXXXXXX[0x]06[Repeat as required][0x]03XXXXXXXX
 
   // repeat default parameter : RX2  869.525
@@ -112,13 +109,15 @@ void test_multiple_mac_commands_prioritization() {
   // DUT truncates the MAC command when max payload size is exceeded.
   // The sequence of the response must be exactly the same as described.
   // The LinkADRAns is not sent in the response as it must be truncated due to
-  payload size restrictions. However, the DR must be set to MinDR nextPacket =
-  dut::wait_for_data(defaultWaitTime);
+  // payload size restrictions. However, the DR must be set to MinDR 
+  
+/*
+  nextPacket = dut::wait_for_data(defaultWaitTime);
   TEST_ASSERT(check_is_next_packet(nextPacket, server_state));
   TEST_ASSERT(is_data(nextPacket));
   TEST_ASSERT_FALSE(is_confirmed_uplink(nextPacket));
   macResponse = get_mac_command_values(nextPacket, server_state);
-  TEST_ASSERT_EQUAL_UINT(51, macResponse.size());
+  TEST_ASSERT_EQUAL_UINT(51, macResponse.size());   
   TEST_ASSERT_EQUAL_UINT8(0x06, macResponse[0]);
   TEST_ASSERT_EQUAL_UINT8(0x05, macResponse[3]);
   TEST_ASSERT_EQUAL_UINT8(0x07, macResponse[4]);
