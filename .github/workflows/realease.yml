@@ -8,13 +8,19 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - name: Set up Python
-        uses: actions/setup-python@v1
-      - name: Install dependencies
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install PlatformIO Core
         run: |
-          python -m pip install --upgrade pip
-          pip install platformio
+          pip install --upgrade platformio
       - name: Release
         env: # Or as an environment variable
           PLATFORMIO_AUTH_TOKEN: ${{ secrets.PIO_TOKEN }}
