@@ -902,7 +902,7 @@ void Lmic::buildDataFrame() {
   uint8_t flen = end + (txdata ? 1 + lengths::MIC + pendTxLen : lengths::MIC);
   if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
-    PRINT_DEBUG(1, F("buildDataFrame: frame too big %i > %i"), flen,
+    PRINT_DEBUG(1, F("buildDataFrame: frame too big %i > %zu"), flen,
                 frame.max_size());
 
     txdata = false;
