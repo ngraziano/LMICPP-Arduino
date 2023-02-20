@@ -46,14 +46,8 @@ void PRINT_DEBUG(int X, const __FlashStringHelper *str, T const... div) {
 #else
 #define F(string_literal) string_literal
 
-template <typename... T>
-void PRINT_DEBUG(int X, const char *str, T const... div) {
-  if (debugLevel >= X) {
-    printf("%" PRIu32 " ", hal_ticks().tick());
-    printf(str, div...);
-    printf("\n");
-  }
-}
+__attribute__((format(printf, 2, 3)))
+void PRINT_DEBUG(int X, const char *str, ...);
 
 #endif
 

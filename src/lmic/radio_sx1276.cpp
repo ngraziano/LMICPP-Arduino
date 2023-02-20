@@ -498,7 +498,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   opmode(OPMODE_RX_SINGLE);
 
   PRINT_DEBUG(
-      1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
+      1, F("RXMODE_SINGLE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d"),
       freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will go back to STANDBY mode as soon as the RX is finished
   // or timed out, and the corresponding IRQ will inform us about completion.
@@ -530,7 +530,7 @@ void RadioSx1276::rx(uint32_t const freq, rps_t const rps) {
   // continous rx
   opmode(OPMODE_RX);
 
-  PRINT_DEBUG(1, F("RXMODE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d, IH=%d"),
+  PRINT_DEBUG(1, F("RXMODE, freq=%" PRIu32 ", SF=%d, BW=%d, CR=4/%d"),
               freq, rps.sf + 6, bwForLog(rps), crForLog(rps));
   // the radio will stay in receive mode until not end
 }

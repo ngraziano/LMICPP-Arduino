@@ -72,7 +72,7 @@ void RadioFake::tx(uint32_t const freq, rps_t const rps, int8_t const txpow,
               F("TXDATA: { \"ts\":%" PRIu32 ", \"f\":%" PRIu32
                 ", \"len\":%d, \"SF\":%d, \"BW\":%d, \"CR\":\"4/%d\", "
                 "\"pow\":%d, \"data\":\"%s\" }"),
-              endOfOperation, freq, frameLength, rps.sf + 6, bwForLog(rps),
+              endOfOperation.tick(), freq, frameLength, rps.sf + 6, bwForLog(rps),
               crForLog(rps), txpow, buffer);
   lastSend.freq = freq;
   lastSend.rps = rps;
@@ -96,7 +96,7 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   auto now = os_getTime();
   if (rxtime < now) {
     PRINT_DEBUG(1, F("RX LATE :  %" PRIu32 " WANTED, late %" PRIi32 " ms"),
-                rxtime, (os_getTime() - rxtime).to_ms());
+                rxtime.tick(), (os_getTime() - rxtime).to_ms());
   }
   hal_waitUntil(rxtime);
   auto windows_end = hal_ticks() + Lmic::calcAirTime(rps, rxsyms);
@@ -113,7 +113,7 @@ void RadioFake::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
       PRINT_DEBUG(1,
                   F("RX WANTED AT :  %" PRIu32 ", current windows %" PRIu32
                     " to %" PRIu32 " "),
-                  simulateReceive.time, rxtime, windows_end);
+                  simulateReceive.time.tick(), rxtime.tick(), windows_end.tick());
     }
     endOfOperation = windows_end;
     isReceived = false;

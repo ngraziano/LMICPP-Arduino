@@ -101,7 +101,7 @@ void LmicDynamicChannel::updateTxTimes(OsDeltaTime const airtime) {
 
   PRINT_DEBUG(
       2, F("Updating info for TX channel %d, airtime will be %" PRIu32 "."),
-      txChnl, airtime);
+      txChnl, airtime.tick());
 }
 
 OsTime LmicDynamicChannel::nextTx(OsTime const now) {
@@ -196,7 +196,7 @@ bool LmicDynamicChannel::nextJoinState() {
   if (failed)
     PRINT_DEBUG(2, F("Join failed"));
   else
-    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), txend);
+    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), txend.tick());
 
   // 1 - triggers EV_JOIN_FAILED event
   return !failed;

@@ -111,7 +111,7 @@ void send_command(HalIo const &hal,
 
 template <>
 void send_command<0>(HalIo const &hal, Sx1262Command<0> const &cmd) {
-  PRINT_DEBUG(2, F("Cmd> %x"), cmd);
+  PRINT_DEBUG(2, F("Cmd> %x"), cmd.command);
   hal.beginspi();
   wait_ready(hal);
   hal.spi(cmd.command);
@@ -447,7 +447,7 @@ void RadioSx1262::rx(uint32_t const freq, rps_t const rps, uint8_t const rxsyms,
   // busy wait until exact rx time
   if (rxtime < os_getTime()) {
     PRINT_DEBUG(1, F("RX LATE :  %" PRIu32 " WANTED, late %" PRIi32 " ms"),
-                rxtime, (os_getTime() - rxtime).to_ms());
+                rxtime.tick(), (os_getTime() - rxtime).to_ms());
   }
   hal_waitUntil(rxtime);
   set_rx();
