@@ -28,7 +28,6 @@ void hal_printf_init() {
 }
 #else
 
-#include <stdarg.h>
 
 void hal_printf_init() {
   // no init for other than AVR
@@ -36,6 +35,7 @@ void hal_printf_init() {
 #endif
 
 #else
+#include <stdarg.h>
 
 void hal_printf_init() {
   // no init for other than AVR
