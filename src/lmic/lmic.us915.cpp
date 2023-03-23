@@ -254,8 +254,12 @@ dr_t LmicUs915::getRx1Dr() const {
   return datarate;
 }
 
+FrequencyAndRate LmicUs915::getTxParameter() const {
+  return {getTxFrequency(), datarate, getTxPower()};
+}
+
 FrequencyAndRate LmicUs915::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr()};
+  return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
 void LmicUs915::initJoinLoop() {
@@ -290,7 +294,7 @@ bool LmicUs915::nextJoinState() {
 }
 
 FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
-  return {FREQ_DNW2, DR_DNW2};
+  return {FREQ_DNW2, DR_DNW2, 0};
 }
 
 LmicUs915::LmicUs915(Radio &aradio) : Lmic(aradio) {}

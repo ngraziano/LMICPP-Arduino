@@ -20,7 +20,6 @@
 
 class LmicDynamicChannel : public Lmic {
 public:
-
 #if defined(ENABLE_SAVE_RESTORE)
   virtual void saveState(StoringAbtract &store) const final;
   virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
@@ -28,22 +27,27 @@ public:
   virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
 #endif
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) override = 0;
+  bool setupChannel(uint8_t channel, uint32_t newfreq,
+                    uint16_t drmap) override = 0;
+  void setDrJoin(dr_t dr) { datarate = dr; }
+  virtual void setDrTx(uint8_t dr) final { datarate = dr; }
+  virtual void reduceDr(uint8_t diff) final {
+    setDrTx(lowerDR(datarate, diff));
+  }
 
 protected:
-  explicit LmicDynamicChannel(Radio &radio,
-                              uint8_t aMaxEIRP, dr_t aMaxJoinDr,
+  explicit LmicDynamicChannel(Radio &radio, uint8_t aMaxEIRP, dr_t aMaxJoinDr,
                               dr_t aMinJoinDr, Bands &aBands);
 
-
-  uint32_t getTxFrequency() const final;
-  int8_t getTxPower() const final;
+  uint32_t getTxFrequency() const;
+  int8_t getTxPower() const;
+  FrequencyAndRate getTxParameter() const final;
   FrequencyAndRate getRx1Parameter() const final;
 
-  uint8_t getRawRps(dr_t dr) const override =0;
-  int8_t pow2dBm(uint8_t powerIndex) const override =0;
+  uint8_t getRawRps(dr_t dr) const override = 0;
+  int8_t pow2dBm(uint8_t powerIndex) const override = 0;
   OsDeltaTime getDwn2SafetyZone() const final;
-  bool validRx1DrOffset(uint8_t drOffset) const override =0;
+  bool validRx1DrOffset(uint8_t drOffset) const override = 0;
 
   void initDefaultChannels() override;
 
@@ -60,16 +64,14 @@ protected:
 
   void setRegionalDutyCycleVerification(bool enabled) final;
 
-
   const int8_t MaxEIRP;
   const dr_t MaxJoinDR;
   const dr_t MinJoinDR;
   ChannelList channels;
   // channel for next TX
   uint8_t txChnl = 0;
-
+  dr_t datarate = 0; // current data rate
 private:
-
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;
 };

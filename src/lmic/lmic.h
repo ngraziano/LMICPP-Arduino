@@ -106,6 +106,7 @@ constexpr int8_t LINK_CHECK_OFF = -128;
 struct FrequencyAndRate {
   uint32_t frequency;
   dr_t datarate;
+  int8_t power;
 };
 
 class Lmic {
@@ -133,7 +134,7 @@ protected:
   // ADR adjusted TX power, limit power to this value.
   // dBm
   int8_t adrTxPow = 0;
-  dr_t datarate = 0; // current data rate
+  
 
 private:
   // curent opmode set at init
@@ -271,9 +272,9 @@ private:
 
 public:
   void setBatteryLevel(uint8_t level);
-  void setDrJoin(dr_t dr);
   // set default/start DR/txpow
-  void setDrTx(uint8_t dr);
+  virtual void setDrTx(uint8_t dr) = 0;
+  
   void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate);
   void setDutyRate(uint8_t duty_rate);
   // set ADR mode (if mobile turn off)
@@ -322,10 +323,10 @@ public:
 
 protected:
   uint32_t convFreq(const uint8_t *ptr) const;
-  virtual uint32_t getTxFrequency() const = 0;
-  virtual int8_t getTxPower() const = 0;
+  virtual FrequencyAndRate getTxParameter() const = 0;
   virtual FrequencyAndRate getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
+  virtual void reduceDr(uint8_t diff) = 0;
 
   int8_t const InvalidPower = -128;
   /**

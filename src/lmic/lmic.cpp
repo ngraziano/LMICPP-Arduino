@@ -119,17 +119,10 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
  **/
 void Lmic::setBatteryLevel(uint8_t level) { battery_level = level; }
 
-void Lmic::setDrJoin(dr_t dr) { datarate = dr; }
 
-void Lmic::setDrTx(uint8_t dr) {
-  if (datarate != dr) {
-    datarate = dr;
-    opmode.set(OpState::NEXTCHNL);
-  }
-}
 
 void Lmic::setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) {
-  rx2Parameter = {rx2frequency, rx2datarate};
+  rx2Parameter = {rx2frequency, rx2datarate, 0};
 }
 
 void Lmic::runEngineUpdate() { engineUpdate(); }
@@ -198,6 +191,7 @@ void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
     adrTxPow = newPower;
     setDrTx(dr);
+    opmode.set(OpState::NEXTCHNL);
   }
 
   response[responseLenght++] = MCMD_LADR_ANS;
@@ -693,7 +687,8 @@ void Lmic::processJoinAcceptNoJoinFrame() {
     txend = globalDutyAvail;
   }
   txend += getDwn2SafetyZone();
-  txend += OsDeltaTime::rnd_delay(rand, 255 >> datarate);
+  // txend += OsDeltaTime::rnd_delay(rand, 255 >> datarate);
+  txend += OsDeltaTime::rnd_delay(rand, 255);
 
   PRINT_DEBUG(1, F("Next Join delay : %i s"), (txend - os_getTime()).to_s());
 
@@ -813,7 +808,8 @@ void Lmic::processRx2DnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt++;
-        setDrTx(lowerDR(datarate, TABLE_GET_U1(DRADJUST, txCnt)));
+        reduceDr(TABLE_GET_U1(DRADJUST, txCnt));
+        opmode.set(OpState::NEXTCHNL);
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
         opmode.set(OpState::TXDATA).reset(OpState::TXRXPEND);
@@ -861,7 +857,8 @@ void Lmic::incrementAdrCount() {
       adrTxPow = pow2dBm(0);
     } else {
       // Lower DR one notch.
-      setDrTx(decDR(datarate));
+      reduceDr(1);
+      opmode.set(OpState::NEXTCHNL);
     }
 
     opmode.set(OpState::LINKDEAD);
@@ -1103,7 +1100,9 @@ void Lmic::engineUpdate() {
 
   txrxFlags.reset();
 
-  rps_t rps = updr2rps(datarate);
+  auto txParameter = getTxParameter();
+
+  rps_t rps = updr2rps(txParameter.datarate);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
   updateTxTimes(airtime);
 
@@ -1112,7 +1111,7 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(getTxFrequency(), rps, getTxPower() + antennaPowerAdjustment,
+  radio.tx(txParameter.frequency, rps, txParameter.power + antennaPowerAdjustment,
            frame.cbegin(), dataLen);
   wait_end_tx();
 }
@@ -1347,7 +1346,6 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(opmode);
   store.write(upRepeat);
   store.write(adrTxPow);
-  store.write(datarate);
   store.write(devNonce);
   store.write(devaddr);
   store.write(seqnoDn);
@@ -1379,7 +1377,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(opmode);
   store.read(upRepeat);
   store.read(adrTxPow);
-  store.read(datarate);
   store.read(devNonce);
   store.read(devaddr);
   store.read(seqnoDn);

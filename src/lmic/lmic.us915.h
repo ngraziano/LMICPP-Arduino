@@ -37,10 +37,16 @@ public:
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
   void setRegionalDutyCycleVerification(bool) final {};
+  void setDrJoin(dr_t dr) { datarate = dr; }
+  virtual void setDrTx(uint8_t dr) final { datarate = dr; }
+    virtual void reduceDr(uint8_t diff) final {
+    setDrTx(lowerDR(datarate, diff));
+  }
 
 protected:
-  uint32_t getTxFrequency() const final;
-  int8_t getTxPower() const final;
+  uint32_t getTxFrequency() const;
+  int8_t getTxPower() const;
+  FrequencyAndRate getTxParameter() const final;
   FrequencyAndRate getRx1Parameter() const final;
   uint8_t getRawRps(dr_t dr) const final;
 
@@ -66,6 +72,7 @@ private:
   uint16_t chRnd = 0;
   // channel for next TX
   uint8_t txChnl = 0;
+  dr_t datarate = 0; // current data rate
 
   void enableChannel(uint8_t channel);
   void enableSubBand(uint8_t band);

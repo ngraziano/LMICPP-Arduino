@@ -153,8 +153,12 @@ dr_t LmicDynamicChannel::getRx1Dr() const {
   return lowerDR(datarate, rx1DrOffset);
 }
 
+FrequencyAndRate LmicDynamicChannel::getTxParameter() const {
+  return {getTxFrequency(), datarate, getTxPower()};
+}
+
 FrequencyAndRate LmicDynamicChannel::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr()};
+  return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
 void LmicDynamicChannel::initJoinLoop() {
@@ -212,12 +216,16 @@ void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
 
   channels.saveStateWithoutTimeData(store);
   store.write(txChnl);
+  store.write(datarate);
+
 }
 
 void LmicDynamicChannel::saveState(StoringAbtract &store) const {
   Lmic::saveState(store);
   channels.saveState(store);
   store.write(txChnl);
+  store.write(datarate);
+
 }
 
 void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
@@ -225,6 +233,7 @@ void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
   channels.loadStateWithoutTimeData(store);
   store.read(txChnl);
+  store.read(datarate);
 }
 
 void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
@@ -232,6 +241,8 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
 
   channels.loadState(store);
   store.read(txChnl);
+  store.read(datarate);
+
 }
 #endif
 

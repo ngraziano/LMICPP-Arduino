@@ -98,7 +98,7 @@ bool LmicEu433::setupChannel(uint8_t const chidx, uint32_t const newfreq,
 }
 
 FrequencyAndRate LmicEu433::defaultRX2Parameter() const {
-  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
+  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2), 0};
 }
 
 LmicEu433::LmicEu433(Radio &aradio)
