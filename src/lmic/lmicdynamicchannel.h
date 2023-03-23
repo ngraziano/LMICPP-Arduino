@@ -31,6 +31,9 @@ public:
                     uint16_t drmap) override = 0;
   void setDrJoin(dr_t dr) { datarate = dr; }
   virtual void setDrTx(uint8_t dr) final { datarate = dr; }
+  virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
+  virtual bool setAdrToMaxIfNotAlreadySet() final;
+
   virtual void reduceDr(uint8_t diff) final {
     setDrTx(lowerDR(datarate, diff));
   }
@@ -70,6 +73,9 @@ protected:
   ChannelList channels;
   // channel for next TX
   uint8_t txChnl = 0;
+  // ADR adjusted TX power, limit power to this value.
+  // dBm
+  int8_t adrTxPow = 0;
   dr_t datarate = 0; // current data rate
 private:
   uint32_t getRx1Frequency() const;

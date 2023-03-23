@@ -114,6 +114,9 @@ struct TimeAndStatus {
   bool status;
 };
 
+
+uint32_t read_frequency(const uint8_t *ptr);
+
 class Lmic {
 public:
   static OsDeltaTime timeBySymbol(rps_t rps);
@@ -134,13 +137,6 @@ private:
   keyCallback_t artEuiCallBack = nullptr;
 
 protected:
-  
-
-  // ADR adjusted TX power, limit power to this value.
-  // dBm
-  int8_t adrTxPow = 0;
-  
-
 private:
   OsTime txend;
   // curent opmode set at init
@@ -274,12 +270,13 @@ private:
   void incrementAdrCount();
   void keep_sticky_mac_response(const uint8_t *const source, uint8_t sourceLen);
 
-
 public:
   void setBatteryLevel(uint8_t level);
   // set default/start DR/txpow
   virtual void setDrTx(uint8_t dr) = 0;
-  
+  virtual void setAdrTxPow(int8_t newPower) = 0;
+  virtual bool setAdrToMaxIfNotAlreadySet() = 0;
+
   void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate);
   void setDutyRate(uint8_t duty_rate);
   // set ADR mode (if mobile turn off)
@@ -327,7 +324,7 @@ public:
   virtual void setRegionalDutyCycleVerification(bool enabled) = 0;
 
 protected:
-  uint32_t convFreq(const uint8_t *ptr) const;
+
   virtual FrequencyAndRate getTxParameter() const = 0;
   virtual FrequencyAndRate getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
@@ -339,7 +336,6 @@ protected:
    */
   virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
   virtual OsDeltaTime getDwn2SafetyZone() const = 0;
-  
 
   virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
 

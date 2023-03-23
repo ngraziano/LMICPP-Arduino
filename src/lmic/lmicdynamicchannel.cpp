@@ -46,7 +46,7 @@ void LmicDynamicChannel::handleCFList(const uint8_t *ptr) {
     return;
   }
   for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
-    uint32_t newfreq = convFreq(ptr);
+    uint32_t newfreq = read_frequency(ptr);
     if (newfreq != 0) {
       setupChannel(chidx, newfreq, 0);
 
@@ -211,12 +211,21 @@ void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
   channels.setCheckDutyCycle(enabled);
 }
 
+bool LmicDynamicChannel::setAdrToMaxIfNotAlreadySet() {
+  if (adrTxPow != MaxEIRP) {
+      adrTxPow = MaxEIRP;
+      return true;
+  }
+  return false;
+}
+
 #if defined(ENABLE_SAVE_RESTORE)
 void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
   Lmic::saveStateWithoutTimeData(store);
 
   channels.saveStateWithoutTimeData(store);
   store.write(txChnl);
+  store.write(adrTxPow);
   store.write(datarate);
 }
 
@@ -224,6 +233,7 @@ void LmicDynamicChannel::saveState(StoringAbtract &store) const {
   Lmic::saveState(store);
   channels.saveState(store);
   store.write(txChnl);
+  store.write(adrTxPow);
   store.write(datarate);
 }
 
@@ -232,6 +242,7 @@ void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
 
   channels.loadStateWithoutTimeData(store);
   store.read(txChnl);
+  store.read(adrTxPow);
   store.read(datarate);
 }
 
@@ -240,6 +251,7 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
 
   channels.loadState(store);
   store.read(txChnl);
+  store.read(adrTxPow);
   store.read(datarate);
 }
 #endif

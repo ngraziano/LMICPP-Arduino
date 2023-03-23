@@ -89,6 +89,14 @@ int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
   return 30 - (powerIndex * 2);
 }
 
+bool LmicUs915::setAdrToMaxIfNotAlreadySet() {
+  if (adrTxPow != pow2dBm(0)) {
+    adrTxPow = pow2dBm(0);
+    return true;
+  }
+  return false;
+}
+
 OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
 bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {

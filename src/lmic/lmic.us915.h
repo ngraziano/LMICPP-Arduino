@@ -36,10 +36,13 @@ public:
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
-  void setRegionalDutyCycleVerification(bool) final {};
+  void setRegionalDutyCycleVerification(bool) final{};
   void setDrJoin(dr_t dr) { datarate = dr; }
   virtual void setDrTx(uint8_t dr) final { datarate = dr; }
-    virtual void reduceDr(uint8_t diff) final {
+  virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
+  virtual bool setAdrToMaxIfNotAlreadySet() final;
+
+  virtual void reduceDr(uint8_t diff) final {
     setDrTx(lowerDR(datarate, diff));
   }
 
@@ -72,6 +75,9 @@ private:
   uint16_t chRnd = 0;
   // channel for next TX
   uint8_t txChnl = 0;
+  // ADR adjusted TX power, limit power to this value.
+  // dBm
+  int8_t adrTxPow = 0;
   dr_t datarate = 0; // current data rate
 
   void enableChannel(uint8_t channel);

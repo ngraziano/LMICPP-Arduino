@@ -119,8 +119,6 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
  **/
 void Lmic::setBatteryLevel(uint8_t level) { battery_level = level; }
 
-
-
 void Lmic::setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) {
   rx2Parameter = {rx2frequency, rx2datarate, 0};
 }
@@ -189,7 +187,7 @@ void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
     upRepeat = nbTrans;
     mapChannels(chMaskCntl, chMask);
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
-    adrTxPow = newPower;
+    setAdrTxPow(newPower);
     setDrTx(dr);
     opmode.set(OpState::NEXTCHNL);
   }
@@ -202,7 +200,7 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
                       uint8_t &responseLenght) {
   const dr_t dr = (dr_t)(opts[1] & 0x0F);
   const uint8_t newRx1DrOffset = ((opts[1] & 0x70) >> 4);
-  const uint32_t newfreq = convFreq(&opts[2]);
+  const uint32_t newfreq = read_frequency(&opts[2]);
   uint8_t dn2Ans = 0x0; // answer pending
   if (validRx1DrOffset(newRx1DrOffset))
     dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
@@ -236,12 +234,12 @@ void Lmic::parse_dcap(const uint8_t *const opts, uint8_t *response,
   response[responseLenght++] = MCMD_DCAP_ANS;
 }
 
-uint32_t Lmic::convFreq(const uint8_t *ptr) const { return rlsbf3(ptr) * 100; }
+uint32_t read_frequency(const uint8_t *ptr) { return rlsbf3(ptr) * 100; }
 
 void Lmic::parse_newchannel(const uint8_t *const opts, uint8_t *response,
                             uint8_t &responseLenght) {
   const uint8_t chidx = opts[1];               // channel
-  const uint32_t newfreq = convFreq(&opts[2]); // freq
+  const uint32_t newfreq = read_frequency(&opts[2]); // freq
   const uint8_t drs = opts[5];                 // datarate span
   uint8_t mcmdNewChannelAns = 0x00;
   if (setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
@@ -854,9 +852,7 @@ void Lmic::incrementAdrCount() {
     // We haven't heard from NWK for some time although we
     // asked for a response for some time - assume we're disconnected.
     // Restore max power if it not the case
-    if (adrTxPow != pow2dBm(0)) {
-      adrTxPow = pow2dBm(0);
-    } else {
+    if (!setAdrToMaxIfNotAlreadySet()) {
       // Lower DR one notch.
       reduceDr(1);
       opmode.set(OpState::NEXTCHNL);
@@ -1112,8 +1108,8 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(txParameter.frequency, rps, txParameter.power + antennaPowerAdjustment,
-           frame.cbegin(), dataLen);
+  radio.tx(txParameter.frequency, rps,
+           txParameter.power + antennaPowerAdjustment, frame.cbegin(), dataLen);
   wait_end_tx();
 }
 
@@ -1346,7 +1342,6 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(netid);
   store.write(opmode);
   store.write(upRepeat);
-  store.write(adrTxPow);
   store.write(devNonce);
   store.write(devaddr);
   store.write(seqnoDn);
@@ -1377,7 +1372,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(netid);
   store.read(opmode);
   store.read(upRepeat);
-  store.read(adrTxPow);
   store.read(devNonce);
   store.read(devaddr);
   store.read(seqnoDn);
