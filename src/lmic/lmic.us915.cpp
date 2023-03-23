@@ -91,7 +91,6 @@ int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
 
 OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
 
-
 bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
   return drOffset < 4;
 }
@@ -262,15 +261,15 @@ FrequencyAndRate LmicUs915::getRx1Parameter() const {
   return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
-void LmicUs915::initJoinLoop() {
+OsTime LmicUs915::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
-  txend = os_getTime() + OsDeltaTime::rnd_delay(rand, 8);
   setDrJoin(SF7);
+  return os_getTime() + OsDeltaTime::rnd_delay(rand, 8);
 }
 
-bool LmicUs915::nextJoinState() {
+TimeAndStatus LmicUs915::nextJoinState() {
   // Try the following:
   //   SF7/8/9/10  on a random channel 0..63
   //   SF8C        on a random channel 64..71
@@ -288,9 +287,8 @@ bool LmicUs915::nextJoinState() {
     }
     datarate = dr;
   }
-  txend = os_getTime();
 
-  return !failed;
+  return {os_getTime(), !failed};
 }
 
 FrequencyAndRate LmicUs915::defaultRX2Parameter() const {

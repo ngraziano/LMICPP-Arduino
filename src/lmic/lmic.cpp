@@ -664,7 +664,8 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   opmode.reset(OpState::TXRXPEND);
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode.reset(OpState::NEXTCHNL);
-  const bool succes = nextJoinState();
+  auto const result = nextJoinState();
+  txend = result.time;
 
   // in §7 of lorawan 1.0.3
   // the backoff for join is describe
@@ -692,7 +693,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
 
   PRINT_DEBUG(1, F("Next Join delay : %i s"), (txend - os_getTime()).to_s());
 
-  if (succes) {
+  if (result.status) {
     // next step to be delayed
     next_job = Job(&Lmic::runEngineUpdate);
   } else {
@@ -991,7 +992,7 @@ bool Lmic::startJoining() {
     txCnt = 0;
     rxDelay = OsDeltaTime::from_sec(DELAY_JACC1);
 
-    initJoinLoop();
+    txend = initJoinLoop();
 
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS

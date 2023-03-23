@@ -109,6 +109,11 @@ struct FrequencyAndRate {
   int8_t power;
 };
 
+struct TimeAndStatus {
+  OsTime time;
+  bool status;
+};
+
 class Lmic {
 public:
   static OsDeltaTime timeBySymbol(rps_t rps);
@@ -129,7 +134,7 @@ private:
   keyCallback_t artEuiCallBack = nullptr;
 
 protected:
-  OsTime txend;
+  
 
   // ADR adjusted TX power, limit power to this value.
   // dBm
@@ -137,9 +142,9 @@ protected:
   
 
 private:
+  OsTime txend;
   // curent opmode set at init
   OpStateValue opmode;
-
   uint8_t battery_level = MCMD_DEVS_BATT_NOINFO;
   int8_t antennaPowerAdjustment = 0;
   // last time we increase duty rate for back-off
@@ -348,8 +353,8 @@ protected:
   virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
   virtual void updateTxTimes(OsDeltaTime airtime) = 0;
   virtual OsTime nextTx(OsTime now) = 0;
-  virtual void initJoinLoop() = 0;
-  virtual bool nextJoinState() = 0;
+  virtual OsTime initJoinLoop() = 0;
+  virtual TimeAndStatus nextJoinState() = 0;
   virtual FrequencyAndRate defaultRX2Parameter() const = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)

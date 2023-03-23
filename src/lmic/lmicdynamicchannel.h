@@ -58,8 +58,8 @@ protected:
   void mapChannels(uint8_t chpage, uint16_t chmap) final;
   void updateTxTimes(OsDeltaTime airtime) final;
   OsTime nextTx(OsTime now) final;
-  void initJoinLoop() final;
-  bool nextJoinState() final;
+  OsTime initJoinLoop() final;
+  TimeAndStatus nextJoinState() final;
   FrequencyAndRate defaultRX2Parameter() const override = 0;
 
   void setRegionalDutyCycleVerification(bool enabled) final;

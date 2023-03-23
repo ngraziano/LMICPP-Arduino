@@ -111,7 +111,8 @@ OsTime LmicDynamicChannel::nextTx(OsTime const now) {
   // next channel or other (random)
   uint8_t nextChannel = txChnl + 1 + (rand.uint8() % 2);
 
-  for (uint8_t channelIndex = 0; channelIndex < ChannelList::LIMIT_CHANNELS; channelIndex++) {
+  for (uint8_t channelIndex = 0; channelIndex < ChannelList::LIMIT_CHANNELS;
+       channelIndex++) {
     if (nextChannel >= channels.LIMIT_CHANNELS) {
       nextChannel = 0;
     }
@@ -161,16 +162,18 @@ FrequencyAndRate LmicDynamicChannel::getRx1Parameter() const {
   return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
-void LmicDynamicChannel::initJoinLoop() {
+OsTime LmicDynamicChannel::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
   setDrJoin(MaxJoinDR);
-  txend = channels.getAvailability(0) + OsDeltaTime::rnd_delay(rand, 8);
-  PRINT_DEBUG(1, F("Init Join loop : avail=%" PRIu32 " txend=%" PRIu32 ""),
-              channels.getAvailability(0).tick(), txend.tick());
+  auto startTime =
+      channels.getAvailability(0) + OsDeltaTime::rnd_delay(rand, 8);
+  PRINT_DEBUG(1, F("Init Join loop : avail=%" PRIu32 " startTime=%" PRIu32 ""),
+              channels.getAvailability(0).tick(), startTime.tick());
+  return startTime;
 }
 
-bool LmicDynamicChannel::nextJoinState() {
+TimeAndStatus LmicDynamicChannel::nextJoinState() {
   bool failed = false;
 
   // Try the tree default channels with same DR
@@ -195,15 +198,13 @@ bool LmicDynamicChannel::nextJoinState() {
   if (time < availability)
     time = availability;
 
-  txend = time;
-
   if (failed)
     PRINT_DEBUG(2, F("Join failed"));
   else
-    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), txend.tick());
+    PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), time.tick());
 
   // 1 - triggers EV_JOIN_FAILED event
-  return !failed;
+  return {time, !failed};
 }
 
 void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
@@ -217,7 +218,6 @@ void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
   channels.saveStateWithoutTimeData(store);
   store.write(txChnl);
   store.write(datarate);
-
 }
 
 void LmicDynamicChannel::saveState(StoringAbtract &store) const {
@@ -225,7 +225,6 @@ void LmicDynamicChannel::saveState(StoringAbtract &store) const {
   channels.saveState(store);
   store.write(txChnl);
   store.write(datarate);
-
 }
 
 void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
@@ -242,13 +241,11 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
   channels.loadState(store);
   store.read(txChnl);
   store.read(datarate);
-
 }
 #endif
 
-LmicDynamicChannel::LmicDynamicChannel(Radio &aradio,
-                                       uint8_t aMaxEIRP, dr_t aMaxJoinDr,
-                                       dr_t aMinJoinDr,
-                                       Bands& aBands)
+LmicDynamicChannel::LmicDynamicChannel(Radio &aradio, uint8_t aMaxEIRP,
+                                       dr_t aMaxJoinDr, dr_t aMinJoinDr,
+                                       Bands &aBands)
     : Lmic(aradio), MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
-      MinJoinDR(aMinJoinDr),  channels{aBands} {}
+      MinJoinDR(aMinJoinDr), channels{aBands} {}
