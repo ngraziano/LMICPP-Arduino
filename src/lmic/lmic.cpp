@@ -163,20 +163,20 @@ void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
   // Include an answer into next frame up
   uint8_t ladrAns =
       MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK;
-  if (!validMapChannels(chMaskCntl, chMask)) {
+  if (!channelParams.validMapChannels(chMaskCntl, chMask)) {
     PRINT_DEBUG(1, F("ADR REQ Invalid map channel maskCtnl=%i, mask=%i"),
                 chMaskCntl, chMask);
     ladrAns &= ~MCMD_LADR_ANS_CHACK;
   }
   const dr_t dr = (dr_t)(p1 >> MCMD_LADR_DR_SHIFT);
-  if (!validDR(dr)) {
+  if (!channelParams.validDR(dr)) {
     PRINT_DEBUG(1, F("ADR REQ Invalid dr %i"), dr);
     ladrAns &= ~MCMD_LADR_ANS_DRACK;
   }
 
   uint8_t const txPowerIndex = (p1 & MCMD_LADR_POW_MASK) >> MCMD_LADR_POW_SHIFT;
-  auto const newPower = pow2dBm(txPowerIndex);
-  if (newPower == InvalidPower) {
+  auto const newPower = channelParams.pow2dBm(txPowerIndex);
+  if (newPower == channelParams.InvalidPower) {
     PRINT_DEBUG(1, F("ADR REQ Invalid power index %i"), txPowerIndex);
     ladrAns &= ~MCMD_LADR_ANS_POWACK;
   }
@@ -185,9 +185,9 @@ void Lmic::parse_ladr(const uint8_t *const opts, uint8_t *response,
       (MCMD_LADR_ANS_POWACK | MCMD_LADR_ANS_CHACK | MCMD_LADR_ANS_DRACK)) {
     // Nothing went wrong - use settings
     upRepeat = nbTrans;
-    mapChannels(chMaskCntl, chMask);
+    channelParams.mapChannels(chMaskCntl, chMask);
     PRINT_DEBUG(1, F("ADR REQ Change dr to %i, power to %i"), dr, txPowerIndex);
-    setAdrTxPow(newPower);
+    channelParams.setAdrTxPow(newPower);
     setDrTx(dr);
     opmode.set(OpState::NEXTCHNL);
   }
@@ -202,9 +202,9 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
   const uint8_t newRx1DrOffset = ((opts[1] & 0x70) >> 4);
   const uint32_t newfreq = read_frequency(&opts[2]);
   uint8_t dn2Ans = 0x0; // answer pending
-  if (validRx1DrOffset(newRx1DrOffset))
+  if (channelParams.validRx1DrOffset(newRx1DrOffset))
     dn2Ans |= MCMD_DN2P_ANS_RX1DrOffsetAck;
-  if (validDR(dr))
+  if (channelParams.validDR(dr))
     dn2Ans |= MCMD_DN2P_ANS_DRACK;
   if (newfreq != 0)
     dn2Ans |= MCMD_DN2P_ANS_CHACK;
@@ -213,7 +213,7 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
                  MCMD_DN2P_ANS_CHACK)) {
     rx2Parameter.datarate = dr;
     rx2Parameter.frequency = newfreq;
-    setRx1DrOffset(newRx1DrOffset);
+    channelParams.setRx1DrOffset(newRx1DrOffset);
   }
 
   // RXParamSetupAns LoRaWAN™ Specification §5.4
@@ -242,7 +242,8 @@ void Lmic::parse_newchannel(const uint8_t *const opts, uint8_t *response,
   const uint32_t newfreq = read_frequency(&opts[2]); // freq
   const uint8_t drs = opts[5];                       // datarate span
   uint8_t mcmdNewChannelAns = 0x00;
-  if (setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
+  if (channelParams.setupChannel(chidx, newfreq,
+                                 dr_range_map(drs & 0xF, drs >> 4)))
     mcmdNewChannelAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
 
   response[responseLenght++] = MCMD_SNCH_ANS;
@@ -579,7 +580,7 @@ bool Lmic::decodeFrame() {
 void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
-  auto parameters = getRx1Parameter();
+  auto parameters = channelParams.getRx1Parameter();
   rps_t rps = dndr2rps(parameters.datarate);
   radio.rx(parameters.frequency, rps, rxsyms, rxtime);
   wait_end_rx();
@@ -644,7 +645,7 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime. Schedule first receive.
 void Lmic::txDone() {
-  auto waitime = schedRx12(rxDelay, getRx1Parameter().datarate);
+  auto waitime = schedRx12(rxDelay, channelParams.getRx1Parameter().datarate);
   next_job = Job(&Lmic::setupRx1, waitime);
 
   setupRxC();
@@ -662,7 +663,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   opmode.reset(OpState::TXRXPEND);
   // Clear NEXTCHNL because join state engine controls channel hopping
   opmode.reset(OpState::NEXTCHNL);
-  auto const result = nextJoinState();
+  auto const result = channelParams.nextJoinState();
   txend = result.time;
 
   // in §7 of lorawan 1.0.3
@@ -685,7 +686,7 @@ void Lmic::processJoinAcceptNoJoinFrame() {
   if (txend < globalDutyAvail) {
     txend = globalDutyAvail;
   }
-  txend += getDwn2SafetyZone();
+  txend += channelParams.getDwn2SafetyZone();
   // txend += OsDeltaTime::rnd_delay(rand, 255 >> datarate);
   txend += OsDeltaTime::rnd_delay(rand, 255);
 
@@ -734,7 +735,7 @@ bool Lmic::processJoinAccept() {
 
   if (dlen > join_accept::lengths::total) {
     // some region just ignore cflist.
-    handleCFList(frame.cbegin() + join_accept::offset::cfList);
+    channelParams.handleCFList(frame.cbegin() + join_accept::offset::cfList);
   }
 
   // already incremented when JOIN REQ got sent off
@@ -750,7 +751,7 @@ bool Lmic::processJoinAccept() {
 
   const uint8_t dlSettings = frame[join_accept::offset::dlSettings];
   rx2Parameter.datarate = dlSettings & 0x0F;
-  setRx1DrOffset((dlSettings >> 4) & 0x7);
+  channelParams.setRx1DrOffset((dlSettings >> 4) & 0x7);
 
   const uint8_t configuredRxDelay = frame[join_accept::offset::rxDelay];
   if (configuredRxDelay == 0) {
@@ -797,7 +798,7 @@ void Lmic::processRx2DnData() {
     // gateay is not listening anyway, delay the next transmission
     // until DNW2_SAFETY_ZONE from now, and add up to 2 seconds of
     // extra randomization.
-    txDelay(os_getTime() + getDwn2SafetyZone(), 2);
+    txDelay(os_getTime() + channelParams.getDwn2SafetyZone(), 2);
   }
   if (!decodeFrame()) {
     dataBeg = 0;
@@ -807,7 +808,7 @@ void Lmic::processRx2DnData() {
     if (txCnt != 0) {
       if (txCnt < TXCONF_ATTEMPTS) {
         txCnt++;
-        reduceDr(TABLE_GET_U1(DRADJUST, txCnt));
+        channelParams.reduceDr(TABLE_GET_U1(DRADJUST, txCnt));
         opmode.set(OpState::NEXTCHNL);
         // Schedule another retransmission
         txDelay(rxtime, RETRY_PERIOD_secs);
@@ -852,9 +853,9 @@ void Lmic::incrementAdrCount() {
     // We haven't heard from NWK for some time although we
     // asked for a response for some time - assume we're disconnected.
     // Restore max power if it not the case
-    if (!setAdrToMaxIfNotAlreadySet()) {
+    if (!channelParams.setAdrToMaxIfNotAlreadySet()) {
       // Lower DR one notch.
-      reduceDr(1);
+      channelParams.reduceDr(1);
       opmode.set(OpState::NEXTCHNL);
     }
 
@@ -986,7 +987,7 @@ bool Lmic::startJoining() {
         .set(OpState::JOINING);
     // Setup state
     rxDelay = OsDeltaTime::from_sec(DELAY_JACC1);
-    txend = initJoinLoop();
+    txend = channelParams.initJoinLoop();
 
     // reportEvent will call engineUpdate which then starts sending JOIN
     // REQUESTS
@@ -1039,7 +1040,7 @@ void Lmic::engineUpdate() {
   OsTime txbeg;
   // Find next suitable channel and return availability time
   if (opmode.test(OpState::NEXTCHNL)) {
-    txbeg = nextTx(now);
+    txbeg = channelParams.nextTx(now);
     opmode.reset(OpState::NEXTCHNL);
     PRINT_DEBUG(2, F("Airtime available at %" PRIu32 " (channel duty limit)"),
                 txbeg.tick());
@@ -1095,11 +1096,11 @@ void Lmic::engineUpdate() {
 
   txrxFlags.reset();
 
-  auto txParameter = getTxParameter();
+  auto txParameter = channelParams.getTxParameter();
 
   rps_t rps = updr2rps(txParameter.datarate);
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
-  updateTxTimes(airtime);
+  channelParams.updateTxTimes(airtime);
 
   // if globalDutyRate==0 send available just after transmit.
   globalDutyAvail = os_getTime() + (airtime << globalDutyRate);
@@ -1131,12 +1132,12 @@ void Lmic::reset() {
     devNonce = rand.uint16();
   }
   opmode.reset();
-  setRx1DrOffset(0);
+  channelParams.setRx1DrOffset(0);
   // we need this for 2nd DN window of join accept
-  rx2Parameter = defaultRX2Parameter();
+  rx2Parameter = channelParams.defaultRX2Parameter();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   globalDutyAvail = os_getTime();
-  initDefaultChannels();
+  channelParams.initDefaultChannels();
 }
 
 void Lmic::init() {
@@ -1158,7 +1159,7 @@ void Lmic::clrTxData() {
 void Lmic::setTxData() {
   opmode.set(OpState::TXDATA);
   // cancel any ongoing TX/RX retries
-    txCnt = 0; 
+  txCnt = 0;
   engineUpdate();
 }
 
@@ -1227,37 +1228,14 @@ void Lmic::setLinkCheckMode(bool const enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t const error) { clockError = error; }
 
-rps_t Lmic::updr2rps(dr_t const dr) const { return rps_t(getRawRps(dr)); }
+rps_t Lmic::updr2rps(dr_t const dr) const {
+  return rps_t(channelParams.getRawRps(dr));
+}
 
 rps_t Lmic::dndr2rps(dr_t const dr) const {
   auto val = updr2rps(dr);
   val.nocrc = true;
   return val;
-}
-
-bool Lmic::isFasterDR(dr_t const dr1, dr_t const dr2) const {
-  return dr1 > dr2;
-}
-
-bool Lmic::isSlowerDR(dr_t const dr1, dr_t const dr2) const {
-  return dr1 < dr2;
-}
-
-// increase data rate
-dr_t Lmic::incDR(dr_t const dr) const { return validDR(dr + 1) ? dr + 1 : dr; }
-
-// decrease data rate
-dr_t Lmic::decDR(dr_t const dr) const { return validDR(dr - 1) ? dr - 1 : dr; }
-
-// in range
-bool Lmic::validDR(dr_t const dr) const { return getRawRps(dr) != ILLEGAL_RPS; }
-
-// decrease data rate by n steps
-dr_t Lmic::lowerDR(dr_t dr, uint8_t n) const {
-  while (n--) {
-    dr = decDR(dr);
-  };
-  return dr;
 }
 
 OsTime Lmic::int_trigger_time() const {
@@ -1324,7 +1302,28 @@ void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
 #if defined(ENABLE_SAVE_RESTORE)
 void Lmic::saveState(StoringAbtract &store) const {
-  Lmic::saveStateWithoutTimeData(store);
+  // TODO radio RSSI,SNR
+  // TODO check if we can avoid storing rxsyms
+  store.write(rxsyms);
+
+  store.write(globalDutyRate);
+  store.write(pendTxFOptsLen);
+  store.write(pendTxFOpts);
+
+  store.write(netid);
+  store.write(opmode);
+  store.write(upRepeat);
+  store.write(devNonce);
+  store.write(devaddr);
+  store.write(seqnoDn);
+  store.write(seqnoUp);
+  store.write(dnConf);
+  store.write(adrAckReq);
+  store.write(rxDelay);
+  store.write(rx2Parameter.datarate);
+  store.write(rx2Parameter.frequency);
+  aes.saveState(store);
+  channelParams.saveState(store);
   store.write(globalDutyAvail);
 }
 
@@ -1350,10 +1349,32 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(rx2Parameter.datarate);
   store.write(rx2Parameter.frequency);
   aes.saveState(store);
+  channelParams.saveStateWithoutTimeData(store);
 }
 
 void Lmic::loadState(RetrieveAbtract &store) {
-  Lmic::loadStateWithoutTimeData(store);
+  // TODO radio RSSI,SNR
+  // TODO check if we can avoid storing rxsyms
+  store.read(rxsyms);
+
+  store.read(globalDutyRate);
+  store.read(pendTxFOptsLen);
+  store.read(pendTxFOpts);
+
+  store.read(netid);
+  store.read(opmode);
+  store.read(upRepeat);
+  store.read(devNonce);
+  store.read(devaddr);
+  store.read(seqnoDn);
+  store.read(seqnoUp);
+  store.read(dnConf);
+  store.read(adrAckReq);
+  store.read(rxDelay);
+  store.read(rx2Parameter.datarate);
+  store.read(rx2Parameter.frequency);
+  aes.loadState(store);
+  channelParams.loadState(store);
   store.read(globalDutyAvail);
 }
 
@@ -1379,6 +1400,7 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(rx2Parameter.datarate);
   store.read(rx2Parameter.frequency);
   aes.loadState(store);
+  channelParams.loadStateWithoutTimeData(store);
 }
 
 #endif
@@ -1394,4 +1416,6 @@ OsDeltaTime Lmic::run() {
   return delay;
 }
 
-Lmic::Lmic(Radio &aradio) : radio(aradio), rand(aes) {}
+Lmic::Lmic(Radio &aradio, Aes &aaes, LmicRand &arand,
+           RegionalChannelParams &achannelParams)
+    : radio(aradio), aes(aaes), rand(arand), channelParams(achannelParams) {}

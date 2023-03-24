@@ -116,6 +116,54 @@ struct TimeAndStatus {
 
 uint32_t read_frequency(const uint8_t *ptr);
 
+class RegionalChannelParams {
+public:
+  virtual FrequencyAndRate getTxParameter() const = 0;
+  virtual FrequencyAndRate getRx1Parameter() const = 0;
+  virtual uint8_t getRawRps(dr_t dr) const = 0;
+  virtual void reduceDr(uint8_t diff) = 0;
+
+  int8_t const InvalidPower = -128;
+  /**
+   * Return InvalidPower if passed value is invalid
+   */
+  virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
+  virtual OsDeltaTime getDwn2SafetyZone() const = 0;
+
+  virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
+
+  virtual void initDefaultChannels() = 0;
+  virtual bool setupChannel(uint8_t channel, uint32_t newfreq,
+                            uint16_t drmap) = 0;
+  virtual void disableChannel(uint8_t channel) = 0;
+  virtual void handleCFList(const uint8_t *ptr) = 0;
+
+  virtual bool validMapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
+  virtual void updateTxTimes(OsDeltaTime airtime) = 0;
+  virtual OsTime nextTx(OsTime now) = 0;
+  virtual OsTime initJoinLoop() = 0;
+  virtual TimeAndStatus nextJoinState() = 0;
+  virtual FrequencyAndRate defaultRX2Parameter() const = 0;
+  virtual void setRx1DrOffset(uint8_t drOffset) = 0;
+
+  // Use in certification tests
+  virtual void setRegionalDutyCycleVerification(bool enabled) = 0;
+
+  virtual bool validDR(dr_t dr) const = 0;
+  virtual void setDrTx(dr_t dr) = 0;
+  virtual void setAdrTxPow(int8_t newPower) = 0;
+  virtual bool setAdrToMaxIfNotAlreadySet() = 0;
+
+#if defined(ENABLE_SAVE_RESTORE)
+
+  virtual void saveState(StoringAbtract &store) const = 0;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const = 0;
+  virtual void loadState(RetrieveAbtract &strore) = 0;
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &strore) = 0;
+#endif
+};
+
 class Lmic {
 public:
   static OsDeltaTime timeBySymbol(rps_t rps);
@@ -124,6 +172,10 @@ public:
 private:
   using Job = OsJobType<Lmic>;
   Radio &radio;
+  Aes &aes;
+  LmicRand &rand;
+  RegionalChannelParams &channelParams;
+
   Job next_job;
   // Radio settings TX/RX (also accessed by HAL)
   OsTime rxtime;
@@ -189,7 +241,6 @@ private:
   // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
 
-private:
   // 2nd RX window (after up stream), init at reset
   FrequencyAndRate rx2Parameter;
 
@@ -201,10 +252,6 @@ private:
   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataBeg = 0;
   uint8_t txCnt = 0;
-  Aes aes;
-
-protected:
-  LmicRand rand;
 
 private:
   // callbacks
@@ -266,9 +313,7 @@ private:
 public:
   void setBatteryLevel(uint8_t level);
   // set default/start DR/txpow
-  virtual void setDrTx(uint8_t dr) = 0;
-  virtual void setAdrTxPow(int8_t newPower) = 0;
-  virtual bool setAdrToMaxIfNotAlreadySet() = 0;
+  void setDrTx(uint8_t dr) { channelParams.setDrTx(dr); };
 
   void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate);
   void setDutyRate(uint8_t duty_rate);
@@ -314,59 +359,13 @@ public:
   void deactivateClassC() { opmode.reset(OpState::CLASSC); }
 
   // Use in certification tests
-  virtual void setRegionalDutyCycleVerification(bool enabled) = 0;
-
-protected:
-  virtual FrequencyAndRate getTxParameter() const = 0;
-  virtual FrequencyAndRate getRx1Parameter() const = 0;
-  virtual uint8_t getRawRps(dr_t dr) const = 0;
-  virtual void reduceDr(uint8_t diff) = 0;
-
-  int8_t const InvalidPower = -128;
-  /**
-   * Return InvalidPower if passed value is invalid
-   */
-  virtual int8_t pow2dBm(uint8_t powerIndex) const = 0;
-  virtual OsDeltaTime getDwn2SafetyZone() const = 0;
-
-  virtual bool validRx1DrOffset(uint8_t drOffset) const = 0;
-
-  virtual void initDefaultChannels() = 0;
-  virtual bool setupChannel(uint8_t channel, uint32_t newfreq,
-                            uint16_t drmap) = 0;
-  virtual void disableChannel(uint8_t channel) = 0;
-  virtual void handleCFList(const uint8_t *ptr) = 0;
-
-  virtual bool validMapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void mapChannels(uint8_t chpage, uint16_t chmap) = 0;
-  virtual void updateTxTimes(OsDeltaTime airtime) = 0;
-  virtual OsTime nextTx(OsTime now) = 0;
-  virtual OsTime initJoinLoop() = 0;
-  virtual TimeAndStatus nextJoinState() = 0;
-  virtual FrequencyAndRate defaultRX2Parameter() const = 0;
-  virtual void setRx1DrOffset(uint8_t drOffset) = 0;
-
-#if defined(ENABLE_SAVE_RESTORE)
-
-  virtual void saveState(StoringAbtract &store) const;
-  virtual void saveStateWithoutTimeData(StoringAbtract &store) const;
-  virtual void loadState(RetrieveAbtract &strore);
-  virtual void loadStateWithoutTimeData(RetrieveAbtract &strore);
-#endif
+  void setRegionalDutyCycleVerification(bool enabled) {
+    channelParams.setRegionalDutyCycleVerification(enabled);
+  };
 
   OsDeltaTime dr2hsym(dr_t dr) const;
   rps_t updr2rps(dr_t dr) const;
   rps_t dndr2rps(dr_t dr) const;
-  bool isFasterDR(dr_t dr1, dr_t dr2) const;
-  bool isSlowerDR(dr_t dr1, dr_t dr2) const;
-  // increase data rate
-  dr_t incDR(dr_t dr) const;
-  // decrease data rate
-  dr_t decDR(dr_t dr) const;
-  // in range
-  bool validDR(dr_t dr) const;
-  // decrease data rate by n steps
-  dr_t lowerDR(dr_t dr, uint8_t n) const;
 
   OsTime int_trigger_time() const;
   void wait_end_rx();
@@ -374,7 +373,17 @@ protected:
   void wait_end_tx();
 
 public:
-  explicit Lmic(Radio &radio);
+#if defined(ENABLE_SAVE_RESTORE)
+
+  void saveState(StoringAbtract &store) const;
+  void saveStateWithoutTimeData(StoringAbtract &store) const;
+  void loadState(RetrieveAbtract &strore);
+  void loadStateWithoutTimeData(RetrieveAbtract &strore);
+#endif
+
+  explicit Lmic(Radio &aradio, Aes &aaes, LmicRand &arand,
+  
+                RegionalChannelParams &achannelParams);
   void store_trigger();
   OsDeltaTime run();
 };

@@ -30,7 +30,7 @@ namespace {
 constexpr uint32_t EU433_FREQ_MIN = 433050000;
 constexpr uint32_t EU433_FREQ_MAX = 434665000;
 constexpr uint32_t FREQ_DNW2 = EU433_R2;
-constexpr LmicEu433::Dr DR_DNW2 = LmicEu433::Dr::SF12;
+constexpr Eu433RegionalChannelParams::Dr DR_DNW2 = Eu433RegionalChannelParams::Dr::SF12;
 
 constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
@@ -49,11 +49,11 @@ constexpr int8_t MaxEIRPValue = 12;
 
 } // namespace
 
-uint8_t LmicEu433::getRawRps(dr_t const dr) const {
+uint8_t Eu433RegionalChannelParams::getRawRps(dr_t const dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicEu433::pow2dBm(uint8_t const powerIndex) const {
+int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 6) {
     return InvalidPower;
   }
@@ -61,18 +61,18 @@ int8_t LmicEu433::pow2dBm(uint8_t const powerIndex) const {
   return MaxEIRP - 2 * powerIndex;
 }
 
-bool LmicEu433::validRx1DrOffset(uint8_t const drOffset) const {
+bool Eu433RegionalChannelParams::validRx1DrOffset(uint8_t const drOffset) const {
   return drOffset < 6;
 }
 
-void LmicEu433::initDefaultChannels() {
-  LmicDynamicChannel::initDefaultChannels();
+void Eu433RegionalChannelParams::initDefaultChannels() {
+  DynamicRegionalChannelParams::initDefaultChannels();
   setupChannel(0, EU433_F1, 0);
   setupChannel(1, EU433_F2, 0);
   setupChannel(2, EU433_F3, 0);
 }
 
-bool LmicEu433::setupChannel(uint8_t const chidx, uint32_t const newfreq,
+bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx, uint32_t const newfreq,
                              uint16_t const drmap) {
   if (chidx >= channels.LIMIT_CHANNELS)
     return false;
@@ -97,9 +97,13 @@ bool LmicEu433::setupChannel(uint8_t const chidx, uint32_t const newfreq,
   return true;
 }
 
-FrequencyAndRate LmicEu433::defaultRX2Parameter() const {
+FrequencyAndRate Eu433RegionalChannelParams::defaultRX2Parameter() const {
   return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2), 0};
 }
 
+
+Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
+    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0, bands) {}
+
 LmicEu433::LmicEu433(Radio &aradio)
-    : LmicDynamicChannel(aradio, MaxEIRPValue, 5, 0, bands) {}
+    : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

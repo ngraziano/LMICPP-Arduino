@@ -18,30 +18,10 @@
 #include "channelList.h"
 #include "lmic.h"
 
-class LmicDynamicChannel : public Lmic {
+class DynamicRegionalChannelParams : public RegionalChannelParams {
 public:
-#if defined(ENABLE_SAVE_RESTORE)
-  virtual void saveState(StoringAbtract &store) const final;
-  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
-  virtual void loadState(RetrieveAbtract &store) final;
-  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
-#endif
-
   bool setupChannel(uint8_t channel, uint32_t newfreq,
                     uint16_t drmap) override = 0;
-  void setDrJoin(dr_t dr) { datarate = dr; }
-  virtual void setDrTx(uint8_t dr) final { datarate = dr; }
-  virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
-  virtual bool setAdrToMaxIfNotAlreadySet() final;
-
-  virtual void reduceDr(uint8_t diff) final {
-    setDrTx(lowerDR(datarate, diff));
-  }
-
-protected:
-  explicit LmicDynamicChannel(Radio &radio, uint8_t aMaxEIRP, dr_t aMaxJoinDr,
-                              dr_t aMinJoinDr, Bands &aBands);
-
   uint32_t getTxFrequency() const;
   int8_t getTxPower() const;
   FrequencyAndRate getTxParameter() const final;
@@ -66,12 +46,42 @@ protected:
   FrequencyAndRate defaultRX2Parameter() const override = 0;
   void setRx1DrOffset(uint8_t drOffset) final;
 
-  void setRegionalDutyCycleVerification(bool enabled) final;
+  void setDrJoin(dr_t dr) { datarate = dr; }
+  virtual void setDrTx(uint8_t dr) final { datarate = dr; }
+  virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
+  virtual bool setAdrToMaxIfNotAlreadySet() final;
 
+  // increase data rate
+  dr_t incDR(dr_t dr) const;
+  // decrease data rate
+  dr_t decDR(dr_t dr) const;
+  // in range
+  bool validDR(dr_t dr) const final;
+  // decrease data rate by n steps
+  dr_t lowerDR(dr_t dr, uint8_t n) const;
+
+  virtual void reduceDr(uint8_t diff) final {
+    setDrTx(lowerDR(datarate, diff));
+  }
+
+#if defined(ENABLE_SAVE_RESTORE)
+  virtual void saveState(StoringAbtract &store) const final;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
+  virtual void loadState(RetrieveAbtract &store) final;
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
+#endif
+
+  DynamicRegionalChannelParams(LmicRand &arand, uint8_t aMaxEIRP,
+                               dr_t aMaxJoinDr, dr_t aMinJoinDr, Bands &aBands);
+
+protected:
+  void setRegionalDutyCycleVerification(bool enabled) final;
+  LmicRand &rand;
   const int8_t MaxEIRP;
   const dr_t MaxJoinDR;
   const dr_t MinJoinDR;
   ChannelList channels;
+
   // channel for next TX
   uint8_t txChnl = 0;
   // ADR adjusted TX power, limit power to this value.

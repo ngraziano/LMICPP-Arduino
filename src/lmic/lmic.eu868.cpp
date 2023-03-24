@@ -37,7 +37,8 @@ namespace {
 constexpr uint32_t EU868_FREQ_MIN = 863000000;
 constexpr uint32_t EU868_FREQ_MAX = 870000000;
 constexpr uint32_t FREQ_DNW2 = EU868_F6;
-constexpr LmicEu868::Dr DR_DNW2 = LmicEu868::Dr::SF12;
+constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
+    Eu868RegionalChannelParams::Dr::SF12;
 
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
@@ -57,11 +58,11 @@ constexpr int8_t MaxEIRPValue = 16;
 
 } // namespace
 
-uint8_t LmicEu868::getRawRps(dr_t const dr) const {
+uint8_t Eu868RegionalChannelParams::getRawRps(dr_t const dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicEu868::pow2dBm(uint8_t const powerIndex) const {
+int8_t Eu868RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 8) {
     return InvalidPower;
   }
@@ -69,29 +70,30 @@ int8_t LmicEu868::pow2dBm(uint8_t const powerIndex) const {
   return MaxEIRP - 2 * powerIndex;
 }
 
-
-bool LmicEu868::validRx1DrOffset(uint8_t const drOffset) const {
+bool Eu868RegionalChannelParams::validRx1DrOffset(
+    uint8_t const drOffset) const {
   return drOffset < 6;
 }
 
-void LmicEu868::initDefaultChannels() {
-  LmicDynamicChannel::initDefaultChannels();
+void Eu868RegionalChannelParams::initDefaultChannels() {
+  DynamicRegionalChannelParams::initDefaultChannels();
   setupChannel(0, EU868_F1, 0);
   setupChannel(1, EU868_F2, 0);
   setupChannel(2, EU868_F3, 0);
 }
 
-bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
-                             uint16_t const drmap) {
+bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
+                                              uint32_t const newfreq,
+                                              uint16_t const drmap) {
   if (chidx >= channels.LIMIT_CHANNELS)
     return false;
 
-  if(chidx < 3 && drmap != 0) {
+  if (chidx < 3 && drmap != 0) {
     // channel 0, 1 and 2 are fixed
     // drmap == 0 is only used internally to reset the channel
     return false;
   }
-  
+
   if (newfreq == 0) {
     channels.disable(chidx);
     return true;
@@ -106,9 +108,12 @@ bool LmicEu868::setupChannel(uint8_t const chidx, uint32_t const newfreq,
   return true;
 }
 
-FrequencyAndRate LmicEu868::defaultRX2Parameter() const {
+FrequencyAndRate Eu868RegionalChannelParams::defaultRX2Parameter() const {
   return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2), 0};
 }
 
+Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
+    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0, bandeu) {}
+
 LmicEu868::LmicEu868(Radio &aradio)
-    : LmicDynamicChannel(aradio, MaxEIRPValue, 5, 0, bandeu) {}
+    : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

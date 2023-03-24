@@ -33,7 +33,7 @@ const OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(750);
 constexpr uint8_t CHNL_DNW2 = 0;
 constexpr uint32_t FREQ_DNW2 =
     US915_500kHz_DNFBASE + CHNL_DNW2 * US915_500kHz_DNFSTEP;
-constexpr dr_t DR_DNW2 = LmicUs915::SF12CR;
+constexpr dr_t DR_DNW2 = Us915RegionalChannelParams::SF12CR;
 } // namespace
 
 #define maxFrameLen(dr)                                                        \
@@ -78,18 +78,42 @@ CONST_TABLE(uint8_t, _DR2RPS_CRC)
   ILLEGAL_RPS
   };
 // clang-format on
-uint8_t LmicUs915::getRawRps(dr_t dr) const {
+
+// increase data rate
+dr_t Us915RegionalChannelParams::incDR(dr_t const dr) const {
+  return validDR(dr + 1) ? dr + 1 : dr;
+}
+
+// decrease data rate
+dr_t Us915RegionalChannelParams::decDR(dr_t const dr) const {
+  return validDR(dr - 1) ? dr - 1 : dr;
+}
+
+// in range
+bool Us915RegionalChannelParams::validDR(dr_t const dr) const {
+  return getRawRps(dr) != ILLEGAL_RPS;
+}
+
+// decrease data rate by n steps
+dr_t Us915RegionalChannelParams::lowerDR(dr_t dr, uint8_t n) const {
+  while (n--) {
+    dr = decDR(dr);
+  };
+  return dr;
+}
+
+uint8_t Us915RegionalChannelParams::getRawRps(dr_t dr) const {
   return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
 }
 
-int8_t LmicUs915::pow2dBm(uint8_t powerIndex) const {
+int8_t Us915RegionalChannelParams::pow2dBm(uint8_t powerIndex) const {
   if (powerIndex >= 15) {
     return InvalidPower;
   }
   return 30 - (powerIndex * 2);
 }
 
-bool LmicUs915::setAdrToMaxIfNotAlreadySet() {
+bool Us915RegionalChannelParams::setAdrToMaxIfNotAlreadySet() {
   if (adrTxPow != pow2dBm(0)) {
     adrTxPow = pow2dBm(0);
     return true;
@@ -97,19 +121,21 @@ bool LmicUs915::setAdrToMaxIfNotAlreadySet() {
   return false;
 }
 
-OsDeltaTime LmicUs915::getDwn2SafetyZone() const { return DNW2_SAFETY_ZONE; }
+OsDeltaTime Us915RegionalChannelParams::getDwn2SafetyZone() const {
+  return DNW2_SAFETY_ZONE;
+}
 
-bool LmicUs915::validRx1DrOffset(uint8_t drOffset) const {
+bool Us915RegionalChannelParams::validRx1DrOffset(uint8_t drOffset) const {
   return drOffset < 4;
 }
 
-void LmicUs915::initDefaultChannels() {
+void Us915RegionalChannelParams::initDefaultChannels() {
   for (uint8_t i = 0; i < 4; i++)
     channelMap[i] = 0xFFFF;
   channelMap[4] = 0x00FF;
 }
 
-void LmicUs915::handleCFList(const uint8_t *ptr) {
+void Us915RegionalChannelParams::handleCFList(const uint8_t *ptr) {
   // Check CFList type
   if (ptr[15] != 1) {
     PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
@@ -122,36 +148,36 @@ void LmicUs915::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicUs915::setupChannel(uint8_t, uint32_t, uint16_t) {
+bool Us915RegionalChannelParams::setupChannel(uint8_t, uint32_t, uint16_t) {
   // channels 0..71 are hardwired
   return false;
 }
 
-void LmicUs915::disableChannel(uint8_t channel) {
+void Us915RegionalChannelParams::disableChannel(uint8_t channel) {
   if (channel < 72)
     channelMap[channel >> 4u] &= ~(1u << (channel & 0xFu));
 }
 
-void LmicUs915::enableChannel(uint8_t channel) {
+void Us915RegionalChannelParams::enableChannel(uint8_t channel) {
   if (channel < 72)
     channelMap[channel >> 4u] |= (1u << (channel & 0xFu));
 }
 
-void LmicUs915::enableSubBand(uint8_t band) {
+void Us915RegionalChannelParams::enableSubBand(uint8_t band) {
   ASSERT(band < 8);
   uint8_t start = band * 8;
   uint8_t end = start + 8;
   for (int channel = start; channel < end; ++channel)
     enableChannel(channel);
 }
-void LmicUs915::disableSubBand(uint8_t band) {
+void Us915RegionalChannelParams::disableSubBand(uint8_t band) {
   ASSERT(band < 8);
   uint8_t start = band * 8;
   uint8_t end = start + 8;
   for (int channel = start; channel < end; ++channel)
     disableChannel(channel);
 }
-void LmicUs915::selectSubBand(uint8_t band) {
+void Us915RegionalChannelParams::selectSubBand(uint8_t band) {
   ASSERT(band < 8);
   for (int b = 0; b < 8; ++b) {
     if (band == b)
@@ -166,7 +192,8 @@ constexpr uint8_t MCMD_LADR_CHP_125ON = 0x06;
 //  ditto
 constexpr uint8_t MCMD_LADR_CHP_125OFF = 0x07;
 
-bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const) {
+bool Us915RegionalChannelParams::validMapChannels(uint8_t const chMaskCntl,
+                                                  uint16_t const) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF)
     return true;
   if (chMaskCntl < 5)
@@ -177,7 +204,8 @@ bool LmicUs915::validMapChannels(uint8_t const chMaskCntl, uint16_t const) {
   return false;
 }
 
-void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
+void Us915RegionalChannelParams::mapChannels(uint8_t chMaskCntl,
+                                             uint16_t chMask) {
   if (chMaskCntl == MCMD_LADR_CHP_125ON || chMaskCntl == MCMD_LADR_CHP_125OFF) {
     uint16_t en125 = chMaskCntl == MCMD_LADR_CHP_125ON ? 0xFFFF : 0x0000;
     for (uint8_t u = 0; u < 4; u++)
@@ -189,7 +217,7 @@ void LmicUs915::mapChannels(uint8_t chMaskCntl, uint16_t chMask) {
   // TODO handle chMaskCntl = 5
 }
 
-uint32_t LmicUs915::getTxFrequency() const {
+uint32_t Us915RegionalChannelParams::getTxFrequency() const {
   uint8_t chnl = txChnl;
   ASSERT(chnl < 64 + 8);
 
@@ -199,17 +227,17 @@ uint32_t LmicUs915::getTxFrequency() const {
   return US915_500kHz_UPFBASE + (chnl - 64) * US915_500kHz_UPFSTEP;
 }
 
-int8_t LmicUs915::getTxPower() const {
+int8_t Us915RegionalChannelParams::getTxPower() const {
   if (txChnl < 64) {
     return 30;
   }
   return 26;
 }
 
-void LmicUs915::updateTxTimes(OsDeltaTime) {}
+void Us915RegionalChannelParams::updateTxTimes(OsDeltaTime) {}
 
 // US does not have duty cycling - return now as earliest TX time
-OsTime LmicUs915::nextTx(OsTime now) {
+OsTime Us915RegionalChannelParams::nextTx(OsTime now) {
   if (chRnd == 0)
     chRnd = rand.uint8() & 0x3F;
   if (datarate >= SF8C) { // 500kHz
@@ -233,12 +261,12 @@ OsTime LmicUs915::nextTx(OsTime now) {
   return now;
 }
 
-uint32_t LmicUs915::getRx1Frequency() const {
+uint32_t Us915RegionalChannelParams::getRx1Frequency() const {
 
   return US915_500kHz_DNFBASE + (txChnl & 0x7) * US915_500kHz_DNFSTEP;
 }
 
-dr_t LmicUs915::getRx1Dr() const {
+dr_t Us915RegionalChannelParams::getRx1Dr() const {
   // |Upstream data rate  | Downstream data rate      |
   // |RX1DROffset         |  0   |  1   |  2   |  3   |
   // |--------------------| ---- | ---- | ---- | ---- |
@@ -261,15 +289,15 @@ dr_t LmicUs915::getRx1Dr() const {
   return datarate;
 }
 
-FrequencyAndRate LmicUs915::getTxParameter() const {
+FrequencyAndRate Us915RegionalChannelParams::getTxParameter() const {
   return {getTxFrequency(), datarate, getTxPower()};
 }
 
-FrequencyAndRate LmicUs915::getRx1Parameter() const {
+FrequencyAndRate Us915RegionalChannelParams::getRx1Parameter() const {
   return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
-OsTime LmicUs915::initJoinLoop() {
+OsTime Us915RegionalChannelParams::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
   adrTxPow = 20;
@@ -277,7 +305,7 @@ OsTime LmicUs915::initJoinLoop() {
   return os_getTime() + OsDeltaTime::rnd_delay(rand, 8);
 }
 
-TimeAndStatus LmicUs915::nextJoinState() {
+TimeAndStatus Us915RegionalChannelParams::nextJoinState() {
   // Try the following:
   //   SF7/8/9/10  on a random channel 0..63
   //   SF8C        on a random channel 64..71
@@ -300,12 +328,60 @@ TimeAndStatus LmicUs915::nextJoinState() {
   return {os_getTime(), !failed};
 }
 
-FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
+FrequencyAndRate Us915RegionalChannelParams::defaultRX2Parameter() const {
   return {FREQ_DNW2, DR_DNW2, 0};
 }
 
-void LmicUs915::setRx1DrOffset(uint8_t drOffset) {
+void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {
   rx1DrOffset = drOffset;
 }
 
-LmicUs915::LmicUs915(Radio &aradio) : Lmic(aradio) {}
+#if defined(ENABLE_SAVE_RESTORE)
+void Us915RegionalChannelParams::saveStateWithoutTimeData(
+    StoringAbtract &store) const {
+
+  store.write(channelMap);
+  store.write(chRnd);
+  store.write(txChnl);
+  store.write(adrTxPow);
+  store.write(datarate);
+  store.write(rx1DrOffset);
+}
+
+void Us915RegionalChannelParams::saveState(StoringAbtract &store) const {
+
+  store.write(channelMap);
+  store.write(chRnd);
+  store.write(txChnl);
+  store.write(adrTxPow);
+  store.write(datarate);
+  store.write(rx1DrOffset);
+}
+
+void Us915RegionalChannelParams::loadStateWithoutTimeData(
+    RetrieveAbtract &store) {
+
+  store.read(channelMap);
+  store.read(chRnd);
+  store.read(txChnl);
+  store.read(adrTxPow);
+  store.read(datarate);
+  store.read(rx1DrOffset);
+}
+
+void Us915RegionalChannelParams::loadState(RetrieveAbtract &store) {
+  store.read(channelMap);
+  store.read(chRnd);
+  store.read(txChnl);
+  store.read(adrTxPow);
+  store.read(datarate);
+  store.read(rx1DrOffset);
+}
+#endif
+
+Us915RegionalChannelParams::Us915RegionalChannelParams(LmicRand &arand)
+    : rand(arand) {}
+
+LmicUs915::LmicUs915(Radio &aradio)
+    : Lmic(aradio, aes, rand, channelParams), rand(aes),
+      channelParams(rand) {}

@@ -24,22 +24,45 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 } // namespace
 
-OsDeltaTime LmicDynamicChannel::getDwn2SafetyZone() const {
+// increase data rate
+dr_t DynamicRegionalChannelParams::incDR(dr_t const dr) const {
+  return validDR(dr + 1) ? dr + 1 : dr;
+}
+
+// decrease data rate
+dr_t DynamicRegionalChannelParams::decDR(dr_t const dr) const {
+  return validDR(dr - 1) ? dr - 1 : dr;
+}
+
+// in range
+bool DynamicRegionalChannelParams::validDR(dr_t const dr) const {
+  return getRawRps(dr) != ILLEGAL_RPS;
+}
+
+// decrease data rate by n steps
+dr_t DynamicRegionalChannelParams::lowerDR(dr_t dr, uint8_t n) const {
+  while (n--) {
+    dr = decDR(dr);
+  };
+  return dr;
+}
+
+OsDeltaTime DynamicRegionalChannelParams::getDwn2SafetyZone() const {
   return DNW2_SAFETY_ZONE;
 }
 
-void LmicDynamicChannel::initDefaultChannels() {
+void DynamicRegionalChannelParams::initDefaultChannels() {
   PRINT_DEBUG(2, F("Init Default Channel"));
 
   channels.disableAll();
   channels.init();
 }
 
-void LmicDynamicChannel::disableChannel(uint8_t const channel) {
+void DynamicRegionalChannelParams::disableChannel(uint8_t const channel) {
   channels.disable(channel);
 }
 
-void LmicDynamicChannel::handleCFList(const uint8_t *ptr) {
+void DynamicRegionalChannelParams::handleCFList(const uint8_t *ptr) {
   // Check CFList type
   if (ptr[15] != 0) {
     PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
@@ -56,8 +79,8 @@ void LmicDynamicChannel::handleCFList(const uint8_t *ptr) {
   }
 }
 
-bool LmicDynamicChannel::validMapChannels(uint8_t const chMaskCntl,
-                                          uint16_t const chMask) {
+bool DynamicRegionalChannelParams::validMapChannels(uint8_t const chMaskCntl,
+                                                    uint16_t const chMask) {
   // Bad page
   if (chMaskCntl != 0 && chMaskCntl != 6)
     return false;
@@ -69,8 +92,8 @@ bool LmicDynamicChannel::validMapChannels(uint8_t const chMaskCntl,
   return true;
 }
 
-void LmicDynamicChannel::mapChannels(uint8_t const chMaskCntl,
-                                     uint16_t const chMask) {
+void DynamicRegionalChannelParams::mapChannels(uint8_t const chMaskCntl,
+                                               uint16_t const chMask) {
   // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
   // ChMaskCntl=6 => All channels ON
   if (chMaskCntl == 6) {
@@ -87,16 +110,16 @@ void LmicDynamicChannel::mapChannels(uint8_t const chMaskCntl,
   }
 }
 
-uint32_t LmicDynamicChannel::getTxFrequency() const {
+uint32_t DynamicRegionalChannelParams::getTxFrequency() const {
   return channels.getFrequency(txChnl);
 }
 
-int8_t LmicDynamicChannel::getTxPower() const {
+int8_t DynamicRegionalChannelParams::getTxPower() const {
   // limit power to value ask in adr (at init MaxEIRP)
   return adrTxPow;
 }
 
-void LmicDynamicChannel::updateTxTimes(OsDeltaTime const airtime) {
+void DynamicRegionalChannelParams::updateTxTimes(OsDeltaTime const airtime) {
   channels.updateAvailabitility(txChnl, os_getTime(), airtime);
 
   PRINT_DEBUG(
@@ -104,7 +127,7 @@ void LmicDynamicChannel::updateTxTimes(OsDeltaTime const airtime) {
       txChnl, airtime.tick());
 }
 
-OsTime LmicDynamicChannel::nextTx(OsTime const now) {
+OsTime DynamicRegionalChannelParams::nextTx(OsTime const now) {
 
   bool channelFound = false;
   OsTime nextTransmitTime;
@@ -146,23 +169,23 @@ OsTime LmicDynamicChannel::nextTx(OsTime const now) {
   return now;
 }
 
-uint32_t LmicDynamicChannel::getRx1Frequency() const {
+uint32_t DynamicRegionalChannelParams::getRx1Frequency() const {
   return channels.getFrequencyRX(txChnl);
 }
 
-dr_t LmicDynamicChannel::getRx1Dr() const {
+dr_t DynamicRegionalChannelParams::getRx1Dr() const {
   return lowerDR(datarate, rx1DrOffset);
 }
 
-FrequencyAndRate LmicDynamicChannel::getTxParameter() const {
+FrequencyAndRate DynamicRegionalChannelParams::getTxParameter() const {
   return {getTxFrequency(), datarate, getTxPower()};
 }
 
-FrequencyAndRate LmicDynamicChannel::getRx1Parameter() const {
+FrequencyAndRate DynamicRegionalChannelParams::getRx1Parameter() const {
   return {getRx1Frequency(), getRx1Dr(), 0};
 }
 
-OsTime LmicDynamicChannel::initJoinLoop() {
+OsTime DynamicRegionalChannelParams::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
   setDrJoin(MaxJoinDR);
@@ -173,7 +196,7 @@ OsTime LmicDynamicChannel::initJoinLoop() {
   return startTime;
 }
 
-TimeAndStatus LmicDynamicChannel::nextJoinState() {
+TimeAndStatus DynamicRegionalChannelParams::nextJoinState() {
   bool failed = false;
 
   // Try the tree default channels with same DR
@@ -207,15 +230,16 @@ TimeAndStatus LmicDynamicChannel::nextJoinState() {
   return {time, !failed};
 }
 
-void LmicDynamicChannel::setRx1DrOffset(uint8_t drOffset) {
+void DynamicRegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {
   rx1DrOffset = drOffset;
 }
 
-void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
+void DynamicRegionalChannelParams::setRegionalDutyCycleVerification(
+    bool enabled) {
   channels.setCheckDutyCycle(enabled);
 }
 
-bool LmicDynamicChannel::setAdrToMaxIfNotAlreadySet() {
+bool DynamicRegionalChannelParams::setAdrToMaxIfNotAlreadySet() {
   if (adrTxPow != MaxEIRP) {
     adrTxPow = MaxEIRP;
     return true;
@@ -224,8 +248,8 @@ bool LmicDynamicChannel::setAdrToMaxIfNotAlreadySet() {
 }
 
 #if defined(ENABLE_SAVE_RESTORE)
-void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
-  Lmic::saveStateWithoutTimeData(store);
+void DynamicRegionalChannelParams::saveStateWithoutTimeData(
+    StoringAbtract &store) const {
 
   channels.saveStateWithoutTimeData(store);
   store.write(txChnl);
@@ -234,8 +258,7 @@ void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(rx1DrOffset);
 }
 
-void LmicDynamicChannel::saveState(StoringAbtract &store) const {
-  Lmic::saveState(store);
+void DynamicRegionalChannelParams::saveState(StoringAbtract &store) const {
   channels.saveState(store);
   store.write(txChnl);
   store.write(adrTxPow);
@@ -243,8 +266,8 @@ void LmicDynamicChannel::saveState(StoringAbtract &store) const {
   store.write(rx1DrOffset);
 }
 
-void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
-  Lmic::loadStateWithoutTimeData(store);
+void DynamicRegionalChannelParams::loadStateWithoutTimeData(
+    RetrieveAbtract &store) {
 
   channels.loadStateWithoutTimeData(store);
   store.read(txChnl);
@@ -253,8 +276,7 @@ void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(rx1DrOffset);
 }
 
-void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
-  Lmic::loadState(store);
+void DynamicRegionalChannelParams::loadState(RetrieveAbtract &store) {
 
   channels.loadState(store);
   store.read(txChnl);
@@ -264,8 +286,11 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
 }
 #endif
 
-LmicDynamicChannel::LmicDynamicChannel(Radio &aradio, uint8_t aMaxEIRP,
-                                       dr_t aMaxJoinDr, dr_t aMinJoinDr,
-                                       Bands &aBands)
-    : Lmic(aradio), MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
+DynamicRegionalChannelParams::DynamicRegionalChannelParams(LmicRand& arand,
+                                                           uint8_t aMaxEIRP,
+                                                           dr_t aMaxJoinDr,
+                                                           dr_t aMinJoinDr,
+                                                           Bands &aBands)
+    : rand{arand},MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
       MinJoinDR(aMinJoinDr), channels{aBands} {}
+

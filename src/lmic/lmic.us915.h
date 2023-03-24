@@ -15,7 +15,7 @@
 
 #include "lmic.h"
 
-class LmicUs915 final : public Lmic {
+class Us915RegionalChannelParams : public RegionalChannelParams {
 public:
   enum Dr : dr_t {
     SF10 = 0,
@@ -32,7 +32,18 @@ public:
     SF7CR
   };
 
-  explicit LmicUs915(Radio &radio);
+  // increase data rate
+  dr_t incDR(dr_t dr) const;
+  // decrease data rate
+  dr_t decDR(dr_t dr) const;
+  // in range
+  bool validDR(dr_t dr) const final;
+  // decrease data rate by n steps
+  dr_t lowerDR(dr_t dr, uint8_t n) const;
+
+  virtual void reduceDr(uint8_t diff) final {
+    setDrTx(lowerDR(datarate, diff));
+  }
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   void selectSubBand(uint8_t band);
@@ -42,11 +53,6 @@ public:
   virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
   virtual bool setAdrToMaxIfNotAlreadySet() final;
 
-  virtual void reduceDr(uint8_t diff) final {
-    setDrTx(lowerDR(datarate, diff));
-  }
-
-protected:
   uint32_t getTxFrequency() const;
   int8_t getTxPower() const;
   FrequencyAndRate getTxParameter() const final;
@@ -71,8 +77,18 @@ protected:
   FrequencyAndRate defaultRX2Parameter() const final;
   void setRx1DrOffset(uint8_t drOffset) final;
 
+#if defined(ENABLE_SAVE_RESTORE)
+  virtual void saveState(StoringAbtract &store) const final;
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
+  virtual void loadState(RetrieveAbtract &store) final;
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
+#endif
+
+  Us915RegionalChannelParams(LmicRand &arand);
+
 private:
-  uint16_t channelMap[(72 + 15) / 16] = {0}; // enabled bits
+  // enabled bits
+  std::array<uint16_t, (72 + 15) / 16> channelMap;
   uint16_t chRnd = 0;
   // channel for next TX
   uint8_t txChnl = 0;
@@ -83,11 +99,24 @@ private:
   // 1 RX window DR offset
   uint8_t rx1DrOffset = 0;
 
+  LmicRand &rand;
+
   void enableChannel(uint8_t channel);
   void enableSubBand(uint8_t band);
   void disableSubBand(uint8_t band);
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;
+};
+
+class LmicUs915 final : public Lmic {
+public:
+  explicit LmicUs915(Radio &radio);
+
+private:
+  Aes aes;
+  LmicRand rand;
+  
+  Us915RegionalChannelParams channelParams;
 };
 
 #endif
