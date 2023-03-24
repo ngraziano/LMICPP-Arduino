@@ -66,7 +66,6 @@ protected:
   FrequencyAndRate defaultRX2Parameter() const override = 0;
   void setRx1DrOffset(uint8_t drOffset) final;
 
-
   void setRegionalDutyCycleVerification(bool enabled) final;
 
   const int8_t MaxEIRP;
@@ -78,9 +77,13 @@ protected:
   // ADR adjusted TX power, limit power to this value.
   // dBm
   int8_t adrTxPow = 0;
-  dr_t datarate = 0; // current data rate
-    // 1 RX window DR offset
+  // current data rate
+  dr_t datarate = 0;
+  // 1 RX window DR offset
   uint8_t rx1DrOffset = 0;
+  // Number of join requests sent
+  uint8_t joinCount = 0;
+
 private:
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;

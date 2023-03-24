@@ -288,10 +288,11 @@ TimeAndStatus LmicUs915::nextJoinState() {
     datarate = SF8C;
   } else {
     txChnl = rand.uint8() & 0x3F;
-    int8_t dr = SF7 - ++txCnt;
+    int8_t dr = SF7 - ++chRnd;
     if (dr < SF10) {
       dr = SF10;
       failed = true; // All DR exhausted - signal failed
+      chRnd = 0;
     }
     datarate = dr;
   }

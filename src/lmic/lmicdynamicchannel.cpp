@@ -180,7 +180,7 @@ TimeAndStatus LmicDynamicChannel::nextJoinState() {
   // If both fail try next lower datarate
   if (++txChnl == 3)
     txChnl = 0;
-  if ((++txCnt & 1) == 0) {
+  if ((++joinCount & 1) == 0) {
     // Lower DR every 2nd try
     if (datarate == MinJoinDR) {
       // we have tried all DR - signal EV_JOIN_FAILED

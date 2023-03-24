@@ -114,7 +114,6 @@ struct TimeAndStatus {
   bool status;
 };
 
-
 uint32_t read_frequency(const uint8_t *ptr);
 
 class Lmic {
@@ -136,8 +135,6 @@ private:
   keyCallback_t devEuiCallBack = nullptr;
   keyCallback_t artEuiCallBack = nullptr;
 
-protected:
-private:
   OsTime txend;
   // curent opmode set at init
   OpStateValue opmode;
@@ -203,13 +200,10 @@ private:
   uint8_t dataLen = 0;
   // 0 or start of data (dataBeg-1 is port)
   uint8_t dataBeg = 0;
-
+  uint8_t txCnt = 0;
   Aes aes;
 
 protected:
-
-
-  uint8_t txCnt = 0;
   LmicRand rand;
 
 private:
@@ -323,7 +317,6 @@ public:
   virtual void setRegionalDutyCycleVerification(bool enabled) = 0;
 
 protected:
-
   virtual FrequencyAndRate getTxParameter() const = 0;
   virtual FrequencyAndRate getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;

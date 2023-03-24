@@ -985,9 +985,7 @@ bool Lmic::startJoining() {
         .reset(OpState::NEXTCHNL)
         .set(OpState::JOINING);
     // Setup state
-    txCnt = 0;
     rxDelay = OsDeltaTime::from_sec(DELAY_JACC1);
-
     txend = initJoinLoop();
 
     // reportEvent will call engineUpdate which then starts sending JOIN
@@ -1159,8 +1157,8 @@ void Lmic::clrTxData() {
 
 void Lmic::setTxData() {
   opmode.set(OpState::TXDATA);
-  if (!opmode.test(OpState::JOINING))
-    txCnt = 0; // cancel any ongoing TX/RX retries
+  // cancel any ongoing TX/RX retries
+    txCnt = 0; 
   engineUpdate();
 }
 
