@@ -213,7 +213,7 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
                  MCMD_DN2P_ANS_CHACK)) {
     rx2Parameter.datarate = dr;
     rx2Parameter.frequency = newfreq;
-    rx1DrOffset = newRx1DrOffset;
+    setRx1DrOffset(newRx1DrOffset);
   }
 
   // RXParamSetupAns LoRaWAN™ Specification §5.4
@@ -238,9 +238,9 @@ uint32_t read_frequency(const uint8_t *ptr) { return rlsbf3(ptr) * 100; }
 
 void Lmic::parse_newchannel(const uint8_t *const opts, uint8_t *response,
                             uint8_t &responseLenght) {
-  const uint8_t chidx = opts[1];               // channel
+  const uint8_t chidx = opts[1];                     // channel
   const uint32_t newfreq = read_frequency(&opts[2]); // freq
-  const uint8_t drs = opts[5];                 // datarate span
+  const uint8_t drs = opts[5];                       // datarate span
   uint8_t mcmdNewChannelAns = 0x00;
   if (setupChannel(chidx, newfreq, dr_range_map(drs & 0xF, drs >> 4)))
     mcmdNewChannelAns |= MCMD_SNCH_ANS_DRACK | MCMD_SNCH_ANS_FQACK;
@@ -750,7 +750,7 @@ bool Lmic::processJoinAccept() {
 
   const uint8_t dlSettings = frame[join_accept::offset::dlSettings];
   rx2Parameter.datarate = dlSettings & 0x0F;
-  rx1DrOffset = (dlSettings >> 4) & 0x7;
+  setRx1DrOffset((dlSettings >> 4) & 0x7);
 
   const uint8_t configuredRxDelay = frame[join_accept::offset::rxDelay];
   if (configuredRxDelay == 0) {
@@ -1133,7 +1133,7 @@ void Lmic::reset() {
     devNonce = rand.uint16();
   }
   opmode.reset();
-  rx1DrOffset = 0;
+  setRx1DrOffset(0);
   // we need this for 2nd DN window of join accept
   rx2Parameter = defaultRX2Parameter();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
@@ -1349,7 +1349,6 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(rx1DrOffset);
   store.write(rx2Parameter.datarate);
   store.write(rx2Parameter.frequency);
   aes.saveState(store);
@@ -1379,7 +1378,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(rx1DrOffset);
   store.read(rx2Parameter.datarate);
   store.read(rx2Parameter.frequency);
   aes.loadState(store);

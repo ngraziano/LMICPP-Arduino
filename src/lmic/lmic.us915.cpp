@@ -303,4 +303,8 @@ FrequencyAndRate LmicUs915::defaultRX2Parameter() const {
   return {FREQ_DNW2, DR_DNW2, 0};
 }
 
+void LmicUs915::setRx1DrOffset(uint8_t drOffset) {
+  rx1DrOffset = drOffset;
+}
+
 LmicUs915::LmicUs915(Radio &aradio) : Lmic(aradio) {}

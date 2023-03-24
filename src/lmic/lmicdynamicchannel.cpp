@@ -207,14 +207,18 @@ TimeAndStatus LmicDynamicChannel::nextJoinState() {
   return {time, !failed};
 }
 
+void LmicDynamicChannel::setRx1DrOffset(uint8_t drOffset) {
+  rx1DrOffset = drOffset;
+}
+
 void LmicDynamicChannel::setRegionalDutyCycleVerification(bool enabled) {
   channels.setCheckDutyCycle(enabled);
 }
 
 bool LmicDynamicChannel::setAdrToMaxIfNotAlreadySet() {
   if (adrTxPow != MaxEIRP) {
-      adrTxPow = MaxEIRP;
-      return true;
+    adrTxPow = MaxEIRP;
+    return true;
   }
   return false;
 }
@@ -227,6 +231,7 @@ void LmicDynamicChannel::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(txChnl);
   store.write(adrTxPow);
   store.write(datarate);
+  store.write(rx1DrOffset);
 }
 
 void LmicDynamicChannel::saveState(StoringAbtract &store) const {
@@ -235,6 +240,7 @@ void LmicDynamicChannel::saveState(StoringAbtract &store) const {
   store.write(txChnl);
   store.write(adrTxPow);
   store.write(datarate);
+  store.write(rx1DrOffset);
 }
 
 void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
@@ -244,6 +250,7 @@ void LmicDynamicChannel::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(txChnl);
   store.read(adrTxPow);
   store.read(datarate);
+  store.read(rx1DrOffset);
 }
 
 void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
@@ -253,6 +260,7 @@ void LmicDynamicChannel::loadState(RetrieveAbtract &store) {
   store.read(txChnl);
   store.read(adrTxPow);
   store.read(datarate);
+  store.read(rx1DrOffset);
 }
 #endif
 

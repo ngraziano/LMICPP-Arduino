@@ -207,8 +207,7 @@ private:
   Aes aes;
 
 protected:
-  // 1 RX window DR offset
-  uint8_t rx1DrOffset = 0;
+
 
   uint8_t txCnt = 0;
   LmicRand rand;
@@ -352,6 +351,7 @@ protected:
   virtual OsTime initJoinLoop() = 0;
   virtual TimeAndStatus nextJoinState() = 0;
   virtual FrequencyAndRate defaultRX2Parameter() const = 0;
+  virtual void setRx1DrOffset(uint8_t drOffset) = 0;
 
 #if defined(ENABLE_SAVE_RESTORE)
 
