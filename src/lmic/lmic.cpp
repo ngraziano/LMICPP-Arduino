@@ -120,7 +120,7 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
 void Lmic::setBatteryLevel(uint8_t level) { battery_level = level; }
 
 void Lmic::setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) {
-  rx2Parameter = {rx2frequency, rx2datarate};
+  channelParams.setRx2Parameter(rx2frequency, rx2datarate);
 }
 
 void Lmic::runEngineUpdate() { engineUpdate(); }
@@ -211,8 +211,7 @@ void Lmic::parse_dn2p(const uint8_t *const opts, uint8_t *response,
   // Only take parameter into account if all parameter are ok.
   if (dn2Ans == (MCMD_DN2P_ANS_RX1DrOffsetAck | MCMD_DN2P_ANS_DRACK |
                  MCMD_DN2P_ANS_CHACK)) {
-    rx2Parameter.datarate = dr;
-    rx2Parameter.frequency = newfreq;
+    channelParams.setRx2Parameter(newfreq, dr);
     channelParams.setRx1DrOffset(newRx1DrOffset);
   }
 
@@ -588,8 +587,8 @@ void Lmic::setupRx1() {
 void Lmic::setupRx2() {
   txrxFlags.reset().set(TxRxStatus::DNW2);
   dataLen = 0;
-  rps_t const rps = dndr2rps(rx2Parameter.datarate);
-  radio.rx(rx2Parameter.frequency, rps, rxsyms, rxtime);
+  auto parameters = channelParams.getRx2Parameter();
+  radio.rx(parameters.frequency, parameters.rps, rxsyms, rxtime);
   wait_end_rx();
 }
 
@@ -599,10 +598,9 @@ void Lmic::setupRxC() {
 
   txrxFlags.reset().set(TxRxStatus::DNWC);
   dataLen = 0;
-  rps_t const rps = dndr2rps(rx2Parameter.datarate);
-  radio.rx(rx2Parameter.frequency, rps);
+  auto parameters = channelParams.getRx2Parameter();
+  radio.rx(parameters.frequency, parameters.rps);
 }
-
 
 OsTime Lmic::schedRx12(OsDeltaTime delay, rps_t rps) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
@@ -745,7 +743,7 @@ bool Lmic::processJoinAccept() {
   stateJustJoined();
 
   const uint8_t dlSettings = frame[join_accept::offset::dlSettings];
-  rx2Parameter.datarate = dlSettings & 0x0F;
+  channelParams.setRx2DataRate(dlSettings & 0x0F);
   channelParams.setRx1DrOffset((dlSettings >> 4) & 0x7);
 
   const uint8_t configuredRxDelay = frame[join_accept::offset::rxDelay];
@@ -763,8 +761,8 @@ void Lmic::processRxJacc() {
   if (!processJoinAccept()) {
     if (txrxFlags.test(TxRxStatus::DNW1)) {
       // wait for RX2
-      auto waitime =
-          schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dndr2rps(rx2Parameter.datarate));
+      auto waitime = schedRx12(OsDeltaTime::from_sec(DELAY_JACC2),
+                               channelParams.getRx2Parameter().rps);
       next_job = Job(&Lmic::setupRx2, waitime);
     } else {
       // nothing in 1st/2nd DN slot
@@ -830,7 +828,7 @@ void Lmic::processRx1DnData() {
     dataLen = 0;
     // if nothing receive, wait for RX2 before take actions
     auto waitime = schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
-                              dndr2rps(rx2Parameter.datarate));
+                             channelParams.getRx2Parameter().rps);
     next_job = Job(&Lmic::setupRx2, waitime);
 
   } else {
@@ -1129,7 +1127,7 @@ void Lmic::reset() {
   opmode.reset();
   channelParams.setRx1DrOffset(0);
   // we need this for 2nd DN window of join accept
-  rx2Parameter = channelParams.defaultRX2Parameter();
+  channelParams.resetRX2Parameter();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   globalDutyAvail = os_getTime();
   channelParams.initDefaultChannels();
@@ -1315,7 +1313,6 @@ void Lmic::saveState(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(rx2Parameter);
   aes.saveState(store);
   channelParams.saveState(store);
   store.write(globalDutyAvail);
@@ -1340,7 +1337,6 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(rx2Parameter);
   aes.saveState(store);
   channelParams.saveStateWithoutTimeData(store);
 }
@@ -1364,7 +1360,6 @@ void Lmic::loadState(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(rx2Parameter);
   aes.loadState(store);
   channelParams.loadState(store);
   store.read(globalDutyAvail);
@@ -1389,7 +1384,6 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(rx2Parameter);
   aes.loadState(store);
   channelParams.loadStateWithoutTimeData(store);
 }

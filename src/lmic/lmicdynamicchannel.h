@@ -26,6 +26,7 @@ public:
   int8_t getTxPower() const;
   TransmitionParameters getTxParameter() const final;
   TransmitionParameters getRx1Parameter() const final;
+  TransmitionParameters getRx2Parameter() const final;
 
   uint8_t getRawRps(dr_t dr) const override = 0;
   int8_t pow2dBm(uint8_t powerIndex) const override = 0;
@@ -43,7 +44,9 @@ public:
   OsTime nextTx(OsTime now) final;
   OsTime initJoinLoop() final;
   TimeAndStatus nextJoinState() final;
-  FrequencyAndRate defaultRX2Parameter() const override = 0;
+
+  void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) final;
+  void setRx2DataRate(dr_t rx2datarate) final;
   void setRx1DrOffset(uint8_t drOffset) final;
 
   void setDrJoin(dr_t dr) { datarate = dr; }
@@ -93,6 +96,7 @@ protected:
   uint8_t rx1DrOffset = 0;
   // Number of join requests sent
   uint8_t joinCount = 0;
+  TransmitionParameters rx2Parameter;
 
 private:
   uint32_t getRx1Frequency() const;

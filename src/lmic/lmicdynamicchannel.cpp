@@ -187,6 +187,22 @@ TransmitionParameters DynamicRegionalChannelParams::getRx1Parameter() const {
   return {getRx1Frequency(), val, 0};
 }
 
+TransmitionParameters DynamicRegionalChannelParams::getRx2Parameter() const {
+  return rx2Parameter;
+}
+
+void DynamicRegionalChannelParams::setRx2Parameter(uint32_t const freq,
+                                                   dr_t const dr) {
+  auto val = rps_t(getRawRps(dr));
+  val.nocrc = true;
+  rx2Parameter = {freq, val, 0};
+}
+
+void DynamicRegionalChannelParams::setRx2DataRate(dr_t const dr) {
+  rx2Parameter.rps = rps_t(getRawRps(dr));
+  rx2Parameter.rps.nocrc = true;
+}
+
 OsTime DynamicRegionalChannelParams::initJoinLoop() {
   txChnl = rand.uint8() % 3;
   adrTxPow = MaxEIRP;
@@ -258,6 +274,7 @@ void DynamicRegionalChannelParams::saveStateWithoutTimeData(
   store.write(adrTxPow);
   store.write(datarate);
   store.write(rx1DrOffset);
+  store.write(rx2Parameter);
 }
 
 void DynamicRegionalChannelParams::saveState(StoringAbtract &store) const {
@@ -266,6 +283,7 @@ void DynamicRegionalChannelParams::saveState(StoringAbtract &store) const {
   store.write(adrTxPow);
   store.write(datarate);
   store.write(rx1DrOffset);
+  store.write(rx2Parameter);
 }
 
 void DynamicRegionalChannelParams::loadStateWithoutTimeData(
@@ -276,6 +294,7 @@ void DynamicRegionalChannelParams::loadStateWithoutTimeData(
   store.read(adrTxPow);
   store.read(datarate);
   store.read(rx1DrOffset);
+  store.read(rx2Parameter);
 }
 
 void DynamicRegionalChannelParams::loadState(RetrieveAbtract &store) {
@@ -285,6 +304,7 @@ void DynamicRegionalChannelParams::loadState(RetrieveAbtract &store) {
   store.read(adrTxPow);
   store.read(datarate);
   store.read(rx1DrOffset);
+  store.read(rx2Parameter);
 }
 #endif
 

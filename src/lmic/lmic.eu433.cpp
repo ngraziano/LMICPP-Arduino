@@ -30,7 +30,8 @@ namespace {
 constexpr uint32_t EU433_FREQ_MIN = 433050000;
 constexpr uint32_t EU433_FREQ_MAX = 434665000;
 constexpr uint32_t FREQ_DNW2 = EU433_R2;
-constexpr Eu433RegionalChannelParams::Dr DR_DNW2 = Eu433RegionalChannelParams::Dr::SF12;
+constexpr Eu433RegionalChannelParams::Dr DR_DNW2 =
+    Eu433RegionalChannelParams::Dr::SF12;
 
 constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
@@ -61,7 +62,8 @@ int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   return MaxEIRP - 2 * powerIndex;
 }
 
-bool Eu433RegionalChannelParams::validRx1DrOffset(uint8_t const drOffset) const {
+bool Eu433RegionalChannelParams::validRx1DrOffset(
+    uint8_t const drOffset) const {
   return drOffset < 6;
 }
 
@@ -72,12 +74,13 @@ void Eu433RegionalChannelParams::initDefaultChannels() {
   setupChannel(2, EU433_F3, 0);
 }
 
-bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx, uint32_t const newfreq,
-                             uint16_t const drmap) {
+bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
+                                              uint32_t const newfreq,
+                                              uint16_t const drmap) {
   if (chidx >= channels.LIMIT_CHANNELS)
     return false;
 
-  if(chidx < 3 && drmap != 0) {
+  if (chidx < 3 && drmap != 0) {
     // channel 0, 1 and 2 are fixed
     // drmap == 0 is only used internally to reset the channel
     return false;
@@ -97,10 +100,11 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx, uint32_t cons
   return true;
 }
 
-FrequencyAndRate Eu433RegionalChannelParams::defaultRX2Parameter() const {
-  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
+void Eu433RegionalChannelParams::resetRX2Parameter() {
+  auto val = rps_t(getRawRps(static_cast<dr_t>(DR_DNW2)));
+  val.nocrc = true;
+  rx2Parameter = {FREQ_DNW2, val};
 }
-
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
     : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0, bands) {}

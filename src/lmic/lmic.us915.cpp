@@ -299,6 +299,10 @@ TransmitionParameters Us915RegionalChannelParams::getRx1Parameter() const {
   return {getRx1Frequency(),val, 0 };
 }
 
+TransmitionParameters Us915RegionalChannelParams::getRx2Parameter() const {
+  return rx2Parameter;
+}
+
 OsTime Us915RegionalChannelParams::initJoinLoop() {
   chRnd = 0;
   txChnl = 0;
@@ -330,12 +334,26 @@ TimeAndStatus Us915RegionalChannelParams::nextJoinState() {
   return {os_getTime(), !failed};
 }
 
-FrequencyAndRate Us915RegionalChannelParams::defaultRX2Parameter() const {
-  return {FREQ_DNW2, DR_DNW2};
+void Us915RegionalChannelParams::resetRX2Parameter() {
+  auto val = rps_t(getRawRps(static_cast<dr_t>(DR_DNW2)));
+  val.nocrc = true;
+  rx2Parameter = {FREQ_DNW2, val, 0};
 }
 
 void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {
   rx1DrOffset = drOffset;
+}
+
+void Us915RegionalChannelParams::setRx2Parameter(uint32_t const freq,
+                                                   dr_t const dr) {
+  auto val = rps_t(getRawRps(dr));
+  val.nocrc = true;
+  rx2Parameter = {freq, val, 0};
+}
+
+void Us915RegionalChannelParams::setRx2DataRate(dr_t const dr) {
+  rx2Parameter.rps = rps_t(getRawRps(dr));
+  rx2Parameter.rps.nocrc = true;
 }
 
 #if defined(ENABLE_SAVE_RESTORE)
@@ -348,6 +366,8 @@ void Us915RegionalChannelParams::saveStateWithoutTimeData(
   store.write(adrTxPow);
   store.write(datarate);
   store.write(rx1DrOffset);
+  store.write(rx2Parameter);
+
 }
 
 void Us915RegionalChannelParams::saveState(StoringAbtract &store) const {
@@ -358,6 +378,7 @@ void Us915RegionalChannelParams::saveState(StoringAbtract &store) const {
   store.write(adrTxPow);
   store.write(datarate);
   store.write(rx1DrOffset);
+  store.write(rx2Parameter);
 }
 
 void Us915RegionalChannelParams::loadStateWithoutTimeData(
@@ -369,6 +390,8 @@ void Us915RegionalChannelParams::loadStateWithoutTimeData(
   store.read(adrTxPow);
   store.read(datarate);
   store.read(rx1DrOffset);
+  store.read(rx2Parameter);
+
 }
 
 void Us915RegionalChannelParams::loadState(RetrieveAbtract &store) {
@@ -378,6 +401,8 @@ void Us915RegionalChannelParams::loadState(RetrieveAbtract &store) {
   store.read(adrTxPow);
   store.read(datarate);
   store.read(rx1DrOffset);
+  store.read(rx2Parameter);
+
 }
 #endif
 

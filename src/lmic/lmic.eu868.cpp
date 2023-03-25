@@ -108,8 +108,10 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
   return true;
 }
 
-FrequencyAndRate Eu868RegionalChannelParams::defaultRX2Parameter() const {
-  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
+void Eu868RegionalChannelParams::resetRX2Parameter() {
+  auto val = rps_t(getRawRps(static_cast<dr_t>(DR_DNW2)));
+  val.nocrc = true;
+  rx2Parameter = {FREQ_DNW2, val};
 }
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)

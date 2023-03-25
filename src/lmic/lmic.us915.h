@@ -57,6 +57,7 @@ public:
   int8_t getTxPower() const;
   TransmitionParameters getTxParameter() const final;
   TransmitionParameters getRx1Parameter() const final;
+  TransmitionParameters getRx2Parameter() const final;
   uint8_t getRawRps(dr_t dr) const final;
 
   int8_t pow2dBm(uint8_t powerIndex) const final;
@@ -74,7 +75,9 @@ public:
   OsTime nextTx(OsTime now) final;
   OsTime initJoinLoop() final;
   TimeAndStatus nextJoinState() final;
-  FrequencyAndRate defaultRX2Parameter() const final;
+  void resetRX2Parameter() final;
+  void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) final;
+  void setRx2DataRate(dr_t rx2datarate) final;
   void setRx1DrOffset(uint8_t drOffset) final;
 
 #if defined(ENABLE_SAVE_RESTORE)
@@ -98,7 +101,7 @@ private:
   dr_t datarate = 0; // current data rate
   // 1 RX window DR offset
   uint8_t rx1DrOffset = 0;
-
+  TransmitionParameters rx2Parameter;
   LmicRand &rand;
 
   void enableChannel(uint8_t channel);

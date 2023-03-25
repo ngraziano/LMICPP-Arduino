@@ -125,6 +125,7 @@ class RegionalChannelParams {
 public:
   virtual TransmitionParameters getTxParameter() const = 0;
   virtual TransmitionParameters getRx1Parameter() const = 0;
+  virtual TransmitionParameters getRx2Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
   virtual void reduceDr(uint8_t diff) = 0;
 
@@ -149,7 +150,9 @@ public:
   virtual OsTime nextTx(OsTime now) = 0;
   virtual OsTime initJoinLoop() = 0;
   virtual TimeAndStatus nextJoinState() = 0;
-  virtual FrequencyAndRate defaultRX2Parameter() const = 0;
+  virtual void resetRX2Parameter() = 0;
+  virtual void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) = 0;
+  virtual void setRx2DataRate(dr_t rx2datarate) = 0;
   virtual void setRx1DrOffset(uint8_t drOffset) = 0;
 
   // Use in certification tests
@@ -245,9 +248,6 @@ private:
 
   // Rx delay after TX, init at reset
   OsDeltaTime rxDelay;
-
-  // 2nd RX window (after up stream), init at reset
-  FrequencyAndRate rx2Parameter;
 
   FrameBuffer frame;
   // transaction flags (TX-RX combo)

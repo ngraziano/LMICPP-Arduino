@@ -30,7 +30,7 @@ public:
   bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;
-  FrequencyAndRate defaultRX2Parameter() const final;
+  void resetRX2Parameter() final;
 
 private:
   BandSingle bands{100};
