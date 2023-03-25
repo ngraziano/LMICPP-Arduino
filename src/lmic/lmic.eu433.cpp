@@ -98,7 +98,7 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx, uint32_t cons
 }
 
 FrequencyAndRate Eu433RegionalChannelParams::defaultRX2Parameter() const {
-  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2), 0};
+  return {FREQ_DNW2, static_cast<dr_t>(DR_DNW2)};
 }
 
 

@@ -289,12 +289,12 @@ dr_t Us915RegionalChannelParams::getRx1Dr() const {
   return datarate;
 }
 
-FrequencyAndRate Us915RegionalChannelParams::getTxParameter() const {
-  return {getTxFrequency(), datarate, getTxPower()};
+TransmitionParameters Us915RegionalChannelParams::getTxParameter() const {
+  return {getTxFrequency(), rps_t(getRawRps(datarate)), getTxPower()};
 }
 
 FrequencyAndRate Us915RegionalChannelParams::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr(), 0};
+  return {getRx1Frequency(), getRx1Dr()};
 }
 
 OsTime Us915RegionalChannelParams::initJoinLoop() {
@@ -329,7 +329,7 @@ TimeAndStatus Us915RegionalChannelParams::nextJoinState() {
 }
 
 FrequencyAndRate Us915RegionalChannelParams::defaultRX2Parameter() const {
-  return {FREQ_DNW2, DR_DNW2, 0};
+  return {FREQ_DNW2, DR_DNW2};
 }
 
 void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {

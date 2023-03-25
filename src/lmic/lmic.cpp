@@ -120,7 +120,7 @@ void Lmic::txDelay(OsTime reftime, uint8_t secSpan) {
 void Lmic::setBatteryLevel(uint8_t level) { battery_level = level; }
 
 void Lmic::setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) {
-  rx2Parameter = {rx2frequency, rx2datarate, 0};
+  rx2Parameter = {rx2frequency, rx2datarate};
 }
 
 void Lmic::runEngineUpdate() { engineUpdate(); }
@@ -1098,7 +1098,7 @@ void Lmic::engineUpdate() {
 
   auto txParameter = channelParams.getTxParameter();
 
-  rps_t rps = updr2rps(txParameter.datarate);
+  rps_t rps = txParameter.rps;
   OsDeltaTime airtime = calcAirTime(rps, dataLen);
   channelParams.updateTxTimes(airtime);
 
@@ -1320,8 +1320,7 @@ void Lmic::saveState(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(rx2Parameter.datarate);
-  store.write(rx2Parameter.frequency);
+  store.write(rx2Parameter);
   aes.saveState(store);
   channelParams.saveState(store);
   store.write(globalDutyAvail);
@@ -1346,8 +1345,7 @@ void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
   store.write(dnConf);
   store.write(adrAckReq);
   store.write(rxDelay);
-  store.write(rx2Parameter.datarate);
-  store.write(rx2Parameter.frequency);
+  store.write(rx2Parameter);
   aes.saveState(store);
   channelParams.saveStateWithoutTimeData(store);
 }
@@ -1371,8 +1369,7 @@ void Lmic::loadState(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(rx2Parameter.datarate);
-  store.read(rx2Parameter.frequency);
+  store.read(rx2Parameter);
   aes.loadState(store);
   channelParams.loadState(store);
   store.read(globalDutyAvail);
@@ -1397,8 +1394,7 @@ void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
   store.read(dnConf);
   store.read(adrAckReq);
   store.read(rxDelay);
-  store.read(rx2Parameter.datarate);
-  store.read(rx2Parameter.frequency);
+  store.read(rx2Parameter);
   aes.loadState(store);
   channelParams.loadStateWithoutTimeData(store);
 }

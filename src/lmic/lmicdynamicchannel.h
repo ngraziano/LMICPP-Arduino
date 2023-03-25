@@ -24,7 +24,7 @@ public:
                     uint16_t drmap) override = 0;
   uint32_t getTxFrequency() const;
   int8_t getTxPower() const;
-  FrequencyAndRate getTxParameter() const final;
+  TransmitionParameters getTxParameter() const final;
   FrequencyAndRate getRx1Parameter() const final;
 
   uint8_t getRawRps(dr_t dr) const override = 0;

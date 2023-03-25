@@ -106,6 +106,11 @@ constexpr int8_t LINK_CHECK_OFF = -128;
 struct FrequencyAndRate {
   uint32_t frequency;
   dr_t datarate;
+};
+
+struct TransmitionParameters {
+  uint32_t frequency;
+  rps_t rps;
   int8_t power;
 };
 
@@ -118,7 +123,7 @@ uint32_t read_frequency(const uint8_t *ptr);
 
 class RegionalChannelParams {
 public:
-  virtual FrequencyAndRate getTxParameter() const = 0;
+  virtual TransmitionParameters getTxParameter() const = 0;
   virtual FrequencyAndRate getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
   virtual void reduceDr(uint8_t diff) = 0;

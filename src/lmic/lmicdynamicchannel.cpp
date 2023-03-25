@@ -177,12 +177,12 @@ dr_t DynamicRegionalChannelParams::getRx1Dr() const {
   return lowerDR(datarate, rx1DrOffset);
 }
 
-FrequencyAndRate DynamicRegionalChannelParams::getTxParameter() const {
-  return {getTxFrequency(), datarate, getTxPower()};
+TransmitionParameters DynamicRegionalChannelParams::getTxParameter() const {
+  return {getTxFrequency(), rps_t(getRawRps(datarate)), getTxPower()};
 }
 
 FrequencyAndRate DynamicRegionalChannelParams::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr(), 0};
+  return {getRx1Frequency(), getRx1Dr()};
 }
 
 OsTime DynamicRegionalChannelParams::initJoinLoop() {
