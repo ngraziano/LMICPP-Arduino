@@ -25,7 +25,6 @@ public:
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   Eu433RegionalChannelParams(LmicRand &arand);
 
-  uint8_t getRawRps(dr_t dr) const final;
   int8_t pow2dBm(uint8_t powerIndex) const final;
   bool validRx1DrOffset(uint8_t drOffset) const final;
 

@@ -41,6 +41,7 @@ constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
     Eu868RegionalChannelParams::Dr::SF12;
 
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
+constexpr rps_t rps_DNW2 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
 
 constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
@@ -58,9 +59,6 @@ constexpr int8_t MaxEIRPValue = 16;
 
 } // namespace
 
-uint8_t Eu868RegionalChannelParams::getRawRps(dr_t const dr) const {
-  return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
-}
 
 int8_t Eu868RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 8) {
@@ -109,13 +107,11 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 void Eu868RegionalChannelParams::resetRX2Parameter() {
-  auto val = rps_t(rps_DR0);
-  val.nocrc = true;
-  rx2Parameter = {FREQ_DNW2, val, 0};
+  rx2Parameter = {FREQ_DNW2, rps_DNW2, 0};
 }
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0, bandeu) {}
+    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0,RESOLVE_TABLE(_DR2RPS_CRC), bandeu) {}
 
 LmicEu868::LmicEu868(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

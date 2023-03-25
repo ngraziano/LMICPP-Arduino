@@ -27,7 +27,6 @@ public:
   TransmitionParameters getTxParameter() const final;
   TransmitionParameters getRx1Parameter() const final;
   TransmitionParameters getRx2Parameter() const final;
-  virtual uint8_t getRawRps(dr_t dr) const = 0;
 
   int8_t pow2dBm(uint8_t powerIndex) const override = 0;
   OsDeltaTime getDwn2SafetyZone() const final;
@@ -62,6 +61,7 @@ public:
   bool validDR(dr_t dr) const final;
   // decrease data rate by n steps
   dr_t lowerDR(dr_t dr, uint8_t n) const;
+  uint8_t getRawRps(dr_t dr) const;
 
   virtual void reduceDr(uint8_t diff) final {
     setDrTx(lowerDR(datarate, diff));
@@ -75,7 +75,8 @@ public:
 #endif
 
   DynamicRegionalChannelParams(LmicRand &arand, uint8_t aMaxEIRP,
-                               dr_t aMaxJoinDr, dr_t aMinJoinDr, Bands &aBands);
+                               dr_t aMaxJoinDr, dr_t aMinJoinDr,
+                               const uint8_t *drtable, Bands &aBands);
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final;
@@ -83,6 +84,7 @@ protected:
   const int8_t MaxEIRP;
   const dr_t MaxJoinDR;
   const dr_t MinJoinDR;
+  const uint8_t *dr_table;
   ChannelList channels;
 
   // channel for next TX

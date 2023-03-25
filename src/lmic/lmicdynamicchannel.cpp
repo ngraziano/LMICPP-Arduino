@@ -39,6 +39,10 @@ bool DynamicRegionalChannelParams::validDR(dr_t const dr) const {
   return getRawRps(dr) != ILLEGAL_RPS;
 }
 
+uint8_t DynamicRegionalChannelParams::getRawRps(dr_t const dr) const {
+  return table_get_u1(dr_table, dr + 1);
+}
+
 // decrease data rate by n steps
 dr_t DynamicRegionalChannelParams::lowerDR(dr_t dr, uint8_t n) const {
   while (n--) {
@@ -312,6 +316,7 @@ DynamicRegionalChannelParams::DynamicRegionalChannelParams(LmicRand &arand,
                                                            uint8_t aMaxEIRP,
                                                            dr_t aMaxJoinDr,
                                                            dr_t aMinJoinDr,
+                                                           const uint8_t* drtable,
                                                            Bands &aBands)
     : rand{arand}, MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
-      MinJoinDR(aMinJoinDr), channels{aBands} {}
+      MinJoinDR(aMinJoinDr), dr_table(drtable), channels{aBands} {}

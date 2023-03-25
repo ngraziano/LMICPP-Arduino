@@ -33,6 +33,8 @@ constexpr uint32_t FREQ_DNW2 = EU433_R2;
 constexpr Eu433RegionalChannelParams::Dr DR_DNW2 =
     Eu433RegionalChannelParams::Dr::SF12;
 
+constexpr rps_t rps_DNW2 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
+
 constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR2 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
@@ -50,9 +52,7 @@ constexpr int8_t MaxEIRPValue = 12;
 
 } // namespace
 
-uint8_t Eu433RegionalChannelParams::getRawRps(dr_t const dr) const {
-  return TABLE_GET_U1(_DR2RPS_CRC, dr + 1);
-}
+
 
 int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 6) {
@@ -101,13 +101,11 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 void Eu433RegionalChannelParams::resetRX2Parameter() {
-  auto val = rps_t(rps_DR0);
-  val.nocrc = true;
-  rx2Parameter = {FREQ_DNW2, val, 0};
+  rx2Parameter = {FREQ_DNW2, rps_DNW2, 0};
 }
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0, bands) {}
+    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0,RESOLVE_TABLE(_DR2RPS_CRC), bands) {}
 
 LmicEu433::LmicEu433(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

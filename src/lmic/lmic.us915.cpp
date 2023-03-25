@@ -42,6 +42,8 @@ CONST_TABLE(uint8_t, maxFrameLens)
 [] = {24, 66, 142, 255, 255, 255, 255, 255, 66, 142};
 
 namespace {
+constexpr rps_t rps_DWN2 = rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5 , true};
+
 constexpr uint8_t rps_DR0 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR2 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
@@ -335,9 +337,7 @@ TimeAndStatus Us915RegionalChannelParams::nextJoinState() {
 }
 
 void Us915RegionalChannelParams::resetRX2Parameter() {
-  auto val = rps_t(getRawRps(static_cast<dr_t>(DR_DNW2)));
-  val.nocrc = true;
-  rx2Parameter = {FREQ_DNW2, val, 0};
+  rx2Parameter = {FREQ_DNW2, rps_DWN2, 0};
 }
 
 void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {
