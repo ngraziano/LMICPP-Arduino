@@ -101,9 +101,9 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 void Eu433RegionalChannelParams::resetRX2Parameter() {
-  auto val = rps_t(getRawRps(static_cast<dr_t>(DR_DNW2)));
+  auto val = rps_t(rps_DR0);
   val.nocrc = true;
-  rx2Parameter = {FREQ_DNW2, val};
+  rx2Parameter = {FREQ_DNW2, val, 0};
 }
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)

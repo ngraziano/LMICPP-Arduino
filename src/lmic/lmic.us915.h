@@ -58,7 +58,6 @@ public:
   TransmitionParameters getTxParameter() const final;
   TransmitionParameters getRx1Parameter() const final;
   TransmitionParameters getRx2Parameter() const final;
-  uint8_t getRawRps(dr_t dr) const final;
 
   int8_t pow2dBm(uint8_t powerIndex) const final;
   OsDeltaTime getDwn2SafetyZone() const final;
@@ -109,6 +108,8 @@ private:
   void disableSubBand(uint8_t band);
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;
+  uint8_t getRawRps(dr_t dr) const;
+
 };
 
 class LmicUs915 final : public Lmic {

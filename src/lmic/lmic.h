@@ -126,7 +126,6 @@ public:
   virtual TransmitionParameters getTxParameter() const = 0;
   virtual TransmitionParameters getRx1Parameter() const = 0;
   virtual TransmitionParameters getRx2Parameter() const = 0;
-  virtual uint8_t getRawRps(dr_t dr) const = 0;
   virtual void reduceDr(uint8_t diff) = 0;
 
   int8_t const InvalidPower = -128;
@@ -368,8 +367,6 @@ public:
     channelParams.setRegionalDutyCycleVerification(enabled);
   };
 
-  rps_t updr2rps(dr_t dr) const;
-  rps_t dndr2rps(dr_t dr) const;
 
   OsTime int_trigger_time() const;
   void wait_end_rx();

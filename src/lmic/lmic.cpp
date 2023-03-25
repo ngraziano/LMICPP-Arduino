@@ -1221,15 +1221,6 @@ void Lmic::setLinkCheckMode(bool const enabled) {
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t const error) { clockError = error; }
 
-rps_t Lmic::updr2rps(dr_t const dr) const {
-  return rps_t(channelParams.getRawRps(dr));
-}
-
-rps_t Lmic::dndr2rps(dr_t const dr) const {
-  auto val = updr2rps(dr);
-  val.nocrc = true;
-  return val;
-}
 
 OsTime Lmic::int_trigger_time() const {
   OsTime const now = os_getTime();
