@@ -293,8 +293,10 @@ TransmitionParameters Us915RegionalChannelParams::getTxParameter() const {
   return {getTxFrequency(), rps_t(getRawRps(datarate)), getTxPower()};
 }
 
-FrequencyAndRate Us915RegionalChannelParams::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr()};
+TransmitionParameters Us915RegionalChannelParams::getRx1Parameter() const {
+  auto val =  rps_t(getRawRps(getRx1Dr()));
+  val.nocrc = true;
+  return {getRx1Frequency(),val, 0 };
 }
 
 OsTime Us915RegionalChannelParams::initJoinLoop() {

@@ -56,7 +56,7 @@ public:
   uint32_t getTxFrequency() const;
   int8_t getTxPower() const;
   TransmitionParameters getTxParameter() const final;
-  FrequencyAndRate getRx1Parameter() const final;
+  TransmitionParameters getRx1Parameter() const final;
   uint8_t getRawRps(dr_t dr) const final;
 
   int8_t pow2dBm(uint8_t powerIndex) const final;
@@ -115,7 +115,7 @@ public:
 private:
   Aes aes;
   LmicRand rand;
-  
+
   Us915RegionalChannelParams channelParams;
 };
 

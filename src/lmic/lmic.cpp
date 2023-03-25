@@ -581,8 +581,7 @@ void Lmic::setupRx1() {
   txrxFlags.reset().set(TxRxStatus::DNW1);
   dataLen = 0;
   auto parameters = channelParams.getRx1Parameter();
-  rps_t rps = dndr2rps(parameters.datarate);
-  radio.rx(parameters.frequency, rps, rxsyms, rxtime);
+  radio.rx(parameters.frequency, parameters.rps, rxsyms, rxtime);
   wait_end_rx();
 }
 
@@ -604,16 +603,12 @@ void Lmic::setupRxC() {
   radio.rx(rx2Parameter.frequency, rps);
 }
 
-OsDeltaTime Lmic::dr2hsym(dr_t dr) const {
-  rps_t rps = updr2rps(dr);
-  return OsDeltaTime(timeBySymbol(rps).tick() / 2);
-}
 
-OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
+OsTime Lmic::schedRx12(OsDeltaTime delay, rps_t rps) {
   PRINT_DEBUG(2, F("SchedRx RX1/2"));
 
   // Half symbol time for the data rate.
-  const OsDeltaTime hsym = dr2hsym(dr);
+  const OsDeltaTime hsym = OsDeltaTime(Lmic::timeBySymbol(rps).tick() / 2);
 
   // If a clock error is specified, compensate for it by extending the
   // receive window
@@ -645,7 +640,7 @@ OsTime Lmic::schedRx12(OsDeltaTime delay, dr_t dr) {
 // Called by HAL once TX complete and delivers exact end of TX time stamp in
 // rxtime. Schedule first receive.
 void Lmic::txDone() {
-  auto waitime = schedRx12(rxDelay, channelParams.getRx1Parameter().datarate);
+  auto waitime = schedRx12(rxDelay, channelParams.getRx1Parameter().rps);
   next_job = Job(&Lmic::setupRx1, waitime);
 
   setupRxC();
@@ -769,7 +764,7 @@ void Lmic::processRxJacc() {
     if (txrxFlags.test(TxRxStatus::DNW1)) {
       // wait for RX2
       auto waitime =
-          schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), rx2Parameter.datarate);
+          schedRx12(OsDeltaTime::from_sec(DELAY_JACC2), dndr2rps(rx2Parameter.datarate));
       next_job = Job(&Lmic::setupRx2, waitime);
     } else {
       // nothing in 1st/2nd DN slot
@@ -835,7 +830,7 @@ void Lmic::processRx1DnData() {
     dataLen = 0;
     // if nothing receive, wait for RX2 before take actions
     auto waitime = schedRx12(rxDelay + OsDeltaTime::from_sec(DELAY_EXTDNW2),
-                             rx2Parameter.datarate);
+                              dndr2rps(rx2Parameter.datarate));
     next_job = Job(&Lmic::setupRx2, waitime);
 
   } else {

@@ -124,7 +124,7 @@ uint32_t read_frequency(const uint8_t *ptr);
 class RegionalChannelParams {
 public:
   virtual TransmitionParameters getTxParameter() const = 0;
-  virtual FrequencyAndRate getRx1Parameter() const = 0;
+  virtual TransmitionParameters getRx1Parameter() const = 0;
   virtual uint8_t getRawRps(dr_t dr) const = 0;
   virtual void reduceDr(uint8_t diff) = 0;
 
@@ -266,7 +266,7 @@ private:
   void setupRx1();
   void setupRx2();
   void setupRxC();
-  OsTime schedRx12(OsDeltaTime delay, dr_t dr);
+  OsTime schedRx12(OsDeltaTime delay, rps_t rps);
 
   void txDone();
 
@@ -368,7 +368,6 @@ public:
     channelParams.setRegionalDutyCycleVerification(enabled);
   };
 
-  OsDeltaTime dr2hsym(dr_t dr) const;
   rps_t updr2rps(dr_t dr) const;
   rps_t dndr2rps(dr_t dr) const;
 

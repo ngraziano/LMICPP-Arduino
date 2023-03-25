@@ -181,8 +181,10 @@ TransmitionParameters DynamicRegionalChannelParams::getTxParameter() const {
   return {getTxFrequency(), rps_t(getRawRps(datarate)), getTxPower()};
 }
 
-FrequencyAndRate DynamicRegionalChannelParams::getRx1Parameter() const {
-  return {getRx1Frequency(), getRx1Dr()};
+TransmitionParameters DynamicRegionalChannelParams::getRx1Parameter() const {
+  auto val = rps_t(getRawRps(getRx1Dr()));
+  val.nocrc = true;
+  return {getRx1Frequency(), val, 0};
 }
 
 OsTime DynamicRegionalChannelParams::initJoinLoop() {
@@ -286,11 +288,10 @@ void DynamicRegionalChannelParams::loadState(RetrieveAbtract &store) {
 }
 #endif
 
-DynamicRegionalChannelParams::DynamicRegionalChannelParams(LmicRand& arand,
+DynamicRegionalChannelParams::DynamicRegionalChannelParams(LmicRand &arand,
                                                            uint8_t aMaxEIRP,
                                                            dr_t aMaxJoinDr,
                                                            dr_t aMinJoinDr,
                                                            Bands &aBands)
-    : rand{arand},MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
+    : rand{arand}, MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
       MinJoinDR(aMinJoinDr), channels{aBands} {}
-
