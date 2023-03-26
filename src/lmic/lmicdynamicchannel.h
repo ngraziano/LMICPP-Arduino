@@ -53,15 +53,14 @@ public:
   virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
   virtual bool setAdrToMaxIfNotAlreadySet() final;
 
-  // increase data rate
-  dr_t incDR(dr_t dr) const;
   // decrease data rate
   dr_t decDR(dr_t dr) const;
   // in range
   bool validDR(dr_t dr) const final;
   // decrease data rate by n steps
   dr_t lowerDR(dr_t dr, uint8_t n) const;
-  uint8_t getRawRps(dr_t dr) const;
+  rps_t getRps(dr_t dr) const;
+  rps_t getRpsDw(dr_t dr) const;
 
   virtual void reduceDr(uint8_t diff) final {
     setDrTx(lowerDR(datarate, diff));
@@ -76,7 +75,8 @@ public:
 
   DynamicRegionalChannelParams(LmicRand &arand, uint8_t aMaxEIRP,
                                dr_t aMaxJoinDr, dr_t aMinJoinDr,
-                               const uint8_t *drtable, Bands &aBands);
+                               const uint8_t *drtable, dr_t aMaxDr,
+                               Bands &aBands);
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final;
@@ -85,6 +85,7 @@ protected:
   const dr_t MaxJoinDR;
   const dr_t MinJoinDR;
   const uint8_t *dr_table;
+  const dr_t MaxDr;
   ChannelList channels;
 
   // channel for next TX

@@ -24,31 +24,29 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 } // namespace
 
-// increase data rate
-dr_t DynamicRegionalChannelParams::incDR(dr_t const dr) const {
-  return validDR(dr + 1) ? dr + 1 : dr;
-}
-
 // decrease data rate
 dr_t DynamicRegionalChannelParams::decDR(dr_t const dr) const {
-  return validDR(dr - 1) ? dr - 1 : dr;
+  return dr == 0 ? 0 : dr - 1;
 }
 
 // in range
 bool DynamicRegionalChannelParams::validDR(dr_t const dr) const {
-  return getRawRps(dr) != ILLEGAL_RPS;
+  return dr < MaxDr;
 }
 
-uint8_t DynamicRegionalChannelParams::getRawRps(dr_t const dr) const {
-  return table_get_u1(dr_table, dr + 1);
+rps_t DynamicRegionalChannelParams::getRps(dr_t const dr) const {
+  return rps_t(table_get_u1(dr_table, dr));
+}
+
+rps_t DynamicRegionalChannelParams::getRpsDw(dr_t const dr) const {
+  auto val = rps_t(table_get_u1(dr_table, dr));
+  val.nocrc = true;
+  return val;
 }
 
 // decrease data rate by n steps
 dr_t DynamicRegionalChannelParams::lowerDR(dr_t dr, uint8_t n) const {
-  while (n--) {
-    dr = decDR(dr);
-  };
-  return dr;
+  return dr < n ? 0 : dr - n;
 }
 
 OsDeltaTime DynamicRegionalChannelParams::getDwn2SafetyZone() const {
@@ -182,13 +180,11 @@ dr_t DynamicRegionalChannelParams::getRx1Dr() const {
 }
 
 TransmitionParameters DynamicRegionalChannelParams::getTxParameter() const {
-  return {getTxFrequency(), rps_t(getRawRps(datarate)), getTxPower()};
+  return {getTxFrequency(), getRps(datarate), getTxPower()};
 }
 
 TransmitionParameters DynamicRegionalChannelParams::getRx1Parameter() const {
-  auto val = rps_t(getRawRps(getRx1Dr()));
-  val.nocrc = true;
-  return {getRx1Frequency(), val, 0};
+  return {getRx1Frequency(), getRpsDw(getRx1Dr()), 0};
 }
 
 TransmitionParameters DynamicRegionalChannelParams::getRx2Parameter() const {
@@ -197,14 +193,11 @@ TransmitionParameters DynamicRegionalChannelParams::getRx2Parameter() const {
 
 void DynamicRegionalChannelParams::setRx2Parameter(uint32_t const freq,
                                                    dr_t const dr) {
-  auto val = rps_t(getRawRps(dr));
-  val.nocrc = true;
-  rx2Parameter = {freq, val, 0};
+  rx2Parameter = {freq, getRpsDw(dr), 0};
 }
 
 void DynamicRegionalChannelParams::setRx2DataRate(dr_t const dr) {
-  rx2Parameter.rps = rps_t(getRawRps(dr));
-  rx2Parameter.rps.nocrc = true;
+  rx2Parameter.rps = getRpsDw(dr);
 }
 
 OsTime DynamicRegionalChannelParams::initJoinLoop() {
@@ -312,11 +305,9 @@ void DynamicRegionalChannelParams::loadState(RetrieveAbtract &store) {
 }
 #endif
 
-DynamicRegionalChannelParams::DynamicRegionalChannelParams(LmicRand &arand,
-                                                           uint8_t aMaxEIRP,
-                                                           dr_t aMaxJoinDr,
-                                                           dr_t aMinJoinDr,
-                                                           const uint8_t* drtable,
-                                                           Bands &aBands)
+DynamicRegionalChannelParams::DynamicRegionalChannelParams(
+    LmicRand &arand, uint8_t aMaxEIRP, dr_t aMaxJoinDr, dr_t aMinJoinDr,
+    const uint8_t *drtable, dr_t aMaxDr, Bands &aBands)
     : rand{arand}, MaxEIRP(aMaxEIRP), MaxJoinDR(aMaxJoinDr),
-      MinJoinDR(aMinJoinDr), dr_table(drtable), channels{aBands} {}
+      MinJoinDR(aMinJoinDr), dr_table(drtable),
+      MaxDr(aMaxDr), channels{aBands} {}

@@ -1090,9 +1090,9 @@ void Lmic::engineUpdate() {
   txrxFlags.reset();
 
   auto txParameter = channelParams.getTxParameter();
+  txParameter.power += antennaPowerAdjustment;
 
-  rps_t rps = txParameter.rps;
-  OsDeltaTime airtime = calcAirTime(rps, dataLen);
+  OsDeltaTime airtime = calcAirTime(txParameter.rps, dataLen);
   channelParams.updateTxTimes(airtime);
 
   // if globalDutyRate==0 send available just after transmit.
@@ -1100,8 +1100,8 @@ void Lmic::engineUpdate() {
   PRINT_DEBUG(2, F("Updating global duty avail to %" PRIu32 ""),
               globalDutyAvail.tick());
 
-  radio.tx(txParameter.frequency, rps,
-           txParameter.power + antennaPowerAdjustment, frame.cbegin(), dataLen);
+  radio.tx(txParameter.frequency, txParameter.rps, txParameter.power,
+           frame.cbegin(), dataLen);
   wait_end_tx();
 }
 
@@ -1220,7 +1220,6 @@ void Lmic::setLinkCheckMode(bool const enabled) {
 // allows for +/- 640 at SF7BW250). MAX_CLOCK_ERROR represents +/-100%,
 // so e.g. for a +/-1% error you would pass MAX_CLOCK_ERROR * 1 / 100.
 void Lmic::setClockError(uint8_t const error) { clockError = error; }
-
 
 OsTime Lmic::int_trigger_time() const {
   OsTime const now = os_getTime();
