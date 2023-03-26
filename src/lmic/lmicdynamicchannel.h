@@ -238,40 +238,41 @@ public:
   }
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual void saveState(StoringAbtract &store) const final {
-    channels.saveState(store);
+private:
+  void saveStateCommun(StoringAbtract &store) const {
     store.write(txChnl);
     store.write(adrTxPow);
     store.write(datarate);
     store.write(rx1DrOffset);
     store.write(rx2Parameter);
+  };
+  void loadStateCommun(RetrieveAbtract &store) {
+    store.read(txChnl);
+    store.read(adrTxPow);
+    store.read(datarate);
+    store.read(rx1DrOffset);
+    store.read(rx2Parameter);
+  };
+
+public:
+  virtual void saveState(StoringAbtract &store) const final {
+    channels.saveState(store);
+    saveStateCommun(store);
   };
   virtual void saveStateWithoutTimeData(StoringAbtract &store) const final {
 
     channels.saveStateWithoutTimeData(store);
-    store.write(txChnl);
-    store.write(adrTxPow);
-    store.write(datarate);
-    store.write(rx1DrOffset);
-    store.write(rx2Parameter);
+    saveStateCommun(store);
   };
   virtual void loadState(RetrieveAbtract &store) final {
 
     channels.loadState(store);
-    store.read(txChnl);
-    store.read(adrTxPow);
-    store.read(datarate);
-    store.read(rx1DrOffset);
-    store.read(rx2Parameter);
+    loadStateCommun(store);
   };
   virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final {
 
     channels.loadStateWithoutTimeData(store);
-    store.read(txChnl);
-    store.read(adrTxPow);
-    store.read(datarate);
-    store.read(rx1DrOffset);
-    store.read(rx2Parameter);
+    loadStateCommun(store);
   };
 #endif
 

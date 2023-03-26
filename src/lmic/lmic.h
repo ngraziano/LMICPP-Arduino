@@ -374,6 +374,10 @@ public:
 
 public:
 #if defined(ENABLE_SAVE_RESTORE)
+private:
+  void saveStateCommon(StoringAbtract &store) const;
+  void loadStateCommon(RetrieveAbtract &strore);
+public:
 
   void saveState(StoringAbtract &store) const;
   void saveStateWithoutTimeData(StoringAbtract &store) const;

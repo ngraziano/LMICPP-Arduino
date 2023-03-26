@@ -1281,9 +1281,8 @@ void Lmic::wait_end_tx() {
 void Lmic::store_trigger() { last_int_trigger = os_getTime(); }
 
 #if defined(ENABLE_SAVE_RESTORE)
-void Lmic::saveState(StoringAbtract &store) const {
-  // TODO radio RSSI,SNR
-  // TODO check if we can avoid storing rxsyms
+
+void Lmic::saveStateCommon(StoringAbtract &store) const {
   store.write(rxsyms);
 
   store.write(globalDutyRate);
@@ -1301,34 +1300,20 @@ void Lmic::saveState(StoringAbtract &store) const {
   store.write(adrAckReq);
   store.write(rxDelay);
   aes.saveState(store);
+}
+
+void Lmic::saveState(StoringAbtract &store) const {
+  saveStateCommon(store);
   channelParams.saveState(store);
   store.write(globalDutyAvail);
 }
 
 void Lmic::saveStateWithoutTimeData(StoringAbtract &store) const {
-  // TODO radio RSSI,SNR
-  // TODO check if we can avoid storing rxsyms
-  store.write(rxsyms);
-
-  store.write(globalDutyRate);
-  store.write(pendTxFOptsLen);
-  store.write(pendTxFOpts);
-
-  store.write(netid);
-  store.write(opmode);
-  store.write(upRepeat);
-  store.write(devNonce);
-  store.write(devaddr);
-  store.write(seqnoDn);
-  store.write(seqnoUp);
-  store.write(dnConf);
-  store.write(adrAckReq);
-  store.write(rxDelay);
-  aes.saveState(store);
+  saveStateCommon(store);
   channelParams.saveStateWithoutTimeData(store);
 }
 
-void Lmic::loadState(RetrieveAbtract &store) {
+void Lmic::loadStateCommon(RetrieveAbtract &store) {
   // TODO radio RSSI,SNR
   // TODO check if we can avoid storing rxsyms
   store.read(rxsyms);
@@ -1348,30 +1333,16 @@ void Lmic::loadState(RetrieveAbtract &store) {
   store.read(adrAckReq);
   store.read(rxDelay);
   aes.loadState(store);
+}
+
+void Lmic::loadState(RetrieveAbtract &store) {
+  loadStateCommon(store);
   channelParams.loadState(store);
   store.read(globalDutyAvail);
 }
 
 void Lmic::loadStateWithoutTimeData(RetrieveAbtract &store) {
-  // TODO radio RSSI,SNR
-  // TODO check if we can avoid storing rxsyms
-  store.read(rxsyms);
-
-  store.read(globalDutyRate);
-  store.read(pendTxFOptsLen);
-  store.read(pendTxFOpts);
-
-  store.read(netid);
-  store.read(opmode);
-  store.read(upRepeat);
-  store.read(devNonce);
-  store.read(devaddr);
-  store.read(seqnoDn);
-  store.read(seqnoUp);
-  store.read(dnConf);
-  store.read(adrAckReq);
-  store.read(rxDelay);
-  aes.loadState(store);
+  loadStateCommon(store);
   channelParams.loadStateWithoutTimeData(store);
 }
 
