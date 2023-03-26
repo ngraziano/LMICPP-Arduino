@@ -18,72 +18,278 @@
 #include "channelList.h"
 #include "lmic.h"
 
+#include "../hal/print_debug.h"
+#include "lmic_table.h"
+#include <algorithm>
+
+namespace {
+
+constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
+
+}
+
+template <int8_t aMaxEIRP, dr_t aMaxJoinDr, dr_t aMinJoinDr>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 public:
+  static constexpr int8_t MaxEIRP = aMaxEIRP;
+  static constexpr dr_t MaxJoinDR = aMaxJoinDr;
+  static constexpr dr_t MinJoinDR = aMinJoinDr;
+
   bool setupChannel(uint8_t channel, uint32_t newfreq,
                     uint16_t drmap) override = 0;
-  uint32_t getTxFrequency() const;
-  int8_t getTxPower() const;
-  TransmitionParameters getTxParameter() const final;
-  TransmitionParameters getRx1Parameter() const final;
-  TransmitionParameters getRx2Parameter() const final;
+  uint32_t getTxFrequency() const { return channels.getFrequency(txChnl); };
+  int8_t getTxPower() const {
+    // limit power to value ask in adr (at init MaxEIRP)
+    return adrTxPow;
+  };
+  TransmitionParameters getTxParameter() const final {
+    return {getTxFrequency(), getRps(datarate), getTxPower()};
+  };
+  TransmitionParameters getRx1Parameter() const final {
+    return {getRx1Frequency(), getRpsDw(getRx1Dr()), 0};
+  };
+  TransmitionParameters getRx2Parameter() const final { return rx2Parameter; };
 
   int8_t pow2dBm(uint8_t powerIndex) const override = 0;
-  OsDeltaTime getDwn2SafetyZone() const final;
+  OsDeltaTime getDwn2SafetyZone() const final { return DNW2_SAFETY_ZONE; };
   bool validRx1DrOffset(uint8_t drOffset) const override = 0;
 
-  void initDefaultChannels() override;
+  void initDefaultChannels() override {
+    PRINT_DEBUG(2, F("Init Default Channel"));
 
-  void disableChannel(uint8_t channel) final;
-  void handleCFList(const uint8_t *ptr) final;
+    channels.disableAll();
+    channels.init();
+  };
 
-  bool validMapChannels(uint8_t chpage, uint16_t chmap) final;
-  void mapChannels(uint8_t chpage, uint16_t chmap) final;
-  void updateTxTimes(OsDeltaTime airtime) final;
-  OsTime nextTx(OsTime now) final;
-  OsTime initJoinLoop() final;
-  TimeAndStatus nextJoinState() final;
+  void disableChannel(uint8_t channel) final { channels.disable(channel); };
+  void handleCFList(const uint8_t *ptr) final {
+    // Check CFList type
+    if (ptr[15] != 0) {
+      PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
+      return;
+    }
+    for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
+      uint32_t newfreq = read_frequency(ptr);
+      if (newfreq != 0) {
+        setupChannel(chidx, newfreq, 0);
 
-  void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) final;
-  void setRx2DataRate(dr_t rx2datarate) final;
-  void setRx1DrOffset(uint8_t drOffset) final;
+        PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""), chidx,
+                    newfreq);
+      }
+    }
+  };
+
+  bool validMapChannels(uint8_t const chMaskCntl, uint16_t const chMask) final {
+    // Bad page
+    if (chMaskCntl != 0 && chMaskCntl != 6)
+      return false;
+
+    //  disable all channel
+    if (chMaskCntl == 0 && chMask == 0)
+      return false;
+
+    return true;
+  };
+
+  void mapChannels(uint8_t const chMaskCntl, uint16_t const chMask) final {
+    // LoRaWAN™ 1.0.2 Regional Parameters §2.1.5
+    // ChMaskCntl=6 => All channels ON
+    if (chMaskCntl == 6) {
+      channels.enableAll();
+      return;
+    }
+
+    for (uint8_t chnl = 0; chnl < ChannelList::LIMIT_CHANNELS; chnl++) {
+      if ((chMask & (1u << chnl)) != 0) {
+        channels.enable(chnl);
+      } else {
+        channels.disable(chnl);
+      }
+    }
+  };
+  void updateTxTimes(OsDeltaTime airtime) final {
+    channels.updateAvailabitility(txChnl, os_getTime(), airtime);
+
+    PRINT_DEBUG(
+        2, F("Updating info for TX channel %d, airtime will be %" PRIu32 "."),
+        txChnl, airtime.tick());
+  };
+  OsTime nextTx(OsTime now) final {
+
+    bool channelFound = false;
+    OsTime nextTransmitTime;
+    // next channel or other (random)
+    uint8_t nextChannel = txChnl + 1 + (rand.uint8() % 2);
+
+    for (uint8_t channelIndex = 0; channelIndex < ChannelList::LIMIT_CHANNELS;
+         channelIndex++) {
+      if (nextChannel >= channels.LIMIT_CHANNELS) {
+        nextChannel = 0;
+      }
+
+      if (channels.is_enable_at_dr(nextChannel, datarate)) {
+        auto availability = channels.getAvailability(nextChannel);
+
+        PRINT_DEBUG(2, F("Considering channel %d"), nextChannel);
+
+        if (!channelFound || availability < nextTransmitTime) {
+          txChnl = nextChannel;
+          nextTransmitTime = availability;
+          channelFound = true;
+        }
+        if (availability < now) {
+          // no need to search better
+          txChnl = nextChannel;
+          return availability;
+        }
+      }
+      nextChannel++;
+    }
+
+    if (channelFound) {
+      return nextTransmitTime;
+    }
+
+    // Fail to find a channel continue on current one.
+    // UGLY FAILBACK
+    PRINT_DEBUG(1, F("Error Fail to find a channel."));
+    return now;
+  };
+  OsTime initJoinLoop() final {
+    txChnl = rand.uint8() % 3;
+    adrTxPow = MaxEIRP;
+    setDrJoin(MaxJoinDR);
+    auto startTime =
+        channels.getAvailability(0) + OsDeltaTime::rnd_delay(rand, 8);
+    PRINT_DEBUG(1,
+                F("Init Join loop : avail=%" PRIu32 " startTime=%" PRIu32 ""),
+                channels.getAvailability(0).tick(), startTime.tick());
+    return startTime;
+  };
+  TimeAndStatus nextJoinState() final {
+    bool failed = false;
+
+    // Try the tree default channels with same DR
+    // If both fail try next lower datarate
+    if (++txChnl == 3)
+      txChnl = 0;
+    if ((++joinCount & 1) == 0) {
+      // Lower DR every 2nd try
+      if (datarate == MinJoinDR) {
+        // we have tried all DR - signal EV_JOIN_FAILED
+        failed = true;
+        // and retry from highest datarate.
+        datarate = MaxJoinDR;
+      } else {
+        datarate = decDR(datarate);
+      }
+    }
+
+    // Set minimal next join time
+    auto time = os_getTime();
+    auto availability = channels.getAvailability(txChnl);
+    if (time < availability)
+      time = availability;
+
+    if (failed)
+      PRINT_DEBUG(2, F("Join failed"));
+    else
+      PRINT_DEBUG(2, F("Scheduling next join at %" PRIu32 ""), time.tick());
+
+    // 1 - triggers EV_JOIN_FAILED event
+    return {time, !failed};
+  };
+
+  void setRx2Parameter(uint32_t const rx2frequency,
+                       dr_t const rx2datarate) final {
+    rx2Parameter = {rx2frequency, getRpsDw(rx2datarate), 0};
+  };
+  void setRx2DataRate(dr_t const rx2datarate) final {
+    rx2Parameter.rps = getRpsDw(rx2datarate);
+  };
+  void setRx1DrOffset(uint8_t drOffset) final { rx1DrOffset = drOffset; };
 
   void setDrJoin(dr_t dr) { datarate = dr; }
   virtual void setDrTx(uint8_t dr) final { datarate = dr; }
   virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
-  virtual bool setAdrToMaxIfNotAlreadySet() final;
+  virtual bool setAdrToMaxIfNotAlreadySet() final {
+    if (adrTxPow != MaxEIRP) {
+      adrTxPow = MaxEIRP;
+      return true;
+    }
+    return false;
+  };
 
   // decrease data rate
-  dr_t decDR(dr_t dr) const;
+  dr_t decDR(dr_t const dr) const { return dr == 0 ? 0 : dr - 1; };
   // in range
-  bool validDR(dr_t dr) const final;
+  bool validDR(dr_t const dr) const final { return dr < MaxDr; };
   // decrease data rate by n steps
-  dr_t lowerDR(dr_t dr, uint8_t n) const;
-  rps_t getRps(dr_t dr) const;
-  rps_t getRpsDw(dr_t dr) const;
+  dr_t lowerDR(dr_t const dr, uint8_t const n) const {
+    return dr < n ? 0 : dr - n;
+  };
+  rps_t getRps(dr_t const dr) const {
+    return rps_t(table_get_u1(dr_table, dr));
+  };
+  rps_t getRpsDw(dr_t const dr) const {
+    auto val = rps_t(table_get_u1(dr_table, dr));
+    val.nocrc = true;
+    return val;
+  };
 
   virtual void reduceDr(uint8_t diff) final {
     setDrTx(lowerDR(datarate, diff));
   }
 
 #if defined(ENABLE_SAVE_RESTORE)
-  virtual void saveState(StoringAbtract &store) const final;
-  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final;
-  virtual void loadState(RetrieveAbtract &store) final;
-  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
+  virtual void saveState(StoringAbtract &store) const final {
+    channels.saveState(store);
+    store.write(txChnl);
+    store.write(adrTxPow);
+    store.write(datarate);
+    store.write(rx1DrOffset);
+    store.write(rx2Parameter);
+  };
+  virtual void saveStateWithoutTimeData(StoringAbtract &store) const final {
+
+    channels.saveStateWithoutTimeData(store);
+    store.write(txChnl);
+    store.write(adrTxPow);
+    store.write(datarate);
+    store.write(rx1DrOffset);
+    store.write(rx2Parameter);
+  };
+  virtual void loadState(RetrieveAbtract &store) final {
+
+    channels.loadState(store);
+    store.read(txChnl);
+    store.read(adrTxPow);
+    store.read(datarate);
+    store.read(rx1DrOffset);
+    store.read(rx2Parameter);
+  };
+  virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final {
+
+    channels.loadStateWithoutTimeData(store);
+    store.read(txChnl);
+    store.read(adrTxPow);
+    store.read(datarate);
+    store.read(rx1DrOffset);
+    store.read(rx2Parameter);
+  };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand, uint8_t aMaxEIRP,
-                               dr_t aMaxJoinDr, dr_t aMinJoinDr,
+  DynamicRegionalChannelParams(LmicRand &arand,
+
                                const uint8_t *drtable, dr_t aMaxDr,
-                               Bands &aBands);
+                               Bands &aBands)
+      : rand{arand}, dr_table(drtable), MaxDr(aMaxDr), channels{aBands} {};
 
 protected:
-  void setRegionalDutyCycleVerification(bool enabled) final;
+  void setRegionalDutyCycleVerification(bool enabled) final {
+    channels.setCheckDutyCycle(enabled);
+  };
   LmicRand &rand;
-  const int8_t MaxEIRP;
-  const dr_t MaxJoinDR;
-  const dr_t MinJoinDR;
   const uint8_t *dr_table;
   const dr_t MaxDr;
   ChannelList channels;
@@ -102,8 +308,8 @@ protected:
   TransmitionParameters rx2Parameter;
 
 private:
-  uint32_t getRx1Frequency() const;
-  dr_t getRx1Dr() const;
+  uint32_t getRx1Frequency() const { return channels.getFrequencyRX(txChnl); };
+  dr_t getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); };
 };
 
 #endif

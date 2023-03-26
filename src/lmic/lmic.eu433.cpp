@@ -47,9 +47,6 @@ constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-// normaly 12.5
-constexpr int8_t MaxEIRPValue = 12;
-
 } // namespace
 
 int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
@@ -103,8 +100,8 @@ void Eu433RegionalChannelParams::resetRX2Parameter() {
 }
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, MaxEIRPValue, 5, 0,
-                                   RESOLVE_TABLE(_DR2RPS_CRC), 7, bands) {}
+    : DynamicRegionalChannelParams(arand, RESOLVE_TABLE(_DR2RPS_CRC), 7,
+                                   bands) {}
 
 LmicEu433::LmicEu433(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

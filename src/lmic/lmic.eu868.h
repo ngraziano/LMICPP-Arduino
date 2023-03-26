@@ -19,7 +19,11 @@
 #include "lmic.h"
 #include "lmicdynamicchannel.h"
 
-class Eu868RegionalChannelParams : public DynamicRegionalChannelParams {
+namespace EU868 {
+constexpr int8_t MaxEIRPValue = 16;
+}
+class Eu868RegionalChannelParams
+    : public DynamicRegionalChannelParams<EU868::MaxEIRPValue, 5, 0> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
@@ -30,6 +34,7 @@ public:
   void resetRX2Parameter() final;
 
   Eu868RegionalChannelParams(LmicRand &arand);
+
 private:
   BandsEu868 bandeu;
 };

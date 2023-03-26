@@ -18,7 +18,12 @@
 #include "lmic.h"
 #include "lmicdynamicchannel.h"
 
-class Eu433RegionalChannelParams : public DynamicRegionalChannelParams {
+namespace EU433 {
+// normaly 12.5
+constexpr int8_t MaxEIRPValue = 12;
+} // namespace EU433
+class Eu433RegionalChannelParams
+    : public DynamicRegionalChannelParams<EU433::MaxEIRPValue, 5, 0> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
