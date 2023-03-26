@@ -1125,9 +1125,6 @@ void Lmic::reset() {
     devNonce = rand.uint16();
   }
   opmode.reset();
-  channelParams.setRx1DrOffset(0);
-  // we need this for 2nd DN window of join accept
-  channelParams.resetRX2Parameter();
   rxDelay = OsDeltaTime::from_sec(DELAY_DNW1);
   globalDutyAvail = os_getTime();
   channelParams.initDefaultChannels();

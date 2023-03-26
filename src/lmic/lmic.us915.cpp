@@ -132,6 +132,8 @@ bool Us915RegionalChannelParams::validRx1DrOffset(uint8_t drOffset) const {
 }
 
 void Us915RegionalChannelParams::initDefaultChannels() {
+  rx2Parameter = {FREQ_DNW2, rps_DWN2, 0};
+  setRx1DrOffset(0);
   for (uint8_t i = 0; i < 4; i++)
     channelMap[i] = 0xFFFF;
   channelMap[4] = 0x00FF;
@@ -334,10 +336,6 @@ TimeAndStatus Us915RegionalChannelParams::nextJoinState() {
   }
 
   return {os_getTime(), !failed};
-}
-
-void Us915RegionalChannelParams::resetRX2Parameter() {
-  rx2Parameter = {FREQ_DNW2, rps_DWN2, 0};
 }
 
 void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {

@@ -51,7 +51,8 @@ public:
 
   void initDefaultChannels() override {
     PRINT_DEBUG(2, F("Init Default Channel"));
-
+    rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
+    setRx1DrOffset(0);
     channels.disableAll();
     channels.init();
   };
@@ -203,10 +204,6 @@ public:
     rx2Parameter.rps = getRpsDw(rx2datarate);
   };
   void setRx1DrOffset(uint8_t drOffset) final { rx1DrOffset = drOffset; };
-
-  void resetRX2Parameter() final {
-    rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
-  }
 
   void setDrJoin(dr_t dr) { datarate = dr; }
   virtual void setDrTx(uint8_t dr) final { datarate = dr; }

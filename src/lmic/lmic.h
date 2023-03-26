@@ -149,7 +149,6 @@ public:
   virtual OsTime nextTx(OsTime now) = 0;
   virtual OsTime initJoinLoop() = 0;
   virtual TimeAndStatus nextJoinState() = 0;
-  virtual void resetRX2Parameter() = 0;
   virtual void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) = 0;
   virtual void setRx2DataRate(dr_t rx2datarate) = 0;
   virtual void setRx1DrOffset(uint8_t drOffset) = 0;

@@ -74,7 +74,6 @@ public:
   OsTime nextTx(OsTime now) final;
   OsTime initJoinLoop() final;
   TimeAndStatus nextJoinState() final;
-  void resetRX2Parameter() final;
   void setRx2Parameter(uint32_t rx2frequency, dr_t rx2datarate) final;
   void setRx2DataRate(dr_t rx2datarate) final;
   void setRx1DrOffset(uint8_t drOffset) final;
