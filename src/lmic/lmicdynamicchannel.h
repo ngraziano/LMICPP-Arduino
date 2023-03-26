@@ -22,19 +22,14 @@
 #include "lmic_table.h"
 #include <algorithm>
 
-namespace {
-
+namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
-}
-
-template <int8_t aMaxEIRP, dr_t aMaxJoinDr, dr_t aMinJoinDr>
+template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR, dr_t MaxDr,
+          uint32_t default_Freq_RX2, uint8_t default_rps_RX2>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
-public:
-  static constexpr int8_t MaxEIRP = aMaxEIRP;
-  static constexpr dr_t MaxJoinDR = aMaxJoinDr;
-  static constexpr dr_t MinJoinDR = aMinJoinDr;
 
+public:
   bool setupChannel(uint8_t channel, uint32_t newfreq,
                     uint16_t drmap) override = 0;
   uint32_t getTxFrequency() const { return channels.getFrequency(txChnl); };
@@ -209,6 +204,10 @@ public:
   };
   void setRx1DrOffset(uint8_t drOffset) final { rx1DrOffset = drOffset; };
 
+  void resetRX2Parameter() final {
+    rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
+  }
+
   void setDrJoin(dr_t dr) { datarate = dr; }
   virtual void setDrTx(uint8_t dr) final { datarate = dr; }
   virtual void setAdrTxPow(int8_t newPower) final { adrTxPow = newPower; }
@@ -229,10 +228,10 @@ public:
     return dr < n ? 0 : dr - n;
   };
   rps_t getRps(dr_t const dr) const {
-    return rps_t(table_get_u1(dr_table, dr));
+    return rps_t(table_get_u1(dr_table_ptr, dr));
   };
   rps_t getRpsDw(dr_t const dr) const {
-    auto val = rps_t(table_get_u1(dr_table, dr));
+    auto val = rps_t(table_get_u1(dr_table_ptr, dr));
     val.nocrc = true;
     return val;
   };
@@ -279,19 +278,15 @@ public:
   };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand,
-
-                               const uint8_t *drtable, dr_t aMaxDr,
-                               Bands &aBands)
-      : rand{arand}, dr_table(drtable), MaxDr(aMaxDr), channels{aBands} {};
+  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands,
+                               const uint8_t *adr_table_ptr)
+      : rand{arand}, channels{aBands}, dr_table_ptr(adr_table_ptr){};
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final {
     channels.setCheckDutyCycle(enabled);
   };
   LmicRand &rand;
-  const uint8_t *dr_table;
-  const dr_t MaxDr;
   ChannelList channels;
 
   // channel for next TX
@@ -306,10 +301,12 @@ protected:
   // Number of join requests sent
   uint8_t joinCount = 0;
   TransmitionParameters rx2Parameter;
+  const uint8_t *dr_table_ptr;
 
 private:
   uint32_t getRx1Frequency() const { return channels.getFrequencyRX(txChnl); };
   dr_t getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); };
 };
 
+} // namespace DYNAMIC_CHANNEL
 #endif

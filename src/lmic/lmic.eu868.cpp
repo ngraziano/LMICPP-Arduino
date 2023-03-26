@@ -33,15 +33,13 @@ enum {
   EU868_F6 = 869525000, // g3   SF7-12
 };
 
-namespace {
-constexpr uint32_t EU868_FREQ_MIN = 863000000;
-constexpr uint32_t EU868_FREQ_MAX = 870000000;
-constexpr uint32_t FREQ_DNW2 = EU868_F6;
+namespace EU868 {
+constexpr uint32_t FREQ_MIN = 863000000;
+constexpr uint32_t FREQ_MAX = 870000000;
 constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
     Eu868RegionalChannelParams::Dr::SF12;
 
-constexpr rps_t rps_DNW2 =
-    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
+
 
 constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
@@ -54,14 +52,15 @@ constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
 CONST_TABLE(uint8_t, _DR2RPS_CRC)
 [] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-} // namespace
+
+} // namespace EU868
 
 int8_t Eu868RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 8) {
     return InvalidPower;
   }
 
-  return MaxEIRP - 2 * powerIndex;
+  return EU868::MaxEIRPValue - 2 * powerIndex;
 }
 
 bool Eu868RegionalChannelParams::validRx1DrOffset(
@@ -93,7 +92,7 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
     return true;
   }
 
-  if (newfreq < EU868_FREQ_MIN || newfreq > EU868_FREQ_MAX) {
+  if (newfreq < EU868::FREQ_MIN || newfreq > EU868::FREQ_MAX) {
     return false;
   }
 
@@ -102,13 +101,10 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
   return true;
 }
 
-void Eu868RegionalChannelParams::resetRX2Parameter() {
-  rx2Parameter = {FREQ_DNW2, rps_DNW2, 0};
-}
+
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, RESOLVE_TABLE(_DR2RPS_CRC), 7,
-                                   bandeu) {}
+    : DynamicRegionalChannelParams(arand, bandeu,EU868::RESOLVE_TABLE(_DR2RPS_CRC))  {}
 
 LmicEu868::LmicEu868(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

@@ -19,11 +19,19 @@
 #include "lmicdynamicchannel.h"
 
 namespace EU433 {
+
 // normaly 12.5
 constexpr int8_t MaxEIRPValue = 12;
+
+constexpr uint32_t FREQ_DNW2 = 434665000;
+
+constexpr rps_t rps_DNW2 =
+    rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
+
 } // namespace EU433
 class Eu433RegionalChannelParams
-    : public DynamicRegionalChannelParams<EU433::MaxEIRPValue, 5, 0> {
+    : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
+          EU433::MaxEIRPValue, 5, 0, 7, EU433::FREQ_DNW2, EU433::rps_DNW2> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
@@ -34,7 +42,6 @@ public:
   bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;
-  void resetRX2Parameter() final;
 
 private:
   BandSingle bands{100};
