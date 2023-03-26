@@ -32,16 +32,12 @@ class DynamicRegionalChannelParams : public RegionalChannelParams {
 public:
   bool setupChannel(uint8_t channel, uint32_t newfreq,
                     uint16_t drmap) override = 0;
-  uint32_t getTxFrequency() const { return channels.getFrequency(txChnl); };
-  int8_t getTxPower() const {
-    // limit power to value ask in adr (at init MaxEIRP)
-    return adrTxPow;
-  };
+
   TransmitionParameters getTxParameter() const final {
-    return {getTxFrequency(), getRps(datarate), getTxPower()};
+    return {channels.getFrequency(txChnl), getRps(datarate), adrTxPow};
   };
   TransmitionParameters getRx1Parameter() const final {
-    return {getRx1Frequency(), getRpsDw(getRx1Dr()), 0};
+    return {channels.getFrequencyRX(txChnl), getRpsDw(getRx1Dr()), 0};
   };
   TransmitionParameters getRx2Parameter() const final { return rx2Parameter; };
 
@@ -110,6 +106,7 @@ public:
         2, F("Updating info for TX channel %d, airtime will be %" PRIu32 "."),
         txChnl, airtime.tick());
   };
+
   OsTime nextTx(OsTime now) final {
 
     bool channelFound = false;
@@ -151,6 +148,7 @@ public:
     PRINT_DEBUG(1, F("Error Fail to find a channel."));
     return now;
   };
+
   OsTime initJoinLoop() final {
     txChnl = rand.uint8() % 3;
     adrTxPow = MaxEIRP;
@@ -233,9 +231,7 @@ public:
     return val;
   };
 
-  virtual void reduceDr(uint8_t diff) final {
-    setDrTx(lowerDR(datarate, diff));
-  }
+  void reduceDr(uint8_t diff) final { setDrTx(lowerDR(datarate, diff)); }
 
 #if defined(ENABLE_SAVE_RESTORE)
 private:
@@ -302,7 +298,6 @@ protected:
   const uint8_t *dr_table_ptr;
 
 private:
-  uint32_t getRx1Frequency() const { return channels.getFrequencyRX(txChnl); };
   dr_t getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); };
 };
 
