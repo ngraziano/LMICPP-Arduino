@@ -29,7 +29,7 @@ constexpr rps_t rps_DNW2 =
 
 } // namespace EU868
 
-class Eu868RegionalChannelParams
+class Eu868RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
           EU868::MaxEIRPValue, 5, 0, 7, EU868::FREQ_DNW2, EU868::rps_DNW2> {
 public:

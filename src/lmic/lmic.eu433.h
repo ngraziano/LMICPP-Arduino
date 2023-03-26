@@ -29,7 +29,7 @@ constexpr rps_t rps_DNW2 =
     rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
 
 } // namespace EU433
-class Eu433RegionalChannelParams
+class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
           EU433::MaxEIRPValue, 5, 0, 7, EU433::FREQ_DNW2, EU433::rps_DNW2> {
 public:

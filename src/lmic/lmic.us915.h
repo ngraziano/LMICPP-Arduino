@@ -15,7 +15,7 @@
 
 #include "lmic.h"
 
-class Us915RegionalChannelParams : public RegionalChannelParams {
+class Us915RegionalChannelParams final : public RegionalChannelParams {
 public:
   enum Dr : dr_t {
     SF10 = 0,
@@ -108,7 +108,6 @@ private:
   uint32_t getRx1Frequency() const;
   dr_t getRx1Dr() const;
   uint8_t getRawRps(dr_t dr) const;
-
 };
 
 class LmicUs915 final : public Lmic {
