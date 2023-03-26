@@ -39,19 +39,8 @@ constexpr uint32_t FREQ_MAX = 870000000;
 constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
     Eu868RegionalChannelParams::Dr::SF12;
 
-
-
-constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR2 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR3 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR4 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR5 = rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
-
-CONST_TABLE(uint8_t, _DR2RPS_CRC)
+CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 [] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
-
 
 } // namespace EU868
 
@@ -101,10 +90,8 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
   return true;
 }
 
-
-
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, bandeu,EU868::RESOLVE_TABLE(_DR2RPS_CRC))  {}
+    : DynamicRegionalChannelParams(arand, bandeu) {}
 
 LmicEu868::LmicEu868(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

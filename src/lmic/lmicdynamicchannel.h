@@ -25,8 +25,9 @@
 namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
-template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR, dr_t MaxDr,
-          uint32_t default_Freq_RX2, uint8_t default_rps_RX2>
+template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
+          const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
+          uint8_t default_rps_RX2>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
@@ -223,10 +224,10 @@ public:
     return dr < n ? 0 : dr - n;
   };
   rps_t getRps(dr_t const dr) const {
-    return rps_t(table_get_u1(dr_table_ptr, dr));
+    return rps_t(table_get_u1(dr_table, dr));
   };
   rps_t getRpsDw(dr_t const dr) const {
-    auto val = rps_t(table_get_u1(dr_table_ptr, dr));
+    auto val = rps_t(table_get_u1(dr_table, dr));
     val.nocrc = true;
     return val;
   };
@@ -272,9 +273,9 @@ public:
   };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands,
-                               const uint8_t *adr_table_ptr)
-      : rand{arand}, channels{aBands}, dr_table_ptr(adr_table_ptr){};
+  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands
+                              )
+      : rand{arand}, channels{aBands}{};
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final {
@@ -295,7 +296,6 @@ protected:
   // Number of join requests sent
   uint8_t joinCount = 0;
   TransmitionParameters rx2Parameter;
-  const uint8_t *dr_table_ptr;
 
 private:
   dr_t getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); };

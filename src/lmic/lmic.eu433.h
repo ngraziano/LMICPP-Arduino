@@ -28,10 +28,21 @@ constexpr uint32_t FREQ_DNW2 = 434665000;
 constexpr rps_t rps_DNW2 =
     rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5, true};
 
+constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR2 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR3 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR4 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR5 = rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5};
+constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
+
+extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[];
+
 } // namespace EU433
 class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
-          EU433::MaxEIRPValue, 5, 0, 7, EU433::FREQ_DNW2, EU433::rps_DNW2> {
+          EU433::MaxEIRPValue, 5, 0, EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7,
+          EU433::FREQ_DNW2, EU433::rps_DNW2> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 

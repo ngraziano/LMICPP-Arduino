@@ -58,6 +58,7 @@ TABLE_GETTER(_s4, int32_t, dword)
 
 // For AVR, store constants in PROGMEM, saving on RAM usage
 #define CONST_TABLE(type, name) constexpr type PROGMEM RESOLVE_TABLE(name)
+#define CONST_TABLE2(type, name) const type PROGMEM RESOLVE_TABLE(name)
 
 #else
 inline uint8_t table_get_u1(const uint8_t *table, size_t index) {
@@ -78,6 +79,8 @@ inline int32_t table_get_s4(const int32_t *table, size_t index) {
 
 // Declare a table
 #define CONST_TABLE(type, name) constexpr type RESOLVE_TABLE(name)
+#define CONST_TABLE2(type, name) const type RESOLVE_TABLE(name)
+
 
 #endif
 

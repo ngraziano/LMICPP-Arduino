@@ -26,22 +26,14 @@ enum {
   EU433_R2 = 434665000,
 };
 
-namespace {
-constexpr uint32_t EU433_FREQ_MIN = 433050000;
-constexpr uint32_t EU433_FREQ_MAX = 434665000;
+namespace EU433 {
+constexpr uint32_t FREQ_MIN = 433050000;
+constexpr uint32_t FREQ_MAX = 434665000;
 
-constexpr uint8_t rps_DR0 = rps_t{SF12, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR1 = rps_t{SF11, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR2 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR3 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR4 = rps_t{SF8, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR5 = rps_t{SF7, BandWidth::BW125, CodingRate::CR_4_5};
-constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
+extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
+    rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-CONST_TABLE(uint8_t, _DR2RPS_CRC)
-[] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
-
-} // namespace
+} // namespace EU433
 
 int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
   if (powerIndex >= 6) {
@@ -80,7 +72,7 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
     return true;
   }
 
-  if (newfreq < EU433_FREQ_MIN || newfreq > EU433_FREQ_MAX) {
+  if (newfreq < EU433::FREQ_MIN || newfreq > EU433::FREQ_MAX) {
     return false;
   }
 
@@ -90,7 +82,7 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, bands, RESOLVE_TABLE(_DR2RPS_CRC)) {}
+    : DynamicRegionalChannelParams(arand, bands) {}
 
 LmicEu433::LmicEu433(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}
