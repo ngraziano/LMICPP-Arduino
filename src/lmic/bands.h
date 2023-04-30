@@ -5,6 +5,7 @@
 
 #include "bufferpack.h"
 #include "osticks.h"
+#include "oslmic.h"
 #include "../hal/print_debug.h"
 
 class Bands {
@@ -29,7 +30,7 @@ public:
   BandSingle() : avail{0} {};
 
   void init() final { avail = os_getTime(); };
-  void updateBandAvailability(uint8_t band, OsTime lastusage,
+  void updateBandAvailability(uint8_t, OsTime lastusage,
                               OsDeltaTime duration) final {
     avail = lastusage + dutyCycle * duration;
 
@@ -43,7 +44,7 @@ public:
   OsTime getAvailability(uint8_t) const final { return avail; };
 
   static constexpr uint8_t MAX_BAND = 1;
-  uint8_t getBandForFrequency(uint32_t frequency) const final { return 0; };
+  uint8_t getBandForFrequency(uint32_t) const final { return 0; };
 
 #if defined(ENABLE_SAVE_RESTORE)
 
