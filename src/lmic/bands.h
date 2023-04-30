@@ -5,6 +5,7 @@
 
 #include "bufferpack.h"
 #include "osticks.h"
+#include "../hal/print_debug.h"
 
 class Bands {
 public:
@@ -23,26 +24,34 @@ public:
 #endif
 };
 
-class BandSingle : public Bands {
+template <uint16_t dutyCycle> class BandSingle : public Bands {
 public:
-  explicit BandSingle(uint16_t duty);
-  void init() final;
+  BandSingle() : avail{0} {};
+
+  void init() final { avail = os_getTime(); };
   void updateBandAvailability(uint8_t band, OsTime lastusage,
-                              OsDeltaTime duration) final;
-  void print_state() const final;
+                              OsDeltaTime duration) final {
+    avail = lastusage + dutyCycle * duration;
+
+    PRINT_DEBUG(2, F("Setting  available time for bandto %" PRIu32 ""),
+                avail.tick());
+  };
+  void print_state() const final {
+
+    PRINT_DEBUG(2, F("Band , available at %" PRIu32 "."), avail.tick());
+  };
   OsTime getAvailability(uint8_t) const final { return avail; };
 
   static constexpr uint8_t MAX_BAND = 1;
-  uint8_t getBandForFrequency(uint32_t frequency) const final;
+  uint8_t getBandForFrequency(uint32_t frequency) const final { return 0; };
 
 #if defined(ENABLE_SAVE_RESTORE)
 
-  void saveState(StoringAbtract &store) const final;
-  void loadState(RetrieveAbtract &store) final;
+  void saveState(StoringAbtract &store) const final { store.write(avail); };
+  void loadState(RetrieveAbtract &store) final { store.read(avail); };
 #endif
 
 private:
-  const uint16_t dutyCycle;
   OsTime avail;
 };
 

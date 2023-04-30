@@ -56,7 +56,7 @@ public:
   void initDefaultChannels() final;
 
 private:
-  BandSingle bands{100};
+  BandSingle<100> bands;
 };
 
 class LmicEu433 final : public Lmic {
