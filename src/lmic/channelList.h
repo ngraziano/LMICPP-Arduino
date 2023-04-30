@@ -41,7 +41,7 @@ public:
 #endif
 };
 
-class ChannelList {
+template <typename BandsType> class ChannelList {
 public:
   // Channel map store a maximum of 16 channel
   // (in rp_2-1.0.1 all dynamic channel region have a minumum of 16 )
@@ -50,7 +50,7 @@ public:
 private:
   std::array<ChannelDetail, LIMIT_CHANNELS> channels = {};
   uint16_t channelMap = 0;
-  Bands &bands;
+  BandsType bands;
   bool checkDutyCycle = true;
 
   uint8_t getBand(uint8_t const channel) const {
@@ -58,7 +58,7 @@ private:
   }
 
 public:
-  constexpr explicit ChannelList(Bands &b) : bands(b) {}
+  constexpr ChannelList() {}
   void init() { bands.init(); }
   void disableAll() { channelMap = 0; }
   void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
@@ -93,7 +93,7 @@ public:
   }
 
   OsTime getAvailability(uint8_t const channel) const {
-    if(!checkDutyCycle) {
+    if (!checkDutyCycle) {
       return hal_ticks();
     }
     auto band = getBand(channel);
@@ -102,15 +102,13 @@ public:
 
   uint32_t getFrequency(uint8_t const channel) const {
     return channels[channel].getFrequency();
-  };  
-  
+  };
+
   uint32_t getFrequencyRX(uint8_t const channel) const {
     return channels[channel].getFrequencyRX();
   };
 
-  void setCheckDutyCycle(bool check) {
-    checkDutyCycle = check;
-  }
+  void setCheckDutyCycle(bool check) { checkDutyCycle = check; }
 
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {

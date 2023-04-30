@@ -43,7 +43,7 @@ constexpr uint8_t limitRX1DrOffset = 6;
 } // namespace EU868
 
 class Eu868RegionalChannelParams final
-    : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
+    : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<BandsEu868,
           EU868::MaxEIRPValue, 5, 0, EU868::RESOLVE_TABLE(_DR2RPS_CRC), 7,
           EU868::FREQ_DNW2, EU868::rps_DNW2,EU868::MaxPowerIndex, EU868::limitRX1DrOffset> {
 public:
@@ -52,8 +52,6 @@ public:
   void initDefaultChannels() final;
   Eu868RegionalChannelParams(LmicRand &arand);
 
-private:
-  BandsEu868 bandeu;
 };
 
 class LmicEu868 final : public Lmic {

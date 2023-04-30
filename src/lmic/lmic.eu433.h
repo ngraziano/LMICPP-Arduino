@@ -41,9 +41,12 @@ extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[];
 
 constexpr uint8_t limitRX1DrOffset = 6;
 
+using Bands = BandSingle<100>;
+
 } // namespace EU433
 class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
+          EU433::Bands,
           EU433::MaxEIRPValue, 5, 0, EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7,
           EU433::FREQ_DNW2, EU433::rps_DNW2, EU433::MaxPowerIndex,
           EU433::limitRX1DrOffset> {
@@ -55,8 +58,6 @@ public:
 
   void initDefaultChannels() final;
 
-private:
-  BandSingle<100> bands;
 };
 
 class LmicEu433 final : public Lmic {

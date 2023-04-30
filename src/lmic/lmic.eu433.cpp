@@ -33,10 +33,7 @@ constexpr uint32_t FREQ_MAX = 434665000;
 extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
     rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-
 } // namespace EU433
-
-
 
 void Eu433RegionalChannelParams::initDefaultChannels() {
   DynamicRegionalChannelParams::initDefaultChannels();
@@ -72,7 +69,7 @@ bool Eu433RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, bands) {}
+    : DynamicRegionalChannelParams(arand) {}
 
 LmicEu433::LmicEu433(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

@@ -25,11 +25,13 @@
 namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
-template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
+template <typename BandsType, int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
           const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
           uint8_t default_rps_RX2, uint8_t maxPowerIndex,
           uint8_t limitRX1DrOffset>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
+
+  using ChannelListType = ChannelList<BandsType>;
 
 public:
   bool setupChannel(uint8_t channel, uint32_t newfreq,
@@ -102,7 +104,7 @@ public:
       return;
     }
 
-    for (uint8_t chnl = 0; chnl < ChannelList::LIMIT_CHANNELS; chnl++) {
+    for (uint8_t chnl = 0; chnl < ChannelListType::LIMIT_CHANNELS; chnl++) {
       if ((chMask & (1u << chnl)) != 0) {
         channels.enable(chnl);
       } else {
@@ -125,8 +127,8 @@ public:
     // next channel or other (random)
     uint8_t nextChannel = txChnl + 1 + (rand.uint8() % 2);
 
-    for (uint8_t channelIndex = 0; channelIndex < ChannelList::LIMIT_CHANNELS;
-         channelIndex++) {
+    for (uint8_t channelIndex = 0;
+         channelIndex < ChannelListType::LIMIT_CHANNELS; channelIndex++) {
       if (nextChannel >= channels.LIMIT_CHANNELS) {
         nextChannel = 0;
       }
@@ -283,15 +285,15 @@ public:
   };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands)
-      : rand{arand}, channels{aBands} {};
+  DynamicRegionalChannelParams(LmicRand &arand) : rand{arand} {};
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final {
     channels.setCheckDutyCycle(enabled);
   };
+
   LmicRand &rand;
-  ChannelList channels;
+  ChannelListType channels;
 
   // channel for next TX
   uint8_t txChnl = 0;

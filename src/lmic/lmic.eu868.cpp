@@ -78,7 +78,7 @@ bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
 }
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand, bandeu) {}
+    : DynamicRegionalChannelParams(arand) {}
 
 LmicEu868::LmicEu868(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}
