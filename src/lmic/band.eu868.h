@@ -10,7 +10,7 @@
 
 class BandsEu868 : public Bands {
 public:
-  void init() final;
+  BandsEu868();
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration) final;
   void print_state() const final;

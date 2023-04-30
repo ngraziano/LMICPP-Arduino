@@ -10,7 +10,6 @@
 
 class Bands {
 public:
-  virtual void init() = 0;
   virtual void updateBandAvailability(uint8_t band, OsTime lastusage,
                                       OsDeltaTime duration) = 0;
   virtual void print_state() const = 0;
@@ -27,9 +26,8 @@ public:
 
 template <uint16_t dutyCycle> class BandSingle : public Bands {
 public:
-  BandSingle() : avail{0} {};
+  BandSingle() : avail{os_getTime()} {};
 
-  void init() final { avail = os_getTime(); };
   void updateBandAvailability(uint8_t, OsTime lastusage,
                               OsDeltaTime duration) final {
     avail = lastusage + dutyCycle * duration;

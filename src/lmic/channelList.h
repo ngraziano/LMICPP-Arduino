@@ -58,12 +58,9 @@ private:
   }
 
 public:
-  constexpr ChannelList() {}
-  void init() {
-    // disable all channels
-    channelMap = 0;
-    bands.init();
+  constexpr ChannelList() {
   }
+
   void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
   void enable(uint8_t channel) {
     // ignore - channel is not defined

@@ -16,9 +16,9 @@ enum { BAND_MILLI = 0, BAND_CENTI = 1, BAND_DECI = 2 };
 
 } // namespace
 
-void BandsEu868::init() {
+BandsEu868::BandsEu868() {
   auto now = os_getTime();
-  avail.fill(now);
+  avail.fill(now);  
 }
 
 void BandsEu868::updateBandAvailability(uint8_t const band,
