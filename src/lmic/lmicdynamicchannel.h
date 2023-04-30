@@ -84,7 +84,7 @@ public:
     PRINT_DEBUG(2, F("Init Default Channel"));
     rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
     setRx1DrOffset(0);
-    channels.disableAll();
+
     channels.init();
 
     for (uint8_t chnl = 0; chnl < nbFixedChannels; chnl++) {
