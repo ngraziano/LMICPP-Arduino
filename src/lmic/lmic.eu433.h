@@ -43,17 +43,20 @@ constexpr uint8_t limitRX1DrOffset = 6;
 
 using Bands = BandSingle<100>;
 
+constexpr uint32_t FREQ_MIN = 433050000;
+constexpr uint32_t FREQ_MAX = 434665000;
+
 } // namespace EU433
 class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
           EU433::Bands,
           EU433::MaxEIRPValue, 5, 0, EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7,
           EU433::FREQ_DNW2, EU433::rps_DNW2, EU433::MaxPowerIndex,
-          EU433::limitRX1DrOffset> {
+          EU433::limitRX1DrOffset,
+          3, EU433::FREQ_MIN, EU433::FREQ_MAX> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-  bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   Eu433RegionalChannelParams(LmicRand &arand);
 
   void initDefaultChannels() final;

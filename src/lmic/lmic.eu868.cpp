@@ -34,8 +34,7 @@ enum {
 };
 
 namespace EU868 {
-constexpr uint32_t FREQ_MIN = 863000000;
-constexpr uint32_t FREQ_MAX = 870000000;
+
 constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
     Eu868RegionalChannelParams::Dr::SF12;
 
@@ -46,35 +45,9 @@ CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 
 void Eu868RegionalChannelParams::initDefaultChannels() {
   DynamicRegionalChannelParams::initDefaultChannels();
-  setupChannel(0, EU868_F1, 0);
-  setupChannel(1, EU868_F2, 0);
-  setupChannel(2, EU868_F3, 0);
-}
-
-bool Eu868RegionalChannelParams::setupChannel(uint8_t const chidx,
-                                              uint32_t const newfreq,
-                                              uint16_t const drmap) {
-  if (chidx >= channels.LIMIT_CHANNELS)
-    return false;
-
-  if (chidx < 3 && drmap != 0) {
-    // channel 0, 1 and 2 are fixed
-    // drmap == 0 is only used internally to reset the channel
-    return false;
-  }
-
-  if (newfreq == 0) {
-    channels.disable(chidx);
-    return true;
-  }
-
-  if (newfreq < EU868::FREQ_MIN || newfreq > EU868::FREQ_MAX) {
-    return false;
-  }
-
-  channels.configure(chidx, newfreq,
-                     drmap == 0 ? dr_range_map(Dr::SF12, Dr::SF7) : drmap);
-  return true;
+  channels.configure(0, EU868_F1, dr_range_map(Dr::SF12, Dr::SF7));
+  channels.configure(1, EU868_F2, dr_range_map(Dr::SF12, Dr::SF7));
+  channels.configure(2, EU868_F3, dr_range_map(Dr::SF12, Dr::SF7));
 }
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)

@@ -28,14 +28,36 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 template <typename BandsType, int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
           const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
           uint8_t default_rps_RX2, uint8_t maxPowerIndex,
-          uint8_t limitRX1DrOffset>
+          uint8_t limitRX1DrOffset, uint8_t nbFixedChannels,
+          uint32_t minFrequency, uint32_t maxFrequency>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
   using ChannelListType = ChannelList<BandsType>;
 
 public:
-  bool setupChannel(uint8_t channel, uint32_t newfreq,
-                    uint16_t drmap) override = 0;
+  bool setupChannel(uint8_t const chidx,
+                                                uint32_t const newfreq,
+                                                uint16_t const drmap) {
+    if (chidx >= channels.LIMIT_CHANNELS)
+      return false;
+
+    if (chidx < nbFixedChannels) {
+      // channel 0, 1 and 2 are fixed
+      return false;
+    }
+
+    if (newfreq == 0) {
+      channels.disable(chidx);
+      return true;
+    }
+
+    if (newfreq < minFrequency || newfreq > maxFrequency) {
+      return false;
+    }
+
+    channels.configure(chidx, newfreq, drmap);
+    return true;
+  }
 
   TransmitionParameters getTxParameter() const final {
     return {channels.getFrequency(txChnl), getRps(datarate), adrTxPow};
