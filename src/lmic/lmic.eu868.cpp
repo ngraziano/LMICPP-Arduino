@@ -35,20 +35,15 @@ enum {
 
 namespace EU868 {
 
-constexpr Eu868RegionalChannelParams::Dr DR_DNW2 =
-    Eu868RegionalChannelParams::Dr::SF12;
+constexpr Dr DR_DNW2 = Dr::SF12;
 
 CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 [] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
+CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU868_F1, EU868_F2, EU868_F3};
+
 } // namespace EU868
 
-void Eu868RegionalChannelParams::initDefaultChannels() {
-  DynamicRegionalChannelParams::initDefaultChannels();
-  channels.configure(0, EU868_F1, dr_range_map(Dr::SF12, Dr::SF7));
-  channels.configure(1, EU868_F2, dr_range_map(Dr::SF12, Dr::SF7));
-  channels.configure(2, EU868_F3, dr_range_map(Dr::SF12, Dr::SF7));
-}
 
 Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
     : DynamicRegionalChannelParams(arand) {}

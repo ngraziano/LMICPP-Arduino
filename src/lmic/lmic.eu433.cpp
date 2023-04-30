@@ -32,14 +32,9 @@ namespace EU433 {
 extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
     rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-} // namespace EU433
+CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU433_F1, EU433_F2, EU433_F3};
 
-void Eu433RegionalChannelParams::initDefaultChannels() {
-  DynamicRegionalChannelParams::initDefaultChannels();
-  channels.configure(0, EU433_F1, dr_range_map(Dr::SF12, Dr::SF7));
-  channels.configure(0, EU433_F2, dr_range_map(Dr::SF12, Dr::SF7));
-  channels.configure(0, EU433_F3, dr_range_map(Dr::SF12, Dr::SF7));
-}
+} // namespace EU433
 
 Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
     : DynamicRegionalChannelParams(arand) {}
