@@ -27,7 +27,7 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
           const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
-          uint8_t default_rps_RX2>
+          uint8_t default_rps_RX2, uint8_t maxPowerIndex>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
@@ -42,7 +42,14 @@ public:
   };
   TransmitionParameters getRx2Parameter() const final { return rx2Parameter; };
 
-  int8_t pow2dBm(uint8_t powerIndex) const override = 0;
+  int8_t pow2dBm(uint8_t const powerIndex) const final {
+    if (powerIndex > maxPowerIndex) {
+      return InvalidPower;
+    }
+
+    return MaxEIRP - 2 * powerIndex;
+  }
+
   OsDeltaTime getDwn2SafetyZone() const final { return DNW2_SAFETY_ZONE; };
   bool validRx1DrOffset(uint8_t drOffset) const override = 0;
 
@@ -273,9 +280,8 @@ public:
   };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands
-                              )
-      : rand{arand}, channels{aBands}{};
+  DynamicRegionalChannelParams(LmicRand &arand, Bands &aBands)
+      : rand{arand}, channels{aBands} {};
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final {

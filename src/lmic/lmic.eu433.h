@@ -22,6 +22,7 @@ namespace EU433 {
 
 // normaly 12.5
 constexpr int8_t MaxEIRPValue = 12;
+constexpr uint8_t MaxPowerIndex = 5;
 
 constexpr uint32_t FREQ_DNW2 = 434665000;
 
@@ -42,14 +43,13 @@ extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[];
 class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
           EU433::MaxEIRPValue, 5, 0, EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7,
-          EU433::FREQ_DNW2, EU433::rps_DNW2> {
+          EU433::FREQ_DNW2, EU433::rps_DNW2, EU433::MaxPowerIndex> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   Eu433RegionalChannelParams(LmicRand &arand);
 
-  int8_t pow2dBm(uint8_t powerIndex) const final;
   bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;

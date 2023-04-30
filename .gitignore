@@ -7,3 +7,4 @@
 .vscode/ipch
 /.pio
 examples/rak811_gps/src/lorakeys.h
+compile_commands.json

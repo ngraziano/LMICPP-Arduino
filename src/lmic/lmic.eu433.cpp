@@ -35,14 +35,6 @@ extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
 
 } // namespace EU433
 
-int8_t Eu433RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
-  if (powerIndex >= 6) {
-    return InvalidPower;
-  }
-
-  return EU433::MaxEIRPValue - 2 * powerIndex;
-}
-
 bool Eu433RegionalChannelParams::validRx1DrOffset(
     uint8_t const drOffset) const {
   return drOffset < 6;

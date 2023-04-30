@@ -44,13 +44,7 @@ CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 
 } // namespace EU868
 
-int8_t Eu868RegionalChannelParams::pow2dBm(uint8_t const powerIndex) const {
-  if (powerIndex >= 8) {
-    return InvalidPower;
-  }
 
-  return EU868::MaxEIRPValue - 2 * powerIndex;
-}
 
 bool Eu868RegionalChannelParams::validRx1DrOffset(
     uint8_t const drOffset) const {
