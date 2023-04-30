@@ -36,8 +36,6 @@ CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU433_F1, EU433_F2, EU433_F3};
 
 } // namespace EU433
 
-Eu433RegionalChannelParams::Eu433RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand) {}
 
 LmicEu433::LmicEu433(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}

@@ -45,8 +45,5 @@ CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU868_F1, EU868_F2, EU868_F3};
 } // namespace EU868
 
 
-Eu868RegionalChannelParams::Eu868RegionalChannelParams(LmicRand &arand)
-    : DynamicRegionalChannelParams(arand) {}
-
 LmicEu868::LmicEu868(Radio &aradio)
     : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}
