@@ -39,18 +39,19 @@ constexpr uint8_t rps_DR6 = rps_t{SF7, BandWidth::BW250, CodingRate::CR_4_5};
 
 extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[];
 
+constexpr uint8_t limitRX1DrOffset = 6;
+
 } // namespace EU433
 class Eu433RegionalChannelParams final
     : public DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
           EU433::MaxEIRPValue, 5, 0, EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7,
-          EU433::FREQ_DNW2, EU433::rps_DNW2, EU433::MaxPowerIndex> {
+          EU433::FREQ_DNW2, EU433::rps_DNW2, EU433::MaxPowerIndex,
+          EU433::limitRX1DrOffset> {
 public:
   enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
   bool setupChannel(uint8_t channel, uint32_t newfreq, uint16_t drmap) final;
   Eu433RegionalChannelParams(LmicRand &arand);
-
-  bool validRx1DrOffset(uint8_t drOffset) const final;
 
   void initDefaultChannels() final;
 

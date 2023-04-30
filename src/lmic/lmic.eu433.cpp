@@ -33,12 +33,10 @@ constexpr uint32_t FREQ_MAX = 434665000;
 extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
     rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
+
 } // namespace EU433
 
-bool Eu433RegionalChannelParams::validRx1DrOffset(
-    uint8_t const drOffset) const {
-  return drOffset < 6;
-}
+
 
 void Eu433RegionalChannelParams::initDefaultChannels() {
   DynamicRegionalChannelParams::initDefaultChannels();

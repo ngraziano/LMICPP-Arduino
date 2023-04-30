@@ -44,13 +44,6 @@ CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 
 } // namespace EU868
 
-
-
-bool Eu868RegionalChannelParams::validRx1DrOffset(
-    uint8_t const drOffset) const {
-  return drOffset < 6;
-}
-
 void Eu868RegionalChannelParams::initDefaultChannels() {
   DynamicRegionalChannelParams::initDefaultChannels();
   setupChannel(0, EU868_F1, 0);

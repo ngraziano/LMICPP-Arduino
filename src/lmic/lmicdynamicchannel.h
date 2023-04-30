@@ -27,7 +27,8 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
 template <int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
           const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
-          uint8_t default_rps_RX2, uint8_t maxPowerIndex>
+          uint8_t default_rps_RX2, uint8_t maxPowerIndex,
+          uint8_t limitRX1DrOffset>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
@@ -51,7 +52,9 @@ public:
   }
 
   OsDeltaTime getDwn2SafetyZone() const final { return DNW2_SAFETY_ZONE; };
-  bool validRx1DrOffset(uint8_t drOffset) const override = 0;
+  bool validRx1DrOffset(uint8_t const drOffset) const final {
+    return drOffset < limitRX1DrOffset;
+  }
 
   void initDefaultChannels() override {
     PRINT_DEBUG(2, F("Init Default Channel"));
