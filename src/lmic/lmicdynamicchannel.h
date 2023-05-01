@@ -30,9 +30,7 @@ template <typename ChannelListType, int8_t MaxEIRP, dr_t MaxJoinDR,
           dr_t MinJoinDR, const uint8_t *dr_table, dr_t MaxDr,
           uint32_t default_Freq_RX2, uint8_t default_rps_RX2,
           uint8_t maxPowerIndex, uint8_t limitRX1DrOffset,
-          uint32_t minFrequency, uint32_t maxFrequency
-
-          >
+          uint32_t minFrequency, uint32_t maxFrequency>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
@@ -42,7 +40,6 @@ public:
       return false;
 
     if (chidx < channels.NB_FIXED_CHANNELS) {
-      // channel 0, 1 and 2 are fixed
       return false;
     }
 
@@ -89,6 +86,7 @@ public:
   };
 
   void disableChannel(uint8_t channel) final { channels.disable(channel); };
+
   void handleCFList(const uint8_t *ptr) final {
     // Check CFList type
     if (ptr[15] != 0) {
@@ -132,7 +130,7 @@ public:
       }
     }
   };
-  
+
   void updateTxTimes(OsDeltaTime airtime) final {
     channels.updateAvailabitility(txChnl, os_getTime(), airtime);
 
@@ -194,6 +192,7 @@ public:
                 channels.getAvailability(0).tick(), startTime.tick());
     return startTime;
   };
+
   TimeAndStatus nextJoinState() final {
     bool failed = false;
 
@@ -208,6 +207,7 @@ public:
         failed = true;
         // and retry from highest datarate.
         datarate = MaxJoinDR;
+        txChnl = rand.uint8() % 3;
       } else {
         datarate = decDR(datarate);
       }
@@ -232,9 +232,11 @@ public:
                        dr_t const rx2datarate) final {
     rx2Parameter = {rx2frequency, getRpsDw(rx2datarate), 0};
   };
+
   void setRx2DataRate(dr_t const rx2datarate) final {
     rx2Parameter.rps = getRpsDw(rx2datarate);
   };
+  
   void setRx1DrOffset(uint8_t drOffset) final { rx1DrOffset = drOffset; };
 
   void setDrJoin(dr_t dr) { datarate = dr; }
