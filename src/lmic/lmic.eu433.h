@@ -55,14 +55,16 @@ constexpr uint32_t F3 = 433575000; // SF7-12
 
 } // namespace EU433
 
+using EU433Channels =
+    ChannelList<EU433::Bands, dr_range_map(EU433::Dr::SF12, EU433::Dr::SF7),
+                EU433::F1, EU433::F2, EU433::F3>;
 
 using Eu433RegionalChannelParams =
     DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
-        EU433::Bands, EU433::MaxEIRPValue, 5, 0,
+        EU433Channels, EU433::MaxEIRPValue, 5, 0,
         EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7, EU433::FREQ_DNW2, EU433::rps_DNW2,
-        EU433::MaxPowerIndex, EU433::limitRX1DrOffset,
-        dr_range_map(EU433::Dr::SF12, EU433::Dr::SF7), EU433::FREQ_MIN,
-        EU433::FREQ_MAX, EU433::F1, EU433::F2, EU433::F3>;
+        EU433::MaxPowerIndex, EU433::limitRX1DrOffset, EU433::FREQ_MIN,
+        EU433::FREQ_MAX>;
 
 class LmicEu433 final : public Lmic {
 public:

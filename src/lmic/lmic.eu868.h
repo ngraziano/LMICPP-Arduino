@@ -45,21 +45,22 @@ constexpr uint32_t FREQ_MAX = 870000000;
 
 enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
 
-
 constexpr uint32_t F1 = 868100000; // g1   SF7-12
 constexpr uint32_t F2 = 868300000; // g1   SF7-12 FSK SF7/250
 constexpr uint32_t F3 = 868500000; // g1   SF7-12
 
 } // namespace EU868
 
+using EU868Channels =
+    ChannelList<BandsEu868, dr_range_map(EU868::Dr::SF12, EU868::Dr::SF7),
+                EU868::F1, EU868::F2, EU868::F3>;
 
 using Eu868RegionalChannelParams =
     DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
-        BandsEu868, EU868::MaxEIRPValue, 5, 0,
+        EU868Channels, EU868::MaxEIRPValue, 5, 0,
         EU868::RESOLVE_TABLE(_DR2RPS_CRC), 7, EU868::FREQ_DNW2, EU868::rps_DNW2,
-        EU868::MaxPowerIndex, EU868::limitRX1DrOffset,
-        dr_range_map(EU868::Dr::SF12, EU868::Dr::SF7), EU868::FREQ_MIN,
-        EU868::FREQ_MAX, EU868::F1, EU868::F2, EU868::F3>;
+        EU868::MaxPowerIndex, EU868::limitRX1DrOffset, EU868::FREQ_MIN,
+        EU868::FREQ_MAX>;
 
 class LmicEu868 final : public Lmic {
 public:

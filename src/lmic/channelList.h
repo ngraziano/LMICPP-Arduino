@@ -41,11 +41,13 @@ public:
 #endif
 };
 
-template <typename BandsType> class ChannelList {
+template <typename BandsType,  uint16_t defaultChannelDrMap,uint32_t... defaultChannelFreq> class ChannelList {
 public:
   // Channel map store a maximum of 16 channel
   // (in rp_2-1.0.1 all dynamic channel region have a minumum of 16 )
   constexpr static const uint8_t LIMIT_CHANNELS = 16;
+  constexpr static const uint8_t NB_FIXED_CHANNELS = sizeof...(defaultChannelFreq);
+  constexpr static const uint16_t DEFAULT_CHANNEL_DR_MAP = defaultChannelDrMap;
 
 private:
   std::array<ChannelDetail, LIMIT_CHANNELS> channels = {};
@@ -59,6 +61,10 @@ private:
 
 public:
   constexpr ChannelList() {
+    uint8_t chnl = 0;
+    for (const auto frequency : {defaultChannelFreq...}) {
+      configure(chnl++, frequency, defaultChannelDrMap);
+    }
   }
 
   void disable(uint8_t channel) { channelMap &= ~(1 << channel); }

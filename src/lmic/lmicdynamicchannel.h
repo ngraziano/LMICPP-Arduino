@@ -26,15 +26,14 @@
 namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 
-template <typename BandsType, int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
-          const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
-          uint8_t default_rps_RX2, uint8_t maxPowerIndex,
-          uint8_t limitRX1DrOffset, uint16_t defaultChannelDrMap,
-          uint32_t minFrequency, uint32_t maxFrequency,
-          uint32_t... defaultChannelFreq>
-class DynamicRegionalChannelParams : public RegionalChannelParams {
+template <typename ChannelListType, int8_t MaxEIRP, dr_t MaxJoinDR,
+          dr_t MinJoinDR, const uint8_t *dr_table, dr_t MaxDr,
+          uint32_t default_Freq_RX2, uint8_t default_rps_RX2,
+          uint8_t maxPowerIndex, uint8_t limitRX1DrOffset,
+          uint32_t minFrequency, uint32_t maxFrequency
 
-  using ChannelListType = ChannelList<BandsType>;
+          >
+class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
   bool setupChannel(uint8_t const chidx, uint32_t const newfreq,
@@ -42,7 +41,7 @@ public:
     if (chidx >= channels.LIMIT_CHANNELS)
       return false;
 
-    if (chidx < sizeof...(defaultChannelFreq)) {
+    if (chidx < channels.NB_FIXED_CHANNELS) {
       // channel 0, 1 and 2 are fixed
       return false;
     }
@@ -87,11 +86,6 @@ public:
     setRx1DrOffset(0);
 
     channels = ChannelListType();
-
-    uint8_t chnl = 0;
-    for (const auto frequency : {defaultChannelFreq...}) {
-      channels.configure(chnl, frequency, defaultChannelDrMap);
-    }
   };
 
   void disableChannel(uint8_t channel) final { channels.disable(channel); };
@@ -101,14 +95,12 @@ public:
       PRINT_DEBUG(2, F("Wrong cflist type %d"), ptr[15]);
       return;
     }
+
     for (uint8_t chidx = 3; chidx < 8; chidx++, ptr += 3) {
       uint32_t newfreq = read_frequency(ptr);
-      if (newfreq != 0) {
-        setupChannel(chidx, newfreq, 0);
-
-        PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""), chidx,
-                    newfreq);
-      }
+      setupChannel(chidx, newfreq, channels.DEFAULT_CHANNEL_DR_MAP);
+      PRINT_DEBUG(2, F("Setup channel, idx=%d, freq=%" PRIu32 ""), chidx,
+                  newfreq);
     }
   };
 
@@ -140,6 +132,7 @@ public:
       }
     }
   };
+  
   void updateTxTimes(OsDeltaTime airtime) final {
     channels.updateAvailabitility(txChnl, os_getTime(), airtime);
 
