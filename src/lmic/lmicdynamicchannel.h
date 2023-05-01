@@ -21,6 +21,7 @@
 #include "../hal/print_debug.h"
 #include "lmic_table.h"
 #include <algorithm>
+#include <initializer_list>
 
 namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
@@ -28,9 +29,9 @@ constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
 template <typename BandsType, int8_t MaxEIRP, dr_t MaxJoinDR, dr_t MinJoinDR,
           const uint8_t *dr_table, dr_t MaxDr, uint32_t default_Freq_RX2,
           uint8_t default_rps_RX2, uint8_t maxPowerIndex,
-          uint8_t limitRX1DrOffset, uint8_t nbFixedChannels,
-          const uint32_t *defaultChannelFreq, uint16_t defaultChannelDrMap,
-          uint32_t minFrequency, uint32_t maxFrequency>
+          uint8_t limitRX1DrOffset, uint16_t defaultChannelDrMap,
+          uint32_t minFrequency, uint32_t maxFrequency,
+          uint32_t... defaultChannelFreq>
 class DynamicRegionalChannelParams : public RegionalChannelParams {
 
   using ChannelListType = ChannelList<BandsType>;
@@ -41,7 +42,7 @@ public:
     if (chidx >= channels.LIMIT_CHANNELS)
       return false;
 
-    if (chidx < nbFixedChannels) {
+    if (chidx < sizeof...(defaultChannelFreq)) {
       // channel 0, 1 and 2 are fixed
       return false;
     }
@@ -80,16 +81,16 @@ public:
     return drOffset < limitRX1DrOffset;
   }
 
-  void initDefaultChannels() override {
+  void initDefaultChannels() final {
     PRINT_DEBUG(2, F("Init Default Channel"));
     rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
     setRx1DrOffset(0);
 
     channels = ChannelListType();
 
-    for (uint8_t chnl = 0; chnl < nbFixedChannels; chnl++) {
-      channels.configure(chnl, table_get_u4(defaultChannelFreq, chnl),
-                         defaultChannelDrMap);
+    uint8_t chnl = 0;
+    for (const auto frequency : {defaultChannelFreq...}) {
+      channels.configure(chnl, frequency, defaultChannelDrMap);
     }
   };
 

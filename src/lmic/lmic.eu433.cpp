@@ -18,13 +18,7 @@
 #include "lmic_table.h"
 #include <algorithm>
 
-// Default frequency plan for EU 433
-enum {
-  EU433_F1 = 433175000, // SF7-12
-  EU433_F2 = 433375000, // SF7-12
-  EU433_F3 = 433575000, // SF7-12
-  EU433_R2 = 434665000,
-};
+
 
 namespace EU433 {
 
@@ -32,7 +26,6 @@ namespace EU433 {
 extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
     rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
 
-CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU433_F1, EU433_F2, EU433_F3};
 
 } // namespace EU433
 

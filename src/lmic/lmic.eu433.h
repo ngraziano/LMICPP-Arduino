@@ -46,18 +46,23 @@ using Bands = BandSingle<100>;
 constexpr uint32_t FREQ_MIN = 433050000;
 constexpr uint32_t FREQ_MAX = 434665000;
 
-extern CONST_TABLE2(uint32_t, _defaultChannels)[];
-
 enum class Dr : dr_t { SF12 = 0, SF11, SF10, SF9, SF8, SF7, SF7B, FSK, NONE };
+
+// Default frequency plan for EU 433
+constexpr uint32_t F1 = 433175000; // SF7-12
+constexpr uint32_t F2 = 433375000; // SF7-12
+constexpr uint32_t F3 = 433575000; // SF7-12
+
 } // namespace EU433
+
+
 using Eu433RegionalChannelParams =
     DYNAMIC_CHANNEL::DynamicRegionalChannelParams<
         EU433::Bands, EU433::MaxEIRPValue, 5, 0,
         EU433::RESOLVE_TABLE(_DR2RPS_CRC), 7, EU433::FREQ_DNW2, EU433::rps_DNW2,
-        EU433::MaxPowerIndex, EU433::limitRX1DrOffset, 3,
-        EU433::RESOLVE_TABLE(_defaultChannels),
+        EU433::MaxPowerIndex, EU433::limitRX1DrOffset,
         dr_range_map(EU433::Dr::SF12, EU433::Dr::SF7), EU433::FREQ_MIN,
-        EU433::FREQ_MAX>;
+        EU433::FREQ_MAX, EU433::F1, EU433::F2, EU433::F3>;
 
 class LmicEu433 final : public Lmic {
 public:

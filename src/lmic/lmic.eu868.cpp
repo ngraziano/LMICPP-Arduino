@@ -24,14 +24,7 @@
 //  g2 : 0.1%  14dBm
 //  g3 :  10%  27dBm
 //                 freq             band     datarates
-enum {
-  EU868_F1 = 868100000, // g1   SF7-12
-  EU868_F2 = 868300000, // g1   SF7-12 FSK SF7/250
-  EU868_F3 = 868500000, // g1   SF7-12
-  EU868_F4 = 868850000, // g2   SF7-12
-  EU868_F5 = 869050000, // g2   SF7-12
-  EU868_F6 = 869525000, // g3   SF7-12
-};
+
 
 namespace EU868 {
 
@@ -39,8 +32,6 @@ constexpr Dr DR_DNW2 = Dr::SF12;
 
 CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 [] = {rps_DR0, rps_DR1, rps_DR2, rps_DR3, rps_DR4, rps_DR5, rps_DR6};
-
-CONST_TABLE2(uint32_t, _defaultChannels)[] = {EU868_F1, EU868_F2, EU868_F3};
 
 } // namespace EU868
 
