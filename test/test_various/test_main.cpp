@@ -6,6 +6,7 @@
 
 #include "test_aes.h"
 #include "test_keyhandler.h"
+#include "test_eu868channels.h"
 
 void setUp(void) {
   // set stuff up here
@@ -19,6 +20,7 @@ int runUnityTests(void) {
   UNITY_BEGIN();
   test_keyhandler::run();
   test_aes::run();
+  test_eu868channels::run();
   UNITY_END();
   return 0;
 }
