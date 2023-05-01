@@ -71,4 +71,8 @@ void BandsEu868::loadState(RetrieveAbtract &store) {
                 [&store](OsTime &date) { store.read(date); });
 }
 
+constexpr uint16_t BandsEu868::getStateSize()  {
+  return sizeof(avail);
+}
+
 #endif

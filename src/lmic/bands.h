@@ -48,6 +48,7 @@ public:
 
   void saveState(StoringAbtract &store) const final { store.write(avail); };
   void loadState(RetrieveAbtract &store) final { store.read(avail); };
+  static constexpr uint16_t getStateSize() { return sizeof(avail); };
 #endif
 
 private:

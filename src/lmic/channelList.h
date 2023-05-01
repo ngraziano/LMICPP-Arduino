@@ -38,6 +38,10 @@ public:
     store.read(frequencyRX);
     store.read(drMap);
   };
+
+  static constexpr uint16_t getStateSize() {
+    return sizeof(frequency) + sizeof(frequencyRX) + sizeof(drMap);
+  };
 #endif
 };
 
@@ -141,6 +145,11 @@ public:
     }
     store.read(channelMap);
   };
+
+  static constexpr uint16_t getStateSize() {
+    return BandsType::getStateSize() +
+           ChannelDetail::getStateSize() * LIMIT_CHANNELS + sizeof(channelMap);
+  }
 #endif
 };
 

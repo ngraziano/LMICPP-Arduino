@@ -23,6 +23,7 @@ public:
 
   void saveState(StoringAbtract &store) const final;
   void loadState(RetrieveAbtract &store) final;
+  static constexpr uint16_t getStateSize();
 #endif
 
 private:
