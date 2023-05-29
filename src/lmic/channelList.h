@@ -69,8 +69,8 @@ private:
 
 public:
   constexpr ChannelList() {
-    #if GCC_VERSION < 60000
     uint8_t chnl = 0;
+    #if __GNUC__ < 6
     for (const auto frequency : {defaultChannelFreq...}) {
       configure(chnl++, frequency, defaultChannelDrMap);
     }
