@@ -5,6 +5,7 @@
 #include "bufferpack.h"
 #include "lorabase.h"
 #include <array>
+#include <initializer_list>
 #include <stdint.h>
 
 struct ChannelDetail {
@@ -45,12 +46,15 @@ public:
 #endif
 };
 
-template <typename BandsType,  uint16_t defaultChannelDrMap,uint32_t... defaultChannelFreq> class ChannelList {
+template <typename BandsType, uint16_t defaultChannelDrMap,
+          uint32_t... defaultChannelFreq>
+class ChannelList {
 public:
   // Channel map store a maximum of 16 channel
   // (in rp_2-1.0.1 all dynamic channel region have a minumum of 16 )
   constexpr static const uint8_t LIMIT_CHANNELS = 16;
-  constexpr static const uint8_t NB_FIXED_CHANNELS = sizeof...(defaultChannelFreq);
+  constexpr static const uint8_t NB_FIXED_CHANNELS =
+      sizeof...(defaultChannelFreq);
   constexpr static const uint16_t DEFAULT_CHANNEL_DR_MAP = defaultChannelDrMap;
 
 private:
@@ -65,44 +69,50 @@ private:
 
 public:
   constexpr ChannelList() {
+    #if GCC_VERSION < 60000
     uint8_t chnl = 0;
     for (const auto frequency : {defaultChannelFreq...}) {
       configure(chnl++, frequency, defaultChannelDrMap);
     }
+    #else
+    (configure(chnl++, defaultChannelFreq, defaultChannelDrMap),...);
+    #endif
   }
 
-  void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
-  void enable(uint8_t channel) {
+  constexpr void disable(uint8_t channel) { channelMap &= ~(1 << channel); }
+  constexpr void enable(uint8_t channel) {
     // ignore - channel is not defined
     if (channels[channel].isConfigured()) {
       channelMap |= (1 << channel);
     }
   }
-  void enableAll() {
+  constexpr void enableAll() {
     for (uint8_t channel = 0; channel < channels.max_size(); channel++) {
       enable(channel);
     }
   }
-  bool is_enable(uint8_t channel) const { return channelMap & (1 << channel); }
+  constexpr bool is_enable(uint8_t channel) const {
+    return channelMap & (1 << channel);
+  }
 
-  bool is_enable_at_dr(uint8_t channel, dr_t datarate) const {
+  constexpr bool is_enable_at_dr(uint8_t channel, dr_t datarate) const {
     return (channelMap & (1 << channel)) &&
            channels[channel].isDrActive(datarate);
   }
 
-  void configure(uint8_t channel, uint32_t const newfreq,
-                 uint16_t const drmap) {
+  constexpr void configure(uint8_t channel, uint32_t const newfreq,
+                           uint16_t const drmap) {
     channels[channel] = ChannelDetail{newfreq, drmap};
     channelMap |= 1 << channel;
   }
 
-  void updateAvailabitility(uint8_t const channel, OsTime const txbeg,
-                            OsDeltaTime const airtime) {
+  constexpr void updateAvailabitility(uint8_t const channel, OsTime const txbeg,
+                                      OsDeltaTime const airtime) {
     // Update band specific duty cycle stats
     bands.updateBandAvailability(getBand(channel), txbeg, airtime);
   }
 
-  OsTime getAvailability(uint8_t const channel) const {
+  constexpr OsTime getAvailability(uint8_t const channel) const {
     if (!checkDutyCycle) {
       return hal_ticks();
     }
@@ -110,15 +120,15 @@ public:
     return bands.getAvailability(band);
   };
 
-  uint32_t getFrequency(uint8_t const channel) const {
+  constexpr uint32_t getFrequency(uint8_t const channel) const {
     return channels[channel].getFrequency();
   };
 
-  uint32_t getFrequencyRX(uint8_t const channel) const {
+  constexpr uint32_t getFrequencyRX(uint8_t const channel) const {
     return channels[channel].getFrequencyRX();
   };
 
-  void setCheckDutyCycle(bool check) { checkDutyCycle = check; }
+  constexpr void setCheckDutyCycle(bool check) { checkDutyCycle = check; }
 
 #if defined(ENABLE_SAVE_RESTORE)
   void saveState(StoringAbtract &store) const {
@@ -146,7 +156,7 @@ public:
     store.read(channelMap);
   };
 
-  static constexpr uint16_t getStateSize() {
+  static constexpr uint16_t getStateBytes() {
     return BandsType::getStateSize() +
            ChannelDetail::getStateSize() * LIMIT_CHANNELS + sizeof(channelMap);
   }

@@ -21,7 +21,6 @@
 #include "../hal/print_debug.h"
 #include "lmic_table.h"
 #include <algorithm>
-#include <initializer_list>
 
 namespace DYNAMIC_CHANNEL {
 constexpr OsDeltaTime DNW2_SAFETY_ZONE = OsDeltaTime::from_ms(3000);
@@ -236,7 +235,7 @@ public:
   void setRx2DataRate(dr_t const rx2datarate) final {
     rx2Parameter.rps = getRpsDw(rx2datarate);
   };
-  
+
   void setRx1DrOffset(uint8_t drOffset) final { rx1DrOffset = drOffset; };
 
   void setDrJoin(dr_t dr) { datarate = dr; }
