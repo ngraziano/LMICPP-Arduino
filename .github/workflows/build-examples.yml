@@ -28,6 +28,6 @@ jobs:
       - name: Build simple sx1262 exemple
         run: platformio ci --lib="." --board=ATmega328P --project-option="lib_deps=https://github.com/ngraziano/avr_stl.git" examples/simple_sx1262
       - name: Build esp32 exemple
-        run: platformio ci --lib="." --board=heltec_wifi_lora_32 examples/esp32
+        run: platformio ci --lib="." examples/esp32 --project-conf examples/esp32/platformio-ci.ini
       - name: Build rak811 exemple
-        run: platformio ci --lib="." --board=rak811_tracker_32 examples/rak811_gps --project-conf examples/rak811_gps/platformio.ini
+        run: platformio ci --lib="." examples/rak811_gps --project-conf examples/rak811_gps/platformio-ci.ini
