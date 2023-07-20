@@ -13,7 +13,7 @@
 #include <Wire.h>
 #include <bme280.h>
 
-#define DEVICE_TEMP2
+#define DEVICE_TEMP1
 #include "lorakeys.h"
 #include "powersave.h"
 
@@ -61,7 +61,7 @@ void onEvent(EventType ev) {
   case EventType::TXCOMPLETE:
     PRINT_DEBUG(2, F("EV_TXCOMPLETE (includes waiting for RX windows)"));
     if (LMIC.getTxRxFlags().test(TxRxStatus::ACK)) {
-      PRINT_DEBUG(1, F("Received ack"));
+      PRINT_DEBUG(2, F("Received ack"));
     }
     break;
   case EventType::RESET:
@@ -213,7 +213,7 @@ void loop() {
     // the test must be adapted from the time spend in other task
     if (nextSend < os_getTime()) {
       if (LMIC.getOpMode().test(OpState::TXRXPEND)) {
-        PRINT_DEBUG(1, F("OpState::TXRXPEND, not sending"));
+        PRINT_DEBUG(2, F("OpState::TXRXPEND, not sending"));
       } else {
         do_send();
       }
