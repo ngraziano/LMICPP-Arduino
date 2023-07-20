@@ -149,13 +149,14 @@ static inline uint8_t readsbox_inv(uint8_t val) {
 constexpr uint8_t const rcon[10] PROGMEM = {0x01, 0x02, 0x04, 0x08, 0x10,
                                             0x20, 0x40, 0x80, 0x1B, 0x36};
 
-static inline void keyScheduleCore(uint8_t *output, const uint8_t *input,
+static inline std::array<uint8_t, 4> keyScheduleCore(const uint8_t *input,
                                    uint8_t iteration) {
-
-  output[0] = readsbox(input[1]) ^ pgm_read_byte(rcon + iteration);
-  output[1] = readsbox(input[2]);
-  output[2] = readsbox(input[3]);
-  output[3] = readsbox(input[0]);
+  return std::array<uint8_t, 4> {
+    (uint8_t)(readsbox(input[1]) ^ pgm_read_byte(rcon + iteration)),
+    readsbox(input[2]),
+    readsbox(input[3]),
+    readsbox(input[0])
+  };
 }
 
 static inline void subBytesAndShiftRows(DataBlock &buffer) {
@@ -224,8 +225,7 @@ void mixColumn(uint8_t *buffer) {
 }
 
 void kcore(uint8_t n, AesKey &schedule) {
-  uint8_t temp[4];
-  keyScheduleCore(temp, schedule.begin() + 12, n);
+  std::array<uint8_t, 4> temp = keyScheduleCore(schedule.begin() + 12, n);
   schedule[0] ^= temp[0];
   schedule[1] ^= temp[1];
   schedule[2] ^= temp[2];
