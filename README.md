@@ -65,6 +65,11 @@ Use define in platformio.ini `build_flags` to change activated part.
 In ``main.cpp`` replace the content of ``do_send()`` with the data you want to send.
 
 
+## Test under windows
+
+To launch unit test under windows you need to install msys2 in the following path ``C:\msys64``.
+``add_msys_path.py`` script will add msys64 path to your environment and ``copy_msys_dll.py`` will copy dll to the build directory.
+
 ## License
 
 Most source files in this repository are made available under the Eclipse Public License v1.0.
