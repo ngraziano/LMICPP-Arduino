@@ -891,7 +891,7 @@ void Lmic::buildDataFrame() {
   if (flen > frame.max_size()) {
     // Options and payload too big - delay payload
     PRINT_DEBUG(1, F("buildDataFrame: frame too big %i > %i"), flen,
-                frame.max_size());
+                (uint8_t)frame.max_size());
 
     txdata = false;
     flen = end + lengths::MIC;

@@ -70,13 +70,7 @@ private:
 public:
   constexpr ChannelList() {
     uint8_t chnl = 0;
-    #if __GNUC__ < 6
-    for (const auto frequency : {defaultChannelFreq...}) {
-      configure(chnl++, frequency, defaultChannelDrMap);
-    }
-    #else
     (configure(chnl++, defaultChannelFreq, defaultChannelDrMap),...);
-    #endif
   }
 
   constexpr void disable(uint8_t channel) { channelMap &= ~(1 << channel); }

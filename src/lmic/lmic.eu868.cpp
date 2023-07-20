@@ -21,4 +21,4 @@ CONST_TABLE2(uint8_t, _DR2RPS_CRC)
 } // namespace EU868
 
 LmicEu868::LmicEu868(Radio &aradio)
-    : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}
+    : Lmic(aradio, aes, rand, channelParams), aes(), rand(aes), channelParams(rand) {}

@@ -60,7 +60,7 @@ void HalIo::endspi() const {
 }
 
 // perform SPI transaction with radio
-uint8_t HalIo::spi(uint8_t const out) const {
+uint8_t HalIo::spi(uint8_t const /* out */) const {
   // uint8_t res = SPI.transfer(out);
   /*
       Serial.print(">");

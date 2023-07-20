@@ -249,13 +249,14 @@ void CertificationProtocol::transmitContinuousWave(uint8_t const *message,
   if (size != 6) {
     return;
   }
-
+  /* 
   uint16_t const timeout =
       message[0] | (static_cast<uint16_t>(message[1]) << 8);
   uint32_t const frequency = message[2] |
                              (static_cast<uint32_t>(message[3]) << 8) |
                              (static_cast<uint32_t>(message[4]) << 16);
   uint8_t const power = message[5];
+  */
   // TODO: implement continuous wave transmission
 }
 

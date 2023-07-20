@@ -21,4 +21,4 @@ extern CONST_TABLE2(uint8_t, _DR2RPS_CRC)[] = {
 } // namespace EU433
 
 LmicEu433::LmicEu433(Radio &aradio)
-    : Lmic(aradio, aes, rand, channelParams), rand(aes), channelParams(rand) {}
+    : Lmic(aradio, aes, rand, channelParams), aes(), rand(aes), channelParams(rand) {}

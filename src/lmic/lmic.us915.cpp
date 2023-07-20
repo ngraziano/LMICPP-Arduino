@@ -42,7 +42,8 @@ CONST_TABLE(uint8_t, maxFrameLens)
 [] = {24, 66, 142, 255, 255, 255, 255, 255, 66, 142};
 
 namespace {
-constexpr rps_t rps_DWN2 = rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5 , true};
+constexpr rps_t rps_DWN2 =
+    rps_t{SF12, BandWidth::BW500, CodingRate::CR_4_5, true};
 
 constexpr uint8_t rps_DR0 = rps_t{SF10, BandWidth::BW125, CodingRate::CR_4_5};
 constexpr uint8_t rps_DR1 = rps_t{SF9, BandWidth::BW125, CodingRate::CR_4_5};
@@ -298,9 +299,9 @@ TransmitionParameters Us915RegionalChannelParams::getTxParameter() const {
 }
 
 TransmitionParameters Us915RegionalChannelParams::getRx1Parameter() const {
-  auto val =  rps_t(getRawRps(getRx1Dr()));
+  auto val = rps_t(getRawRps(getRx1Dr()));
   val.nocrc = true;
-  return {getRx1Frequency(),val, 0 };
+  return {getRx1Frequency(), val, 0};
 }
 
 TransmitionParameters Us915RegionalChannelParams::getRx2Parameter() const {
@@ -343,7 +344,7 @@ void Us915RegionalChannelParams::setRx1DrOffset(uint8_t drOffset) {
 }
 
 void Us915RegionalChannelParams::setRx2Parameter(uint32_t const freq,
-                                                   dr_t const dr) {
+                                                 dr_t const dr) {
   auto val = rps_t(getRawRps(dr));
   val.nocrc = true;
   rx2Parameter = {freq, val, 0};
@@ -365,7 +366,6 @@ void Us915RegionalChannelParams::saveStateWithoutTimeData(
   store.write(datarate);
   store.write(rx1DrOffset);
   store.write(rx2Parameter);
-
 }
 
 void Us915RegionalChannelParams::saveState(StoringAbtract &store) const {
@@ -389,7 +389,6 @@ void Us915RegionalChannelParams::loadStateWithoutTimeData(
   store.read(datarate);
   store.read(rx1DrOffset);
   store.read(rx2Parameter);
-
 }
 
 void Us915RegionalChannelParams::loadState(RetrieveAbtract &store) {
@@ -400,7 +399,6 @@ void Us915RegionalChannelParams::loadState(RetrieveAbtract &store) {
   store.read(datarate);
   store.read(rx1DrOffset);
   store.read(rx2Parameter);
-
 }
 #endif
 
@@ -408,5 +406,5 @@ Us915RegionalChannelParams::Us915RegionalChannelParams(LmicRand &arand)
     : rand(arand) {}
 
 LmicUs915::LmicUs915(Radio &aradio)
-    : Lmic(aradio, aes, rand, channelParams), rand(aes),
+    : Lmic(aradio, aes, rand, channelParams), aes(), rand(aes),
       channelParams(rand) {}
