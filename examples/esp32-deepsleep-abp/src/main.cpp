@@ -23,7 +23,11 @@ constexpr lmic_pinmap lmic_pins = {
     .dio = {26, 33},
 };
 RadioSx1276 radio{lmic_pins};
-LmicEu868 LMIC{radio};
+Aes aes;
+LmicRand lmicrand{aes};
+Eu868RegionalChannelParams channelParams{lmicrand};
+
+Lmic LMIC{radio, aes, lmicrand, channelParams};
 
 OsTime nextSend;
 
@@ -118,14 +122,14 @@ void setup() {
   LMIC.setRx2Parameter(869525000, 3);
 
   // Channel 0,1,2 : default channel for EU868
-  // LMIC.setupChannel(0, 868100000, dr_range_map(0, 5));
-  // LMIC.setupChannel(1, 868300000, dr_range_map(0, 5));
-  // LMIC.setupChannel(2, 868500000, dr_range_map(0, 5));
-  LMIC.setupChannel(3, 867100000, dr_range_map(0, 5));
-  LMIC.setupChannel(4, 867300000, dr_range_map(0, 5));
-  LMIC.setupChannel(5, 867500000, dr_range_map(0, 5));
-  LMIC.setupChannel(6, 867700000, dr_range_map(0, 5));
-  LMIC.setupChannel(7, 867900000, dr_range_map(0, 5));
+  // channelParams.setupChannel(0, 868100000, dr_range_map(0, 5));
+  // channelParams.setupChannel(1, 868300000, dr_range_map(0, 5));
+  // channelParams.setupChannel(2, 868500000, dr_range_map(0, 5));
+  channelParams.setupChannel(3, 867100000, dr_range_map(0, 5));
+  channelParams.setupChannel(4, 867300000, dr_range_map(0, 5));
+  channelParams.setupChannel(5, 867500000, dr_range_map(0, 5));
+  channelParams.setupChannel(6, 867700000, dr_range_map(0, 5));
+  channelParams.setupChannel(7, 867900000, dr_range_map(0, 5));
 
   // Tx Datarate for EU868  0 => SF12 ... 5 => SF7
   LMIC.setDrTx(5);
