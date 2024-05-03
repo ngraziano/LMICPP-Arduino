@@ -603,7 +603,7 @@ void Lmic::setupRxC() {
 }
 
 OsTime Lmic::schedRx12(OsDeltaTime delay, rps_t rps) {
-  PRINT_DEBUG(2, F("SchedRx RX1/2"));
+  PRINT_DEBUG(1, F("SchedRx RX1/2 @ %" PRIu32), (txend + delay).tick());
 
   // Half symbol time for the data rate.
   const OsDeltaTime hsym = OsDeltaTime(Lmic::timeBySymbol(rps).tick() / 2);
@@ -1236,7 +1236,7 @@ void Lmic::wait_end_rx() {
 
     dataLen = radio.handle_end_rx(frame, true);
 
-    PRINT_DEBUG(1, F("End RX - Start RX : %" PRIi32 " us "),
+    PRINT_DEBUG(1, F("End RX - Open RX : %" PRIi32 " us "),
                 (now - rxtime).to_us());
     rxtime = now;
 
