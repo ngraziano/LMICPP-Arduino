@@ -12,7 +12,6 @@ class Bands {
 public:
   virtual void updateBandAvailability(uint8_t band, OsTime lastusage,
                                       OsDeltaTime duration) = 0;
-  virtual void print_state() const = 0;
   virtual OsTime getAvailability(uint8_t band) const = 0;
 
   virtual uint8_t getBandForFrequency(uint32_t frequency) const = 0;
@@ -35,8 +34,7 @@ public:
     PRINT_DEBUG(2, F("Setting  available time for bandto %" PRIu32 ""),
                 avail.tick());
   };
-  void print_state() const final {
-
+  void print_state() const  {
     PRINT_DEBUG(2, F("Band , available at %" PRIu32 "."), avail.tick());
   };
   OsTime getAvailability(uint8_t) const final { return avail; };

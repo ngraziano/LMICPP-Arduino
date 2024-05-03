@@ -13,7 +13,7 @@ public:
   BandsEu868();
   void updateBandAvailability(uint8_t band, OsTime lastusage,
                               OsDeltaTime duration) final;
-  void print_state() const final;
+  void print_state() const;
   OsTime getAvailability(uint8_t band) const final { return avail[band]; };
 
   static constexpr uint8_t MAX_BAND = 3;
