@@ -113,8 +113,10 @@ uint8_t DisableIRQsGard::intNumber = 0;
 // -----------------------------------------------------------------------------
 
 void hal_init() {
-  // printf support
-  hal_printf_init();
+  if constexpr(debugLevel > 0) {
+    // printf support
+    hal_printf_init();
+  }
 }
 
 void hal_failed(const char *file, uint16_t line) {
