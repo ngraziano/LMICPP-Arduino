@@ -85,7 +85,7 @@ public:
   virtual void loadStateWithoutTimeData(RetrieveAbtract &store) final;
 #endif
 
-  Us915RegionalChannelParams(LmicRand &arand);
+  explicit Us915RegionalChannelParams(LmicRand &arand);
 
 private:
   // enabled bits
