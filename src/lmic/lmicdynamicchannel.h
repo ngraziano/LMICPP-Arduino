@@ -34,7 +34,7 @@ class DynamicRegionalChannelParams : public RegionalChannelParams {
 
 public:
   bool setupChannel(uint8_t const chidx, uint32_t const newfreq,
-                    uint16_t const drmap) {
+                    uint16_t const drmap) override {
     if (chidx >= channels.LIMIT_CHANNELS)
       return false;
 
@@ -307,7 +307,7 @@ public:
   };
 #endif
 
-  DynamicRegionalChannelParams(LmicRand &arand) : rand{arand} {};
+  explicit DynamicRegionalChannelParams(LmicRand &arand) : rand{arand} {};
 
 protected:
   void setRegionalDutyCycleVerification(bool enabled) final {
@@ -328,7 +328,7 @@ protected:
   uint8_t rx1DrOffset = 0;
   // Number of join requests sent
   uint8_t joinCount = 0;
-  TransmitionParameters rx2Parameter;
+  TransmitionParameters rx2Parameter = {default_Freq_RX2, rps_t(default_rps_RX2), 0};
 
 private:
   dr_t getRx1Dr() const { return lowerDR(datarate, rx1DrOffset); };
