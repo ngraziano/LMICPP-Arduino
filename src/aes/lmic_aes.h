@@ -16,11 +16,11 @@ using AesBlock = std::array<uint8_t, AES_BLCK_SIZE>;
 
 class Aes {
 private:
-  AesKey AESDevKey;
+  AesKey AESDevKey = {0};
   // network session key
-  AesKey nwkSKey;
+  AesKey nwkSKey = {0};
   // application session key
-  AesKey appSKey;
+  AesKey appSKey = {0};
 
   static AesBlock micB0(uint32_t devaddr, uint32_t seqno, PktDir dndir, uint8_t len);
   static void aes_cmac(const uint8_t *buf, uint8_t len, bool prepend_aux,
