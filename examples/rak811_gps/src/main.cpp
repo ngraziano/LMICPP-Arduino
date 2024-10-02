@@ -23,8 +23,8 @@ constexpr uint32_t TX_INTERVAL = 140;
 
 constexpr unsigned int BAUDRATE = 115200;
 
-constexpr uint32_t magic_constant = 0x5157;
-uint32_t pauseBatt = 345; // centiVolt
+constexpr uint32_t magic_constant = 0x5117;
+uint32_t pauseBatt = 340; // centiVolt
 
 class EEPromStore : public StoringAbtract {
 private:
@@ -86,6 +86,8 @@ void saveState() {
   digitalWrite(LED2, HIGH);
 }
 
+uint nbPacketSent = 0;
+
 void onEvent(EventType ev) {
   switch (ev) {
   case EventType::JOINING:
@@ -113,6 +115,10 @@ void onEvent(EventType ev) {
           pauseBatt = data[0] + data[1] * 256;
         }
       }
+    }
+    nbPacketSent++;
+    if (nbPacketSent % 32 == 0) {
+      saveState();
     }
     break;
   default:
@@ -159,6 +165,7 @@ void emptyGpsBuffer() {
 
 int32_t old_latitude = 0;
 int32_t old_longitude = 0;
+int32_t nb_ignored = 0;
 
 void do_send(OsDeltaTime to_wait) {
   if (LMIC.getTxRxFlags().test(TxRxStatus::NEED_BATTERY_LEVEL)) {
@@ -193,9 +200,15 @@ void do_send(OsDeltaTime to_wait) {
   if (std::abs(latitude - old_latitude) < 1000 &&
       std::abs(longitude - old_longitude) < 1000) {
     PRINT_DEBUG(1, F("GPS position not changed"));
-    nextSendEpoch = rtc.getEpoch() + TX_INTERVAL;
-    return;
+    nb_ignored++;
+    if (nb_ignored < 10) {
+      PRINT_DEBUG(1, F("GPS position not changed skip"));
+      nextSendEpoch = rtc.getEpoch() + TX_INTERVAL;
+      return;
+    }
   }
+
+  nb_ignored = 0;
 
   old_latitude = latitude;
   old_longitude = longitude;
@@ -306,6 +319,7 @@ void setup() {
     LMIC.loadStateWithoutTimeData(store);
     digitalWrite(LED2, HIGH);
     LMIC.setDrTx(5);
+    LMIC.clrTxData();
   }
 
   // first send
@@ -315,6 +329,7 @@ void setup() {
     PRINT_DEBUG(1, F("Starting ."));
     delay(1000);
   }
+  
 }
 
 void goToSleep(uint32_t nb_sec_to_sleep) {
@@ -356,7 +371,6 @@ void sleep_if_battery_too_low() {
 }
 
 void loop() {
-
   sleep_if_battery_too_low();
 
   OsDeltaTime to_wait = LMIC.run();
@@ -373,6 +387,7 @@ void loop() {
   }
 
   if (LMIC.getOpMode().test(OpState::TXDATA)) {
+    PRINT_DEBUG(1, F("Refresh data ."));
     // refresh data
     do_send(to_wait);
     return;
