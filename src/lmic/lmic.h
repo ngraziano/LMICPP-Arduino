@@ -325,6 +325,8 @@ public:
   void setLinkCheckMode(bool enabled);
   void setSession(uint32_t netid, devaddr_t devaddr, AesKey const &nwkSKey,
                   AesKey const &artKey);
+  devaddr_t getDeviceAddress() const { return devaddr; };
+  uint32_t getNetID() const { return netid; };
   void askLinkCheck();
   /**
    * Adjust output power by this amount (for antenna gain)

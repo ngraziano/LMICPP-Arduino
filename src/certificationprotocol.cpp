@@ -238,6 +238,8 @@ void CertificationProtocol::sendDeviceTimeReques() {
   // The DeviceTimeReq command has no payload.
 
   // TODO: implement device time request
+
+  // lmic.askDeviceTime();
 }
 
 void CertificationProtocol::transmitContinuousWave(uint8_t const *message,
