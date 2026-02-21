@@ -314,6 +314,7 @@ private:
   void keep_sticky_mac_response(const uint8_t *const source, uint8_t sourceLen);
 
 public:
+  uint32_t getSeqnoUp() const { return seqnoUp; }
   void setBatteryLevel(uint8_t level);
   // set default/start DR/txpow
   void setDrTx(uint8_t dr) { channelParams.setDrTx(dr); };
